@@ -3,6 +3,14 @@ name = "warppcs"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "server"
+path = "src/bin/server.rs"
+
+[[bin]]
+name = "client"
+path = "src/bin/client.rs"
+
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
 opt-level = 1
