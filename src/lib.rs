@@ -61,6 +61,7 @@ pub enum ServerMessages {
         entity: Entity,
         id: ClientId,
         translation: [f32; 3],
+        color: Color,
     },
     PlayerRemove {
         id: ClientId,
@@ -116,9 +117,9 @@ pub fn setup_level(
 ) {
     // plane
     commands.spawn(MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(meshes.add(Rectangle::new(25.0, 50.0))),
+        mesh: Mesh2dHandle(meshes.add(Rectangle::new(6000.0, 2000.0))),
         material: materials.add(Color::hsl(109., 0.97, 0.88)),
-        transform: Transform::from_xyz(0.0, -1.0, 0.0),
+        transform: Transform::from_xyz(0.0, -1050.0, 0.0),
         ..default()
     });
     // light

@@ -112,11 +112,12 @@ fn client_sync_players(
                 id,
                 translation,
                 entity,
+                color,
             } => {
                 println!("Player {} connected.", id);
                 let mut client_entity = commands.spawn(MaterialMesh2dBundle {
                     mesh: Mesh2dHandle(meshes.add(Capsule2d::new(25.0, 50.0))),
-                    material: materials.add(Color::hsl(182., 0.87, 0.39)),
+                    material: materials.add(color),
                     transform: Transform::from_xyz(translation[0], translation[1], translation[2]),
                     ..default()
                 });

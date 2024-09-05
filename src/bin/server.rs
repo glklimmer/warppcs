@@ -10,6 +10,7 @@ use warppcs::{ClientChannel, NetworkedEntities, PlayerInput, ServerChannel, Serv
 #[derive(Debug, Component)]
 pub struct Player {
     pub id: ClientId,
+    pub color: Color,
 }
 
 #[derive(Debug, Default, Component)]
@@ -76,6 +77,15 @@ fn server_update_system(
         match event {
             ServerEvent::ClientConnected { client_id } => {
                 println!("Player {} connected.", client_id);
+                println!("test");
+
+                players.iter().for_each(|player| {
+                    println!(
+                        "Sending player {} with color {}.",
+                        player.1.id,
+                        player.1.color.hue()
+                    );
+                });
 
                 // Initialize other players for this new client
                 for (entity, player, transform) in players.iter() {
@@ -84,6 +94,7 @@ fn server_update_system(
                         id: player.id,
                         entity,
                         translation,
+                        color: player.color,
                     })
                     .unwrap();
                     server.send_message(*client_id, ServerChannel::ServerMessages, message);
@@ -95,11 +106,16 @@ fn server_update_system(
                     0.51,
                     (fastrand::f32() - 0.5) * 200.,
                 );
+                let color = Color::hsl(fastrand::f32() * 360., 0.8, 0.8);
                 let player_entity = commands
                     .spawn((
+                        transform,
                         PlayerInput::default(),
                         Velocity::default(),
-                        Player { id: *client_id },
+                        Player {
+                            id: *client_id,
+                            color,
+                        },
                     ))
                     .id();
 
@@ -110,6 +126,7 @@ fn server_update_system(
                     id: *client_id,
                     entity: player_entity,
                     translation,
+                    color,
                 })
                 .unwrap();
                 server.broadcast_message(ServerChannel::ServerMessages, message);
