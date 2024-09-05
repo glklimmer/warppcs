@@ -31,7 +31,16 @@ fn main() {
 
     add_netcode_network(&mut app);
 
-    app.add_systems(Update, (server_update_system, server_network_sync));
+    app.add_systems(FixedUpdate, apply_velocity_system);
+
+    app.add_systems(
+        Update,
+        (
+            server_update_system,
+            server_network_sync,
+            move_players_system,
+        ),
+    );
 
     app.run();
 }
@@ -77,7 +86,6 @@ fn server_update_system(
         match event {
             ServerEvent::ClientConnected { client_id } => {
                 println!("Player {} connected.", client_id);
-                println!("test");
 
                 players.iter().for_each(|player| {
                     println!(
@@ -166,4 +174,20 @@ fn server_network_sync(mut server: ResMut<RenetServer>, query: Query<(Entity, &T
 
     let sync_message = bincode::serialize(&networked_entities).unwrap();
     server.broadcast_message(ServerChannel::NetworkedEntities, sync_message);
+}
+
+const PLAYER_MOVE_SPEED: f32 = 200.0;
+
+fn move_players_system(mut query: Query<(&mut Velocity, &PlayerInput)>) {
+    for (mut velocity, input) in query.iter_mut() {
+        let x = (input.right as i8 - input.left as i8) as f32;
+        let direction = Vec2::new(x, 0.).normalize_or_zero();
+        velocity.0 = direction * PLAYER_MOVE_SPEED;
+    }
+}
+
+fn apply_velocity_system(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>) {
+    for (velocity, mut transform) in query.iter_mut() {
+        transform.translation += velocity.0.extend(0.) * time.delta_seconds();
+    }
 }

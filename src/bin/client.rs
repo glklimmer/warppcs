@@ -10,7 +10,10 @@ use bevy_renet::{
     RenetClientPlugin,
 };
 
-use warppcs::{connection_config, setup_level, NetworkedEntities, ServerChannel, ServerMessages};
+use warppcs::{
+    connection_config, setup_level, ClientChannel, NetworkedEntities, PlayerInput, ServerChannel,
+    ServerMessages,
+};
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Connected;
@@ -41,8 +44,13 @@ fn main() {
 
     app.insert_resource(NetworkMapping::default());
     app.insert_resource(ClientLobby::default());
+    app.insert_resource(PlayerInput::default());
 
-    app.add_systems(Update, (client_sync_players,).in_set(Connected));
+    app.add_systems(Update, player_input);
+    app.add_systems(
+        Update,
+        (client_sync_players, client_send_input).in_set(Connected),
+    );
 
     app.add_systems(Startup, (setup_level, setup_camera));
 
@@ -165,4 +173,16 @@ fn client_sync_players(
 
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
+}
+
+fn player_input(keyboard_input: Res<ButtonInput<KeyCode>>, mut player_input: ResMut<PlayerInput>) {
+    player_input.left =
+        keyboard_input.pressed(KeyCode::KeyA) || keyboard_input.pressed(KeyCode::ArrowLeft);
+    player_input.right =
+        keyboard_input.pressed(KeyCode::KeyD) || keyboard_input.pressed(KeyCode::ArrowRight);
+}
+
+fn client_send_input(player_input: Res<PlayerInput>, mut client: ResMut<RenetClient>) {
+    let input_message = bincode::serialize(&*player_input).unwrap();
+    client.send_message(ClientChannel::Input, input_message);
 }
