@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
-use bevy::prelude::*;
+use bevy::{app::ScheduleRunnerPlugin, prelude::*};
 use bevy_renet::{
     renet::{ClientId, RenetServer, ServerEvent},
     RenetServerPlugin,
@@ -24,7 +24,11 @@ pub struct ServerLobby {
 fn main() {
     let mut app = App::new();
 
-    app.add_plugins(MinimalPlugins);
+    app.add_plugins(
+        MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(Duration::from_secs_f64(
+            1.0 / 60.0,
+        ))),
+    );
 
     app.add_plugins(RenetServerPlugin);
     app.insert_resource(ServerLobby::default());
