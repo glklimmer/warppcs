@@ -3,7 +3,8 @@ use bevy::prelude::*;
 use crate::{
     server::movement::Velocity,
     shared::networking::{
-        ClientChannel, NetworkedEntities, PlayerInput, ServerChannel, ServerMessages,
+        ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, PlayerInput,
+        ServerChannel, ServerMessages,
     },
 };
 use bevy_renet::{
@@ -26,9 +27,9 @@ impl Plugin for ServerNetworkPlugin {
 }
 
 #[derive(Debug, Component)]
-pub struct Player {
-    pub id: ClientId,
-    pub color: Color,
+struct ServerPlayer {
+    id: ClientId,
+    color: Color,
 }
 
 #[derive(Debug, Default, Resource)]
@@ -71,7 +72,7 @@ fn server_update_system(
     mut commands: Commands,
     mut lobby: ResMut<ServerLobby>,
     mut server: ResMut<RenetServer>,
-    players: Query<(Entity, &Player, &Transform)>,
+    players: Query<(Entity, &ServerPlayer, &Transform)>,
 ) {
     for event in server_events.read() {
         match event {
@@ -111,9 +112,14 @@ fn server_update_system(
                         transform,
                         PlayerInput::default(),
                         Velocity::default(),
-                        Player {
+                        ServerPlayer {
                             id: *client_id,
                             color,
+                        },
+                        Movement {
+                            facing: Facing::Left,
+                            moving: false,
+                            translation: transform.translation.into(),
                         },
                     ))
                     .id();
@@ -154,13 +160,13 @@ fn server_update_system(
     }
 }
 
-fn server_network_sync(mut server: ResMut<RenetServer>, query: Query<(Entity, &Transform)>) {
+fn server_network_sync(mut server: ResMut<RenetServer>, query: Query<(Entity, &Movement)>) {
     let mut networked_entities = NetworkedEntities::default();
-    for (entity, transform) in query.iter() {
-        networked_entities.entities.push(entity);
-        networked_entities
-            .translations
-            .push(transform.translation.into());
+    for (entity, movement) in query.iter() {
+        networked_entities.entities.push(NetworkEntity {
+            entity,
+            movement: movement.clone(),
+        });
     }
 
     let sync_message = bincode::serialize(&networked_entities).unwrap();

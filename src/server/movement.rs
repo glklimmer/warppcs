@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::shared::networking::PlayerInput;
+use crate::shared::networking::{Facing, Movement, PlayerInput};
 
 pub struct MovementPlugin;
 
@@ -17,11 +17,20 @@ pub struct Velocity(pub Vec2);
 
 const PLAYER_MOVE_SPEED: f32 = 200.0;
 
-fn move_players_system(mut query: Query<(&mut Velocity, &PlayerInput)>) {
-    for (mut velocity, input) in query.iter_mut() {
+fn move_players_system(mut query: Query<(&mut Velocity, &mut Movement, &PlayerInput, &Transform)>) {
+    for (mut velocity, mut movement, input, transform) in query.iter_mut() {
         let x = (input.right as i8 - input.left as i8) as f32;
         let direction = Vec2::new(x, 0.).normalize_or_zero();
         velocity.0 = direction * PLAYER_MOVE_SPEED;
+
+        movement.translation = transform.translation.into();
+        if input.right {
+            movement.facing = Facing::Right
+        }
+        if input.left {
+            movement.facing = Facing::Left
+        }
+        movement.moving = x != 0.;
     }
 }
 

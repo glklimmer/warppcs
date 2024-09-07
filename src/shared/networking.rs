@@ -1,9 +1,12 @@
 use bevy::prelude::*;
 
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
+use bevy::ui::Direction;
 use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::{f32::consts::PI, time::Duration};
+
+use crate::server::movement::Velocity;
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -65,10 +68,28 @@ pub enum ServerMessages {
     },
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum Facing {
+    Left,
+    Right,
+}
+
+#[derive(Debug, Serialize, Deserialize, Component, Clone)]
+pub struct Movement {
+    pub facing: Facing,
+    pub moving: bool,
+    pub translation: [f32; 3],
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NetworkEntity {
+    pub entity: Entity,
+    pub movement: Movement,
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct NetworkedEntities {
-    pub entities: Vec<Entity>,
-    pub translations: Vec<[f32; 3]>,
+    pub entities: Vec<NetworkEntity>,
 }
 
 impl From<ServerChannel> for u8 {

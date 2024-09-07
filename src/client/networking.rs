@@ -1,9 +1,14 @@
 use bevy::prelude::*;
 
-use crate::shared::networking::{
-    connection_config, ClientChannel, NetworkedEntities, PlayerInput, ServerChannel, ServerMessages,
+use crate::{
+    client::player::{
+        AnimationIndices, Animations, AnimationsState, ClientPlayer, CurrentAnimation,
+    },
+    shared::networking::{
+        connection_config, ClientChannel, Movement, NetworkedEntities, PlayerInput, ServerChannel,
+        ServerMessages,
+    },
 };
-use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_renet::{
     client_connected,
     renet::{ClientId, RenetClient},
@@ -34,7 +39,7 @@ struct Connected;
 
 #[derive(Debug, Default, Resource)]
 struct ClientLobby {
-    players: HashMap<ClientId, PlayerInfo>,
+    players: HashMap<ClientId, PlayerEntityMapping>,
 }
 
 #[derive(Component)]
@@ -44,7 +49,7 @@ struct ControlledPlayer;
 struct CurrentClientId(u64);
 
 #[derive(Debug)]
-struct PlayerInfo {
+struct PlayerEntityMapping {
     client_entity: Entity,
     server_entity: Entity,
 }
@@ -97,12 +102,12 @@ fn add_netcode_network(app: &mut App) {
 
 fn client_sync_players(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     mut client: ResMut<RenetClient>,
     client_id: Res<CurrentClientId>,
     mut lobby: ResMut<ClientLobby>,
     mut network_mapping: ResMut<NetworkMapping>,
+    asset_server: Res<AssetServer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     let client_id = client_id.0;
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
@@ -114,19 +119,71 @@ fn client_sync_players(
                 entity,
                 color,
             } => {
+                let texture = asset_server.load("f1_general.png");
+                let layout_walk = TextureAtlasLayout::from_grid(
+                    UVec2::splat(100),
+                    1,
+                    8,
+                    Some(UVec2::new(1, 1)),
+                    None,
+                );
+
+                let layout_idle = TextureAtlasLayout::from_grid(
+                    UVec2::splat(100),
+                    1,
+                    8,
+                    Some(UVec2::new(1, 1)),
+                    Some(UVec2::new(100, 1)),
+                );
+
+                let layout_attack = TextureAtlasLayout::from_grid(
+                    UVec2::splat(100),
+                    1,
+                    8,
+                    Some(UVec2::new(1, 1)),
+                    Some(UVec2::new(700, 1)),
+                );
+
+                let idle_id = texture_atlas_layouts.add(layout_idle);
+                let walk_id = texture_atlas_layouts.add(layout_walk);
+                let attack_id = texture_atlas_layouts.add(layout_attack);
+
                 println!("Player {} connected.", id);
-                let mut client_entity = commands.spawn(MaterialMesh2dBundle {
-                    mesh: Mesh2dHandle(meshes.add(Capsule2d::new(25.0, 50.0))),
-                    material: materials.add(color),
-                    transform: Transform::from_xyz(translation[0], translation[1], translation[2]),
-                    ..default()
-                });
+                let mut client_entity = commands.spawn((
+                    SpriteBundle {
+                        transform: Transform {
+                            translation: Vec3::new(translation[0], translation[1], translation[2]),
+                            scale: Vec3::splat(2.0),
+                            ..Default::default()
+                        },
+                        texture,
+                        ..default()
+                    },
+                    Animations {
+                        idle: (
+                            idle_id.clone(),
+                            Timer::from_seconds(0.1, TimerMode::Repeating),
+                        ),
+                        walk: (walk_id, Timer::from_seconds(0.08, TimerMode::Repeating)),
+                        attack: (attack_id, Timer::from_seconds(0.05, TimerMode::Repeating)),
+                    },
+                    TextureAtlas {
+                        layout: idle_id,
+                        index: 7,
+                    },
+                    AnimationIndices { first: 7, last: 0 },
+                    CurrentAnimation {
+                        state: AnimationsState::Idle,
+                        timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+                    },
+                    ClientPlayer,
+                ));
 
                 if client_id == id.raw() {
                     client_entity.insert(ControlledPlayer);
                 }
 
-                let player_info = PlayerInfo {
+                let player_info = PlayerEntityMapping {
                     server_entity: entity,
                     client_entity: client_entity.id(),
                 };
@@ -135,7 +192,7 @@ fn client_sync_players(
             }
             ServerMessages::PlayerRemove { id } => {
                 println!("Player {} disconnected.", id);
-                if let Some(PlayerInfo {
+                if let Some(PlayerEntityMapping {
                     server_entity,
                     client_entity,
                 }) = lobby.players.remove(&id)
@@ -151,13 +208,14 @@ fn client_sync_players(
         let networked_entities: NetworkedEntities = bincode::deserialize(&message).unwrap();
 
         for i in 0..networked_entities.entities.len() {
-            if let Some(entity) = network_mapping.0.get(&networked_entities.entities[i]) {
-                let translation = networked_entities.translations[i].into();
-                let transform = Transform {
-                    translation,
-                    ..Default::default()
-                };
-                commands.entity(*entity).insert(transform);
+            if let Some(entity) = network_mapping
+                .0
+                .get(&networked_entities.entities[i].entity)
+            {
+                let network_entity = &networked_entities.entities[i];
+                let movement = network_entity.movement.clone();
+
+                commands.entity(*entity).insert(movement);
             }
         }
     }
