@@ -41,7 +41,7 @@ struct ClientLobby {
 }
 
 #[derive(Component)]
-struct ControlledPlayer;
+pub struct ControlledPlayer;
 
 #[derive(Debug, Resource)]
 struct CurrentClientId(u64);
