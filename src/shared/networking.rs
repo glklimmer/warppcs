@@ -16,6 +16,11 @@ pub struct PlayerInput {
     pub right: bool,
 }
 
+#[derive(Debug, Serialize, Deserialize, Event)]
+pub enum PlayerCommand {
+    MeleeAttack,
+}
+
 pub enum ClientChannel {
     Input,
     Command,
@@ -65,6 +70,9 @@ pub enum ServerMessages {
     },
     PlayerRemove {
         id: ClientId,
+    },
+    MeleeAttack {
+        entity: Entity,
     },
 }
 

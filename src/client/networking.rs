@@ -3,16 +3,23 @@ use bevy::prelude::*;
 use crate::{
     client::animation::{AnimationIndices, Animations, AnimationsState, CurrentAnimation},
     shared::networking::{
-        connection_config, ClientChannel, NetworkedEntities, PlayerInput, ServerChannel,
-        ServerMessages,
+        connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput,
+        ServerChannel, ServerMessages, PROTOCOL_ID,
     },
 };
 use bevy_renet::{
     client_connected,
-    renet::{ClientId, RenetClient},
+    renet::{
+        transport::{ClientAuthentication, NetcodeClientTransport, NetcodeTransportError},
+        ClientId, RenetClient,
+    },
     RenetClientPlugin,
 };
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    net::UdpSocket,
+    time::{Duration, SystemTime},
+};
 
 pub struct ClientNetworkingPlugin;
 
@@ -22,12 +29,19 @@ impl Plugin for ClientNetworkingPlugin {
 
         add_netcode_network(app);
 
+        app.add_event::<UnitEvent>();
+
         app.insert_resource(NetworkMapping::default());
         app.insert_resource(ClientLobby::default());
 
         app.add_systems(
             Update,
-            (client_sync_players, client_send_input).in_set(Connected),
+            (
+                client_sync_players,
+                client_send_input,
+                client_send_player_commands,
+            )
+                .in_set(Connected),
         );
     }
 }
@@ -55,13 +69,12 @@ struct PlayerEntityMapping {
 #[derive(Default, Resource)]
 struct NetworkMapping(HashMap<Entity, Entity>);
 
-fn add_netcode_network(app: &mut App) {
-    use crate::shared::networking::PROTOCOL_ID;
-    use bevy_renet::renet::transport::{
-        ClientAuthentication, NetcodeClientTransport, NetcodeTransportError,
-    };
-    use std::{net::UdpSocket, time::SystemTime};
+#[derive(Event)]
+pub enum UnitEvent {
+    MeleeAttack(Entity),
+}
 
+fn add_netcode_network(app: &mut App) {
     app.add_plugins(bevy_renet::transport::NetcodeClientPlugin);
 
     app.configure_sets(Update, Connected.run_if(client_connected));
@@ -106,6 +119,7 @@ fn client_sync_players(
     mut network_mapping: ResMut<NetworkMapping>,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut unit_events: EventWriter<UnitEvent>,
 ) {
     let client_id = client_id.0;
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
@@ -172,7 +186,8 @@ fn client_sync_players(
                     AnimationIndices { first: 7, last: 0 },
                     CurrentAnimation {
                         state: AnimationsState::Idle,
-                        timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+                        frame_timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+                        animation_duration: Timer::from_seconds(0., TimerMode::Once),
                     },
                 ));
 
@@ -198,6 +213,11 @@ fn client_sync_players(
                     network_mapping.0.remove(&server_entity);
                 }
             }
+            ServerMessages::MeleeAttack { entity } => {
+                if let Some(entity) = network_mapping.0.get(&entity) {
+                    unit_events.send(UnitEvent::MeleeAttack(*entity));
+                }
+            }
         }
     }
 
@@ -221,4 +241,14 @@ fn client_sync_players(
 fn client_send_input(player_input: Res<PlayerInput>, mut client: ResMut<RenetClient>) {
     let input_message = bincode::serialize(&*player_input).unwrap();
     client.send_message(ClientChannel::Input, input_message);
+}
+
+fn client_send_player_commands(
+    mut player_commands: EventReader<PlayerCommand>,
+    mut client: ResMut<RenetClient>,
+) {
+    for command in player_commands.read() {
+        let command_message = bincode::serialize(command).unwrap();
+        client.send_message(ClientChannel::Command, command_message);
+    }
 }

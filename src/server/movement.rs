@@ -8,7 +8,7 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(FixedUpdate, apply_velocity_system);
 
-        app.add_systems(Update, (move_players_system,));
+        app.add_systems(Update, (move_players_system));
     }
 }
 
@@ -17,8 +17,8 @@ pub struct Velocity(pub Vec2);
 
 const PLAYER_MOVE_SPEED: f32 = 200.0;
 
-fn move_players_system(mut query: Query<(&mut Velocity, &mut Movement, &PlayerInput, &Transform)>) {
-    for (mut velocity, mut movement, input, transform) in query.iter_mut() {
+fn move_players_system(mut query: Query<(&PlayerInput, &Transform, &mut Velocity, &mut Movement)>) {
+    for (input, transform, mut velocity, mut movement) in query.iter_mut() {
         let x = (input.right as i8 - input.left as i8) as f32;
         let direction = Vec2::new(x, 0.).normalize_or_zero();
         velocity.0 = direction * PLAYER_MOVE_SPEED;

@@ -3,15 +3,20 @@ use bevy::prelude::*;
 use crate::{
     server::movement::Velocity,
     shared::networking::{
-        ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, PlayerInput,
-        ServerChannel, ServerMessages,
+        ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, PlayerCommand,
+        PlayerInput, ServerChannel, ServerMessages,
     },
 };
 use bevy_renet::{
     renet::{ClientId, RenetServer, ServerEvent},
     RenetServerPlugin,
 };
+
+use crate::shared::networking::{connection_config, PROTOCOL_ID};
+use bevy_renet::renet::transport::{NetcodeServerTransport, ServerAuthentication, ServerConfig};
+use bevy_renet::transport::NetcodeServerPlugin;
 use std::collections::HashMap;
+use std::{net::UdpSocket, time::SystemTime};
 
 pub struct ServerNetworkPlugin;
 
@@ -38,13 +43,6 @@ pub struct ServerLobby {
 }
 
 fn add_netcode_network(app: &mut App) {
-    use crate::shared::networking::{connection_config, PROTOCOL_ID};
-    use bevy_renet::renet::transport::{
-        NetcodeServerTransport, ServerAuthentication, ServerConfig,
-    };
-    use bevy_renet::transport::NetcodeServerPlugin;
-    use std::{net::UdpSocket, time::SystemTime};
-
     app.add_plugins(NetcodeServerPlugin);
 
     let server = RenetServer::new(connection_config());
@@ -143,6 +141,22 @@ fn server_update_system(
     }
 
     for client_id in server.clients_id() {
+        while let Some(message) = server.receive_message(client_id, ClientChannel::Command) {
+            let command: PlayerCommand = bincode::deserialize(&message).unwrap();
+            match command {
+                PlayerCommand::MeleeAttack => {
+                    println!("Received meele attack from client {}", client_id);
+
+                    if let Some(player_entity) = lobby.players.get(&client_id) {
+                        let message = ServerMessages::MeleeAttack {
+                            entity: *player_entity,
+                        };
+                        let message = bincode::serialize(&message).unwrap();
+                        server.broadcast_message(ServerChannel::ServerMessages, message);
+                    }
+                }
+            }
+        }
         while let Some(message) = server.receive_message(client_id, ClientChannel::Input) {
             let input: PlayerInput = bincode::deserialize(&message).unwrap();
             if let Some(player_entity) = lobby.players.get(&client_id) {
@@ -164,3 +178,5 @@ fn server_network_sync(mut server: ResMut<RenetServer>, query: Query<(Entity, &M
     let sync_message = bincode::serialize(&networked_entities).unwrap();
     server.broadcast_message(ServerChannel::NetworkedEntities, sync_message);
 }
+
+fn server_melee_attack() {}
