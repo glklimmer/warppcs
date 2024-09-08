@@ -79,14 +79,6 @@ fn server_update_system(
             ServerEvent::ClientConnected { client_id } => {
                 println!("Player {} connected.", client_id);
 
-                players.iter().for_each(|player| {
-                    println!(
-                        "Sending player {} with color {}.",
-                        player.1.id,
-                        player.1.color.hue()
-                    );
-                });
-
                 // Initialize other players for this new client
                 for (entity, player, transform) in players.iter() {
                     let translation: [f32; 3] = transform.translation.into();
