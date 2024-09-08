@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use warppcs::{
     client::{
-        camera::CameraPlugin, input::InputPlugin, networking::ClientNetworkingPlugin,
-        player::PlayerPlugin,
+        animation::AnimationPlugin, camera::CameraPlugin, input::InputPlugin,
+        movement::MovementPlugin, networking::ClientNetworkingPlugin,
     },
     shared::networking::setup_level,
 };
@@ -15,7 +15,8 @@ fn main() {
     app.add_plugins(ClientNetworkingPlugin);
     app.add_plugins(CameraPlugin);
     app.add_plugins(InputPlugin);
-    app.add_plugins(PlayerPlugin);
+    app.add_plugins(MovementPlugin);
+    app.add_plugins(AnimationPlugin);
 
     app.add_systems(Startup, setup_level);
 

@@ -1,11 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    client::player::{
-        AnimationIndices, Animations, AnimationsState, ClientPlayer, CurrentAnimation,
-    },
+    client::animation::{AnimationIndices, Animations, AnimationsState, CurrentAnimation},
     shared::networking::{
-        connection_config, ClientChannel, Movement, NetworkedEntities, PlayerInput, ServerChannel,
+        connection_config, ClientChannel, NetworkedEntities, PlayerInput, ServerChannel,
         ServerMessages,
     },
 };
@@ -176,7 +174,6 @@ fn client_sync_players(
                         state: AnimationsState::Idle,
                         timer: Timer::from_seconds(0.1, TimerMode::Repeating),
                     },
-                    ClientPlayer,
                 ));
 
                 if client_id == id.raw() {

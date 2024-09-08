@@ -2,9 +2,9 @@ use bevy::prelude::*;
 
 use crate::shared::networking::{Facing, Movement};
 
-pub struct PlayerPlugin;
+pub struct AnimationPlugin;
 
-impl Plugin for PlayerPlugin {
+impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<AnimationChanged>();
         app.add_systems(
@@ -13,7 +13,6 @@ impl Plugin for PlayerPlugin {
                 animate,
                 set_current_animation,
                 animate_sprite_system,
-                set_transform,
                 // attack_system,
             ),
         );
@@ -46,17 +45,8 @@ pub struct CurrentAnimation {
     pub timer: Timer,
 }
 
-#[derive(Component)]
-pub struct ClientPlayer;
-
 #[derive(Event)]
 struct AnimationChanged;
-
-fn set_transform(mut query: Query<(&mut Transform, &Movement)>) {
-    for (mut transform, movement) in &mut query {
-        transform.translation = movement.translation.into();
-    }
-}
 
 fn set_current_animation(
     mut query: Query<(&mut CurrentAnimation, &Movement)>,
@@ -96,20 +86,6 @@ fn animate_sprite_system(
         }
     }
 }
-fn attack_system(
-    kb: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&Animations, &mut TextureAtlas, &mut CurrentAnimation), With<ClientPlayer>>,
-) {
-    for (animations, mut atlas, mut animation_timer) in &mut query {
-        if kb.pressed(KeyCode::KeyE) {
-            atlas.layout = animations.attack.0.clone();
-            if animation_timer.state != AnimationsState::Attack {
-                animation_timer.state = AnimationsState::Attack;
-                animation_timer.timer = animations.attack.1.clone();
-            }
-        }
-    }
-}
 
 fn animate(
     mut query: Query<(
@@ -145,3 +121,18 @@ fn animate(
         }
     }
 }
+
+// fn attack_system(
+//     kb: Res<ButtonInput<KeyCode>>,
+//     mut query: Query<(&Animations, &mut TextureAtlas, &mut CurrentAnimation)>,
+// ) {
+//     for (animations, mut atlas, mut animation_timer) in &mut query {
+//         if kb.pressed(KeyCode::KeyE) {
+//             atlas.layout = animations.attack.0.clone();
+//             if animation_timer.state != AnimationsState::Attack {
+//                 animation_timer.state = AnimationsState::Attack;
+//                 animation_timer.timer = animations.attack.1.clone();
+//             }
+//         }
+//     }
+// }
