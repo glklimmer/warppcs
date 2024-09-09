@@ -17,31 +17,6 @@ use bevy_renet::{
 };
 use std::{collections::HashMap, net::UdpSocket, time::SystemTime};
 
-pub struct ClientNetworkingPlugin;
-
-impl Plugin for ClientNetworkingPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(RenetClientPlugin);
-
-        add_netcode_network(app);
-
-        app.add_event::<UnitEvent>();
-
-        app.insert_resource(NetworkMapping::default());
-        app.insert_resource(ClientLobby::default());
-
-        app.add_systems(
-            Update,
-            (
-                client_sync_players,
-                client_send_input,
-                client_send_player_commands,
-            )
-                .in_set(Connected),
-        );
-    }
-}
-
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Connected;
 
@@ -68,6 +43,31 @@ struct NetworkMapping(HashMap<Entity, Entity>);
 #[derive(Event)]
 pub enum UnitEvent {
     MeleeAttack(Entity),
+}
+
+pub struct ClientNetworkingPlugin;
+
+impl Plugin for ClientNetworkingPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(RenetClientPlugin);
+
+        add_netcode_network(app);
+
+        app.add_event::<UnitEvent>();
+
+        app.insert_resource(NetworkMapping::default());
+        app.insert_resource(ClientLobby::default());
+
+        app.add_systems(
+            Update,
+            (
+                client_sync_players,
+                client_send_input,
+                client_send_player_commands,
+            )
+                .in_set(Connected),
+        );
+    }
 }
 
 fn add_netcode_network(app: &mut App) {

@@ -1,5 +1,4 @@
-use bevy::prelude::*;
-
+use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use warppcs::{
     client::{
         animation::AnimationPlugin, camera::CameraPlugin, input::InputPlugin,
@@ -19,6 +18,8 @@ fn main() {
     app.add_plugins(AnimationPlugin);
 
     app.add_systems(Startup, setup_level);
+
+    app.add_plugins(FrameTimeDiagnosticsPlugin);
 
     app.run();
 }

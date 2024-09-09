@@ -18,6 +18,16 @@ use bevy_renet::transport::NetcodeServerPlugin;
 use std::collections::HashMap;
 use std::{net::UdpSocket, time::SystemTime};
 
+#[derive(Debug, Component)]
+struct ServerPlayer {
+    id: ClientId,
+}
+
+#[derive(Debug, Default, Resource)]
+pub struct ServerLobby {
+    pub players: HashMap<ClientId, Entity>,
+}
+
 pub struct ServerNetworkPlugin;
 
 impl Plugin for ServerNetworkPlugin {
@@ -29,16 +39,6 @@ impl Plugin for ServerNetworkPlugin {
 
         add_netcode_network(app);
     }
-}
-
-#[derive(Debug, Component)]
-struct ServerPlayer {
-    id: ClientId,
-}
-
-#[derive(Debug, Default, Resource)]
-pub struct ServerLobby {
-    pub players: HashMap<ClientId, Entity>,
 }
 
 fn add_netcode_network(app: &mut App) {

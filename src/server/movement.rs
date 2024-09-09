@@ -2,6 +2,11 @@ use bevy::prelude::*;
 
 use crate::shared::networking::{Facing, Movement, PlayerInput};
 
+#[derive(Debug, Default, Component)]
+pub struct Velocity(pub Vec2);
+
+const PLAYER_MOVE_SPEED: f32 = 200.0;
+
 pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
@@ -11,11 +16,6 @@ impl Plugin for MovementPlugin {
         app.add_systems(Update, move_players_system);
     }
 }
-
-#[derive(Debug, Default, Component)]
-pub struct Velocity(pub Vec2);
-
-const PLAYER_MOVE_SPEED: f32 = 200.0;
 
 fn move_players_system(mut query: Query<(&PlayerInput, &Transform, &mut Velocity, &mut Movement)>) {
     for (input, transform, mut velocity, mut movement) in query.iter_mut() {

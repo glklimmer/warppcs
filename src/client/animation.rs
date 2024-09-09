@@ -4,18 +4,6 @@ use crate::shared::networking::{Facing, Movement};
 
 use super::networking::UnitEvent;
 
-pub struct AnimationPlugin;
-
-impl Plugin for AnimationPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_event::<AnimationChanged>();
-        app.add_systems(
-            Update,
-            (animate, set_current_animation, animate_sprite_system),
-        );
-    }
-}
-
 #[derive(PartialEq, Eq, Debug)]
 pub enum AnimationsState {
     Idle,
@@ -45,6 +33,18 @@ pub struct CurrentAnimation {
 
 #[derive(Event)]
 struct AnimationChanged;
+
+pub struct AnimationPlugin;
+
+impl Plugin for AnimationPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<AnimationChanged>();
+        app.add_systems(
+            Update,
+            (animate, set_current_animation, animate_sprite_system),
+        );
+    }
+}
 
 fn set_current_animation(
     mut unit_events: EventReader<UnitEvent>,
