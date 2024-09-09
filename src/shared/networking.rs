@@ -1,12 +1,9 @@
 use bevy::prelude::*;
 
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
-use bevy::ui::Direction;
 use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::{f32::consts::PI, time::Duration};
-
-use crate::server::movement::Velocity;
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -66,7 +63,6 @@ pub enum ServerMessages {
         entity: Entity,
         id: ClientId,
         translation: [f32; 3],
-        color: Color,
     },
     PlayerRemove {
         id: ClientId,

@@ -34,7 +34,6 @@ impl Plugin for ServerNetworkPlugin {
 #[derive(Debug, Component)]
 struct ServerPlayer {
     id: ClientId,
-    color: Color,
 }
 
 #[derive(Debug, Default, Resource)]
@@ -84,7 +83,6 @@ fn server_update_system(
                         id: player.id,
                         entity,
                         translation,
-                        color: player.color,
                     })
                     .unwrap();
                     server.send_message(*client_id, ServerChannel::ServerMessages, message);
@@ -96,16 +94,12 @@ fn server_update_system(
                     0.51,
                     (fastrand::f32() - 0.5) * 200.,
                 );
-                let color = Color::hsl(fastrand::f32() * 360., 0.8, 0.8);
                 let player_entity = commands
                     .spawn((
                         transform,
                         PlayerInput::default(),
                         Velocity::default(),
-                        ServerPlayer {
-                            id: *client_id,
-                            color,
-                        },
+                        ServerPlayer { id: *client_id },
                         Movement {
                             facing: Facing::Left,
                             moving: false,
@@ -121,7 +115,6 @@ fn server_update_system(
                     id: *client_id,
                     entity: player_entity,
                     translation,
-                    color,
                 })
                 .unwrap();
                 server.broadcast_message(ServerChannel::ServerMessages, message);

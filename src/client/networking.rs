@@ -15,11 +15,7 @@ use bevy_renet::{
     },
     RenetClientPlugin,
 };
-use std::{
-    collections::HashMap,
-    net::UdpSocket,
-    time::{Duration, SystemTime},
-};
+use std::{collections::HashMap, net::UdpSocket, time::SystemTime};
 
 pub struct ClientNetworkingPlugin;
 
@@ -129,7 +125,6 @@ fn client_sync_players(
                 id,
                 translation,
                 entity,
-                color,
             } => {
                 let texture = asset_server.load("f1_general.png");
                 let layout_walk = TextureAtlasLayout::from_grid(

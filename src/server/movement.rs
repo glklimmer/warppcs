@@ -8,7 +8,7 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(FixedUpdate, apply_velocity_system);
 
-        app.add_systems(Update, (move_players_system));
+        app.add_systems(Update, move_players_system);
     }
 }
 
