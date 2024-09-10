@@ -94,6 +94,7 @@ fn server_update_system(
                     0.51,
                     (fastrand::f32() - 0.5) * 200.,
                 );
+
                 let player_entity = commands
                     .spawn((
                         transform,
@@ -171,5 +172,3 @@ fn server_network_sync(mut server: ResMut<RenetServer>, query: Query<(Entity, &M
     let sync_message = bincode::serialize(&networked_entities).unwrap();
     server.broadcast_message(ServerChannel::NetworkedEntities, sync_message);
 }
-
-fn server_melee_attack() {}
