@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    client::animation::{AnimationIndices, Animations, AnimationsState, CurrentAnimation},
+    client::generals::{AnimationsState, PaladinBundle, WarriorBundle},
     shared::networking::{
         connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput,
         ServerChannel, ServerMessages, PROTOCOL_ID,
@@ -16,6 +16,8 @@ use bevy_renet::{
     RenetClientPlugin,
 };
 use std::{collections::HashMap, net::UdpSocket, time::SystemTime};
+
+use super::generals::{PaladinSpriteSheet, WarriorSpriteSheet};
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Connected;
@@ -113,9 +115,9 @@ fn client_sync_players(
     client_id: Res<CurrentClientId>,
     mut lobby: ResMut<ClientLobby>,
     mut network_mapping: ResMut<NetworkMapping>,
-    asset_server: Res<AssetServer>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut unit_events: EventWriter<UnitEvent>,
+    warrior_sprite_sheet: Res<WarriorSpriteSheet>,
+    paladin_sprite_sheet: Res<PaladinSpriteSheet>,
 ) {
     let client_id = client_id.0;
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
@@ -126,65 +128,22 @@ fn client_sync_players(
                 translation,
                 entity,
             } => {
-                let texture = asset_server.load("f1_general.png");
-                let layout_walk = TextureAtlasLayout::from_grid(
-                    UVec2::splat(100),
-                    1,
-                    8,
-                    Some(UVec2::new(1, 1)),
-                    None,
-                );
-
-                let layout_idle = TextureAtlasLayout::from_grid(
-                    UVec2::splat(100),
-                    1,
-                    8,
-                    Some(UVec2::new(1, 1)),
-                    Some(UVec2::new(100, 1)),
-                );
-
-                let layout_attack = TextureAtlasLayout::from_grid(
-                    UVec2::splat(100),
-                    1,
-                    8,
-                    Some(UVec2::new(1, 1)),
-                    Some(UVec2::new(700, 1)),
-                );
-
-                let idle_id = texture_atlas_layouts.add(layout_idle);
-                let walk_id = texture_atlas_layouts.add(layout_walk);
-                let attack_id = texture_atlas_layouts.add(layout_attack);
-
+                let mut client_entity;
                 println!("Player {} connected.", id);
-                let mut client_entity = commands.spawn((
-                    SpriteBundle {
-                        transform: Transform {
-                            translation: Vec3::new(translation[0], translation[1], translation[2]),
-                            scale: Vec3::splat(2.0),
-                            ..Default::default()
-                        },
-                        texture,
-                        ..default()
-                    },
-                    Animations {
-                        idle: (
-                            idle_id.clone(),
-                            Timer::from_seconds(0.1, TimerMode::Repeating),
-                        ),
-                        walk: (walk_id, Timer::from_seconds(0.08, TimerMode::Repeating)),
-                        attack: (attack_id, Timer::from_seconds(0.05, TimerMode::Repeating)),
-                    },
-                    TextureAtlas {
-                        layout: idle_id,
-                        index: 7,
-                    },
-                    AnimationIndices { first: 7, last: 0 },
-                    CurrentAnimation {
-                        state: AnimationsState::Idle,
-                        frame_timer: Timer::from_seconds(0.1, TimerMode::Repeating),
-                        animation_duration: Timer::from_seconds(0., TimerMode::Once),
-                    },
-                ));
+
+                if lobby.players.len() == 0 {
+                    client_entity = commands.spawn(PaladinBundle::new(
+                        &paladin_sprite_sheet,
+                        translation,
+                        AnimationsState::Idle,
+                    ));
+                } else {
+                    client_entity = commands.spawn(WarriorBundle::new(
+                        &warrior_sprite_sheet,
+                        translation,
+                        AnimationsState::Idle,
+                    ));
+                }
 
                 if client_id == id.raw() {
                     client_entity.insert(ControlledPlayer);
@@ -194,6 +153,7 @@ fn client_sync_players(
                     server_entity: entity,
                     client_entity: client_entity.id(),
                 };
+
                 lobby.players.insert(id, player_info);
                 network_mapping.0.insert(entity, client_entity.id());
             }
