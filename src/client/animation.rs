@@ -2,34 +2,10 @@ use bevy::prelude::*;
 
 use crate::shared::networking::{Facing, Movement};
 
-use super::networking::UnitEvent;
-
-#[derive(PartialEq, Eq, Debug)]
-pub enum AnimationsState {
-    Idle,
-    Walk,
-    Attack,
-}
-
-#[derive(Component)]
-pub struct Animations {
-    pub idle: (Handle<TextureAtlasLayout>, Timer),
-    pub walk: (Handle<TextureAtlasLayout>, Timer),
-    pub attack: (Handle<TextureAtlasLayout>, Timer),
-}
-
-#[derive(Component)]
-pub struct AnimationIndices {
-    pub first: usize,
-    pub last: usize,
-}
-
-#[derive(Component)]
-pub struct CurrentAnimation {
-    pub state: AnimationsState,
-    pub frame_timer: Timer,
-    pub animation_duration: Timer,
-}
+use super::{
+    generals::{AnimationIndices, AnimationsState, CurrentAnimation, GeneralAnimations},
+    networking::UnitEvent,
+};
 
 #[derive(Event)]
 struct AnimationChanged;
@@ -52,20 +28,20 @@ fn set_current_animation(
         Entity,
         &mut CurrentAnimation,
         &Movement,
-        &Animations,
         &AnimationIndices,
+        &GeneralAnimations,
     )>,
     mut change_animation: EventWriter<AnimationChanged>,
 ) {
     for event in unit_events.read() {
-        for (entity, mut current_animation, _, animation, animation_indices) in &mut query {
+        for (entity, mut current_animation, _, animation_indices, general_animations) in &mut query
+        {
             match event {
                 UnitEvent::MeleeAttack(attacking_entity) => {
                     if entity == *attacking_entity {
                         current_animation.state = AnimationsState::Attack;
-
                         current_animation.animation_duration = Timer::new(
-                            animation.attack.1.duration().mul_f32(
+                            general_animations.attack.1.duration().mul_f32(
                                 animation_indices.last.abs_diff(animation_indices.first) as f32
                                     + 1.0,
                             ),
@@ -125,7 +101,7 @@ fn animate_sprite_system(
 
 fn animate(
     mut query: Query<(
-        &Animations,
+        &GeneralAnimations,
         &Movement,
         &mut TextureAtlas,
         &mut Transform,
@@ -135,27 +111,37 @@ fn animate(
 ) {
     for _state_change in animation_changed.read() {
         for (animations, movement, mut atlas, mut transform, mut current_animation) in &mut query {
-            match current_animation.state {
+            // Check if facing direction has changed
+            let new_scale_x = match movement.facing {
+                Facing::Left => -transform.scale.x.abs(),
+                Facing::Right => transform.scale.x.abs(),
+            };
+
+            if transform.scale.x != new_scale_x {
+                transform.scale.x = new_scale_x;
+                println!("{}", if new_scale_x < 0.0 { "Left" } else { "Right" });
+            }
+
+            // Update animation state
+            let (new_layout, new_frame_timer) = match current_animation.state {
                 AnimationsState::Idle => {
-                    current_animation.frame_timer = animations.idle.1.clone();
-                    atlas.layout = animations.idle.0.clone();
+                    println!("Idle");
+                    (&animations.idle.0, animations.idle.1.clone())
                 }
                 AnimationsState::Walk => {
-                    atlas.layout = animations.walk.0.clone();
-                    current_animation.frame_timer = animations.walk.1.clone();
+                    println!("Walking");
+                    (&animations.walk.0, animations.walk.1.clone())
                 }
                 AnimationsState::Attack => {
-                    atlas.layout = animations.attack.0.clone();
-                    current_animation.frame_timer = animations.attack.1.clone();
+                    println!("Attack");
+                    (&animations.attack.0, animations.attack.1.clone())
                 }
-            }
-            match movement.facing {
-                Facing::Left => {
-                    transform.scale.x = transform.scale.x.abs() * -1.;
-                }
-                Facing::Right => {
-                    transform.scale.x = transform.scale.x.abs() * 1.;
-                }
+            };
+
+            // Update only if the animation has changed
+            if atlas.layout != *new_layout {
+                atlas.layout = new_layout.clone();
+                current_animation.frame_timer = new_frame_timer;
             }
         }
     }
