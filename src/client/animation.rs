@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::shared::networking::{Facing, Movement};
 
 use super::{
-    generals::{AnimationIndices, AnimationsState, CurrentAnimation, GeneralAnimations},
+    generals::{AnimationsState, CurrentAnimation, GeneralAnimations},
     networking::UnitEvent,
 };
 
@@ -17,36 +17,28 @@ impl Plugin for AnimationPlugin {
         app.add_event::<AnimationChanged>();
         app.add_systems(
             Update,
-            (animate, set_current_animation, animate_sprite_system),
+            (
+                animate,
+                set_current_animation,
+                animate_sprite_system,
+                mirror_sprite,
+            ),
         );
     }
 }
 
 fn set_current_animation(
     mut unit_events: EventReader<UnitEvent>,
-    mut query: Query<(
-        Entity,
-        &mut CurrentAnimation,
-        &Movement,
-        &AnimationIndices,
-        &GeneralAnimations,
-    )>,
+    mut query: Query<(Entity, &mut CurrentAnimation, &Movement, &GeneralAnimations)>,
     mut change_animation: EventWriter<AnimationChanged>,
 ) {
     for event in unit_events.read() {
-        for (entity, mut current_animation, _, animation_indices, general_animations) in &mut query
-        {
+        for (entity, mut current_animation, _, general_animations) in &mut query {
             match event {
                 UnitEvent::MeleeAttack(attacking_entity) => {
                     if entity == *attacking_entity {
                         current_animation.state = AnimationsState::Attack;
-                        current_animation.animation_duration = Timer::new(
-                            general_animations.attack.1.duration().mul_f32(
-                                animation_indices.last.abs_diff(animation_indices.first) as f32
-                                    + 1.0,
-                            ),
-                            TimerMode::Once,
-                        );
+                        current_animation.current = general_animations.attack.clone();
                         change_animation.send(AnimationChanged);
                     }
                 }
@@ -54,7 +46,7 @@ fn set_current_animation(
         }
     }
 
-    for (_, mut current_animation, movement, _, _) in &mut query {
+    for (_, mut current_animation, movement, _) in &mut query {
         match current_animation.state {
             AnimationsState::Idle => {
                 if movement.moving {
@@ -69,7 +61,7 @@ fn set_current_animation(
                 }
             }
             AnimationsState::Attack => {
-                if current_animation.animation_duration.finished() {
+                if current_animation.current.animation_duration.finished() {
                     current_animation.state = match movement.moving {
                         true => AnimationsState::Walk,
                         false => AnimationsState::Idle,
@@ -83,15 +75,18 @@ fn set_current_animation(
 
 fn animate_sprite_system(
     time: Res<Time>,
-    mut query: Query<(&AnimationIndices, &mut CurrentAnimation, &mut TextureAtlas)>,
+    mut query: Query<(&mut CurrentAnimation, &mut TextureAtlas)>,
 ) {
-    for (indices, mut timer, mut atlas) in &mut query {
-        timer.frame_timer.tick(time.delta());
-        timer.animation_duration.tick(time.delta());
+    for (mut current_animation, mut atlas) in &mut query {
+        current_animation.current.frame_timer.tick(time.delta());
+        current_animation
+            .current
+            .animation_duration
+            .tick(time.delta());
 
-        if timer.frame_timer.just_finished() {
-            atlas.index = if atlas.index == indices.last {
-                indices.first
+        if current_animation.current.frame_timer.just_finished() {
+            atlas.index = if atlas.index == current_animation.current.last_sprite_index {
+                current_animation.current.first_sprite_index
             } else {
                 atlas.index - 1
             };
@@ -100,49 +95,44 @@ fn animate_sprite_system(
 }
 
 fn animate(
-    mut query: Query<(
-        &GeneralAnimations,
-        &Movement,
-        &mut TextureAtlas,
-        &mut Transform,
-        &mut CurrentAnimation,
-    )>,
+    mut query: Query<(&GeneralAnimations, &mut TextureAtlas, &mut CurrentAnimation)>,
     mut animation_changed: EventReader<AnimationChanged>,
 ) {
     for _state_change in animation_changed.read() {
-        for (animations, movement, mut atlas, mut transform, mut current_animation) in &mut query {
-            // Check if facing direction has changed
-            let new_scale_x = match movement.facing {
-                Facing::Left => -transform.scale.x.abs(),
-                Facing::Right => transform.scale.x.abs(),
-            };
-
-            if transform.scale.x != new_scale_x {
-                transform.scale.x = new_scale_x;
-                println!("{}", if new_scale_x < 0.0 { "Left" } else { "Right" });
-            }
-
+        for (animations, mut atlas, mut current_animation) in &mut query {
             // Update animation state
             let (new_layout, new_frame_timer) = match current_animation.state {
-                AnimationsState::Idle => {
-                    println!("Idle");
-                    (&animations.idle.0, animations.idle.1.clone())
-                }
-                AnimationsState::Walk => {
-                    println!("Walking");
-                    (&animations.walk.0, animations.walk.1.clone())
-                }
-                AnimationsState::Attack => {
-                    println!("Attack");
-                    (&animations.attack.0, animations.attack.1.clone())
-                }
+                AnimationsState::Idle => (
+                    &animations.idle.layout_handle,
+                    animations.idle.frame_timer.clone(),
+                ),
+                AnimationsState::Walk => (
+                    &animations.walk.layout_handle,
+                    animations.walk.frame_timer.clone(),
+                ),
+                AnimationsState::Attack => (
+                    &animations.attack.layout_handle,
+                    animations.attack.frame_timer.clone(),
+                ),
             };
 
             // Update only if the animation has changed
             if atlas.layout != *new_layout {
                 atlas.layout = new_layout.clone();
-                current_animation.frame_timer = new_frame_timer;
+                current_animation.current.frame_timer = new_frame_timer;
             }
+        }
+    }
+}
+
+fn mirror_sprite(mut query: Query<(&Movement, &mut Transform)>) {
+    for (movement, mut transform) in &mut query {
+        let new_scale_x = match movement.facing {
+            Facing::Left => -transform.scale.x.abs(),
+            Facing::Right => transform.scale.x.abs(),
+        };
+        if transform.scale.x != new_scale_x {
+            transform.scale.x = new_scale_x;
         }
     }
 }
