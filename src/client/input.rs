@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::shared::networking::{PlayerCommand, PlayerInput};
+use crate::shared::networking::{PlayerCommand, PlayerInput, UnitType};
 
 pub struct InputPlugin;
 
@@ -24,5 +24,9 @@ fn player_input(
 
     if keyboard_input.just_pressed(KeyCode::KeyE) {
         player_commands.send(PlayerCommand::MeleeAttack);
+    }
+
+    if keyboard_input.just_pressed(KeyCode::KeyQ) {
+        player_commands.send(PlayerCommand::SpawnUnit(UnitType::Pikeman));
     }
 }

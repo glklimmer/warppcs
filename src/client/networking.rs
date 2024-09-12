@@ -4,7 +4,7 @@ use crate::{
     client::king::{AnimationsState, PaladinBundle, WarriorBundle},
     shared::networking::{
         connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput,
-        ServerChannel, ServerMessages, PROTOCOL_ID,
+        ServerChannel, ServerMessages, UnitType, PROTOCOL_ID,
     },
 };
 use bevy_renet::{
@@ -169,6 +169,33 @@ fn client_sync_players(
                 if let Some(entity) = network_mapping.0.get(&entity) {
                     unit_events.send(UnitEvent::MeleeAttack(*entity));
                 }
+            }
+            ServerMessages::SpawnUnit {
+                entity,
+                owner,
+                unit_type,
+                translation,
+            } => {
+                println!("Spawning Unit for player {} connected.", owner);
+                let texture = match unit_type {
+                    UnitType::Warrior => asset_server.load("aseprite/warrior.png"),
+                    UnitType::Pikeman => asset_server.load("aseprite/pike_man.png"),
+                    UnitType::Archer => asset_server.load("aseprite/archer.png"),
+                };
+
+                let unit_entity = commands
+                    .spawn(SpriteBundle {
+                        transform: Transform {
+                            translation: Vec3::new(translation[0], translation[1], translation[2]),
+                            scale: Vec3::splat(3.0),
+                            ..Default::default()
+                        },
+                        texture,
+                        ..default()
+                    })
+                    .id();
+
+                network_mapping.0.insert(entity, unit_entity);
             }
         }
     }

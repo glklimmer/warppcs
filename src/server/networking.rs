@@ -4,7 +4,7 @@ use crate::{
     server::movement::Velocity,
     shared::networking::{
         ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, PlayerCommand,
-        PlayerInput, ServerChannel, ServerMessages,
+        PlayerInput, ServerChannel, ServerMessages, UnitType,
     },
 };
 use bevy_renet::{
@@ -147,6 +147,38 @@ fn server_update_system(
                         };
                         let message = bincode::serialize(&message).unwrap();
                         server.broadcast_message(ServerChannel::ServerMessages, message);
+                    }
+                }
+                PlayerCommand::SpawnUnit(unit_type) => {
+                    println!(
+                        "Received spawn unit from client {}: {:?}",
+                        client_id, unit_type
+                    );
+
+                    if let Some(player_entity) = lobby.players.get(&client_id) {
+                        if let Ok((_, _, player_transform)) = players.get(*player_entity) {
+                            let unit_entity = commands
+                                .spawn((
+                                    Transform::from_translation(player_transform.translation),
+                                    unit_type.clone(),
+                                    Velocity::default(),
+                                    Movement {
+                                        facing: Facing::Left,
+                                        moving: false,
+                                        translation: player_transform.translation.into(),
+                                    },
+                                ))
+                                .id();
+
+                            let message = ServerMessages::SpawnUnit {
+                                entity: unit_entity,
+                                owner: client_id,
+                                unit_type,
+                                translation: player_transform.translation.into(),
+                            };
+                            let message = bincode::serialize(&message).unwrap();
+                            server.broadcast_message(ServerChannel::ServerMessages, message);
+                        }
                     }
                 }
             }
