@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     client::king::{AnimationsState, PaladinBundle, WarriorBundle},
     shared::networking::{
-        connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput,
+        connection_config, ClientChannel, Movement, NetworkedEntities, PlayerCommand, PlayerInput,
         ServerChannel, ServerMessages, UnitType, PROTOCOL_ID,
     },
 };
@@ -108,6 +108,8 @@ fn add_netcode_network(app: &mut App) {
 
     app.add_systems(Update, panic_on_error_system);
 }
+
+#[allow(clippy::too_many_arguments)]
 fn client_sync_players(
     mut commands: Commands,
     mut client: ResMut<RenetClient>,
@@ -171,12 +173,12 @@ fn client_sync_players(
                 }
             }
             ServerMessages::SpawnUnit {
-                entity,
+                entity: server_entity,
                 owner,
                 unit_type,
                 translation,
             } => {
-                println!("Spawning Unit for player {} connected.", owner);
+                println!("Spawning {:?} Unit for player {}.", unit_type, owner);
                 let texture = match unit_type {
                     UnitType::Warrior => asset_server.load("aseprite/warrior.png"),
                     UnitType::Pikeman => asset_server.load("aseprite/pike_man.png"),
@@ -184,18 +186,24 @@ fn client_sync_players(
                 };
 
                 let unit_entity = commands
-                    .spawn(SpriteBundle {
-                        transform: Transform {
-                            translation: Vec3::new(translation[0], translation[1], translation[2]),
-                            scale: Vec3::splat(3.0),
-                            ..Default::default()
+                    .spawn((
+                        SpriteBundle {
+                            transform: Transform {
+                                translation: translation.into(),
+                                scale: Vec3::splat(3.0),
+                                ..default()
+                            },
+                            texture,
+                            ..default()
                         },
-                        texture,
-                        ..default()
-                    })
+                        Movement {
+                            translation,
+                            ..default()
+                        },
+                    ))
                     .id();
 
-                network_mapping.0.insert(entity, unit_entity);
+                network_mapping.0.insert(server_entity, unit_entity);
             }
         }
     }

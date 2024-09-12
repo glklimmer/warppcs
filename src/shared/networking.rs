@@ -56,13 +56,14 @@ pub enum ServerMessages {
     },
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub enum Facing {
+    #[default]
     Left,
     Right,
 }
 
-#[derive(Debug, Serialize, Deserialize, Component, Clone)]
+#[derive(Debug, Serialize, Deserialize, Component, Clone, Default)]
 pub struct Movement {
     pub facing: Facing,
     pub moving: bool,

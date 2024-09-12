@@ -4,7 +4,7 @@ use crate::{
     server::movement::Velocity,
     shared::networking::{
         ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, PlayerCommand,
-        PlayerInput, ServerChannel, ServerMessages, UnitType,
+        PlayerInput, ServerChannel, ServerMessages,
     },
 };
 use bevy_renet::{
@@ -163,7 +163,7 @@ fn server_update_system(
                                     unit_type.clone(),
                                     Velocity::default(),
                                     Movement {
-                                        facing: Facing::Left,
+                                        facing: Facing::Right,
                                         moving: false,
                                         translation: player_transform.translation.into(),
                                     },
