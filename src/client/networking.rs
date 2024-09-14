@@ -119,6 +119,7 @@ fn client_sync_players(
     mut unit_events: EventWriter<UnitEvent>,
     warrior_sprite_sheet: Res<WarriorSpriteSheet>,
     paladin_sprite_sheet: Res<PaladinSpriteSheet>,
+    asset_server: Res<AssetServer>,
 ) {
     let client_id = client_id.0;
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
