@@ -128,11 +128,11 @@ fn client_sync_players(
             ServerMessages::PlayerCreate {
                 id,
                 translation,
-                entity,
+                entity: server_player_entity,
             } => {
                 println!("Player {} connected.", id);
 
-                let mut client_entity = match id.raw() {
+                let mut client_player_entity = match id.raw() {
                     1 => commands.spawn(PaladinBundle::new(
                         &paladin_sprite_sheet,
                         translation,
@@ -146,16 +146,18 @@ fn client_sync_players(
                 };
 
                 if client_id == id.raw() {
-                    client_entity.insert(ControlledPlayer);
+                    client_player_entity.insert(ControlledPlayer);
                 }
 
                 let player_info = PlayerEntityMapping {
-                    server_entity: entity,
-                    client_entity: client_entity.id(),
+                    server_entity: server_player_entity,
+                    client_entity: client_player_entity.id(),
                 };
 
                 lobby.players.insert(id, player_info);
-                network_mapping.0.insert(entity, client_entity.id());
+                network_mapping
+                    .0
+                    .insert(server_player_entity, client_player_entity.id());
             }
             ServerMessages::PlayerRemove { id } => {
                 println!("Player {} disconnected.", id);
@@ -168,13 +170,15 @@ fn client_sync_players(
                     network_mapping.0.remove(&server_entity);
                 }
             }
-            ServerMessages::MeleeAttack { entity } => {
-                if let Some(entity) = network_mapping.0.get(&entity) {
+            ServerMessages::MeleeAttack {
+                entity: server_entity,
+            } => {
+                if let Some(entity) = network_mapping.0.get(&server_entity) {
                     unit_events.send(UnitEvent::MeleeAttack(*entity));
                 }
             }
             ServerMessages::SpawnUnit {
-                entity: server_entity,
+                entity: server_unit_entity,
                 owner,
                 unit_type,
                 translation,
@@ -186,7 +190,7 @@ fn client_sync_players(
                     UnitType::Archer => asset_server.load("aseprite/archer.png"),
                 };
 
-                let unit_entity = commands
+                let client_unit_entity = commands
                     .spawn((
                         SpriteBundle {
                             transform: Transform {
@@ -204,7 +208,9 @@ fn client_sync_players(
                     ))
                     .id();
 
-                network_mapping.0.insert(server_entity, unit_entity);
+                network_mapping
+                    .0
+                    .insert(server_unit_entity, client_unit_entity);
             }
         }
     }
@@ -213,14 +219,14 @@ fn client_sync_players(
         let networked_entities: NetworkedEntities = bincode::deserialize(&message).unwrap();
 
         for i in 0..networked_entities.entities.len() {
-            if let Some(entity) = network_mapping
+            if let Some(client_entity) = network_mapping
                 .0
                 .get(&networked_entities.entities[i].entity)
             {
-                let network_entity = &networked_entities.entities[i];
-                let movement = network_entity.movement.clone();
+                let message_entity = &networked_entities.entities[i];
+                let movement = message_entity.movement.clone();
 
-                commands.entity(*entity).insert(movement);
+                commands.entity(*client_entity).insert(movement);
             }
         }
     }
