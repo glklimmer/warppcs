@@ -13,9 +13,17 @@ pub struct PlayerInput {
     pub right: bool,
 }
 
+#[derive(Debug, Component, Serialize, Deserialize, Clone)]
+pub enum UnitType {
+    Warrior,
+    Pikeman,
+    Archer,
+}
+
 #[derive(Debug, Serialize, Deserialize, Event)]
 pub enum PlayerCommand {
     MeleeAttack,
+    SpawnUnit(UnitType),
 }
 
 pub enum ClientChannel {
@@ -40,15 +48,22 @@ pub enum ServerMessages {
     MeleeAttack {
         entity: Entity,
     },
+    SpawnUnit {
+        entity: Entity,
+        owner: ClientId,
+        unit_type: UnitType,
+        translation: [f32; 3],
+    },
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub enum Facing {
+    #[default]
     Left,
     Right,
 }
 
-#[derive(Debug, Serialize, Deserialize, Component, Clone)]
+#[derive(Debug, Serialize, Deserialize, Component, Clone, Default)]
 pub struct Movement {
     pub facing: Facing,
     pub moving: bool,
