@@ -26,19 +26,11 @@ impl Plugin for MovementPlugin {
     }
 }
 
-fn move_players_system(mut query: Query<(&PlayerInput, &mut Velocity, &mut Movement)>) {
-    for (input, mut velocity, mut movement) in query.iter_mut() {
+fn move_players_system(mut query: Query<(&PlayerInput, &mut Velocity)>) {
+    for (input, mut velocity) in query.iter_mut() {
         let x = (input.right as i8 - input.left as i8) as f32;
         let direction = Vec2::new(x, 0.).normalize_or_zero();
         velocity.0 = direction * PLAYER_MOVE_SPEED;
-
-        if input.right {
-            movement.facing = Facing::Right
-        }
-        if input.left {
-            movement.facing = Facing::Left
-        }
-        movement.moving = x != 0.;
     }
 }
 
@@ -49,6 +41,14 @@ fn apply_velocity_system(
     for (velocity, mut transform, mut movement) in query.iter_mut() {
         transform.translation += velocity.0.extend(0.) * time.delta_seconds();
         movement.translation = transform.translation.into();
+
+        if velocity.0.x > 0. {
+            movement.facing = Facing::Right
+        }
+        if velocity.0.x < 0. {
+            movement.facing = Facing::Left
+        }
+        movement.moving = velocity.0.x != 0.;
     }
 }
 
