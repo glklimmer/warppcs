@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-pub struct GeneralPlugin;
+pub struct KingPlugin;
 
-impl Plugin for GeneralPlugin {
+impl Plugin for KingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PaladinSpriteSheet>();
         app.init_resource::<WarriorSpriteSheet>();
@@ -27,7 +27,7 @@ pub struct AnimationTimer(pub Timer);
 
 #[derive(Component, Debug)]
 pub struct CurrentAnimation {
-    pub state: AnimationsState,
+    pub initial_state: AnimationsState,
     pub current: AnimationConfig,
 }
 
@@ -158,7 +158,7 @@ impl PaladinBundle {
                 },
             },
             current_animation: CurrentAnimation {
-                state: AnimationsState::Idle,
+                initial_state: AnimationsState::Idle,
                 current: AnimationConfig {
                     layout_handle: idle_handle.clone(),
                     first_sprite_index: 7,
@@ -290,7 +290,7 @@ impl WarriorBundle {
                 },
             },
             current_animation: CurrentAnimation {
-                state: AnimationsState::Idle,
+                initial_state: AnimationsState::Idle,
                 current: AnimationConfig {
                     layout_handle: idle_handle.clone(),
                     first_sprite_index: 7,

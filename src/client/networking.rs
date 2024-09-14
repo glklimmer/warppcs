@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    client::generals::{AnimationsState, PaladinBundle, WarriorBundle},
+    client::king::{AnimationsState, PaladinBundle, WarriorBundle},
     shared::networking::{
         connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput,
         ServerChannel, ServerMessages, PROTOCOL_ID,
@@ -17,7 +17,7 @@ use bevy_renet::{
 };
 use std::{collections::HashMap, net::UdpSocket, time::SystemTime};
 
-use super::generals::{PaladinSpriteSheet, WarriorSpriteSheet};
+use super::king::{PaladinSpriteSheet, WarriorSpriteSheet};
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Connected;
@@ -108,7 +108,6 @@ fn add_netcode_network(app: &mut App) {
 
     app.add_systems(Update, panic_on_error_system);
 }
-
 fn client_sync_players(
     mut commands: Commands,
     mut client: ResMut<RenetClient>,
@@ -128,22 +127,20 @@ fn client_sync_players(
                 translation,
                 entity,
             } => {
-                let mut client_entity;
                 println!("Player {} connected.", id);
 
-                if lobby.players.len() == 0 {
-                    client_entity = commands.spawn(PaladinBundle::new(
+                let mut client_entity = match id.raw() {
+                    1 => commands.spawn(PaladinBundle::new(
                         &paladin_sprite_sheet,
                         translation,
                         AnimationsState::Idle,
-                    ));
-                } else {
-                    client_entity = commands.spawn(WarriorBundle::new(
+                    )),
+                    _ => commands.spawn(WarriorBundle::new(
                         &warrior_sprite_sheet,
                         translation,
                         AnimationsState::Idle,
-                    ));
-                }
+                    )),
+                };
 
                 if client_id == id.raw() {
                     client_entity.insert(ControlledPlayer);

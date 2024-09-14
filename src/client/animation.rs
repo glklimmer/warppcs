@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::shared::networking::{Facing, Movement};
 
 use super::{
-    generals::{AnimationsState, CurrentAnimation, GeneralAnimations},
+    king::{AnimationsState, CurrentAnimation, GeneralAnimations},
     networking::UnitEvent,
 };
 
@@ -33,12 +33,12 @@ fn set_current_animation(
     mut change_animation: EventWriter<AnimationChanged>,
 ) {
     for event in unit_events.read() {
-        for (entity, mut current_animation, _, general_animations) in &mut query {
+        for (entity, mut current_animation, _, king_animations) in &mut query {
             match event {
                 UnitEvent::MeleeAttack(attacking_entity) => {
                     if entity == *attacking_entity {
-                        current_animation.state = AnimationsState::Attack;
-                        current_animation.current = general_animations.attack.clone();
+                        current_animation.initial_state = AnimationsState::Attack;
+                        current_animation.current = king_animations.attack.clone();
                         change_animation.send(AnimationChanged);
                     }
                 }
@@ -47,22 +47,22 @@ fn set_current_animation(
     }
 
     for (_, mut current_animation, movement, _) in &mut query {
-        match current_animation.state {
+        match current_animation.initial_state {
             AnimationsState::Idle => {
                 if movement.moving {
-                    current_animation.state = AnimationsState::Walk;
+                    current_animation.initial_state = AnimationsState::Walk;
                     change_animation.send(AnimationChanged);
                 }
             }
             AnimationsState::Walk => {
                 if !movement.moving {
-                    current_animation.state = AnimationsState::Idle;
+                    current_animation.initial_state = AnimationsState::Idle;
                     change_animation.send(AnimationChanged);
                 }
             }
             AnimationsState::Attack => {
                 if current_animation.current.animation_duration.finished() {
-                    current_animation.state = match movement.moving {
+                    current_animation.initial_state = match movement.moving {
                         true => AnimationsState::Walk,
                         false => AnimationsState::Idle,
                     };
@@ -101,7 +101,7 @@ fn animate(
     for _state_change in animation_changed.read() {
         for (animations, mut atlas, mut current_animation) in &mut query {
             // Update animation state
-            let (new_layout, new_frame_timer) = match current_animation.state {
+            let (new_layout, new_frame_timer) = match current_animation.initial_state {
                 AnimationsState::Idle => (
                     &animations.idle.layout_handle,
                     animations.idle.frame_timer.clone(),
