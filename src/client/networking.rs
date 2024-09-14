@@ -2,9 +2,10 @@ use bevy::prelude::*;
 
 use crate::{
     client::king::{AnimationsState, PaladinBundle, WarriorBundle},
+    server::ai::attack::{unit_health, unit_swing_timer},
     shared::networking::{
         connection_config, ClientChannel, Movement, NetworkedEntities, PlayerCommand, PlayerInput,
-        ServerChannel, ServerMessages, UnitType, PROTOCOL_ID,
+        ServerChannel, ServerMessages, Unit, UnitType, PROTOCOL_ID,
     },
 };
 use bevy_renet::{
@@ -180,12 +181,12 @@ fn client_sync_players(
             ServerMessages::SpawnUnit {
                 entity: server_unit_entity,
                 owner,
-                unit_type,
                 translation,
+                unit_type,
             } => {
-                println!("Spawning {:?} Unit for player {}.", unit_type, owner);
+                println!("Spawning {:?} Unit for player {}.", unit_type, owner.0);
                 let texture = match unit_type {
-                    UnitType::Warrior => asset_server.load("aseprite/warrior.png"),
+                    UnitType::Shieldwarrior => asset_server.load("aseprite/shield_warrior.png"),
                     UnitType::Pikeman => asset_server.load("aseprite/pike_man.png"),
                     UnitType::Archer => asset_server.load("aseprite/archer.png"),
                 };
@@ -204,6 +205,12 @@ fn client_sync_players(
                         Movement {
                             translation,
                             ..default()
+                        },
+                        owner,
+                        Unit {
+                            unit_type,
+                            health: 100.,
+                            swing_timer: Timer::from_seconds(2., TimerMode::Repeating),
                         },
                     ))
                     .id();

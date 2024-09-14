@@ -13,11 +13,18 @@ pub struct PlayerInput {
     pub right: bool,
 }
 
-#[derive(Debug, Component, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum UnitType {
-    Warrior,
+    Shieldwarrior,
     Pikeman,
     Archer,
+}
+
+#[derive(Component, Clone)]
+pub struct Unit {
+    pub health: f32,
+    pub unit_type: UnitType,
+    pub swing_timer: Timer,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event)]
@@ -35,6 +42,14 @@ pub enum ServerChannel {
     NetworkedEntities,
 }
 
+#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize)]
+pub struct Owner(pub ClientId);
+
+#[derive(Debug, Component, PartialEq, Serialize, Deserialize)]
+pub enum ProjectileType {
+    Arrow { damage: f32 },
+}
+
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
     PlayerCreate {
@@ -49,11 +64,18 @@ pub enum ServerMessages {
         entity: Entity,
     },
     SpawnUnit {
+        owner: Owner,
         entity: Entity,
-        owner: ClientId,
         unit_type: UnitType,
         translation: [f32; 3],
     },
+    // SpawnProjectile {
+    //     owner: Owner,
+    //     entity: Entity,
+    //     projectile_type: ProjectileType,
+    //     translation: [f32; 3],
+    //     direction: [f32; 2],
+    // },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

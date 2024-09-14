@@ -1,4 +1,5 @@
 use bevy::{
+    color::palettes::css::RED,
     diagnostic::{
         EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
         SystemInformationDiagnosticsPlugin,
@@ -11,7 +12,8 @@ use warppcs::{
         animation::AnimationPlugin, camera::CameraPlugin, input::InputPlugin, king::KingPlugin,
         movement::MovementPlugin, networking::ClientNetworkingPlugin,
     },
-    shared::networking::setup_level,
+    server::ai::attack::unit_range,
+    shared::networking::{setup_level, Unit},
 };
 
 fn main() {
@@ -35,9 +37,21 @@ fn main() {
     // This shit break shit
     // app.add_plugins(FrameTimeDiagnosticsPlugin::default());
 
+    app.add_systems(Update, draw_range);
+
     app.run();
 }
 
 fn debug_system(mut commands: Commands) {
     commands.spawn(PerfUiBundle::default());
+}
+
+fn draw_range(mut gizmos: Gizmos, query: Query<(&Transform, &Unit)>) {
+    for (transform, unit) in query.iter() {
+        gizmos.circle_2d(
+            transform.translation.truncate(),
+            unit_range(&unit.unit_type),
+            RED,
+        );
+    }
 }

@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use bevy::prelude::*;
 
-use crate::shared::networking::{Facing, Movement, PlayerInput, UnitType};
+use crate::shared::networking::{Facing, Movement, PlayerInput, Unit};
 
 #[derive(Debug, Default, Component)]
 pub struct Velocity(pub Vec2);
@@ -19,7 +19,7 @@ impl Plugin for MovementPlugin {
             Update,
             (
                 move_players_system,
-                unit_random_target,
+                // unit_random_target,
                 unit_move_towards_target,
             ),
         );
@@ -58,7 +58,7 @@ struct MovementTarget(Vec3);
 #[allow(clippy::type_complexity)]
 fn unit_random_target(
     mut commands: Commands,
-    query: Query<(Entity, &Transform, Option<&MovementTarget>), (With<UnitType>, With<Movement>)>,
+    query: Query<(Entity, &Transform, Option<&MovementTarget>), (With<Unit>, With<Movement>)>,
 ) {
     for (entity, transform, target_option) in query.iter() {
         if target_option.is_none() {
@@ -77,7 +77,7 @@ fn unit_move_towards_target(
     mut commands: Commands,
     mut query: Query<
         (Entity, &mut Velocity, &Transform, &MovementTarget),
-        (With<UnitType>, With<Movement>),
+        (With<Unit>, With<Movement>),
     >,
 ) {
     for (entity, mut velocity, transform, target) in &mut query {

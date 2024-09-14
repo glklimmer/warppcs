@@ -1,10 +1,16 @@
 use bevy::prelude::*;
 
 use crate::{
-    server::movement::Velocity,
+    server::{
+        ai::{
+            attack::{unit_health, unit_swing_timer},
+            UnitBehaviour,
+        },
+        movement::Velocity,
+    },
     shared::networking::{
-        ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, PlayerCommand,
-        PlayerInput, ServerChannel, ServerMessages,
+        ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, Owner, PlayerCommand,
+        PlayerInput, ServerChannel, ServerMessages, Unit,
     },
 };
 use bevy_renet::{
@@ -157,22 +163,30 @@ fn server_update_system(
 
                     if let Some(player_entity) = lobby.players.get(&client_id) {
                         if let Ok((_, _, player_transform)) = players.get(*player_entity) {
+                            let unit = Unit {
+                                health: unit_health(&unit_type),
+                                swing_timer: unit_swing_timer(&unit_type),
+                                unit_type: unit_type.clone(),
+                            };
+
                             let unit_entity = commands
                                 .spawn((
                                     Transform::from_translation(player_transform.translation),
-                                    unit_type.clone(),
+                                    unit,
+                                    Owner(client_id),
                                     Velocity::default(),
                                     Movement {
                                         facing: Facing::Right,
                                         moving: false,
                                         translation: player_transform.translation.into(),
                                     },
+                                    UnitBehaviour::Idle,
                                 ))
                                 .id();
 
                             let message = ServerMessages::SpawnUnit {
                                 entity: unit_entity,
-                                owner: client_id,
+                                owner: Owner(client_id),
                                 unit_type,
                                 translation: player_transform.translation.into(),
                             };
