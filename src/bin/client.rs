@@ -24,15 +24,16 @@ fn main() {
     app.add_plugins(InputPlugin);
     app.add_plugins(MovementPlugin);
     app.add_plugins(AnimationPlugin);
-    // app.add_plugins(GizmosPlugin);
 
     app.add_systems(Startup, setup_level);
 
-    app.add_plugins(PerfUiPlugin);
-    app.add_systems(Startup, debug_system);
-    app.add_plugins(FrameTimeDiagnosticsPlugin);
-    app.add_plugins(EntityCountDiagnosticsPlugin);
-    app.add_plugins(SystemInformationDiagnosticsPlugin);
+    // app.add_plugins(GizmosPlugin);
+
+    // app.add_plugins(PerfUiPlugin);
+    // app.add_systems(Startup, debug_system);
+    // app.add_plugins(FrameTimeDiagnosticsPlugin);
+    // app.add_plugins(EntityCountDiagnosticsPlugin);
+    // app.add_plugins(SystemInformationDiagnosticsPlugin);
     // This shit break shit
     // app.add_plugins(FrameTimeDiagnosticsPlugin::default());
 
