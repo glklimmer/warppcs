@@ -1,8 +1,8 @@
-use std::cmp::Ordering;
-
 use bevy::prelude::*;
 
 use crate::shared::networking::{Facing, Movement, PlayerInput, Unit};
+
+use super::ai::{attack::unit_speed, UnitBehaviour};
 
 #[derive(Debug, Default, Component)]
 pub struct Velocity(pub Vec2);
@@ -13,14 +13,14 @@ pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, apply_velocity_system);
+        app.add_systems(FixedUpdate, (apply_velocity_system, determine_velocity));
 
         app.add_systems(
             Update,
             (
                 move_players_system,
                 // unit_random_target,
-                unit_move_towards_target,
+                // unit_move_towards_target,
             ),
         );
     }
@@ -52,45 +52,17 @@ fn apply_velocity_system(
     }
 }
 
-#[derive(Component)]
-struct MovementTarget(Vec3);
+fn determine_velocity(mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit)>) {
+    for (mut velocity, transform, behaviour, unit) in &mut query {
+        match behaviour {
+            UnitBehaviour::Idle | UnitBehaviour::AttackTarget(_) => velocity.0.x = 0.,
+            UnitBehaviour::MoveTarget(target) => {
+                let target_right = target.x > transform.translation.x;
 
-#[allow(clippy::type_complexity)]
-fn unit_random_target(
-    mut commands: Commands,
-    query: Query<(Entity, &Transform, Option<&MovementTarget>), (With<Unit>, With<Movement>)>,
-) {
-    for (entity, transform, target_option) in query.iter() {
-        if target_option.is_none() {
-            let mut new_target = transform.translation;
-            new_target.x += (fastrand::f32() - 0.5) * 600.;
-
-            commands.entity(entity).insert(MovementTarget(new_target));
-        }
-    }
-}
-
-const UNIT_MOVE_SPEED: f32 = 100.;
-
-#[allow(clippy::type_complexity)]
-fn unit_move_towards_target(
-    mut commands: Commands,
-    mut query: Query<
-        (Entity, &mut Velocity, &Transform, &MovementTarget),
-        (With<Unit>, With<Movement>),
-    >,
-) {
-    for (entity, mut velocity, transform, target) in &mut query {
-        let delta_x = (transform.translation.x - target.0.x).abs();
-
-        if delta_x <= 20.0 {
-            velocity.0.x = 0.;
-            commands.entity(entity).remove::<MovementTarget>();
-        } else {
-            match transform.translation.x.total_cmp(&target.0.x) {
-                Ordering::Less => velocity.0.x = UNIT_MOVE_SPEED,
-                Ordering::Greater => velocity.0.x = -UNIT_MOVE_SPEED,
-                _ => {} // Not needed anymore as the delta_x check handles it
+                match target_right {
+                    true => velocity.0.x = unit_speed(&unit.unit_type),
+                    false => velocity.0.x = -unit_speed(&unit.unit_type),
+                }
             }
         }
     }

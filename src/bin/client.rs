@@ -1,5 +1,4 @@
 use bevy::{
-    color::palettes::css::RED,
     diagnostic::{
         EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
         SystemInformationDiagnosticsPlugin,
@@ -9,11 +8,10 @@ use bevy::{
 use iyes_perf_ui::{entries::PerfUiBundle, PerfUiPlugin};
 use warppcs::{
     client::{
-        animation::AnimationPlugin, camera::CameraPlugin, input::InputPlugin, king::KingPlugin,
-        movement::MovementPlugin, networking::ClientNetworkingPlugin,
+        animation::AnimationPlugin, camera::CameraPlugin, gizmos::GizmosPlugin, input::InputPlugin,
+        king::KingPlugin, movement::MovementPlugin, networking::ClientNetworkingPlugin,
     },
-    server::ai::attack::unit_range,
-    shared::networking::{setup_level, Unit},
+    shared::networking::setup_level,
 };
 
 fn main() {
@@ -26,6 +24,7 @@ fn main() {
     app.add_plugins(InputPlugin);
     app.add_plugins(MovementPlugin);
     app.add_plugins(AnimationPlugin);
+    // app.add_plugins(GizmosPlugin);
 
     app.add_systems(Startup, setup_level);
 
@@ -37,21 +36,9 @@ fn main() {
     // This shit break shit
     // app.add_plugins(FrameTimeDiagnosticsPlugin::default());
 
-    app.add_systems(Update, draw_range);
-
     app.run();
 }
 
 fn debug_system(mut commands: Commands) {
     commands.spawn(PerfUiBundle::default());
-}
-
-fn draw_range(mut gizmos: Gizmos, query: Query<(&Transform, &Unit)>) {
-    for (transform, unit) in query.iter() {
-        gizmos.circle_2d(
-            transform.translation.truncate(),
-            unit_range(&unit.unit_type),
-            RED,
-        );
-    }
 }

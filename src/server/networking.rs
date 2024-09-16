@@ -38,7 +38,10 @@ pub struct ServerNetworkPlugin;
 
 impl Plugin for ServerNetworkPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (server_update_system, server_network_sync));
+        app.add_systems(
+            Update,
+            (server_update_system, server_network_sync, on_unit_death),
+        );
 
         app.add_plugins(RenetServerPlugin);
         app.insert_resource(ServerLobby::default());
@@ -217,4 +220,20 @@ fn server_network_sync(mut server: ResMut<RenetServer>, query: Query<(Entity, &M
 
     let sync_message = bincode::serialize(&networked_entities).unwrap();
     server.broadcast_message(ServerChannel::NetworkedEntities, sync_message);
+}
+
+fn on_unit_death(
+    mut server: ResMut<RenetServer>,
+    mut commands: Commands,
+    query: Query<(Entity, &Unit)>,
+) {
+    for (entity, unit) in query.iter() {
+        if unit.health <= 0. {
+            commands.entity(entity).despawn();
+
+            let message = ServerMessages::UnitDied { entity };
+            let unit_dead_message = bincode::serialize(&message).unwrap();
+            server.broadcast_message(ServerChannel::ServerMessages, unit_dead_message);
+        }
+    }
 }

@@ -69,6 +69,9 @@ pub enum ServerMessages {
         unit_type: UnitType,
         translation: [f32; 3],
     },
+    UnitDied {
+        entity: Entity,
+    },
     // SpawnProjectile {
     //     owner: Owner,
     //     entity: Entity,

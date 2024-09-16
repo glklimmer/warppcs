@@ -52,6 +52,14 @@ pub fn unit_swing_timer(unit_type: &UnitType) -> Timer {
     Timer::from_seconds(time, TimerMode::Repeating)
 }
 
+pub fn unit_speed(unit_type: &UnitType) -> f32 {
+    match unit_type {
+        UnitType::Shieldwarrior => 80.,
+        UnitType::Pikeman => 100.,
+        UnitType::Archer => 120.,
+    }
+}
+
 fn process_attacks(
     mut query: Query<(&UnitBehaviour, &mut Unit)>,
     mut attack_events: EventWriter<TakeDamage>,
