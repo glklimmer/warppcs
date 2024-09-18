@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::shared::networking::{Facing, Movement, PlayerInput, Unit};
+use crate::shared::networking::{PlayerInput, Unit};
 
 use super::ai::{attack::unit_speed, UnitBehaviour};
 
@@ -34,21 +34,9 @@ fn move_players_system(mut query: Query<(&PlayerInput, &mut Velocity)>) {
     }
 }
 
-fn apply_velocity_system(
-    mut query: Query<(&Velocity, &mut Transform, &mut Movement)>,
-    time: Res<Time>,
-) {
-    for (velocity, mut transform, mut movement) in query.iter_mut() {
+fn apply_velocity_system(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>) {
+    for (velocity, mut transform) in query.iter_mut() {
         transform.translation += velocity.0.extend(0.) * time.delta_seconds();
-        movement.translation = transform.translation.into();
-
-        if velocity.0.x > 0. {
-            movement.facing = Facing::Right
-        }
-        if velocity.0.x < 0. {
-            movement.facing = Facing::Left
-        }
-        movement.moving = velocity.0.x != 0.;
     }
 }
 

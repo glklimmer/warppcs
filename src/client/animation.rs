@@ -1,92 +1,70 @@
 use bevy::prelude::*;
 
-use crate::shared::networking::{Facing, Movement};
+use crate::shared::networking::Facing;
 
 use super::{
-    king::{AnimationsState, CurrentAnimation, GeneralAnimations},
-    networking::UnitEvent,
+    king::{AnimationReferences, AnimationSetting},
+    networking::{Change, NetworkEvent},
 };
 
-#[derive(Event)]
-struct AnimationChanged;
+#[derive(Component, PartialEq, Eq, Debug, Clone, Copy)]
+pub enum UnitAnimation {
+    Idle,
+    Walk,
+    Attack,
+}
+
+#[derive(Component)]
+pub struct UnitFacing(pub Facing);
+
+#[derive(Debug, Event)]
+/// Gets only triggered if new animation
+pub struct AnimationTrigger {
+    pub entity: Entity,
+    pub state: UnitAnimation,
+}
+
+#[derive(Component)]
+struct FullAnimation;
 
 pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<AnimationChanged>();
+        app.add_event::<AnimationTrigger>();
+
         app.add_systems(
             Update,
             (
-                animate,
-                set_current_animation,
-                animate_sprite_system,
+                advance_animation,
+                set_animation_settings,
+                set_next_animation,
+                set_unit_facing,
                 mirror_sprite,
             ),
         );
     }
 }
 
-fn set_current_animation(
-    mut unit_events: EventReader<UnitEvent>,
-    mut query: Query<(Entity, &mut CurrentAnimation, &Movement, &GeneralAnimations)>,
-    mut change_animation: EventWriter<AnimationChanged>,
-) {
-    for event in unit_events.read() {
-        for (entity, mut current_animation, _, king_animations) in &mut query {
-            match event {
-                UnitEvent::MeleeAttack(attacking_entity) => {
-                    if entity == *attacking_entity {
-                        current_animation.initial_state = AnimationsState::Attack;
-                        current_animation.current = king_animations.attack.clone();
-                        change_animation.send(AnimationChanged);
-                    }
-                }
-            }
-        }
-    }
-
-    for (_, mut current_animation, movement, _) in &mut query {
-        match current_animation.initial_state {
-            AnimationsState::Idle => {
-                if movement.moving {
-                    current_animation.initial_state = AnimationsState::Walk;
-                    change_animation.send(AnimationChanged);
-                }
-            }
-            AnimationsState::Walk => {
-                if !movement.moving {
-                    current_animation.initial_state = AnimationsState::Idle;
-                    change_animation.send(AnimationChanged);
-                }
-            }
-            AnimationsState::Attack => {
-                if current_animation.current.animation_duration.finished() {
-                    current_animation.initial_state = match movement.moving {
-                        true => AnimationsState::Walk,
-                        false => AnimationsState::Idle,
-                    };
-                    change_animation.send(AnimationChanged);
-                }
-            }
-        }
-    }
-}
-
-fn animate_sprite_system(
+fn advance_animation(
     time: Res<Time>,
-    mut query: Query<(&mut CurrentAnimation, &mut TextureAtlas)>,
+    mut commands: Commands,
+    mut query: Query<(
+        Entity,
+        &mut AnimationSetting,
+        &mut TextureAtlas,
+        Option<&FullAnimation>,
+    )>,
 ) {
-    for (mut current_animation, mut atlas) in &mut query {
-        current_animation.current.frame_timer.tick(time.delta());
-        current_animation
-            .current
-            .animation_duration
-            .tick(time.delta());
+    for (entity, mut current_animation, mut atlas, maybe_full) in &mut query {
+        current_animation.config.frame_timer.tick(time.delta());
 
-        if current_animation.current.frame_timer.just_finished() {
-            atlas.index = if atlas.index == current_animation.current.last_sprite_index {
-                current_animation.current.first_sprite_index
+        if current_animation.config.frame_timer.just_finished() {
+            atlas.index = if atlas.index == current_animation.config.last_sprite_index {
+                if maybe_full.is_some() {
+                    commands.entity(entity).remove::<FullAnimation>();
+                }
+                current_animation.config.first_sprite_index
             } else {
                 atlas.index - 1
             };
@@ -94,40 +72,104 @@ fn animate_sprite_system(
     }
 }
 
-fn animate(
-    mut query: Query<(&GeneralAnimations, &mut TextureAtlas, &mut CurrentAnimation)>,
-    mut animation_changed: EventReader<AnimationChanged>,
+fn set_next_animation(
+    mut commands: Commands,
+    mut animation: Query<(&mut AnimationSetting, Option<&FullAnimation>)>,
+    mut network_events: EventReader<NetworkEvent>,
+    mut animation_trigger: EventWriter<AnimationTrigger>,
 ) {
-    for _state_change in animation_changed.read() {
-        for (animations, mut atlas, mut current_animation) in &mut query {
-            // Update animation state
-            let (new_layout, new_frame_timer) = match current_animation.initial_state {
-                AnimationsState::Idle => (
-                    &animations.idle.layout_handle,
-                    animations.idle.frame_timer.clone(),
-                ),
-                AnimationsState::Walk => (
-                    &animations.walk.layout_handle,
-                    animations.walk.frame_timer.clone(),
-                ),
-                AnimationsState::Attack => (
-                    &animations.attack.layout_handle,
-                    animations.attack.frame_timer.clone(),
-                ),
+    for event in network_events.read() {
+        if let Ok((mut current_animation, maybe_full)) = animation.get_mut(event.entity) {
+            let new_animation = match &event.change {
+                Change::Movement(movement) => match movement.moving {
+                    true => UnitAnimation::Walk,
+                    false => UnitAnimation::Idle,
+                },
+                Change::Attack => UnitAnimation::Attack,
             };
 
-            // Update only if the animation has changed
-            if atlas.layout != *new_layout {
-                atlas.layout = new_layout.clone();
-                current_animation.current.frame_timer = new_frame_timer;
+            if is_interupt_animation(&new_animation)
+                || (maybe_full.is_none() && new_animation != current_animation.state)
+            {
+                current_animation.state = new_animation;
+
+                if is_full_animation(&new_animation) {
+                    commands.entity(event.entity).insert(FullAnimation);
+                }
+                animation_trigger.send(AnimationTrigger {
+                    entity: event.entity,
+                    state: new_animation,
+                });
+
+                if is_full_animation(&new_animation) {
+                    break;
+                }
             }
         }
     }
 }
 
-fn mirror_sprite(mut query: Query<(&Movement, &mut Transform)>) {
-    for (movement, mut transform) in &mut query {
-        let new_scale_x = match movement.facing {
+fn is_interupt_animation(animation: &UnitAnimation) -> bool {
+    match animation {
+        UnitAnimation::Idle => false,
+        UnitAnimation::Walk => false,
+        UnitAnimation::Attack => true,
+    }
+}
+
+fn is_full_animation(animation: &UnitAnimation) -> bool {
+    match animation {
+        UnitAnimation::Idle => false,
+        UnitAnimation::Walk => false,
+        UnitAnimation::Attack => true,
+    }
+}
+
+fn set_unit_facing(mut commands: Commands, mut movements: EventReader<NetworkEvent>) {
+    for event in movements.read() {
+        if let Change::Movement(movement) = &event.change {
+            if let Some(new_facing) = &movement.facing {
+                commands
+                    .entity(event.entity)
+                    .insert(UnitFacing(new_facing.clone()));
+            }
+        }
+    }
+}
+
+fn set_animation_settings(
+    mut query: Query<
+        (
+            &AnimationReferences,
+            &mut AnimationSetting,
+            &mut TextureAtlas,
+        ),
+        Changed<AnimationSetting>,
+    >,
+    mut animation_changed: EventReader<AnimationTrigger>,
+) {
+    for new_animation in animation_changed.read() {
+        if let Ok((references, mut current_animation, mut atlas)) =
+            query.get_mut(new_animation.entity)
+        {
+            let reference = match current_animation.state {
+                UnitAnimation::Idle => &references.idle,
+                UnitAnimation::Walk => &references.walk,
+                UnitAnimation::Attack => &references.attack,
+            };
+
+            atlas.layout = reference.layout_handle.clone();
+            atlas.index = reference.first_sprite_index;
+
+            current_animation.config.frame_timer = reference.frame_timer.clone();
+            current_animation.config.frame_timer.reset();
+        }
+    }
+}
+
+fn mirror_sprite(mut query: Query<(&UnitFacing, &mut Transform)>) {
+    for (unit_facing, mut transform) in &mut query {
+        let new_scale_x = match unit_facing.0 {
             Facing::Left => -transform.scale.x.abs(),
             Facing::Right => transform.scale.x.abs(),
         };
