@@ -1,7 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
-    client::king::{AnimationsState, PaladinBundle, WarriorBundle},
+    client::{
+        gizmos::UnitRange,
+        king::{AnimationsState, PaladinBundle, WarriorBundle},
+    },
+    server::ai::attack::unit_range,
     shared::networking::{
         connection_config, ClientChannel, Movement, NetworkedEntities, PlayerCommand, PlayerInput,
         ServerChannel, ServerMessages, UnitType, PROTOCOL_ID,
@@ -180,12 +184,12 @@ fn client_sync_players(
             ServerMessages::SpawnUnit {
                 entity: server_unit_entity,
                 owner,
-                unit_type,
                 translation,
+                unit_type,
             } => {
-                println!("Spawning {:?} Unit for player {}.", unit_type, owner);
+                println!("Spawning {:?} Unit for player {}.", unit_type, owner.0);
                 let texture = match unit_type {
-                    UnitType::Warrior => asset_server.load("aseprite/warrior.png"),
+                    UnitType::Shieldwarrior => asset_server.load("aseprite/shield_warrior.png"),
                     UnitType::Pikeman => asset_server.load("aseprite/pike_man.png"),
                     UnitType::Archer => asset_server.load("aseprite/archer.png"),
                 };
@@ -205,6 +209,8 @@ fn client_sync_players(
                             translation,
                             ..default()
                         },
+                        owner,
+                        UnitRange(unit_range(&unit_type)),
                     ))
                     .id();
 
@@ -212,22 +218,34 @@ fn client_sync_players(
                     .0
                     .insert(server_unit_entity, client_unit_entity);
             }
+            ServerMessages::UnitDied {
+                entity: server_entity,
+            } => {
+                println!("dead unit detection recieved.");
+                if let Some(client_entity) = network_mapping.0.remove(&server_entity) {
+                    commands.entity(client_entity).despawn();
+                }
+            }
         }
     }
 
     while let Some(message) = client.receive_message(ServerChannel::NetworkedEntities) {
-        let networked_entities: NetworkedEntities = bincode::deserialize(&message).unwrap();
+        let maybe_net_entities: Result<NetworkedEntities, _> = bincode::deserialize(&message);
+        match maybe_net_entities {
+            Ok(networked_entities) => {
+                for i in 0..networked_entities.entities.len() {
+                    if let Some(client_entity) = network_mapping
+                        .0
+                        .get(&networked_entities.entities[i].entity)
+                    {
+                        let message_entity = &networked_entities.entities[i];
+                        let movement = message_entity.movement.clone();
 
-        for i in 0..networked_entities.entities.len() {
-            if let Some(client_entity) = network_mapping
-                .0
-                .get(&networked_entities.entities[i].entity)
-            {
-                let message_entity = &networked_entities.entities[i];
-                let movement = message_entity.movement.clone();
-
-                commands.entity(*client_entity).insert(movement);
+                        commands.entity(*client_entity).insert(movement);
+                    }
+                }
             }
+            Err(error) => error!("Error on deserialize: {}", error),
         }
     }
 }

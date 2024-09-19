@@ -26,7 +26,13 @@ fn player_input(
         player_commands.send(PlayerCommand::MeleeAttack);
     }
 
-    if keyboard_input.just_pressed(KeyCode::KeyQ) {
+    if keyboard_input.just_pressed(KeyCode::Digit1) {
+        player_commands.send(PlayerCommand::SpawnUnit(UnitType::Archer));
+    }
+    if keyboard_input.just_pressed(KeyCode::Digit2) {
+        player_commands.send(PlayerCommand::SpawnUnit(UnitType::Shieldwarrior));
+    }
+    if keyboard_input.just_pressed(KeyCode::Digit3) {
         player_commands.send(PlayerCommand::SpawnUnit(UnitType::Pikeman));
     }
 }

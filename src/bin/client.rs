@@ -8,8 +8,8 @@ use bevy::{
 use iyes_perf_ui::{entries::PerfUiBundle, PerfUiPlugin};
 use warppcs::{
     client::{
-        animation::AnimationPlugin, camera::CameraPlugin, input::InputPlugin, king::KingPlugin,
-        movement::MovementPlugin, networking::ClientNetworkingPlugin,
+        animation::AnimationPlugin, camera::CameraPlugin, gizmos::GizmosPlugin, input::InputPlugin,
+        king::KingPlugin, movement::MovementPlugin, networking::ClientNetworkingPlugin,
     },
     shared::networking::setup_level,
 };
@@ -27,11 +27,13 @@ fn main() {
 
     app.add_systems(Startup, setup_level);
 
-    app.add_plugins(PerfUiPlugin);
-    app.add_systems(Startup, debug_system);
-    app.add_plugins(FrameTimeDiagnosticsPlugin);
-    app.add_plugins(EntityCountDiagnosticsPlugin);
-    app.add_plugins(SystemInformationDiagnosticsPlugin);
+    // app.add_plugins(GizmosPlugin);
+
+    // app.add_plugins(PerfUiPlugin);
+    // app.add_systems(Startup, debug_system);
+    // app.add_plugins(FrameTimeDiagnosticsPlugin);
+    // app.add_plugins(EntityCountDiagnosticsPlugin);
+    // app.add_plugins(SystemInformationDiagnosticsPlugin);
     // This shit break shit
     // app.add_plugins(FrameTimeDiagnosticsPlugin::default());
 

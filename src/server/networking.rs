@@ -1,10 +1,16 @@
 use bevy::prelude::*;
 
 use crate::{
-    server::movement::Velocity,
+    server::{
+        ai::{
+            attack::{unit_health, unit_swing_timer},
+            UnitBehaviour,
+        },
+        movement::Velocity,
+    },
     shared::networking::{
-        ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, PlayerCommand,
-        PlayerInput, ServerChannel, ServerMessages,
+        ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, Owner, PlayerCommand,
+        PlayerInput, ServerChannel, ServerMessages, Unit,
     },
 };
 use bevy_renet::{
@@ -32,7 +38,10 @@ pub struct ServerNetworkPlugin;
 
 impl Plugin for ServerNetworkPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (server_update_system, server_network_sync));
+        app.add_systems(
+            Update,
+            (server_update_system, server_network_sync, on_unit_death),
+        );
 
         app.add_plugins(RenetServerPlugin);
         app.insert_resource(ServerLobby::default());
@@ -157,22 +166,30 @@ fn server_update_system(
 
                     if let Some(player_entity) = lobby.players.get(&client_id) {
                         if let Ok((_, _, player_transform)) = players.get(*player_entity) {
+                            let unit = Unit {
+                                health: unit_health(&unit_type),
+                                swing_timer: unit_swing_timer(&unit_type),
+                                unit_type: unit_type.clone(),
+                            };
+
                             let unit_entity = commands
                                 .spawn((
                                     Transform::from_translation(player_transform.translation),
-                                    unit_type.clone(),
+                                    unit,
+                                    Owner(client_id),
                                     Velocity::default(),
                                     Movement {
                                         facing: Facing::Right,
                                         moving: false,
                                         translation: player_transform.translation.into(),
                                     },
+                                    UnitBehaviour::Idle,
                                 ))
                                 .id();
 
                             let message = ServerMessages::SpawnUnit {
                                 entity: unit_entity,
-                                owner: client_id,
+                                owner: Owner(client_id),
                                 unit_type,
                                 translation: player_transform.translation.into(),
                             };
@@ -203,4 +220,20 @@ fn server_network_sync(mut server: ResMut<RenetServer>, query: Query<(Entity, &M
 
     let sync_message = bincode::serialize(&networked_entities).unwrap();
     server.broadcast_message(ServerChannel::NetworkedEntities, sync_message);
+}
+
+fn on_unit_death(
+    mut server: ResMut<RenetServer>,
+    mut commands: Commands,
+    query: Query<(Entity, &Unit)>,
+) {
+    for (entity, unit) in query.iter() {
+        if unit.health <= 0. {
+            commands.entity(entity).despawn();
+
+            let message = ServerMessages::UnitDied { entity };
+            let unit_dead_message = bincode::serialize(&message).unwrap();
+            server.broadcast_message(ServerChannel::ServerMessages, unit_dead_message);
+        }
+    }
 }
