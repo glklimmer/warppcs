@@ -110,11 +110,6 @@ fn server_update_system(
                         PlayerInput::default(),
                         Velocity::default(),
                         ServerPlayer { id: *client_id },
-                        Movement {
-                            facing: Facing::Left,
-                            moving: false,
-                            translation: transform.translation.into(),
-                        },
                     ))
                     .id();
 
@@ -148,8 +143,6 @@ fn server_update_system(
             let command: PlayerCommand = bincode::deserialize(&message).unwrap();
             match command {
                 PlayerCommand::MeleeAttack => {
-                    println!("Received meele attack from client {}", client_id);
-
                     if let Some(player_entity) = lobby.players.get(&client_id) {
                         let message = ServerMessages::MeleeAttack {
                             entity: *player_entity,
@@ -178,11 +171,6 @@ fn server_update_system(
                                     unit,
                                     Owner(client_id),
                                     Velocity::default(),
-                                    Movement {
-                                        facing: Facing::Right,
-                                        moving: false,
-                                        translation: player_transform.translation.into(),
-                                    },
                                     UnitBehaviour::Idle,
                                 ))
                                 .id();
@@ -209,12 +197,25 @@ fn server_update_system(
     }
 }
 
-fn server_network_sync(mut server: ResMut<RenetServer>, query: Query<(Entity, &Movement)>) {
+fn server_network_sync(
+    mut server: ResMut<RenetServer>,
+    query: Query<(Entity, &Transform, &Velocity)>,
+) {
     let mut networked_entities = NetworkedEntities::default();
-    for (entity, movement) in query.iter() {
+    for (entity, transform, velocity) in query.iter() {
+        let movement = Movement {
+            facing: match velocity.0.x.total_cmp(&0.) {
+                std::cmp::Ordering::Less => Some(Facing::Left),
+                std::cmp::Ordering::Equal => None,
+                std::cmp::Ordering::Greater => Some(Facing::Right),
+            },
+            moving: velocity.0.x != 0.,
+        };
+
         networked_entities.entities.push(NetworkEntity {
             entity,
-            movement: movement.clone(),
+            translation: transform.translation.into(),
+            movement,
         });
     }
 
