@@ -9,7 +9,7 @@ use iyes_perf_ui::{entries::PerfUiBundle, PerfUiPlugin};
 use warppcs::{
     client::{
         animation::AnimationPlugin, camera::CameraPlugin, gizmos::GizmosPlugin, input::InputPlugin,
-        king::KingPlugin, movement::MovementPlugin, networking::ClientNetworkingPlugin,
+        king::KingPlugin, networking::ClientNetworkingPlugin,
     },
     shared::networking::setup_level,
 };
@@ -22,7 +22,6 @@ fn main() {
     app.add_plugins(ClientNetworkingPlugin);
     app.add_plugins(CameraPlugin);
     app.add_plugins(InputPlugin);
-    app.add_plugins(MovementPlugin);
     app.add_plugins(AnimationPlugin);
 
     app.add_systems(Startup, setup_level);

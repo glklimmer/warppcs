@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use super::animation::UnitAnimation;
+
 pub struct KingPlugin;
 
 impl Plugin for KingPlugin {
@@ -15,24 +17,17 @@ pub struct AnimationsAtlasLayout {
     pub attack: Handle<TextureAtlasLayout>,
 }
 
-#[derive(Component, PartialEq, Eq, Debug)]
-pub enum AnimationsState {
-    Idle,
-    Walk,
-    Attack,
-}
-
 #[derive(Component)]
 pub struct AnimationTimer(pub Timer);
 
 #[derive(Component, Debug)]
-pub struct CurrentAnimation {
-    pub initial_state: AnimationsState,
-    pub current: AnimationConfig,
+pub struct AnimationSetting {
+    pub state: UnitAnimation,
+    pub config: AnimationConfig,
 }
 
 #[derive(Component, Debug, Clone)]
-pub struct GeneralAnimations {
+pub struct AnimationReferences {
     pub idle: AnimationConfig,
     pub walk: AnimationConfig,
     pub attack: AnimationConfig,
@@ -44,7 +39,6 @@ pub struct AnimationConfig {
     pub first_sprite_index: usize,
     pub last_sprite_index: usize,
     pub frame_timer: Timer,
-    pub animation_duration: Timer,
 }
 
 // ------  Paladin ----- //
@@ -97,25 +91,25 @@ pub struct PaladinBundle {
     pub paladin: Paladin,
     pub sprite_sheet: SpriteBundle,
     pub texture_atlas: TextureAtlas,
-    pub state: AnimationsState,
-    pub current_animation: CurrentAnimation,
-    pub animations: GeneralAnimations,
+    pub state: UnitAnimation,
+    pub current_animation: AnimationSetting,
+    pub animations: AnimationReferences,
 }
 
 impl PaladinBundle {
     pub fn new(
         paladin_sprite_sheet: &Res<PaladinSpriteSheet>,
         translation: [f32; 3],
-        initial_state: AnimationsState,
+        initial_state: UnitAnimation,
     ) -> Self {
         let idle_handle = paladin_sprite_sheet.animations_atlas_layout.idle.clone();
         let walk_handle = paladin_sprite_sheet.animations_atlas_layout.walk.clone();
         let attack_handle = paladin_sprite_sheet.animations_atlas_layout.attack.clone();
 
         let layout_handle = match initial_state {
-            AnimationsState::Idle => &idle_handle,
-            AnimationsState::Walk => &walk_handle,
-            AnimationsState::Attack => &attack_handle,
+            UnitAnimation::Idle => &idle_handle,
+            UnitAnimation::Walk => &walk_handle,
+            UnitAnimation::Attack => &attack_handle,
         };
 
         PaladinBundle {
@@ -134,37 +128,33 @@ impl PaladinBundle {
                 layout: layout_handle.clone(),
                 index: 7,
             },
-            animations: GeneralAnimations {
+            animations: AnimationReferences {
                 idle: AnimationConfig {
                     layout_handle: idle_handle.clone(),
                     first_sprite_index: 7,
                     last_sprite_index: 0,
                     frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
-                    animation_duration: Timer::from_seconds(1. / 10., TimerMode::Repeating),
                 },
                 walk: AnimationConfig {
                     layout_handle: walk_handle.clone(),
                     first_sprite_index: 7,
                     last_sprite_index: 0,
                     frame_timer: Timer::from_seconds(1. / 15., TimerMode::Repeating),
-                    animation_duration: Timer::from_seconds(1., TimerMode::Repeating),
                 },
                 attack: AnimationConfig {
                     layout_handle: attack_handle.clone(),
                     first_sprite_index: 7,
                     last_sprite_index: 0,
                     frame_timer: Timer::from_seconds(1. / 15., TimerMode::Repeating),
-                    animation_duration: Timer::from_seconds(1. / 15. * 8., TimerMode::Once),
                 },
             },
-            current_animation: CurrentAnimation {
-                initial_state: AnimationsState::Idle,
-                current: AnimationConfig {
+            current_animation: AnimationSetting {
+                state: UnitAnimation::Idle,
+                config: AnimationConfig {
                     layout_handle: idle_handle.clone(),
                     first_sprite_index: 7,
                     last_sprite_index: 0,
                     frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
-                    animation_duration: Timer::from_seconds(1., TimerMode::Once),
                 },
             },
         }
@@ -229,25 +219,25 @@ pub struct WarriorBundle {
     pub warrior: Warrior,
     pub sprite_sheet: SpriteBundle,
     pub texture_atlas: TextureAtlas,
-    pub state: AnimationsState,
-    pub current_animation: CurrentAnimation,
-    pub animations: GeneralAnimations,
+    pub state: UnitAnimation,
+    pub current_animation: AnimationSetting,
+    pub animations: AnimationReferences,
 }
 
 impl WarriorBundle {
     pub fn new(
         paladin_sprite_sheet: &Res<WarriorSpriteSheet>,
         translation: [f32; 3],
-        initial_state: AnimationsState,
+        initial_state: UnitAnimation,
     ) -> Self {
         let idle_handle = paladin_sprite_sheet.animations_atlas_layout.idle.clone();
         let walk_handle = paladin_sprite_sheet.animations_atlas_layout.walk.clone();
         let attack_handle = paladin_sprite_sheet.animations_atlas_layout.attack.clone();
 
         let layout_handle = match initial_state {
-            AnimationsState::Idle => &idle_handle,
-            AnimationsState::Walk => &walk_handle,
-            AnimationsState::Attack => &attack_handle,
+            UnitAnimation::Idle => &idle_handle,
+            UnitAnimation::Walk => &walk_handle,
+            UnitAnimation::Attack => &attack_handle,
         };
 
         WarriorBundle {
@@ -266,37 +256,33 @@ impl WarriorBundle {
                 layout: layout_handle.clone(),
                 index: 9,
             },
-            animations: GeneralAnimations {
+            animations: AnimationReferences {
                 idle: AnimationConfig {
                     layout_handle: idle_handle.clone(),
                     first_sprite_index: 7,
                     last_sprite_index: 0,
                     frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
-                    animation_duration: Timer::from_seconds(1., TimerMode::Repeating),
                 },
                 walk: AnimationConfig {
                     layout_handle: walk_handle.clone(),
                     first_sprite_index: 7,
                     last_sprite_index: 0,
                     frame_timer: Timer::from_seconds(1. / 20., TimerMode::Repeating),
-                    animation_duration: Timer::from_seconds(1., TimerMode::Repeating),
                 },
                 attack: AnimationConfig {
                     layout_handle: attack_handle.clone(),
                     first_sprite_index: 7,
                     last_sprite_index: 0,
                     frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
-                    animation_duration: Timer::from_seconds(1., TimerMode::Repeating),
                 },
             },
-            current_animation: CurrentAnimation {
-                initial_state: AnimationsState::Idle,
-                current: AnimationConfig {
+            current_animation: AnimationSetting {
+                state: UnitAnimation::Idle,
+                config: AnimationConfig {
                     layout_handle: idle_handle.clone(),
                     first_sprite_index: 7,
                     last_sprite_index: 0,
                     frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
-                    animation_duration: Timer::from_seconds(1., TimerMode::Repeating),
                 },
             },
         }

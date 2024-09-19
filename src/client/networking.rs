@@ -2,8 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     client::{
+        animation::UnitAnimation,
         gizmos::UnitRange,
-        king::{AnimationsState, PaladinBundle, WarriorBundle},
+        king::{PaladinBundle, WarriorBundle},
     },
     server::ai::attack::unit_range,
     shared::networking::{
@@ -46,9 +47,15 @@ struct PlayerEntityMapping {
 #[derive(Default, Resource)]
 struct NetworkMapping(HashMap<Entity, Entity>);
 
+pub enum Change {
+    Movement(Movement),
+    Attack,
+}
+
 #[derive(Event)]
-pub enum UnitEvent {
-    MeleeAttack(Entity),
+pub struct NetworkEvent {
+    pub entity: Entity,
+    pub change: Change,
 }
 
 pub struct ClientNetworkingPlugin;
@@ -59,10 +66,10 @@ impl Plugin for ClientNetworkingPlugin {
 
         add_netcode_network(app);
 
-        app.add_event::<UnitEvent>();
-
         app.insert_resource(NetworkMapping::default());
         app.insert_resource(ClientLobby::default());
+
+        app.add_event::<NetworkEvent>();
 
         app.add_systems(
             Update,
@@ -116,11 +123,12 @@ fn add_netcode_network(app: &mut App) {
 #[allow(clippy::too_many_arguments)]
 fn client_sync_players(
     mut commands: Commands,
+    mut transforms: Query<&mut Transform>,
     mut client: ResMut<RenetClient>,
     client_id: Res<CurrentClientId>,
     mut lobby: ResMut<ClientLobby>,
     mut network_mapping: ResMut<NetworkMapping>,
-    mut unit_events: EventWriter<UnitEvent>,
+    mut network_events: EventWriter<NetworkEvent>,
     warrior_sprite_sheet: Res<WarriorSpriteSheet>,
     paladin_sprite_sheet: Res<PaladinSpriteSheet>,
     asset_server: Res<AssetServer>,
@@ -136,16 +144,16 @@ fn client_sync_players(
             } => {
                 println!("Player {} connected.", id);
 
-                let mut client_player_entity = match id.raw() {
-                    1 => commands.spawn(PaladinBundle::new(
+                let mut client_player_entity = match lobby.players.len() {
+                    0 => commands.spawn(PaladinBundle::new(
                         &paladin_sprite_sheet,
                         translation,
-                        AnimationsState::Idle,
+                        UnitAnimation::Idle,
                     )),
                     _ => commands.spawn(WarriorBundle::new(
                         &warrior_sprite_sheet,
                         translation,
-                        AnimationsState::Idle,
+                        UnitAnimation::Idle,
                     )),
                 };
 
@@ -177,8 +185,11 @@ fn client_sync_players(
             ServerMessages::MeleeAttack {
                 entity: server_entity,
             } => {
-                if let Some(entity) = network_mapping.0.get(&server_entity) {
-                    unit_events.send(UnitEvent::MeleeAttack(*entity));
+                if let Some(client_entity) = network_mapping.0.get(&server_entity) {
+                    network_events.send(NetworkEvent {
+                        entity: *client_entity,
+                        change: Change::Attack,
+                    });
                 }
             }
             ServerMessages::SpawnUnit {
@@ -203,10 +214,6 @@ fn client_sync_players(
                                 ..default()
                             },
                             texture,
-                            ..default()
-                        },
-                        Movement {
-                            translation,
                             ..default()
                         },
                         owner,
@@ -238,10 +245,16 @@ fn client_sync_players(
                         .0
                         .get(&networked_entities.entities[i].entity)
                     {
-                        let message_entity = &networked_entities.entities[i];
-                        let movement = message_entity.movement.clone();
+                        let network_entity = &networked_entities.entities[i];
 
-                        commands.entity(*client_entity).insert(movement);
+                        if let Ok(mut transform) = transforms.get_mut(*client_entity) {
+                            transform.translation = network_entity.translation.into();
+                        }
+
+                        network_events.send(NetworkEvent {
+                            entity: *client_entity,
+                            change: Change::Movement(network_entity.movement.clone()),
+                        });
                     }
                 }
             }
