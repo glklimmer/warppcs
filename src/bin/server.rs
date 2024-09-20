@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy::app::ScheduleRunnerPlugin;
 use std::time::Duration;
-use warppcs::server::{ai::AIPlugin, movement::MovementPlugin, networking::ServerNetworkPlugin};
+use warppcs::server::ServerPlugin;
 
 fn main() {
     let mut app = App::new();
@@ -12,9 +12,7 @@ fn main() {
         ))),
     );
 
-    app.add_plugins(ServerNetworkPlugin);
-    app.add_plugins(MovementPlugin);
-    app.add_plugins(AIPlugin);
+    app.add_plugins(ServerPlugin);
 
     app.run();
 }

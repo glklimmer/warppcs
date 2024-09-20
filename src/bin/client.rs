@@ -6,25 +6,13 @@ use bevy::{
     prelude::*,
 };
 use iyes_perf_ui::{entries::PerfUiBundle, PerfUiPlugin};
-use warppcs::{
-    client::{
-        animation::AnimationPlugin, camera::CameraPlugin, gizmos::GizmosPlugin, input::InputPlugin,
-        king::KingPlugin, networking::ClientNetworkingPlugin,
-    },
-    shared::networking::setup_level,
-};
+use warppcs::client::ClientPlugin;
 
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()));
 
-    app.add_plugins(KingPlugin);
-    app.add_plugins(ClientNetworkingPlugin);
-    app.add_plugins(CameraPlugin);
-    app.add_plugins(InputPlugin);
-    app.add_plugins(AnimationPlugin);
-
-    app.add_systems(Startup, setup_level);
+    app.add_plugins(ClientPlugin);
 
     // app.add_plugins(GizmosPlugin);
 
