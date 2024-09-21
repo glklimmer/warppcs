@@ -1,10 +1,16 @@
 use bevy::prelude::*;
 
-use crate::shared::networking::{PlayerInput, Unit};
+use crate::{
+    server::ai::{attack::unit_speed, UnitBehaviour},
+    shared::{
+        networking::{PlayerInput, Unit},
+        GRAVITY_G,
+    },
+};
 
-use super::ai::{attack::unit_speed, UnitBehaviour};
+use super::collider::BoxCollider;
 
-#[derive(Debug, Default, Component)]
+#[derive(Debug, Default, Component, Copy, Clone)]
 pub struct Velocity(pub Vec2);
 
 const PLAYER_MOVE_SPEED: f32 = 200.0;
@@ -13,16 +19,22 @@ pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, (apply_velocity_system, determine_velocity));
-
         app.add_systems(
-            Update,
-            (
-                move_players_system,
-                // unit_random_target,
-                // unit_move_towards_target,
-            ),
+            FixedUpdate,
+            (apply_velocity, determine_unit_velocity, apply_gravity),
         );
+
+        app.add_systems(Update, move_players_system);
+    }
+}
+
+fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, time: Res<Time>) {
+    for (mut velocity, transform, collider) in &mut query {
+        if transform.translation.y - collider.0.y > 0. {
+            velocity.0.y -= GRAVITY_G * time.delta_seconds();
+        } else {
+            velocity.0.y = 0.;
+        }
     }
 }
 
@@ -34,13 +46,13 @@ fn move_players_system(mut query: Query<(&PlayerInput, &mut Velocity)>) {
     }
 }
 
-fn apply_velocity_system(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>) {
+fn apply_velocity(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>) {
     for (velocity, mut transform) in query.iter_mut() {
         transform.translation += velocity.0.extend(0.) * time.delta_seconds();
     }
 }
 
-fn determine_velocity(mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit)>) {
+fn determine_unit_velocity(mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit)>) {
     for (mut velocity, transform, behaviour, unit) in &mut query {
         match behaviour {
             UnitBehaviour::Idle | UnitBehaviour::AttackTarget(_) => velocity.0.x = 0.,

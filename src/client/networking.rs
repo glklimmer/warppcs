@@ -3,13 +3,11 @@ use bevy::prelude::*;
 use crate::{
     client::{
         animation::UnitAnimation,
-        gizmos::UnitRange,
         king::{PaladinBundle, WarriorBundle},
     },
-    server::ai::attack::unit_range,
     shared::networking::{
-        connection_config, ClientChannel, Movement, NetworkedEntities, PlayerCommand, PlayerInput,
-        ServerChannel, ServerMessages, UnitType, PROTOCOL_ID,
+        connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput,
+        ProjectileType, Rotation, ServerChannel, ServerMessages, UnitType, PROTOCOL_ID,
     },
 };
 use bevy_renet::{
@@ -48,7 +46,8 @@ struct PlayerEntityMapping {
 struct NetworkMapping(HashMap<Entity, Entity>);
 
 pub enum Change {
-    Movement(Movement),
+    Rotation(Rotation),
+    Movement(bool),
     Attack,
 }
 
@@ -57,6 +56,9 @@ pub struct NetworkEvent {
     pub entity: Entity,
     pub change: Change,
 }
+
+#[derive(Component)]
+struct Despawning;
 
 pub struct ClientNetworkingPlugin;
 
@@ -80,6 +82,8 @@ impl Plugin for ClientNetworkingPlugin {
             )
                 .in_set(Connected),
         );
+
+        app.add_systems(PostUpdate, (despawn_entities,).in_set(Connected));
     }
 }
 
@@ -198,7 +202,6 @@ fn client_sync_players(
                 translation,
                 unit_type,
             } => {
-                println!("Spawning {:?} Unit for player {}.", unit_type, owner.0);
                 let texture = match unit_type {
                     UnitType::Shieldwarrior => asset_server.load("aseprite/shield_warrior.png"),
                     UnitType::Pikeman => asset_server.load("aseprite/pike_man.png"),
@@ -217,7 +220,6 @@ fn client_sync_players(
                             ..default()
                         },
                         owner,
-                        UnitRange(unit_range(&unit_type)),
                     ))
                     .id();
 
@@ -225,13 +227,42 @@ fn client_sync_players(
                     .0
                     .insert(server_unit_entity, client_unit_entity);
             }
-            ServerMessages::UnitDied {
+            ServerMessages::DespawnEntity {
                 entity: server_entity,
             } => {
-                println!("dead unit detection recieved.");
                 if let Some(client_entity) = network_mapping.0.remove(&server_entity) {
-                    commands.entity(client_entity).despawn();
+                    commands.entity(client_entity).insert(Despawning);
                 }
+            }
+            ServerMessages::SpawnProjectile {
+                entity: server_entity,
+                projectile_type,
+                translation,
+                direction,
+            } => {
+                let texture = match projectile_type {
+                    ProjectileType::Arrow => asset_server.load("aseprite/arrow.png"),
+                };
+
+                let direction: Vec2 = direction.into();
+                let position: Vec3 = translation.into();
+                let position = position.truncate();
+
+                let angle = (direction - position).angle_between(position);
+
+                let client_entity = commands
+                    .spawn((SpriteBundle {
+                        transform: Transform {
+                            translation: translation.into(),
+                            scale: Vec3::splat(2.0),
+                            rotation: Quat::from_rotation_z(angle),
+                        },
+                        texture,
+                        ..default()
+                    },))
+                    .id();
+
+                network_mapping.0.insert(server_entity, client_entity);
             }
         }
     }
@@ -253,7 +284,12 @@ fn client_sync_players(
 
                         network_events.send(NetworkEvent {
                             entity: *client_entity,
-                            change: Change::Movement(network_entity.movement.clone()),
+                            change: Change::Rotation(network_entity.rotation.clone()),
+                        });
+
+                        network_events.send(NetworkEvent {
+                            entity: *client_entity,
+                            change: Change::Movement(network_entity.moving),
                         });
                     }
                 }
@@ -275,5 +311,11 @@ fn client_send_player_commands(
     for command in player_commands.read() {
         let command_message = bincode::serialize(command).unwrap();
         client.send_message(ClientChannel::Command, command_message);
+    }
+}
+
+fn despawn_entities(mut commands: Commands, query: Query<Entity, With<Despawning>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
     }
 }

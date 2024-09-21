@@ -6,11 +6,11 @@ use crate::{
             attack::{unit_health, unit_swing_timer},
             UnitBehaviour,
         },
-        movement::Velocity,
+        physics::{collider::BoxCollider, movement::Velocity},
     },
     shared::networking::{
-        ClientChannel, Facing, Movement, NetworkEntity, NetworkedEntities, Owner, PlayerCommand,
-        PlayerInput, ServerChannel, ServerMessages, Unit,
+        ClientChannel, Facing, NetworkEntity, NetworkedEntities, Owner, PlayerCommand, PlayerInput,
+        ProjectileType, Rotation, ServerChannel, ServerMessages, Unit,
     },
 };
 use bevy_renet::{
@@ -100,7 +100,7 @@ fn server_update_system(
                 // Spawn new player
                 let transform = Transform::from_xyz(
                     (fastrand::f32() - 0.5) * 200.,
-                    0.51,
+                    50.0,
                     (fastrand::f32() - 0.5) * 200.,
                 );
 
@@ -172,6 +172,7 @@ fn server_update_system(
                                     Owner(client_id),
                                     Velocity::default(),
                                     UnitBehaviour::Idle,
+                                    BoxCollider(Vec2::new(50., 90.)),
                                 ))
                                 .id();
 
@@ -199,23 +200,41 @@ fn server_update_system(
 
 fn server_network_sync(
     mut server: ResMut<RenetServer>,
-    query: Query<(Entity, &Transform, &Velocity)>,
+    unit_query: Query<(Entity, &Transform, &Velocity), Without<ProjectileType>>,
+    projectile_query: Query<(Entity, &Transform, &Velocity), With<ProjectileType>>,
 ) {
     let mut networked_entities = NetworkedEntities::default();
-    for (entity, transform, velocity) in query.iter() {
-        let movement = Movement {
+    for (entity, transform, velocity) in unit_query.iter() {
+        let movement = Rotation::LeftRight {
             facing: match velocity.0.x.total_cmp(&0.) {
                 std::cmp::Ordering::Less => Some(Facing::Left),
                 std::cmp::Ordering::Equal => None,
                 std::cmp::Ordering::Greater => Some(Facing::Right),
             },
-            moving: velocity.0.x != 0.,
         };
 
         networked_entities.entities.push(NetworkEntity {
             entity,
             translation: transform.translation.into(),
-            movement,
+            rotation: movement,
+            moving: velocity.0.x != 0.,
+        });
+    }
+
+    for (entity, transform, velocity) in projectile_query.iter() {
+        if velocity.0.x == 0. && velocity.0.y == 0. {
+            continue;
+        }
+
+        let orientation = Rotation::Free {
+            angle: (velocity.0.to_angle()),
+        };
+
+        networked_entities.entities.push(NetworkEntity {
+            entity,
+            translation: transform.translation.into(),
+            rotation: orientation,
+            moving: true,
         });
     }
 
@@ -230,9 +249,9 @@ fn on_unit_death(
 ) {
     for (entity, unit) in query.iter() {
         if unit.health <= 0. {
-            commands.entity(entity).despawn();
+            commands.entity(entity).despawn_recursive();
 
-            let message = ServerMessages::UnitDied { entity };
+            let message = ServerMessages::DespawnEntity { entity };
             let unit_dead_message = bincode::serialize(&message).unwrap();
             server.broadcast_message(ServerChannel::ServerMessages, unit_dead_message);
         }

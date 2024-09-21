@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::shared::networking::Facing;
+use crate::shared::networking::{Facing, Rotation};
 
 use super::{
     king::{AnimationReferences, AnimationSetting},
@@ -40,6 +40,7 @@ impl Plugin for AnimationPlugin {
                 set_animation_settings,
                 set_next_animation,
                 set_unit_facing,
+                set_free_orientation,
                 mirror_sprite,
             ),
         );
@@ -80,29 +81,32 @@ fn set_next_animation(
 ) {
     for event in network_events.read() {
         if let Ok((mut current_animation, maybe_full)) = animation.get_mut(event.entity) {
-            let new_animation = match &event.change {
-                Change::Movement(movement) => match movement.moving {
-                    true => UnitAnimation::Walk,
-                    false => UnitAnimation::Idle,
+            let maybe_new_animation = match &event.change {
+                Change::Movement(moving) => match moving {
+                    true => Some(UnitAnimation::Walk),
+                    false => Some(UnitAnimation::Idle),
                 },
-                Change::Attack => UnitAnimation::Attack,
+                Change::Attack => Some(UnitAnimation::Attack),
+                Change::Rotation(_) => None,
             };
 
-            if is_interupt_animation(&new_animation)
-                || (maybe_full.is_none() && new_animation != current_animation.state)
-            {
-                current_animation.state = new_animation;
+            if let Some(new_animation) = maybe_new_animation {
+                if is_interupt_animation(&new_animation)
+                    || (maybe_full.is_none() && new_animation != current_animation.state)
+                {
+                    current_animation.state = new_animation;
 
-                if is_full_animation(&new_animation) {
-                    commands.entity(event.entity).insert(FullAnimation);
-                }
-                animation_trigger.send(AnimationTrigger {
-                    entity: event.entity,
-                    state: new_animation,
-                });
+                    if is_full_animation(&new_animation) {
+                        commands.entity(event.entity).insert(FullAnimation);
+                    }
+                    animation_trigger.send(AnimationTrigger {
+                        entity: event.entity,
+                        state: new_animation,
+                    });
 
-                if is_full_animation(&new_animation) {
-                    break;
+                    if is_full_animation(&new_animation) {
+                        break;
+                    }
                 }
             }
         }
@@ -127,11 +131,25 @@ fn is_full_animation(animation: &UnitAnimation) -> bool {
 
 fn set_unit_facing(mut commands: Commands, mut movements: EventReader<NetworkEvent>) {
     for event in movements.read() {
-        if let Change::Movement(movement) = &event.change {
-            if let Some(new_facing) = &movement.facing {
-                commands
-                    .entity(event.entity)
-                    .insert(UnitFacing(new_facing.clone()));
+        if let Change::Rotation(Rotation::LeftRight {
+            facing: Some(new_facing),
+        }) = &event.change
+        {
+            commands
+                .entity(event.entity)
+                .insert(UnitFacing(new_facing.clone()));
+        }
+    }
+}
+
+fn set_free_orientation(
+    mut query: Query<&mut Transform>,
+    mut movements: EventReader<NetworkEvent>,
+) {
+    for event in movements.read() {
+        if let Change::Rotation(Rotation::Free { angle }) = &event.change {
+            if let Ok(mut transform) = query.get_mut(event.entity) {
+                transform.rotation = Quat::from_axis_angle(Vec3::Z, *angle);
             }
         }
     }
