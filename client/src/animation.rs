@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::shared::networking::{Facing, Rotation};
+use shared::networking::{Facing, Rotation};
 
 use super::{
     king::{AnimationReferences, AnimationSetting},

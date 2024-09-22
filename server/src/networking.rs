@@ -1,26 +1,20 @@
 use bevy::prelude::*;
 
-use crate::{
-    server::{
-        ai::{
-            attack::{unit_health, unit_swing_timer},
-            UnitBehaviour,
-        },
-        physics::{collider::BoxCollider, movement::Velocity},
-    },
-    shared::networking::{
-        ClientChannel, Facing, NetworkEntity, NetworkedEntities, Owner, PlayerCommand, PlayerInput,
-        ProjectileType, Rotation, ServerChannel, ServerMessages, Unit,
-    },
-};
+use crate::ai::attack::{unit_health, unit_swing_timer};
+use crate::ai::UnitBehaviour;
+use crate::physics::movement::Velocity;
+use bevy_renet::renet::transport::{NetcodeServerTransport, ServerAuthentication, ServerConfig};
+use bevy_renet::transport::NetcodeServerPlugin;
 use bevy_renet::{
     renet::{ClientId, RenetServer, ServerEvent},
     RenetServerPlugin,
 };
-
-use crate::shared::networking::{connection_config, PROTOCOL_ID};
-use bevy_renet::renet::transport::{NetcodeServerTransport, ServerAuthentication, ServerConfig};
-use bevy_renet::transport::NetcodeServerPlugin;
+use shared::networking::{
+    connection_config, ClientChannel, Facing, NetworkEntity, NetworkedEntities, Owner,
+    PlayerCommand, PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages, Unit,
+    PROTOCOL_ID,
+};
+use shared::BoxCollider;
 use std::collections::HashMap;
 use std::{net::UdpSocket, time::SystemTime};
 

@@ -1,15 +1,5 @@
 use bevy::prelude::*;
 
-use crate::{
-    client::{
-        animation::UnitAnimation,
-        king::{PaladinBundle, WarriorBundle},
-    },
-    shared::networking::{
-        connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput,
-        ProjectileType, Rotation, ServerChannel, ServerMessages, UnitType, PROTOCOL_ID,
-    },
-};
 use bevy_renet::{
     client_connected,
     renet::{
@@ -18,7 +8,19 @@ use bevy_renet::{
     },
     RenetClientPlugin,
 };
+use shared::{
+    networking::{
+        connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput,
+        ProjectileType, Rotation, ServerChannel, ServerMessages, UnitType, PROTOCOL_ID,
+    },
+    BoxCollider,
+};
 use std::{collections::HashMap, net::UdpSocket, time::SystemTime};
+
+use crate::{
+    animation::UnitAnimation,
+    king::{PaladinBundle, WarriorBundle},
+};
 
 use super::king::{PaladinSpriteSheet, WarriorSpriteSheet};
 
@@ -162,7 +164,8 @@ fn client_sync_players(
                 };
 
                 if client_id == id.raw() {
-                    client_player_entity.insert(ControlledPlayer);
+                    client_player_entity
+                        .insert((ControlledPlayer, BoxCollider(Vec2::new(50., 90.))));
                 }
 
                 let player_info = PlayerEntityMapping {

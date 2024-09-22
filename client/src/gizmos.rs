@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
 };
 
-use crate::server::{ai::SIGHT_RANGE, physics::collider::BoxCollider};
+use shared::BoxCollider;
 
 pub struct GizmosPlugin;
 
@@ -19,7 +19,7 @@ pub struct UnitRange(pub f32);
 fn draw_range(mut gizmos: Gizmos, query: Query<(&Transform, &UnitRange)>) {
     for (transform, range) in query.iter() {
         gizmos.circle_2d(transform.translation.truncate(), range.0, RED);
-        gizmos.circle_2d(transform.translation.truncate(), SIGHT_RANGE, GREEN);
+        // gizmos.circle_2d(transform.translation.truncate(), SIGHT_RANGE, GREEN);
     }
 }
 
