@@ -1,14 +1,10 @@
 use bevy::prelude::*;
 
-use crate::{
-    server::ai::{attack::unit_speed, UnitBehaviour},
-    shared::{
-        networking::{PlayerInput, Unit},
-        GRAVITY_G,
-    },
+use crate::ai::{attack::unit_speed, UnitBehaviour};
+use shared::{
+    networking::{PlayerInput, Unit},
+    BoxCollider, GRAVITY_G,
 };
-
-use super::collider::BoxCollider;
 
 #[derive(Debug, Default, Component, Copy, Clone)]
 pub struct Velocity(pub Vec2);

@@ -4,12 +4,10 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 
 use super::UnitBehaviour;
-use crate::{
-    server::physics::{collider::BoxCollider, movement::Velocity},
-    shared::{
-        networking::{Owner, ProjectileType, ServerChannel, ServerMessages, Unit, UnitType},
-        GRAVITY_G,
-    },
+use crate::physics::movement::Velocity;
+use shared::{
+    networking::{Owner, ProjectileType, ServerChannel, ServerMessages, Unit, UnitType},
+    BoxCollider, GRAVITY_G,
 };
 
 pub struct AttackPlugin;

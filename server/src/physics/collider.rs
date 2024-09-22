@@ -3,19 +3,12 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::RenetServer;
 
-use crate::server::ai::attack::{projectile_damage, TakeDamage};
-use crate::shared::networking::{Owner, ProjectileType, ServerChannel, ServerMessages};
+use shared::networking::{Owner, ProjectileType, ServerChannel, ServerMessages};
+use shared::BoxCollider;
+
+use crate::ai::attack::{projectile_damage, TakeDamage};
 
 use super::movement::Velocity;
-
-#[derive(Component)]
-pub struct BoxCollider(pub Vec2);
-
-impl BoxCollider {
-    fn half_size(&self) -> Vec2 {
-        Vec2::new(self.0.x / 2., self.0.y / 2.)
-    }
-}
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);

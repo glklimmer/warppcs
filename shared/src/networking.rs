@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 
-use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
-use std::{f32::consts::PI, time::Duration};
+use std::time::Duration;
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -170,40 +169,4 @@ pub fn connection_config() -> ConnectionConfig {
         client_channels_config: ClientChannel::channels_config(),
         server_channels_config: ServerChannel::channels_config(),
     }
-}
-
-pub fn setup_level(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    // Plain
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(meshes.add(Rectangle::new(6000.0, 2000.0))),
-        material: materials.add(Color::hsl(109., 0.97, 0.88)),
-        transform: Transform::from_xyz(0.0, -1000.0, 0.0),
-        ..default()
-    });
-
-    //  Reference  Point
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(meshes.add(Rectangle::new(30.0, 50.0))),
-        material: materials.add(Color::srgb(255., 255., 255.)),
-        transform: Transform::from_xyz(0.0, 100.0, 0.0),
-        ..default()
-    });
-
-    // light
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            shadows_enabled: true,
-            ..default()
-        },
-        transform: Transform {
-            translation: Vec3::new(0.0, 2.0, 0.0),
-            rotation: Quat::from_rotation_x(-PI / 4.),
-            ..default()
-        },
-        ..default()
-    });
 }

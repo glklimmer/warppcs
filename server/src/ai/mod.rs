@@ -1,7 +1,7 @@
 use attack::{unit_range, AttackPlugin};
 use bevy::prelude::*;
 
-use crate::shared::networking::{Owner, Unit};
+use shared::networking::{Owner, Unit};
 
 pub mod attack;
 

@@ -1,0 +1,15 @@
+[package]
+name = "shared"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+client = []
+server = []
+
+[dependencies]
+bevy = { version = "0.14.1", features = ["dynamic_linking"] }
+bevy_renet = { version = "0.0.12", features = ["serde"] }
+bincode = "1.3.3"
+fastrand = "2.1.1"
+serde = { version = "1.0.209", features = ["derive"] }

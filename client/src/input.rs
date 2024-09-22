@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::shared::networking::{PlayerCommand, PlayerInput, UnitType};
+use shared::networking::{PlayerCommand, PlayerInput, UnitType};
 
 pub struct InputPlugin;
 
