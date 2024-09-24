@@ -42,12 +42,12 @@ pub enum ServerChannel {
     NetworkedEntities,
 }
 
-#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
 pub struct Owner(pub ClientId);
 
-#[derive(Debug, Component, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
 pub enum ProjectileType {
-    Arrow { damage: f32 },
+    Arrow,
 }
 
 #[derive(Debug, Serialize, Deserialize, Component)]
@@ -69,16 +69,15 @@ pub enum ServerMessages {
         unit_type: UnitType,
         translation: [f32; 3],
     },
-    UnitDied {
+    DespawnEntity {
         entity: Entity,
     },
-    // SpawnProjectile {
-    //     owner: Owner,
-    //     entity: Entity,
-    //     projectile_type: ProjectileType,
-    //     translation: [f32; 3],
-    //     direction: [f32; 2],
-    // },
+    SpawnProjectile {
+        entity: Entity,
+        projectile_type: ProjectileType,
+        translation: [f32; 3],
+        direction: [f32; 2],
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -88,17 +87,18 @@ pub enum Facing {
     Right,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct Movement {
-    pub facing: Option<Facing>,
-    pub moving: bool,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum Rotation {
+    LeftRight { facing: Option<Facing> },
+    Free { angle: f32 },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NetworkEntity {
     pub entity: Entity,
     pub translation: [f32; 3],
-    pub movement: Movement,
+    pub rotation: Rotation,
+    pub moving: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -181,7 +181,7 @@ pub fn setup_level(
     commands.spawn(MaterialMesh2dBundle {
         mesh: Mesh2dHandle(meshes.add(Rectangle::new(6000.0, 2000.0))),
         material: materials.add(Color::hsl(109., 0.97, 0.88)),
-        transform: Transform::from_xyz(0.0, -1050.0, 0.0),
+        transform: Transform::from_xyz(0.0, -1000.0, 0.0),
         ..default()
     });
 

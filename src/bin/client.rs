@@ -6,7 +6,7 @@ use bevy::{
     prelude::*,
 };
 use iyes_perf_ui::{entries::PerfUiBundle, PerfUiPlugin};
-use warppcs::client::ClientPlugin;
+use warppcs::client::{gizmos::GizmosPlugin, ClientPlugin};
 
 fn main() {
     let mut app = App::new();

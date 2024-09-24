@@ -18,7 +18,7 @@ impl Plugin for AIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(AttackPlugin);
 
-        app.add_systems(Update, (determine_behaviour, track_behaviour)); // TODO: This should be less then update
+        app.add_systems(Update, (determine_behaviour,)); // TODO: This should be less then update
     }
 }
 
@@ -83,11 +83,5 @@ fn determine_behaviour(
                 }
             }
         }
-    }
-}
-
-fn track_behaviour(query: Query<&UnitBehaviour, Changed<UnitBehaviour>>) {
-    for behaviour in query.iter() {
-        println!("new behaviour: {:?}", behaviour);
     }
 }
