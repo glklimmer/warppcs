@@ -11,6 +11,7 @@ use input::InputPlugin;
 use king::KingPlugin;
 use networking::ClientNetworkingPlugin;
 use shared::SharedPlugin;
+use ui::MenuPlugin;
 
 pub mod animation;
 pub mod camera;
@@ -18,6 +19,7 @@ pub mod gizmos;
 pub mod input;
 pub mod king;
 pub mod networking;
+pub mod ui;
 
 fn main() {
     let mut app = App::new();
@@ -28,9 +30,11 @@ fn main() {
     app.add_plugins(CameraPlugin);
     app.add_plugins(InputPlugin);
     app.add_plugins(AnimationPlugin);
+    app.add_plugins(MenuPlugin);
 
     app.add_plugins(SharedPlugin);
 
+    app.add_systems(Startup, setup_background);
     app.add_systems(Startup, setup_background);
 
     app.run();
