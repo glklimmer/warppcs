@@ -18,6 +18,11 @@ enum Button {
     CreateLobby,
     JoinLobby,
 }
+#[derive(Component)]
+enum Checkbox {
+    Checked,
+    None,
+}
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
@@ -28,6 +33,7 @@ impl Plugin for MenuPlugin {
         app.add_systems(OnEnter(AppState::MultiPlayer), display_multiplayer_buttons);
 
         app.add_systems(OnEnter(AppState::CreateLooby), display_create_lobby);
+        app.add_systems(Update, checkbox.run_if(in_state(AppState::CreateLooby)));
 
         app.add_systems(Update, (button_system, change_state_on_button));
     }
@@ -241,7 +247,7 @@ fn display_multiplayer_buttons(mut commands: Commands) {
         });
 }
 
-fn display_create_lobby(mut commands: Commands) {
+fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -256,17 +262,18 @@ fn display_create_lobby(mut commands: Commands) {
             ..default()
         })
         .with_children(|parent| {
-            for i in 0..4 {
+            for i in 1..5 {
                 parent
                     .spawn(NodeBundle {
                         style: Style {
                             display: Display::Flex,
-                            flex_direction: FlexDirection::Column,
-                            width: Val::Percent(20.0),
+                            flex_direction: FlexDirection::Row,
+                            width: Val::Percent(50.0),
                             height: Val::Percent(20.0),
                             align_items: AlignItems::Center,
-                            justify_content: JustifyContent::Center,
+                            justify_content: JustifyContent::SpaceBetween,
                             border: UiRect::all(Val::Px(2.0)),
+                            padding: UiRect::all(Val::Px(10.0)),
                             ..default()
                         },
                         border_color: BorderColor(Color::BLACK),
@@ -281,7 +288,53 @@ fn display_create_lobby(mut commands: Commands) {
                                 ..default()
                             },
                         ));
+                    })
+                    .with_children(|parent| {
+                        parent.spawn((
+                            ButtonBundle {
+                                style: Style {
+                                    width: Val::Px(50.),
+                                    height: Val::Px(50.),
+
+                                    ..Default::default()
+                                },
+                                image: UiImage::new(asset_server.load("ui/checkbox.png")),
+
+                                ..Default::default()
+                            },
+                            Checkbox::None,
+                        ));
                     });
             }
         });
+}
+
+fn checkbox(
+    mut checkbox_query: Query<
+        (&Interaction, &mut UiImage, &mut Checkbox),
+        (Changed<Interaction>, With<Checkbox>),
+    >,
+    asset_server: Res<AssetServer>,
+) {
+    for (interactions, mut checkbox_image, mut checkbox) in &mut checkbox_query {
+        match *interactions {
+            Interaction::Pressed => {
+                match *checkbox {
+                    Checkbox::Checked => {
+                        *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+                        *checkbox = Checkbox::None;
+                    }
+                    Checkbox::None => {
+                        *checkbox_image =
+                            UiImage::new(asset_server.load("ui/checkbox_checked.png"));
+                        *checkbox = Checkbox::Checked;
+                    }
+                }
+
+                println!("clicked")
+            }
+            Interaction::Hovered => {}
+            Interaction::None => {}
+        }
+    }
 }
