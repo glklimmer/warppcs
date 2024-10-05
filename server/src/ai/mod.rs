@@ -1,7 +1,10 @@
 use attack::{unit_range, AttackPlugin};
 use bevy::prelude::*;
 
-use shared::networking::{Owner, Unit};
+use shared::{
+    map::GameSceneId,
+    networking::{Owner, Unit},
+};
 
 pub mod attack;
 
@@ -31,20 +34,21 @@ struct TargetInfo {
 }
 
 fn determine_behaviour(
-    mut query: Query<(&mut UnitBehaviour, &Transform, &Owner, &Unit)>,
-    others: Query<(Entity, &Transform, &Owner), With<Unit>>,
+    mut query: Query<(&mut UnitBehaviour, &GameSceneId, &Transform, &Owner, &Unit)>,
+    others: Query<(Entity, &GameSceneId, &Transform, &Owner), With<Unit>>,
 ) {
-    for (mut behaviour, transform, owner, unit) in &mut query {
+    for (mut behaviour, scene_id, transform, owner, unit) in &mut query {
         let possible_targets: Vec<TargetInfo> = others
             .iter()
-            .filter(|other| other.2.ne(owner))
+            .filter(|other| other.1.eq(scene_id))
+            .filter(|other| other.3.ne(owner))
             .map(|other| TargetInfo {
                 entity: other.0,
                 distance: transform
                     .translation
                     .truncate()
-                    .distance(other.1.translation.truncate()),
-                translation: other.1.translation.truncate(),
+                    .distance(other.2.translation.truncate()),
+                translation: other.2.translation.truncate(),
             })
             .collect();
 

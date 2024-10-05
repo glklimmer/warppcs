@@ -4,6 +4,8 @@ use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
+use crate::map::{GameSceneId, GameSceneType};
+
 pub const PROTOCOL_ID: u64 = 7;
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
@@ -28,6 +30,8 @@ pub struct Unit {
 
 #[derive(Debug, Serialize, Deserialize, Event)]
 pub enum PlayerCommand {
+    StartGame,
+    TravelTo(GameSceneId),
     MeleeAttack,
     SpawnUnit(UnitType),
 }
@@ -49,33 +53,55 @@ pub enum ProjectileType {
     Arrow,
 }
 
+#[derive(Debug, Component, Serialize, Deserialize, Copy, Clone)]
+pub enum PlayerSkin {
+    Warrior,
+    Monster,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event)]
+pub struct SpawnPlayer {
+    pub id: ClientId,
+    pub entity: Entity,
+    pub translation: [f32; 3],
+    pub skin: PlayerSkin,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event)]
+pub struct SpawnUnit {
+    pub owner: Owner,
+    pub entity: Entity,
+    pub unit_type: UnitType,
+    pub translation: [f32; 3],
+}
+
+#[derive(Debug, Serialize, Deserialize, Event)]
+pub struct SpawnProjectile {
+    pub entity: Entity,
+    pub projectile_type: ProjectileType,
+    pub translation: [f32; 3],
+    pub direction: [f32; 2],
+}
+
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
-    PlayerCreate {
-        entity: Entity,
-        id: ClientId,
-        translation: [f32; 3],
-    },
+    SpawnPlayer(SpawnPlayer),
+    SpawnUnit(SpawnUnit),
+    SpawnProjectile(SpawnProjectile),
     PlayerRemove {
         id: ClientId,
-    },
-    MeleeAttack {
-        entity: Entity,
-    },
-    SpawnUnit {
-        owner: Owner,
-        entity: Entity,
-        unit_type: UnitType,
-        translation: [f32; 3],
     },
     DespawnEntity {
         entity: Entity,
     },
-    SpawnProjectile {
+    LoadGameScene {
+        game_scene_type: GameSceneType,
+        players: Vec<SpawnPlayer>,
+        units: Vec<SpawnUnit>,
+        projectiles: Vec<SpawnProjectile>,
+    },
+    MeleeAttack {
         entity: Entity,
-        projectile_type: ProjectileType,
-        translation: [f32; 3],
-        direction: [f32; 2],
     },
 }
 

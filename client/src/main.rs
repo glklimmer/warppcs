@@ -10,7 +10,6 @@ use camera::CameraPlugin;
 use input::InputPlugin;
 use king::KingPlugin;
 use networking::ClientNetworkingPlugin;
-use shared::SharedPlugin;
 use ui::MenuPlugin;
 
 pub mod animation;
@@ -32,9 +31,6 @@ fn main() {
     app.add_plugins(AnimationPlugin);
     app.add_plugins(MenuPlugin);
 
-    app.add_plugins(SharedPlugin);
-
-    app.add_systems(Startup, setup_background);
     app.add_systems(Startup, setup_background);
 
     app.run();
