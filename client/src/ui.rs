@@ -40,9 +40,7 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.insert_state(AppState::MainMenu);
 
-        app.add_systems(Startup, setup);
-
-        app.add_systems(OnEnter(AppState::MainMenu), setup);
+        app.add_systems(OnEnter(AppState::MainMenu), display_main_menu);
 
         app.add_systems(OnEnter(AppState::MultiPlayer), display_multiplayer_buttons);
 
@@ -61,7 +59,7 @@ const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 
-fn setup(mut commands: Commands) {
+fn display_main_menu(mut commands: Commands) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -171,7 +169,7 @@ fn button_system(
 }
 
 fn change_state_on_button(
-    mut button_query: Query<(&Interaction, &Button), (Changed<Interaction>)>,
+    mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     for (interaction, button) in &mut button_query {
@@ -471,7 +469,7 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
 }
 
 fn add_player_to_lobby_slot(
-    mut text_query: Query<(&mut Text), (With<LobbySlotName>)>,
+    mut text_query: Query<&mut Text, With<LobbySlotName>>,
     mut slot_owner_query: Query<&mut LobbySlotOwner>,
     mut checkbox_query: Query<&mut Visibility, With<Checkbox>>,
     lobby: Res<ClientLobby>,
