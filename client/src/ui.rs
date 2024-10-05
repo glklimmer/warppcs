@@ -1,6 +1,6 @@
 use bevy::{color::palettes::css::BURLYWOOD, prelude::*};
 
-use crate::networking::CurrentClientId;
+use crate::networking::{ClientLobby, CurrentClientId};
 
 pub struct MenuPlugin;
 
@@ -33,6 +33,9 @@ enum Checkbox {
 #[derive(Component)]
 struct LobbySlotOwner(u64);
 
+#[derive(Component)]
+struct LobbySlotName;
+
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.insert_state(AppState::MainMenu);
@@ -44,9 +47,10 @@ impl Plugin for MenuPlugin {
         app.add_systems(OnEnter(AppState::MultiPlayer), display_multiplayer_buttons);
 
         app.add_systems(OnEnter(AppState::CreateLooby), display_create_lobby);
+
         app.add_systems(
             Update,
-            lobby_slot_checkbox.run_if(in_state(AppState::CreateLooby)),
+            (lobby_slot_checkbox, add_player_to_lobby_slot).run_if(in_state(AppState::CreateLooby)),
         );
 
         app.add_systems(Update, (button_system, change_state_on_button));
@@ -294,11 +298,7 @@ fn display_multiplayer_buttons(mut commands: Commands) {
         });
 }
 
-fn display_create_lobby(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    client_id: Res<CurrentClientId>,
-) {
+fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -344,10 +344,6 @@ fn display_create_lobby(
         })
         .with_children(|parent| {
             for i in 1..5 {
-                let mut lobby_slot_owner = 0;
-                if i == 1 {
-                    lobby_slot_owner = client_id.0
-                }
                 parent
                     .spawn(NodeBundle {
                         style: Style {
@@ -365,13 +361,16 @@ fn display_create_lobby(
                         ..Default::default()
                     })
                     .with_children(|parent| {
-                        parent.spawn(TextBundle::from_section(
-                            format!("Player {i}"),
-                            TextStyle {
-                                font_size: 35.0,
-                                color: Color::srgb(0.9, 0.9, 0.9),
-                                ..default()
-                            },
+                        parent.spawn((
+                            TextBundle::from_section(
+                                format!("Slot {i}"),
+                                TextStyle {
+                                    font_size: 35.0,
+                                    color: Color::srgb(0.9, 0.9, 0.9),
+                                    ..default()
+                                },
+                            ),
+                            LobbySlotName,
                         ));
                     })
                     .with_children(|parent| {
@@ -380,14 +379,13 @@ fn display_create_lobby(
                                 style: Style {
                                     width: Val::Px(50.),
                                     height: Val::Px(50.),
-
                                     ..Default::default()
                                 },
+                                visibility: Visibility::Hidden,
                                 image: UiImage::new(asset_server.load("ui/checkbox.png")),
-
                                 ..Default::default()
                             },
-                            LobbySlotOwner(lobby_slot_owner),
+                            LobbySlotOwner(0),
                             Checkbox::None,
                         ));
                     });
@@ -470,6 +468,27 @@ fn display_create_lobby(
                 },
             ));
         });
+}
+
+fn add_player_to_lobby_slot(
+    mut text_query: Query<(&mut Text), (With<LobbySlotName>)>,
+    mut slot_owner_query: Query<&mut LobbySlotOwner>,
+    mut checkbox_query: Query<&mut Visibility, With<Checkbox>>,
+    lobby: Res<ClientLobby>,
+) {
+    for (i, player) in lobby.players.keys().enumerate() {
+        if let Some(mut text) = text_query.iter_mut().nth(i) {
+            text.sections[0].value = player.to_string();
+        }
+
+        if let Some(mut lobby_slot_owner) = slot_owner_query.iter_mut().nth(i) {
+            lobby_slot_owner.0 = player.raw();
+        }
+
+        if let Some(mut button) = checkbox_query.iter_mut().nth(i) {
+            *button = Visibility::Visible;
+        }
+    }
 }
 
 fn lobby_slot_checkbox(
