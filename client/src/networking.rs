@@ -28,18 +28,18 @@ use super::king::{PaladinSpriteSheet, WarriorSpriteSheet};
 struct Connected;
 
 #[derive(Debug, Default, Resource)]
-struct ClientLobby {
-    players: HashMap<ClientId, PlayerEntityMapping>,
+pub struct ClientLobby {
+    pub players: HashMap<ClientId, PlayerEntityMapping>,
 }
 
 #[derive(Component)]
 pub struct ControlledPlayer;
 
 #[derive(Debug, Resource)]
-struct CurrentClientId(u64);
+pub struct CurrentClientId(pub u64);
 
 #[derive(Debug)]
-struct PlayerEntityMapping {
+pub struct PlayerEntityMapping {
     client_entity: Entity,
     server_entity: Entity,
 }
