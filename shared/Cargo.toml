@@ -8,6 +8,7 @@ client = []
 server = []
 
 [dependencies]
+enum_as_f32_macro = { path = "../enum_as_f32_macro" }
 bevy = { version = "0.14.1", features = ["dynamic_linking"] }
 bevy_renet = { version = "0.0.12", features = ["serde"] }
 bincode = "1.3.3"

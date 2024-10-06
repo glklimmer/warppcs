@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use shared::networking::{PlayerCommand, PlayerInput, UnitType};
+use shared::{
+    map::GameSceneId,
+    networking::{PlayerCommand, PlayerInput, UnitType},
+};
 
 pub struct InputPlugin;
 
@@ -26,13 +29,25 @@ fn player_input(
         player_commands.send(PlayerCommand::MeleeAttack);
     }
 
+    if keyboard_input.just_pressed(KeyCode::Enter) {
+        player_commands.send(PlayerCommand::StartGame);
+    }
+
     if keyboard_input.just_pressed(KeyCode::Digit1) {
-        player_commands.send(PlayerCommand::SpawnUnit(UnitType::Archer));
+        player_commands.send(PlayerCommand::TravelTo(GameSceneId(1)));
     }
     if keyboard_input.just_pressed(KeyCode::Digit2) {
+        player_commands.send(PlayerCommand::TravelTo(GameSceneId(2)));
+    }
+
+    // actually Y
+    if keyboard_input.just_pressed(KeyCode::KeyZ) {
+        player_commands.send(PlayerCommand::SpawnUnit(UnitType::Archer));
+    }
+    if keyboard_input.just_pressed(KeyCode::KeyX) {
         player_commands.send(PlayerCommand::SpawnUnit(UnitType::Shieldwarrior));
     }
-    if keyboard_input.just_pressed(KeyCode::Digit3) {
+    if keyboard_input.just_pressed(KeyCode::KeyC) {
         player_commands.send(PlayerCommand::SpawnUnit(UnitType::Pikeman));
     }
 }

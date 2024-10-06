@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::RenetServer;
 
+use shared::map::GameSceneId;
 use shared::networking::{Owner, ProjectileType, ServerChannel, ServerMessages};
 use shared::BoxCollider;
 
@@ -31,12 +32,18 @@ fn projectile_collision(
         &BoxCollider,
         &ProjectileType,
         &Owner,
+        &GameSceneId,
     )>,
-    targets: Query<(Entity, &Transform, &BoxCollider, &Owner), Without<ProjectileType>>,
+    targets: Query<
+        (Entity, &Transform, &BoxCollider, &Owner, &GameSceneId),
+        Without<ProjectileType>,
+    >,
     mut server: ResMut<RenetServer>,
     mut attack_events: EventWriter<TakeDamage>,
 ) {
-    for (entity, transform, mut velocity, collider, projectile_type, owner) in &mut projectiles {
+    for (entity, transform, mut velocity, collider, projectile_type, owner, scene_id) in
+        &mut projectiles
+    {
         if transform.translation.y - collider.0.y <= 0.0 {
             velocity.0 = Vec2::ZERO;
             commands.entity(entity).remove::<BoxCollider>();
@@ -46,8 +53,10 @@ fn projectile_collision(
             continue;
         }
 
-        for (target_entity, target_transform, target_collider, target_owner) in targets.iter() {
-            if owner == target_owner {
+        for (target_entity, target_transform, target_collider, target_owner, target_scene_id) in
+            targets.iter()
+        {
+            if owner == target_owner || scene_id != target_scene_id {
                 continue;
             }
             let projectile = Aabb2d::new(transform.translation.truncate(), collider.half_size());

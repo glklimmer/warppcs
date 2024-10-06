@@ -135,9 +135,9 @@ fn set_unit_facing(mut commands: Commands, mut movements: EventReader<NetworkEve
             facing: Some(new_facing),
         }) = &event.change
         {
-            commands
-                .entity(event.entity)
-                .insert(UnitFacing(new_facing.clone()));
+            if let Some(mut entity) = commands.get_entity(event.entity) {
+                entity.try_insert(UnitFacing(new_facing.clone()));
+            }
         }
     }
 }

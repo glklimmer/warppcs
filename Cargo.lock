@@ -1742,6 +1742,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum_as_f32_macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3423,6 +3432,7 @@ dependencies = [
  "bevy",
  "bevy_renet",
  "bincode",
+ "enum_as_f32_macro",
  "fastrand",
  "serde",
 ]

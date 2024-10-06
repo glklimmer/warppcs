@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use bevy::sprite::Mesh2dHandle;
 use bevy_renet::{
     client_connected,
     renet::{
@@ -9,20 +10,17 @@ use bevy_renet::{
     RenetClientPlugin,
 };
 use shared::{
+    map::base::MainBuildingBundle,
+    map::GameSceneType,
     networking::{
-        connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput,
-        ProjectileType, Rotation, ServerChannel, ServerMessages, UnitType, PROTOCOL_ID,
+        connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput, Rotation,
+        ServerChannel, ServerMessages, SpawnPlayer, SpawnProjectile, SpawnUnit, PROTOCOL_ID,
     },
-    BoxCollider,
 };
+use spawn::{spawn_player, spawn_projectile, spawn_unit};
 use std::{collections::HashMap, net::UdpSocket, time::SystemTime};
 
-use crate::{
-    animation::UnitAnimation,
-    king::{PaladinBundle, WarriorBundle},
-};
-
-use super::king::{PaladinSpriteSheet, WarriorSpriteSheet};
+mod spawn;
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Connected;
@@ -60,7 +58,7 @@ pub struct NetworkEvent {
 }
 
 #[derive(Component)]
-struct Despawning;
+struct PartOfScene;
 
 pub struct ClientNetworkingPlugin;
 
@@ -74,6 +72,9 @@ impl Plugin for ClientNetworkingPlugin {
         app.insert_resource(ClientLobby::default());
 
         app.add_event::<NetworkEvent>();
+        app.add_event::<SpawnPlayer>();
+        app.add_event::<SpawnUnit>();
+        app.add_event::<SpawnProjectile>();
 
         app.add_systems(
             Update,
@@ -81,11 +82,12 @@ impl Plugin for ClientNetworkingPlugin {
                 client_sync_players,
                 client_send_input,
                 client_send_player_commands,
+                spawn_player,
+                spawn_unit,
+                spawn_projectile,
             )
                 .in_set(Connected),
         );
-
-        app.add_systems(PostUpdate, (despawn_entities,).in_set(Connected));
     }
 }
 
@@ -130,53 +132,22 @@ fn add_netcode_network(app: &mut App) {
 fn client_sync_players(
     mut commands: Commands,
     mut transforms: Query<&mut Transform>,
+    entities: Query<Entity, With<PartOfScene>>,
     mut client: ResMut<RenetClient>,
-    client_id: Res<CurrentClientId>,
     mut lobby: ResMut<ClientLobby>,
     mut network_mapping: ResMut<NetworkMapping>,
     mut network_events: EventWriter<NetworkEvent>,
-    warrior_sprite_sheet: Res<WarriorSpriteSheet>,
-    paladin_sprite_sheet: Res<PaladinSpriteSheet>,
-    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut spawn_player: EventWriter<SpawnPlayer>,
+    mut spawn_unit: EventWriter<SpawnUnit>,
+    mut spawn_projectile: EventWriter<SpawnProjectile>,
 ) {
-    let client_id = client_id.0;
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
         let server_message = bincode::deserialize(&message).unwrap();
         match server_message {
-            ServerMessages::PlayerCreate {
-                id,
-                translation,
-                entity: server_player_entity,
-            } => {
-                println!("Player {} connected.", id);
-
-                let mut client_player_entity = match lobby.players.len() {
-                    0 => commands.spawn(PaladinBundle::new(
-                        &paladin_sprite_sheet,
-                        translation,
-                        UnitAnimation::Idle,
-                    )),
-                    _ => commands.spawn(WarriorBundle::new(
-                        &warrior_sprite_sheet,
-                        translation,
-                        UnitAnimation::Idle,
-                    )),
-                };
-
-                if client_id == id.raw() {
-                    client_player_entity
-                        .insert((ControlledPlayer, BoxCollider(Vec2::new(50., 90.))));
-                }
-
-                let player_info = PlayerEntityMapping {
-                    server_entity: server_player_entity,
-                    client_entity: client_player_entity.id(),
-                };
-
-                lobby.players.insert(id, player_info);
-                network_mapping
-                    .0
-                    .insert(server_player_entity, client_player_entity.id());
+            ServerMessages::SpawnPlayer(spawn) => {
+                spawn_player.send(spawn);
             }
             ServerMessages::PlayerRemove { id } => {
                 println!("Player {} disconnected.", id);
@@ -199,73 +170,60 @@ fn client_sync_players(
                     });
                 }
             }
-            ServerMessages::SpawnUnit {
-                entity: server_unit_entity,
-                owner,
-                translation,
-                unit_type,
-            } => {
-                let texture = match unit_type {
-                    UnitType::Shieldwarrior => asset_server.load("aseprite/shield_warrior.png"),
-                    UnitType::Pikeman => asset_server.load("aseprite/pike_man.png"),
-                    UnitType::Archer => asset_server.load("aseprite/archer.png"),
-                };
-
-                let client_unit_entity = commands
-                    .spawn((
-                        SpriteBundle {
-                            transform: Transform {
-                                translation: translation.into(),
-                                scale: Vec3::splat(3.0),
-                                ..default()
-                            },
-                            texture,
-                            ..default()
-                        },
-                        owner,
-                    ))
-                    .id();
-
-                network_mapping
-                    .0
-                    .insert(server_unit_entity, client_unit_entity);
+            ServerMessages::SpawnUnit(spawn) => {
+                spawn_unit.send(spawn);
             }
             ServerMessages::DespawnEntity {
                 entity: server_entity,
             } => {
                 if let Some(client_entity) = network_mapping.0.remove(&server_entity) {
-                    commands.entity(client_entity).insert(Despawning);
+                    if let Some(mut entity) = commands.get_entity(client_entity) {
+                        entity.despawn();
+                    }
                 }
             }
-            ServerMessages::SpawnProjectile {
-                entity: server_entity,
-                projectile_type,
-                translation,
-                direction,
+            ServerMessages::SpawnProjectile(spawn) => {
+                spawn_projectile.send(spawn);
+            }
+            ServerMessages::LoadGameScene {
+                game_scene_type: map_type,
+                players,
+                units,
+                projectiles,
             } => {
-                let texture = match projectile_type {
-                    ProjectileType::Arrow => asset_server.load("aseprite/arrow.png"),
+                println!("Loading map {:?}...", map_type);
+
+                for entity in entities.iter() {
+                    commands.entity(entity).despawn();
+                }
+
+                match map_type {
+                    GameSceneType::Base(color) => {
+                        commands.spawn((
+                            MainBuildingBundle::new(),
+                            (
+                                Mesh2dHandle(meshes.add(Rectangle::new(200., 100.))),
+                                materials.add(color),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
+                    }
+                    GameSceneType::Camp => todo!(),
                 };
-
-                let direction: Vec2 = direction.into();
-                let position: Vec3 = translation.into();
-                let position = position.truncate();
-
-                let angle = (direction - position).angle_between(position);
-
-                let client_entity = commands
-                    .spawn((SpriteBundle {
-                        transform: Transform {
-                            translation: translation.into(),
-                            scale: Vec3::splat(2.0),
-                            rotation: Quat::from_rotation_z(angle),
-                        },
-                        texture,
-                        ..default()
-                    },))
-                    .id();
-
-                network_mapping.0.insert(server_entity, client_entity);
+                println!("revieved {} players", players.len());
+                players.into_iter().for_each(|spawn| {
+                    spawn_player.send(spawn);
+                });
+                units.into_iter().for_each(|spawn| {
+                    spawn_unit.send(spawn);
+                });
+                projectiles.into_iter().for_each(|spawn| {
+                    spawn_projectile.send(spawn);
+                });
             }
         }
     }
@@ -314,11 +272,5 @@ fn client_send_player_commands(
     for command in player_commands.read() {
         let command_message = bincode::serialize(command).unwrap();
         client.send_message(ClientChannel::Command, command_message);
-    }
-}
-
-fn despawn_entities(mut commands: Commands, query: Query<Entity, With<Despawning>>) {
-    for entity in query.iter() {
-        commands.entity(entity).despawn();
     }
 }

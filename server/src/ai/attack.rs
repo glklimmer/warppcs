@@ -4,9 +4,12 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 
 use super::UnitBehaviour;
-use crate::physics::movement::Velocity;
+use crate::{networking::ServerLobby, physics::movement::Velocity};
 use shared::{
-    networking::{Owner, ProjectileType, ServerChannel, ServerMessages, Unit, UnitType},
+    map::GameSceneId,
+    networking::{
+        Owner, ProjectileType, ServerChannel, ServerMessages, SpawnProjectile, Unit, UnitType,
+    },
     BoxCollider, GRAVITY_G,
 };
 
@@ -73,12 +76,15 @@ pub fn projectile_damage(projectile_type: &ProjectileType) -> f32 {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn process_attacks(
     mut commands: Commands,
     mut server: ResMut<RenetServer>,
     mut query: Query<(&UnitBehaviour, &mut Unit, &Owner, &Transform)>,
     position: Query<&Transform>,
+    scene_ids: Query<&GameSceneId>,
     mut attack_events: EventWriter<TakeDamage>,
+    lobby: Res<ServerLobby>,
     time: Res<Time>,
 ) {
     for (behaviour, mut unit, owner, transform) in query.iter_mut() {
@@ -130,6 +136,7 @@ fn process_attacks(
                         let speed = v0_squared.sqrt();
 
                         let velocity = Velocity(Vec2::from_angle(theta) * speed);
+                        let scene_id = scene_ids.get(*target_entity).unwrap();
 
                         let arrow = commands.spawn((
                             arrow_transform,
@@ -137,16 +144,26 @@ fn process_attacks(
                             projectile_type,
                             velocity,
                             BoxCollider(Vec2::new(20., 20.)),
+                            *scene_id,
                         ));
 
-                        let message = ServerMessages::SpawnProjectile {
+                        let message = ServerMessages::SpawnProjectile(SpawnProjectile {
                             entity: arrow.id(),
                             projectile_type,
                             translation: arrow_transform.translation.into(),
                             direction: velocity.0.into(),
-                        };
+                        });
                         let message = bincode::serialize(&message).unwrap();
-                        server.broadcast_message(ServerChannel::ServerMessages, message);
+                        for (client_id, entity) in lobby.players.iter() {
+                            let player_scene_id = scene_ids.get(*entity).unwrap();
+                            if scene_id.eq(player_scene_id) {
+                                server.send_message(
+                                    *client_id,
+                                    ServerChannel::ServerMessages,
+                                    message.clone(),
+                                );
+                            }
+                        }
                     }
                 }
             }
