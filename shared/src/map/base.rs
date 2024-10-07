@@ -1,38 +1,38 @@
 use bevy::prelude::*;
 
-use super::{Layers, TriggerZone};
+use super::{spawn_point::SpawnPointBundle, Layers};
 use crate::BoxCollider;
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 pub struct MainBuilding;
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 pub enum MainBuildingLevel {
     First,
     Second,
     Third,
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 pub enum BuildStatus {
     None,
     Built,
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 pub enum Building {
     Archer,
     Warrior,
     Pikeman,
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 pub enum UpgradableBuilding {
     Wall,
     Tower,
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 pub enum Upgradable {
     None,
     First,
@@ -40,12 +40,11 @@ pub enum Upgradable {
     Third,
 }
 
-#[derive(Bundle)]
+#[derive(Bundle, Copy, Clone)]
 pub struct MainBuildingBundle {
     pub base: MainBuilding,
     pub collider: BoxCollider,
     pub main_building_level: MainBuildingLevel,
-    pub trigger_zone: TriggerZone,
     pub transform: Transform,
 }
 
@@ -55,7 +54,6 @@ impl MainBuildingBundle {
             base: MainBuilding,
             collider: BoxCollider(Vec2::new(200., 100.)),
             main_building_level: MainBuildingLevel::First,
-            trigger_zone: TriggerZone,
             transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
         }
     }
@@ -67,12 +65,11 @@ impl Default for MainBuildingBundle {
     }
 }
 
-#[derive(Bundle)]
+#[derive(Bundle, Copy, Clone)]
 pub struct BuildingBundle {
     pub building: Building,
     pub collider: BoxCollider,
     pub build_status: BuildStatus,
-    pub trigger_zone: TriggerZone,
     pub transform: Transform,
 }
 
@@ -82,8 +79,7 @@ impl BuildingBundle {
             building: Building::Archer,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::None,
-            trigger_zone: TriggerZone,
-            transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(400., 50., Layers::Building.as_f32()),
         }
     }
 
@@ -92,8 +88,7 @@ impl BuildingBundle {
             building: Building::Warrior,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::None,
-            trigger_zone: TriggerZone,
-            transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(-400., 50., Layers::Building.as_f32()),
         }
     }
 
@@ -102,31 +97,28 @@ impl BuildingBundle {
             building: Building::Pikeman,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::None,
-            trigger_zone: TriggerZone,
-            transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(650., 50., Layers::Building.as_f32()),
         }
     }
 }
 
-#[derive(Bundle)]
+#[derive(Bundle, Copy, Clone)]
 pub struct UpgradableBuildingBundle {
     pub building: UpgradableBuilding,
     pub upgrade: Upgradable,
     pub collider: BoxCollider,
     pub build_status: BuildStatus,
-    pub trigger_zone: TriggerZone,
     pub transform: Transform,
 }
 
 impl UpgradableBuildingBundle {
-    pub fn wall() -> Self {
+    pub fn wall(x: f32) -> Self {
         UpgradableBuildingBundle {
             building: UpgradableBuilding::Wall,
             upgrade: Upgradable::None,
-            collider: BoxCollider(Vec2::new(200., 100.)),
+            collider: BoxCollider(Vec2::new(50., 75.)),
             build_status: BuildStatus::None,
-            trigger_zone: TriggerZone,
-            transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 75. / 2., Layers::Building.as_f32()),
         }
     }
 
@@ -136,12 +128,12 @@ impl UpgradableBuildingBundle {
             upgrade: Upgradable::None,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::None,
-            trigger_zone: TriggerZone,
             transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
         }
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct BaseScene {
     pub main_building: MainBuildingBundle,
     pub archer_building: BuildingBundle,
@@ -149,6 +141,8 @@ pub struct BaseScene {
     pub pikeman_building: BuildingBundle,
     pub left_wall: UpgradableBuildingBundle,
     pub right_wall: UpgradableBuildingBundle,
+    pub left_spawn_point: SpawnPointBundle,
+    pub right_spawn_point: SpawnPointBundle,
 }
 
 impl BaseScene {
@@ -158,8 +152,10 @@ impl BaseScene {
             archer_building: BuildingBundle::archer(),
             warrior_building: BuildingBundle::warrior(),
             pikeman_building: BuildingBundle::pikeman(),
-            left_wall: UpgradableBuildingBundle::wall(),
-            right_wall: UpgradableBuildingBundle::tower(),
+            left_wall: UpgradableBuildingBundle::wall(-800.),
+            right_wall: UpgradableBuildingBundle::wall(1050.),
+            left_spawn_point: SpawnPointBundle::new(-1200.),
+            right_spawn_point: SpawnPointBundle::new(1200.),
         }
     }
 }

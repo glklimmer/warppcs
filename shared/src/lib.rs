@@ -5,7 +5,7 @@ pub mod networking;
 
 pub const GRAVITY_G: f32 = 9.81 * 100.;
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 pub struct BoxCollider(pub Vec2);
 
 impl BoxCollider {

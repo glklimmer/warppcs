@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use shared::{
-    map::GameSceneId,
-    networking::{PlayerCommand, PlayerInput, UnitType},
-};
+use shared::networking::{PlayerCommand, PlayerInput, UnitType};
 
 pub struct InputPlugin;
 
@@ -33,11 +30,8 @@ fn player_input(
         player_commands.send(PlayerCommand::StartGame);
     }
 
-    if keyboard_input.just_pressed(KeyCode::Digit1) {
-        player_commands.send(PlayerCommand::TravelTo(GameSceneId(1)));
-    }
-    if keyboard_input.just_pressed(KeyCode::Digit2) {
-        player_commands.send(PlayerCommand::TravelTo(GameSceneId(2)));
+    if keyboard_input.just_pressed(KeyCode::KeyF) {
+        player_commands.send(PlayerCommand::Interact);
     }
 
     // actually Y

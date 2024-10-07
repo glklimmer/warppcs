@@ -135,6 +135,7 @@ fn display_main_menu(mut commands: Commands) {
         });
 }
 
+#[allow(clippy::type_complexity)]
 fn button_system(
     mut commands: Commands,
     mut interaction_query: Query<
@@ -489,6 +490,7 @@ fn add_player_to_lobby_slot(
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn lobby_slot_checkbox(
     mut commands: Commands,
     mut checkbox_query: Query<
