@@ -1,27 +1,27 @@
 use bevy::prelude::*;
 
 use bevy::color::palettes::css::{BLUE, RED};
-use shared::map::base::BaseScene;
-use shared::map::{GameScene, GameSceneId, GameSceneType, Layers};
+use renet_steam::bevy::SteamServerPlugin;
 
-use crate::ai::attack::{unit_health, unit_swing_timer};
-use crate::ai::UnitBehaviour;
-use crate::game_scenes::GameSceneDestination;
-use crate::physics::movement::Velocity;
-use bevy_renet::renet::transport::{NetcodeServerTransport, ServerAuthentication, ServerConfig};
-use bevy_renet::transport::NetcodeServerPlugin;
+use crate::map::base::MainBuildingBundle;
+use crate::map::{GameScene, GameSceneId, GameSceneType, Layers};
+use crate::networking::{
+    ClientChannel, Facing, NetworkEntity, NetworkedEntities, Owner, PlayerCommand, PlayerInput,
+    PlayerSkin, ProjectileType, Rotation, ServerChannel, ServerMessages, SpawnPlayer,
+    SpawnProjectile, SpawnUnit, Unit,
+};
+use crate::server::ai::attack::{unit_health, unit_swing_timer};
+use crate::server::ai::UnitBehaviour;
+use crate::BoxCollider;
 use bevy_renet::{
     renet::{ClientId, RenetServer, ServerEvent},
     RenetServerPlugin,
 };
-use shared::networking::{
-    connection_config, ClientChannel, Facing, NetworkEntity, NetworkedEntities, Owner,
-    PlayerCommand, PlayerInput, PlayerSkin, ProjectileType, Rotation, ServerChannel,
-    ServerMessages, SpawnPlayer, SpawnUnit, Unit, PROTOCOL_ID,
-};
-use shared::BoxCollider;
 use std::collections::HashMap;
-use std::{net::UdpSocket, time::SystemTime};
+
+use super::ai::AIPlugin;
+use super::physics::movement::Velocity;
+use super::physics::PhysicsPlugin;
 
 #[derive(Debug, Default, Resource)]
 pub struct ServerLobby {
@@ -33,53 +33,25 @@ pub struct GameWorld {
     pub game_scenes: HashMap<GameSceneId, GameScene>,
 }
 
-#[derive(Component)]
-pub struct ServerPlayer(pub ClientId);
-
-#[derive(Event)]
-pub struct InteractEvent(pub ClientId);
-
 pub struct ServerNetworkPlugin;
 
 impl Plugin for ServerNetworkPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<InteractEvent>();
-
         app.add_systems(
             Update,
             (server_update_system, server_network_sync, on_unit_death),
         );
+
+        app.add_plugins(AIPlugin);
+        app.add_plugins(PhysicsPlugin);
 
         app.insert_resource(ServerLobby::default());
         app.add_plugins(RenetServerPlugin);
 
         app.insert_resource(GameWorld::default());
 
-        add_netcode_network(app);
+        app.add_plugins(SteamServerPlugin);
     }
-}
-
-fn add_netcode_network(app: &mut App) {
-    app.add_plugins(NetcodeServerPlugin);
-
-    let server = RenetServer::new(connection_config());
-
-    let public_addr = "127.0.0.1:6969".parse().unwrap();
-    let socket = UdpSocket::bind(public_addr).unwrap();
-    let current_time: std::time::Duration = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap();
-    let server_config = ServerConfig {
-        current_time,
-        max_clients: 64,
-        protocol_id: PROTOCOL_ID,
-        public_addresses: vec![public_addr],
-        authentication: ServerAuthentication::Unsecure,
-    };
-
-    let transport = NetcodeServerTransport::new(server_config, socket).unwrap();
-    app.insert_resource(server);
-    app.insert_resource(transport);
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -89,17 +61,17 @@ fn server_update_system(
     mut lobby: ResMut<ServerLobby>,
     mut server: ResMut<RenetServer>,
     transforms: Query<&Transform>,
+    player_skins: Query<&PlayerSkin>,
     scene_ids: Query<&GameSceneId>,
+    units: Query<(&GameSceneId, &Owner, Entity, &Unit, &Transform)>,
+    projectiles: Query<(&GameSceneId, Entity, &ProjectileType, &Transform, &Velocity)>,
     mut game_world: ResMut<GameWorld>,
-    mut interact: EventWriter<InteractEvent>,
 ) {
     for event in server_events.read() {
         match event {
             ServerEvent::ClientConnected { client_id } => {
                 println!("Player {} connected.", client_id);
-                let player_entity = commands
-                    .spawn((ServerPlayer(*client_id), BoxCollider(Vec2::new(50., 90.))))
-                    .id();
+                let player_entity = commands.spawn(()).id();
                 lobby.players.insert(*client_id, player_entity);
             }
             ServerEvent::ClientDisconnected { client_id, reason } => {
@@ -177,57 +149,18 @@ fn server_update_system(
                 PlayerCommand::StartGame => {
                     println!("Starting game...");
                     for (client_id, player_entity) in lobby.players.iter() {
-                        let (game_scene_id, skin, color, left_destination, right_destination) =
-                            if game_world.game_scenes.is_empty() {
-                                (
-                                    GameSceneId(1),
-                                    PlayerSkin::Warrior,
-                                    BLUE,
-                                    GameSceneDestination {
-                                        scene: GameSceneId(2),
-                                        position: Vec3::new(-1300., 50., Layers::Player.as_f32()),
-                                    },
-                                    GameSceneDestination {
-                                        scene: GameSceneId(2),
-                                        position: Vec3::new(1300., 50., Layers::Player.as_f32()),
-                                    },
-                                )
-                            } else {
-                                (
-                                    GameSceneId(2),
-                                    PlayerSkin::Monster,
-                                    RED,
-                                    GameSceneDestination {
-                                        scene: GameSceneId(1),
-                                        position: Vec3::new(-1300., 50., Layers::Player.as_f32()),
-                                    },
-                                    GameSceneDestination {
-                                        scene: GameSceneId(1),
-                                        position: Vec3::new(1300., 50., Layers::Player.as_f32()),
-                                    },
-                                )
-                            };
+                        let (game_scene_id, skin, color) = if game_world.game_scenes.is_empty() {
+                            (GameSceneId(1), PlayerSkin::Warrior, BLUE)
+                        } else {
+                            (GameSceneId(2), PlayerSkin::Monster, RED)
+                        };
                         println!("world: {:?}, skin: {:?}", game_scene_id, skin);
 
                         // Create Game Scene
-                        let base = BaseScene::new();
-                        let server_components = (Owner(*client_id), game_scene_id);
-                        commands.spawn((base.main_building, server_components));
-                        commands.spawn((base.archer_building, server_components));
-                        commands.spawn((base.warrior_building, server_components));
-                        commands.spawn((base.pikeman_building, server_components));
-                        commands.spawn((base.left_wall, server_components));
-                        commands.spawn((base.right_wall, server_components));
-
                         commands.spawn((
-                            base.left_spawn_point,
-                            server_components,
-                            left_destination,
-                        ));
-                        commands.spawn((
-                            base.right_spawn_point,
-                            server_components,
-                            right_destination,
+                            MainBuildingBundle::new(),
+                            Owner(*client_id),
+                            game_scene_id,
                         ));
 
                         let game_scene_type = GameSceneType::Base(Color::from(color));
@@ -284,8 +217,118 @@ fn server_update_system(
                         }
                     }
                 }
-                PlayerCommand::Interact => {
-                    interact.send(InteractEvent(client_id));
+                PlayerCommand::TravelTo(target_game_scene_id) => {
+                    if let Some(player_entity) = lobby.players.get(&client_id) {
+                        println!(
+                            "player {:?} traveling to {:?}",
+                            client_id, target_game_scene_id
+                        );
+
+                        // Remove entity from game scene
+                        commands.entity(*player_entity).remove::<GameSceneId>();
+
+                        // Tell all players on map that player left
+                        let message = ServerMessages::DespawnEntity {
+                            entity: *player_entity,
+                        };
+                        let message = bincode::serialize(&message).unwrap();
+                        let current_game_scene_id = scene_ids.get(*player_entity).unwrap();
+                        for (other_client_id, other_entity) in lobby.players.iter() {
+                            let other_scene_id = scene_ids.get(*other_entity).unwrap();
+                            if current_game_scene_id.eq(other_scene_id) {
+                                server.send_message(
+                                    *other_client_id,
+                                    ServerChannel::ServerMessages,
+                                    message.clone(),
+                                );
+                            }
+                        }
+
+                        // Travel Player to new game scene
+                        let player_target_transform =
+                            Transform::from_xyz(0., 50., Layers::Player.as_f32());
+                        commands
+                            .entity(*player_entity)
+                            .insert((target_game_scene_id, player_target_transform));
+
+                        // Tell client to load game scene
+                        let game_scene = game_world.game_scenes.get(&target_game_scene_id).unwrap();
+                        let mut players: Vec<SpawnPlayer> = lobby
+                            .players
+                            .iter()
+                            .filter(|(_, other_entity)| {
+                                let scene = scene_ids.get(**other_entity).unwrap();
+                                target_game_scene_id.eq(scene)
+                            })
+                            .map(|(other_client_id, other_entity)| {
+                                let transform = transforms.get(*other_entity).unwrap();
+                                let skin = player_skins.get(*other_entity).unwrap();
+                                SpawnPlayer {
+                                    id: *other_client_id,
+                                    entity: *other_entity,
+                                    translation: transform.translation.into(),
+                                    skin: *skin,
+                                }
+                            })
+                            .collect();
+                        players.push(SpawnPlayer {
+                            id: client_id,
+                            entity: *player_entity,
+                            translation: player_target_transform.translation.into(),
+                            skin: *player_skins.get(*player_entity).unwrap(),
+                        });
+                        let units = units
+                            .iter()
+                            .filter(|(scene, ..)| target_game_scene_id.eq(*scene))
+                            .map(|(_, owner, entity, unit, translation)| SpawnUnit {
+                                owner: *owner,
+                                entity,
+                                unit_type: unit.unit_type.clone(),
+                                translation: translation.translation.into(),
+                            })
+                            .collect();
+                        let projectiles = projectiles
+                            .iter()
+                            .filter(|(scene, ..)| target_game_scene_id.eq(*scene))
+                            .map(
+                                |(_, entity, projectile, translation, velocity)| SpawnProjectile {
+                                    entity,
+                                    projectile_type: *projectile,
+                                    translation: translation.translation.into(),
+                                    direction: velocity.0.into(),
+                                },
+                            )
+                            .collect();
+
+                        let message = ServerMessages::LoadGameScene {
+                            game_scene_type: game_scene.game_scene_type,
+                            players,
+                            units,
+                            projectiles,
+                        };
+                        let message = bincode::serialize(&message).unwrap();
+                        server.send_message(client_id, ServerChannel::ServerMessages, message);
+
+                        // Tell other players in new scene that new player arrived
+                        let skin = player_skins.get(*player_entity).unwrap();
+                        let message = ServerMessages::SpawnPlayer(SpawnPlayer {
+                            id: client_id,
+                            entity: *player_entity,
+                            translation: player_target_transform.translation.into(),
+                            skin: *skin,
+                        });
+                        let message = bincode::serialize(&message).unwrap();
+                        for (other_client_id, other_entity) in lobby.players.iter() {
+                            let other_scene_id = scene_ids.get(*other_entity).unwrap();
+                            if target_game_scene_id.eq(other_scene_id) {
+                                server.send_message(
+                                    *other_client_id,
+                                    ServerChannel::ServerMessages,
+                                    message.clone(),
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }

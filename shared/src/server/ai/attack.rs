@@ -4,8 +4,9 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 
 use super::UnitBehaviour;
-use crate::{networking::ServerLobby, physics::movement::Velocity};
-use shared::{
+use crate::server::networking::ServerLobby;
+use crate::server::physics::movement::Velocity;
+use crate::{
     map::GameSceneId,
     networking::{
         Owner, ProjectileType, ServerChannel, ServerMessages, SpawnProjectile, Unit, UnitType,
