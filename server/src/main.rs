@@ -2,10 +2,7 @@ use bevy::prelude::*;
 
 use bevy::app::ScheduleRunnerPlugin;
 use shared::{
-    server::{
-        ai::AIPlugin, create_server::create_server, game_scenes::GameScenesPlugin,
-        networking::ServerNetworkPlugin, physics::PhysicsPlugin,
-    },
+    server::{create_server::create_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,
 };
 

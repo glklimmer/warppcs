@@ -4,7 +4,7 @@ use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::map::{GameSceneId, GameSceneType};
+use crate::map::GameSceneType;
 
 pub const PROTOCOL_ID: u64 = 7;
 
