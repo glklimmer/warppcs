@@ -14,3 +14,5 @@ bevy_renet = { version = "0.0.12", features = ["serde"] }
 bincode = "1.3.3"
 fastrand = "2.1.1"
 serde = { version = "1.0.209", features = ["derive"] }
+renet_steam = { version = "0.0.2", features = ["bevy"] }
+steamworks = { version = "0.11" }

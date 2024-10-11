@@ -1,18 +1,17 @@
 use bevy::prelude::*;
 
-use bevy::math::bounding::Aabb2d;
-use bevy::math::bounding::IntersectsVolume;
-use bevy_renet::renet::RenetServer;
-use shared::map::GameSceneId;
-use shared::networking::{
+use crate::map::GameSceneId;
+use crate::networking::{
     Owner, PlayerSkin, ProjectileType, ServerChannel, ServerMessages, SpawnPlayer, SpawnProjectile,
     SpawnUnit, Unit,
 };
-use shared::BoxCollider;
+use crate::BoxCollider;
+use bevy::math::bounding::Aabb2d;
+use bevy::math::bounding::IntersectsVolume;
+use bevy_renet::renet::RenetServer;
 
-use crate::networking::InteractEvent;
-use crate::networking::{GameWorld, ServerLobby, ServerPlayer};
-use crate::physics::movement::Velocity;
+use super::networking::{GameWorld, InteractEvent, ServerLobby, ServerPlayer};
+use super::physics::movement::Velocity;
 
 #[derive(Component, Clone)]
 pub struct GameSceneDestination {

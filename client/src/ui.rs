@@ -1,4 +1,6 @@
 use bevy::{color::palettes::css::BURLYWOOD, prelude::*};
+use shared::steamworks::SteamworksClient;
+use steamworks::LobbyId;
 
 use crate::networking::{ClientLobby, CurrentClientId};
 
@@ -14,13 +16,14 @@ enum AppState {
     GameSession,
 }
 
-#[derive(Component)]
+#[derive(Component, PartialEq)]
 enum Button {
     SinglePlayer,
     MultiPlayer,
     CreateLobby,
     JoinLobby,
     StartGame,
+    InvitePlayer,
     Back(AppState),
 }
 
@@ -139,18 +142,25 @@ fn display_main_menu(mut commands: Commands) {
 fn button_system(
     mut commands: Commands,
     mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor, &mut BorderColor),
+        (
+            &Interaction,
+            &mut BackgroundColor,
+            &mut BorderColor,
+            &Button,
+        ),
         (Changed<Interaction>, With<Button>),
     >,
     buttons_query: Query<Entity, With<Node>>,
     asset_server: Res<AssetServer>,
 ) {
-    for (interaction, mut color, mut border_color) in &mut interaction_query {
+    for (interaction, mut color, mut border_color, button) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
                 *color = PRESSED_BUTTON.into();
-                for button_entity in buttons_query.iter() {
-                    commands.entity(button_entity).despawn_recursive();
+                if *button != Button::InvitePlayer {
+                    for button_entity in buttons_query.iter() {
+                        commands.entity(button_entity).despawn_recursive();
+                    }
                 }
             }
             Interaction::Hovered => {
@@ -172,6 +182,7 @@ fn button_system(
 fn change_state_on_button(
     mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
     mut next_state: ResMut<NextState<AppState>>,
+    steam_client: Res<SteamworksClient>,
 ) {
     for (interaction, button) in &mut button_query {
         match *interaction {
@@ -182,6 +193,9 @@ fn change_state_on_button(
                 Button::CreateLobby => next_state.set(AppState::CreateLooby),
                 Button::JoinLobby => next_state.set(AppState::JoinLobby),
                 Button::StartGame => next_state.set(AppState::GameSession),
+                Button::InvitePlayer => steam_client
+                    .friends()
+                    .activate_invite_dialog(LobbyId::from_raw(76561198079103566)),
                 Button::Back(state) => next_state.set(state.clone()),
             },
             Interaction::None => {}
@@ -360,18 +374,50 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
                         ..Default::default()
                     })
                     .with_children(|parent| {
-                        parent.spawn((
-                            TextBundle::from_section(
-                                format!("Slot {i}"),
-                                TextStyle {
-                                    font_size: 35.0,
-                                    color: Color::srgb(0.9, 0.9, 0.9),
+                        parent
+                            .spawn((
+                                ButtonBundle {
+                                    style: Style {
+                                        width: Val::Px(350.0),
+                                        height: Val::Px(65.0),
+                                        border: UiRect::all(Val::Px(5.0)),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    border_color: BorderColor(Color::BLACK),
+                                    background_color: NORMAL_BUTTON.into(),
                                     ..default()
                                 },
-                            ),
-                            LobbySlotName,
-                        ));
+                                Button::InvitePlayer,
+                            ))
+                            .with_children(|parent| {
+                                parent.spawn((
+                                    TextBundle::from_section(
+                                        format!("Slot {i}"),
+                                        TextStyle {
+                                            font_size: 35.0,
+                                            color: Color::srgb(0.9, 0.9, 0.9),
+                                            ..default()
+                                        },
+                                    ),
+                                    LobbySlotName,
+                                ));
+                            });
                     })
+                    // .with_children(|parent| {
+                    //     parent.spawn((
+                    //         TextBundle::from_section(
+                    //             format!("Slot {i}"),
+                    //             TextStyle {
+                    //                 font_size: 35.0,
+                    //                 color: Color::srgb(0.9, 0.9, 0.9),
+                    //                 ..default()
+                    //             },
+                    //         ),
+                    //         LobbySlotName,
+                    //     ));
+                    // })
                     .with_children(|parent| {
                         parent.spawn((
                             ButtonBundle {

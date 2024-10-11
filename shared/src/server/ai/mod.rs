@@ -1,7 +1,7 @@
 use attack::{unit_range, AttackPlugin};
 use bevy::prelude::*;
 
-use shared::{
+use crate::{
     map::GameSceneId,
     networking::{Owner, Unit},
 };

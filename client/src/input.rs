@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use shared::networking::{PlayerCommand, PlayerInput, UnitType};
+use shared::{
+    map::GameSceneId,
+    networking::{PlayerCommand, PlayerInput, UnitType},
+};
 
 pub struct InputPlugin;
 
