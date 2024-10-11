@@ -15,6 +15,7 @@ use shared::{
 use spawn::{spawn_player, spawn_projectile, spawn_unit};
 use std::collections::HashMap;
 
+pub mod join_server;
 mod spawn;
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]

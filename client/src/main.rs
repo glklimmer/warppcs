@@ -5,21 +5,16 @@ use std::f32::consts::PI;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 
 use animation::AnimationPlugin;
-use bevy_renet::{client_connected, renet::RenetClient};
+use bevy_renet::client_connected;
 use camera::CameraPlugin;
 use input::InputPlugin;
 use king::KingPlugin;
-use networking::{ClientNetworkingPlugin, Connected, CurrentClientId};
-use renet_steam::{
-    bevy::{SteamClientPlugin, SteamServerPlugin, SteamTransportError},
-    SteamClientTransport,
-};
+use networking::{join_server::join_server, ClientNetworkingPlugin, Connected};
+use renet_steam::bevy::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
 use shared::{
-    networking::connection_config,
     server::{create_server::create_server, networking::ServerNetworkPlugin},
-    steamworks::{SteamworksClient, SteamworksPlugin},
+    steamworks::SteamworksPlugin,
 };
-use steamworks::SteamId;
 use ui::MenuPlugin;
 
 pub mod animation;
@@ -67,30 +62,6 @@ fn main() {
     app.add_systems(Startup, (create_server, join_server).chain());
 
     app.run();
-}
-
-fn join_server(mut commands: Commands, steam_client: Res<SteamworksClient>) {
-    let client = RenetClient::new(connection_config());
-
-    steam_client.networking_utils().init_relay_network_access();
-
-    println!("From Client {}", steam_client.friends().name());
-
-    let server_steam_id = 76561198079103566;
-    let server_steam_id = SteamId::from_raw(server_steam_id);
-
-    let transport = SteamClientTransport::new(&steam_client, &server_steam_id);
-    let transport = match transport {
-        Ok(transport) => transport,
-        Err(e) => {
-            println!("Id {:?}", server_steam_id);
-            panic!("Error when trying to create SteamClientTransport: {}", e)
-        }
-    };
-
-    commands.insert_resource(transport);
-    commands.insert_resource(client);
-    commands.insert_resource(CurrentClientId(steam_client.user().steam_id().raw()));
 }
 
 fn setup_background(
