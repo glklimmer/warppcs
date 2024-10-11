@@ -14,9 +14,9 @@ use super::movement::Velocity;
 #[derive(Component)]
 struct DelayedDespawn(Timer);
 
-pub struct ColliderPlugin;
+pub struct ProjectilePlugin;
 
-impl Plugin for ColliderPlugin {
+impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(FixedUpdate, projectile_collision);
         app.add_systems(PostUpdate, delayed_despawn);

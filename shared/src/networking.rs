@@ -31,7 +31,7 @@ pub struct Unit {
 #[derive(Debug, Serialize, Deserialize, Event)]
 pub enum PlayerCommand {
     StartGame,
-    TravelTo(GameSceneId),
+    Interact,
     MeleeAttack,
     SpawnUnit(UnitType),
 }

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use game_scenes::GameScenesPlugin;
 
 use std::time::Duration;
 
@@ -9,6 +10,7 @@ use networking::ServerNetworkPlugin;
 use physics::PhysicsPlugin;
 
 pub mod ai;
+pub mod game_scenes;
 pub mod networking;
 pub mod physics;
 
@@ -23,6 +25,7 @@ fn main() {
     app.add_plugins(ServerNetworkPlugin);
     app.add_plugins(AIPlugin);
     app.add_plugins(PhysicsPlugin);
+    app.add_plugins(GameScenesPlugin);
 
     app.run();
 }

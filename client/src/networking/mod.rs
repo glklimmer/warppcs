@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{color::palettes::css::YELLOW, prelude::*};
 
 use bevy::sprite::Mesh2dHandle;
 use bevy_renet::{
@@ -10,8 +10,7 @@ use bevy_renet::{
     RenetClientPlugin,
 };
 use shared::{
-    map::base::MainBuildingBundle,
-    map::GameSceneType,
+    map::{base::BaseScene, GameSceneType},
     networking::{
         connection_config, ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput, Rotation,
         ServerChannel, ServerMessages, SpawnPlayer, SpawnProjectile, SpawnUnit, PROTOCOL_ID,
@@ -199,11 +198,122 @@ fn client_sync_players(
 
                 match map_type {
                     GameSceneType::Base(color) => {
+                        let base = BaseScene::new();
                         commands.spawn((
-                            MainBuildingBundle::new(),
+                            base.main_building,
                             (
-                                Mesh2dHandle(meshes.add(Rectangle::new(200., 100.))),
+                                Mesh2dHandle(
+                                    meshes.add(Rectangle::from_size(base.main_building.collider.0)),
+                                ),
                                 materials.add(color),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
+                        commands.spawn((
+                            base.archer_building,
+                            (
+                                Mesh2dHandle(
+                                    meshes
+                                        .add(Rectangle::from_size(base.archer_building.collider.0)),
+                                ),
+                                materials.add(color),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
+                        commands.spawn((
+                            base.warrior_building,
+                            (
+                                Mesh2dHandle(
+                                    meshes.add(Rectangle::from_size(
+                                        base.warrior_building.collider.0,
+                                    )),
+                                ),
+                                materials.add(color),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
+                        commands.spawn((
+                            base.pikeman_building,
+                            (
+                                Mesh2dHandle(
+                                    meshes.add(Rectangle::from_size(
+                                        base.pikeman_building.collider.0,
+                                    )),
+                                ),
+                                materials.add(color),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
+                        commands.spawn((
+                            base.left_wall,
+                            (
+                                Mesh2dHandle(
+                                    meshes.add(Rectangle::from_size(base.left_wall.collider.0)),
+                                ),
+                                materials.add(color),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
+                        commands.spawn((
+                            base.right_wall,
+                            (
+                                Mesh2dHandle(
+                                    meshes.add(Rectangle::from_size(base.right_wall.collider.0)),
+                                ),
+                                materials.add(color),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
+
+                        commands.spawn((
+                            base.left_spawn_point,
+                            (
+                                Mesh2dHandle(
+                                    meshes.add(Rectangle::from_size(
+                                        base.left_spawn_point.collider.0,
+                                    )),
+                                ),
+                                materials.add(Color::from(YELLOW)),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
+                        commands.spawn((
+                            base.right_spawn_point,
+                            (
+                                Mesh2dHandle(
+                                    meshes.add(Rectangle::from_size(
+                                        base.left_spawn_point.collider.0,
+                                    )),
+                                ),
+                                materials.add(Color::from(YELLOW)),
                                 GlobalTransform::default(),
                                 Visibility::default(),
                                 InheritedVisibility::default(),
