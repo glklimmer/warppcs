@@ -5,6 +5,7 @@ use bevy_renet::{
     renet::{ClientId, RenetClient},
     RenetClientPlugin,
 };
+use shared::GameState;
 use shared::{
     map::{base::BaseScene, GameSceneType},
     networking::{
@@ -59,9 +60,9 @@ pub struct PlayerJoined(pub ClientId);
 #[derive(Component)]
 struct PartOfScene;
 
-pub struct ClientNetworkingPlugin;
+pub struct ClientNetworkPlugin;
 
-impl Plugin for ClientNetworkingPlugin {
+impl Plugin for ClientNetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(RenetClientPlugin);
 
@@ -127,6 +128,7 @@ fn client_sync_players(
     mut spawn_unit: EventWriter<SpawnUnit>,
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut player_joined: EventWriter<PlayerJoined>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
         let server_message = bincode::deserialize(&message).unwrap();
@@ -320,6 +322,8 @@ fn client_sync_players(
                 projectiles.into_iter().for_each(|spawn| {
                     spawn_projectile.send(spawn);
                 });
+
+                next_state.set(GameState::GameSession);
             }
             ServerMessages::PlayerJoined { id } => {
                 player_joined.send(PlayerJoined(id));

@@ -22,7 +22,10 @@ impl Plugin for AIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(AttackPlugin);
 
-        app.add_systems(OnEnter(GameState::GameSession), determine_behaviour); // TODO: This should be less then update
+        app.add_systems(
+            Update, // TODO: This should be less then update
+            determine_behaviour.run_if(in_state(GameState::GameSession)),
+        );
     }
 }
 

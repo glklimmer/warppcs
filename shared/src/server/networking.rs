@@ -120,6 +120,7 @@ fn server_update_system(
     scene_ids: Query<&GameSceneId>,
     mut game_world: ResMut<GameWorld>,
     mut interact: EventWriter<InteractEvent>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     for client_id in server.clients_id() {
         while let Some(message) = server.receive_message(client_id, ClientChannel::Command) {
@@ -288,6 +289,8 @@ fn server_update_system(
                                 .push(*first_game_scene_id);
                         }
                     }
+
+                    next_state.set(GameState::GameSession);
                 }
                 PlayerCommand::Interact => {
                     interact.send(InteractEvent(client_id));
