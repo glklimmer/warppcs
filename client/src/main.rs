@@ -12,6 +12,7 @@ use king::KingPlugin;
 use networking::{join_server::join_server, ClientNetworkingPlugin, Connected};
 use renet_steam::bevy::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
 use shared::{
+    networking::GameState,
     server::{create_server::create_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,
 };
@@ -29,6 +30,23 @@ fn main() {
     let mut app = App::new();
     app.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
 
+    app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()));
+
+    app.add_plugins(KingPlugin);
+    app.add_plugins(CameraPlugin);
+    app.add_plugins(InputPlugin);
+    app.add_plugins(AnimationPlugin);
+    app.add_plugins(MenuPlugin);
+
+    app.add_systems(Startup, setup_background);
+
+    app.add_systems(
+        OnEnter(GameState::CreateLooby),
+        (create_server, join_server).chain(),
+    );
+
+    app.add_plugins(ClientNetworkingPlugin);
+
     #[cfg(feature = "steam")]
     {
         app.add_plugins(ServerNetworkPlugin);
@@ -45,21 +63,10 @@ fn main() {
             }
         }
 
-        app.add_systems(Update, panic_on_error_system);
+        app.add_systems(Update, panic_on_error_system.run_if(client_connected));
     }
 
-    app.add_plugins(ClientNetworkingPlugin);
-
-    app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()));
-
-    app.add_plugins(KingPlugin);
-    app.add_plugins(CameraPlugin);
-    app.add_plugins(InputPlugin);
-    app.add_plugins(AnimationPlugin);
-    app.add_plugins(MenuPlugin);
-
-    app.add_systems(Startup, setup_background);
-    app.add_systems(Startup, (create_server, join_server).chain());
+    //app.add_systems(Startup, join_server.run_if(on_event::<JoinLobby>()));
 
     app.run();
 }

@@ -15,6 +15,8 @@ use shared::{
 use spawn::{spawn_player, spawn_projectile, spawn_unit};
 use std::collections::HashMap;
 
+use crate::ui::PlayerJoined;
+
 pub mod join_server;
 mod spawn;
 
@@ -22,7 +24,7 @@ mod spawn;
 pub struct Connected;
 
 #[derive(Debug, Default, Resource)]
-pub struct ClientLobby {
+pub struct ClientPlayers {
     pub players: HashMap<ClientId, PlayerEntityMapping>,
 }
 
@@ -69,7 +71,7 @@ impl Plugin for ClientNetworkingPlugin {
         // add_steam_network(app);
 
         app.insert_resource(NetworkMapping::default());
-        app.insert_resource(ClientLobby::default());
+        app.insert_resource(ClientPlayers::default());
 
         app.add_event::<NetworkEvent>();
         app.add_event::<SpawnPlayer>();
@@ -97,7 +99,7 @@ fn client_sync_players(
     mut transforms: Query<&mut Transform>,
     entities: Query<Entity, With<PartOfScene>>,
     mut client: ResMut<RenetClient>,
-    mut lobby: ResMut<ClientLobby>,
+    mut lobby: ResMut<ClientPlayers>,
     mut network_mapping: ResMut<NetworkMapping>,
     mut network_events: EventWriter<NetworkEvent>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -105,6 +107,7 @@ fn client_sync_players(
     mut spawn_player: EventWriter<SpawnPlayer>,
     mut spawn_unit: EventWriter<SpawnUnit>,
     mut spawn_projectile: EventWriter<SpawnProjectile>,
+    mut player_joined: EventWriter<PlayerJoined>,
 ) {
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
         let server_message = bincode::deserialize(&message).unwrap();
@@ -299,6 +302,9 @@ fn client_sync_players(
                     spawn_projectile.send(spawn);
                 });
             }
+            ServerMessages::PlayerJoined { id } => {
+                player_joined.send(PlayerJoined(id));
+            }
         }
     }
 
@@ -344,6 +350,7 @@ fn client_send_player_commands(
     mut client: ResMut<RenetClient>,
 ) {
     for command in player_commands.read() {
+        println!("Player Command sended");
         let command_message = bincode::serialize(command).unwrap();
         client.send_message(ClientChannel::Command, command_message);
     }

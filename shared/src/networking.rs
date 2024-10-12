@@ -8,6 +8,16 @@ use crate::map::GameSceneType;
 
 pub const PROTOCOL_ID: u64 = 7;
 
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum GameState {
+    MainMenu,
+    SinglePlayer,
+    MultiPlayer,
+    JoinLobby,
+    CreateLooby,
+    GameSession,
+}
+
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
 pub struct PlayerInput {
     pub left: bool,
@@ -35,6 +45,9 @@ pub enum PlayerCommand {
     MeleeAttack,
     SpawnUnit(UnitType),
 }
+
+#[derive(Debug, Serialize, Deserialize, Event)]
+pub struct ChangeState(pub GameState);
 
 pub enum ClientChannel {
     Input,
@@ -85,6 +98,9 @@ pub struct SpawnProjectile {
 
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
+    PlayerJoined {
+        id: ClientId,
+    },
     SpawnPlayer(SpawnPlayer),
     SpawnUnit(SpawnUnit),
     SpawnProjectile(SpawnProjectile),

@@ -3,15 +3,9 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::RenetServer;
 
-<<<<<<<< HEAD:shared/src/server/physics/projectile.rs
-use shared::map::GameSceneId;
-use shared::networking::{Owner, ProjectileType, ServerChannel, ServerMessages};
-use shared::BoxCollider;
-========
 use crate::map::GameSceneId;
 use crate::networking::{Owner, ProjectileType, ServerChannel, ServerMessages};
 use crate::BoxCollider;
->>>>>>>> 175627d (move server to shared for steam):shared/src/server/physics/collider.rs
 
 use crate::server::ai::attack::{projectile_damage, TakeDamage};
 

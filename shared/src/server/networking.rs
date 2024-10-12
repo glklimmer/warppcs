@@ -3,9 +3,9 @@ use bevy::prelude::*;
 use crate::map::base::BaseScene;
 use crate::map::{GameScene, GameSceneId, GameSceneType, Layers};
 use crate::networking::{
-    ClientChannel, Facing, NetworkEntity, NetworkedEntities, Owner, PlayerCommand, PlayerInput,
-    PlayerSkin, ProjectileType, Rotation, ServerChannel, ServerMessages, SpawnPlayer, SpawnUnit,
-    Unit,
+    ClientChannel, Facing, GameState, NetworkEntity, NetworkedEntities, Owner, PlayerCommand,
+    PlayerInput, PlayerSkin, ProjectileType, Rotation, ServerChannel, ServerMessages, SpawnPlayer,
+    SpawnUnit, Unit,
 };
 use crate::server::ai::attack::{unit_health, unit_swing_timer};
 use crate::server::ai::UnitBehaviour;
@@ -52,7 +52,13 @@ impl Plugin for ServerNetworkPlugin {
 
         app.add_systems(
             Update,
-            (server_update_system, server_network_sync, on_unit_death),
+            server_lobby_system.run_if(in_state(GameState::CreateLooby)),
+        );
+
+        app.add_systems(
+            Update,
+            (on_unit_death, server_update_system, server_network_sync)
+                .run_if(in_state(GameState::JoinLobby)),
         );
 
         app.insert_resource(ServerLobby::default());
@@ -62,25 +68,29 @@ impl Plugin for ServerNetworkPlugin {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn server_update_system(
-    mut server_events: EventReader<ServerEvent>,
+fn server_lobby_system(
     mut commands: Commands,
+    mut server_events: EventReader<ServerEvent>,
     mut lobby: ResMut<ServerLobby>,
     mut server: ResMut<RenetServer>,
-    transforms: Query<&Transform>,
-    scene_ids: Query<&GameSceneId>,
-    mut game_world: ResMut<GameWorld>,
-    mut interact: EventWriter<InteractEvent>,
 ) {
     for event in server_events.read() {
         match event {
             ServerEvent::ClientConnected { client_id } => {
                 println!("Player {} connected.", client_id);
+                for player in lobby.players.iter() {
+                    let message =
+                        bincode::serialize(&ServerMessages::PlayerJoined { id: *player.0 })
+                            .unwrap();
+                    server.send_message(*client_id, ServerChannel::ServerMessages, message)
+                }
                 let player_entity = commands
                     .spawn((ServerPlayer(*client_id), BoxCollider(Vec2::new(50., 90.))))
                     .id();
                 lobby.players.insert(*client_id, player_entity);
+                let message =
+                    bincode::serialize(&ServerMessages::PlayerJoined { id: *client_id }).unwrap();
+                server.broadcast_message(ServerChannel::ServerMessages, message)
             }
             ServerEvent::ClientDisconnected { client_id, reason } => {
                 println!("Player {} disconnected: {}", client_id, reason);
@@ -95,7 +105,18 @@ fn server_update_system(
             }
         }
     }
+}
 
+#[allow(clippy::too_many_arguments)]
+fn server_update_system(
+    mut commands: Commands,
+    lobby: Res<ServerLobby>,
+    mut server: ResMut<RenetServer>,
+    transforms: Query<&Transform>,
+    scene_ids: Query<&GameSceneId>,
+    mut game_world: ResMut<GameWorld>,
+    mut interact: EventWriter<InteractEvent>,
+) {
     for client_id in server.clients_id() {
         while let Some(message) = server.receive_message(client_id, ClientChannel::Command) {
             let command: PlayerCommand = bincode::deserialize(&message).unwrap();

@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::map::GameSceneId;
 use crate::networking::{
-    Owner, PlayerSkin, ProjectileType, ServerChannel, ServerMessages, SpawnPlayer, SpawnProjectile,
-    SpawnUnit, Unit,
+    GameState, Owner, PlayerSkin, ProjectileType, ServerChannel, ServerMessages, SpawnPlayer,
+    SpawnProjectile, SpawnUnit, Unit,
 };
 use crate::BoxCollider;
 use bevy::math::bounding::Aabb2d;
@@ -31,7 +31,10 @@ impl Plugin for GameScenesPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<TravelEvent>();
 
-        app.add_systems(FixedUpdate, (check_travel, travel));
+        app.add_systems(
+            FixedUpdate,
+            (check_travel, travel).run_if(in_state(GameState::GameSession)),
+        );
     }
 }
 

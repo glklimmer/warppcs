@@ -1,20 +1,17 @@
 use bevy::{color::palettes::css::BURLYWOOD, prelude::*};
-use shared::steamworks::SteamworksClient;
+use bevy_renet::renet::ClientId;
+use shared::{
+    networking::{GameState, PlayerCommand},
+    steamworks::SteamworksClient,
+};
 use steamworks::LobbyId;
 
-use crate::networking::{ClientLobby, CurrentClientId};
+use crate::networking::CurrentClientId;
 
 pub struct MenuPlugin;
 
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
-enum AppState {
-    MainMenu,
-    SinglePlayer,
-    MultiPlayer,
-    JoinLobby,
-    CreateLooby,
-    GameSession,
-}
+#[derive(Event, Clone)]
+pub struct PlayerJoined(pub ClientId);
 
 #[derive(Component, PartialEq)]
 enum Button {
@@ -24,34 +21,37 @@ enum Button {
     JoinLobby,
     StartGame,
     InvitePlayer,
-    Back(AppState),
+    Back(GameState),
 }
 
 #[derive(Component)]
 enum Checkbox {
     Checked,
-    None,
+    Unchecked,
 }
 
 #[derive(Component)]
-struct LobbySlotOwner(u64);
+struct LobbySlotOwner(ClientId);
 
 #[derive(Component)]
 struct LobbySlotName;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_state(AppState::MainMenu);
+        app.add_event::<PlayerJoined>();
 
-        app.add_systems(OnEnter(AppState::MainMenu), display_main_menu);
+        app.insert_state(GameState::MainMenu);
 
-        app.add_systems(OnEnter(AppState::MultiPlayer), display_multiplayer_buttons);
+        app.add_systems(OnEnter(GameState::MainMenu), display_main_menu);
 
-        app.add_systems(OnEnter(AppState::CreateLooby), display_create_lobby);
+        app.add_systems(OnEnter(GameState::MultiPlayer), display_multiplayer_buttons);
+
+        app.add_systems(OnEnter(GameState::CreateLooby), display_create_lobby);
 
         app.add_systems(
             Update,
-            (lobby_slot_checkbox, add_player_to_lobby_slot).run_if(in_state(AppState::CreateLooby)),
+            (lobby_slot_checkbox, add_player_to_lobby_slot)
+                .run_if(in_state(GameState::CreateLooby)),
         );
 
         app.add_systems(Update, (button_system, change_state_on_button));
@@ -181,18 +181,21 @@ fn button_system(
 
 fn change_state_on_button(
     mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    mut player_commands: EventWriter<PlayerCommand>,
     steam_client: Res<SteamworksClient>,
 ) {
     for (interaction, button) in &mut button_query {
         match *interaction {
             Interaction::Hovered => {}
             Interaction::Pressed => match button {
-                Button::SinglePlayer => next_state.set(AppState::SinglePlayer),
-                Button::MultiPlayer => next_state.set(AppState::MultiPlayer),
-                Button::CreateLobby => next_state.set(AppState::CreateLooby),
-                Button::JoinLobby => next_state.set(AppState::JoinLobby),
-                Button::StartGame => next_state.set(AppState::GameSession),
+                Button::SinglePlayer => next_state.set(GameState::SinglePlayer),
+                Button::MultiPlayer => next_state.set(GameState::MultiPlayer),
+                Button::CreateLobby => next_state.set(GameState::CreateLooby),
+                Button::JoinLobby => next_state.set(GameState::JoinLobby),
+                Button::StartGame => {
+                    player_commands.send(PlayerCommand::StartGame);
+                }
                 Button::InvitePlayer => steam_client
                     .friends()
                     .activate_invite_dialog(LobbyId::from_raw(76561198079103566)),
@@ -297,7 +300,7 @@ fn display_multiplayer_buttons(mut commands: Commands) {
                 background_color: NORMAL_BUTTON.into(),
                 ..default()
             },
-            Button::Back(AppState::MainMenu),
+            Button::Back(GameState::MainMenu),
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
@@ -311,7 +314,11 @@ fn display_multiplayer_buttons(mut commands: Commands) {
         });
 }
 
-fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn display_create_lobby(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    steam_client: Res<SteamworksClient>,
+) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -331,7 +338,7 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
             parent
                 .spawn((ButtonBundle {
                     style: Style {
-                        width: Val::Px(300.0),
+                        width: Val::Px(400.0),
                         height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
                         align_items: AlignItems::Center,
@@ -345,8 +352,9 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
                     ..default()
                 },))
                 .with_children(|parent| {
+                    let client_id = steam_client.user().steam_id().raw();
                     parent.spawn(TextBundle::from_section(
-                        "Code",
+                        format!("Code: {client_id}"),
                         TextStyle {
                             font_size: 35.0,
                             color: Color::srgb(0.9, 0.9, 0.9),
@@ -405,19 +413,6 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
                                 ));
                             });
                     })
-                    // .with_children(|parent| {
-                    //     parent.spawn((
-                    //         TextBundle::from_section(
-                    //             format!("Slot {i}"),
-                    //             TextStyle {
-                    //                 font_size: 35.0,
-                    //                 color: Color::srgb(0.9, 0.9, 0.9),
-                    //                 ..default()
-                    //             },
-                    //         ),
-                    //         LobbySlotName,
-                    //     ));
-                    // })
                     .with_children(|parent| {
                         parent.spawn((
                             ButtonBundle {
@@ -430,8 +425,7 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
                                 image: UiImage::new(asset_server.load("ui/checkbox.png")),
                                 ..Default::default()
                             },
-                            LobbySlotOwner(0),
-                            Checkbox::None,
+                            Checkbox::Unchecked,
                         ));
                     });
             }
@@ -501,7 +495,7 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
                 background_color: NORMAL_BUTTON.into(),
                 ..default()
             },
-            Button::Back(AppState::MultiPlayer),
+            Button::Back(GameState::MultiPlayer),
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
@@ -516,22 +510,25 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
 }
 
 fn add_player_to_lobby_slot(
-    mut text_query: Query<&mut Text, With<LobbySlotName>>,
-    mut slot_owner_query: Query<&mut LobbySlotOwner>,
+    mut commands: Commands,
+    mut text_query: Query<
+        (Entity, &mut Text, &Parent),
+        (Without<LobbySlotOwner>, With<LobbySlotName>),
+    >,
     mut checkbox_query: Query<&mut Visibility, With<Checkbox>>,
-    lobby: Res<ClientLobby>,
+    mut player_joined: EventReader<PlayerJoined>,
+    slots: Query<&Children>,
 ) {
-    for (i, player) in lobby.players.keys().enumerate() {
-        if let Some(mut text) = text_query.iter_mut().nth(i) {
-            text.sections[0].value = player.to_string();
-        }
-
-        if let Some(mut lobby_slot_owner) = slot_owner_query.iter_mut().nth(i) {
-            lobby_slot_owner.0 = player.raw();
-        }
-
-        if let Some(mut button) = checkbox_query.iter_mut().nth(i) {
-            *button = Visibility::Visible;
+    for event in player_joined.read() {
+        for (entity, mut text, parent) in &mut text_query {
+            text.sections[0].value = event.0.to_string();
+            commands.entity(entity).insert(LobbySlotOwner(event.0));
+            for child in slots.get(parent.get()).unwrap().iter() {
+                if let Ok(mut checkbox) = checkbox_query.get_mut(*child) {
+                    *checkbox = Visibility::Visible;
+                }
+            }
+            break;
         }
     }
 }
@@ -547,20 +544,20 @@ fn lobby_slot_checkbox(
     client_id: Res<CurrentClientId>,
 ) {
     for (interactions, mut checkbox_image, mut checkbox, lobby_slot_owner) in &mut checkbox_query {
-        if lobby_slot_owner.0 != client_id.0 {
+        if lobby_slot_owner.0.raw().eq(&client_id.0) {
             continue;
         }
         match *interactions {
             Interaction::Pressed => match *checkbox {
                 Checkbox::Checked => {
                     *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
-                    *checkbox = Checkbox::None;
+                    *checkbox = Checkbox::Unchecked;
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sound/switch_002.ogg"),
                         ..Default::default()
                     });
                 }
-                Checkbox::None => {
+                Checkbox::Unchecked => {
                     *checkbox_image = UiImage::new(asset_server.load("ui/checkbox_checked.png"));
                     *checkbox = Checkbox::Checked;
                     commands.spawn(AudioBundle {

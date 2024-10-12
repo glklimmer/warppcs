@@ -14,7 +14,7 @@ pub fn join_server(mut commands: Commands, steam_client: Res<SteamworksClient>) 
 
     println!("From Client {}", steam_client.friends().name());
 
-    let server_steam_id = 76561198079103566;
+    let server_steam_id = 76561198130394626;
     let server_steam_id = SteamId::from_raw(server_steam_id);
 
     let transport = SteamClientTransport::new(&steam_client, &server_steam_id);
