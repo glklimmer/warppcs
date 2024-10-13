@@ -9,13 +9,18 @@ use bevy_renet::client_connected;
 use camera::CameraPlugin;
 use input::InputPlugin;
 use king::KingPlugin;
-use networking::{join_server::join_server, ClientNetworkingPlugin, Connected};
+use networking::{
+    join_server::{join_own_server, join_server},
+    ClientNetworkingPlugin, Connected,
+};
 use renet_steam::bevy::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
 use shared::{
+    networking::MultiplayerRoles,
     server::{create_server::create_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,
+    GameState,
 };
-use ui::MenuPlugin;
+use ui::{MainMenuStates, MenuPlugin};
 
 pub mod animation;
 pub mod camera;
@@ -24,10 +29,27 @@ pub mod input;
 pub mod king;
 pub mod networking;
 pub mod ui;
+pub mod ui_widgets;
 
 fn main() {
     let mut app = App::new();
     app.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
+
+    app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()));
+
+    app.insert_state(GameState::MainMenu);
+    app.insert_state(MultiplayerRoles::NotInGame);
+    app.insert_state(MainMenuStates::TitleScreen);
+
+    app.add_plugins(KingPlugin);
+    app.add_plugins(CameraPlugin);
+    app.add_plugins(InputPlugin);
+    app.add_plugins(AnimationPlugin);
+    app.add_plugins(MenuPlugin);
+
+    app.add_systems(Startup, setup_background);
+
+    app.add_plugins(ClientNetworkingPlugin);
 
     #[cfg(feature = "steam")]
     {
@@ -45,21 +67,15 @@ fn main() {
             }
         }
 
-        app.add_systems(Update, panic_on_error_system);
+        app.add_systems(Update, panic_on_error_system.run_if(client_connected));
     }
 
-    app.add_plugins(ClientNetworkingPlugin);
+    app.add_systems(
+        OnEnter(MultiplayerRoles::Host),
+        (create_server, join_own_server).chain(),
+    );
 
-    app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()));
-
-    app.add_plugins(KingPlugin);
-    app.add_plugins(CameraPlugin);
-    app.add_plugins(InputPlugin);
-    app.add_plugins(AnimationPlugin);
-    app.add_plugins(MenuPlugin);
-
-    app.add_systems(Startup, setup_background);
-    app.add_systems(Startup, (create_server, join_server).chain());
+    app.add_systems(Update, join_server.run_if(in_state(GameState::MainMenu)));
 
     app.run();
 }

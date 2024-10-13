@@ -8,6 +8,13 @@ use crate::map::GameSceneType;
 
 pub const PROTOCOL_ID: u64 = 7;
 
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum MultiplayerRoles {
+    Host,
+    Client,
+    NotInGame,
+}
+
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
 pub struct PlayerInput {
     pub left: bool,
@@ -85,6 +92,9 @@ pub struct SpawnProjectile {
 
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
+    PlayerJoined {
+        id: ClientId,
+    },
     SpawnPlayer(SpawnPlayer),
     SpawnUnit(SpawnUnit),
     SpawnProjectile(SpawnProjectile),

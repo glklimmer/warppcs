@@ -6,6 +6,7 @@ use bevy_renet::renet::RenetServer;
 use super::UnitBehaviour;
 use crate::server::networking::ServerLobby;
 use crate::server::physics::movement::Velocity;
+use crate::GameState;
 use crate::{
     map::GameSceneId,
     networking::{
@@ -26,7 +27,10 @@ impl Plugin for AttackPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<TakeDamage>();
 
-        app.add_systems(Update, (process_attacks, apply_damage));
+        app.add_systems(
+            Update,
+            (process_attacks, apply_damage).run_if(in_state(GameState::GameSession)),
+        );
     }
 }
 

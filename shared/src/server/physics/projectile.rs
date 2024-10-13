@@ -5,7 +5,7 @@ use bevy_renet::renet::RenetServer;
 
 use crate::map::GameSceneId;
 use crate::networking::{Owner, ProjectileType, ServerChannel, ServerMessages};
-use crate::BoxCollider;
+use crate::{BoxCollider, GameState};
 
 use crate::server::ai::attack::{projectile_damage, TakeDamage};
 
@@ -18,8 +18,14 @@ pub struct ProjectilePlugin;
 
 impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, projectile_collision);
-        app.add_systems(PostUpdate, delayed_despawn);
+        app.add_systems(
+            FixedUpdate,
+            projectile_collision.run_if(in_state(GameState::GameSession)),
+        );
+        app.add_systems(
+            PostUpdate,
+            delayed_despawn.run_if(in_state(GameState::GameSession)),
+        );
     }
 }
 

@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use crate::{
     map::GameSceneId,
     networking::{Owner, Unit},
+    GameState,
 };
 
 pub mod attack;
@@ -21,7 +22,7 @@ impl Plugin for AIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(AttackPlugin);
 
-        app.add_systems(Update, (determine_behaviour,)); // TODO: This should be less then update
+        app.add_systems(OnEnter(GameState::GameSession), determine_behaviour); // TODO: This should be less then update
     }
 }
 

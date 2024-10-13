@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::{ClientLobby, CurrentClientId, NetworkMapping};
+use super::{ClientPlayers, CurrentClientId, NetworkMapping};
 use crate::{
     animation::UnitAnimation,
     king::{PaladinBundle, PaladinSpriteSheet, WarriorBundle, WarriorSpriteSheet},
@@ -16,7 +16,7 @@ pub fn spawn_player(
     client_id: Res<CurrentClientId>,
     warrior_sprite_sheet: Res<WarriorSpriteSheet>,
     paladin_sprite_sheet: Res<PaladinSpriteSheet>,
-    mut lobby: ResMut<ClientLobby>,
+    mut lobby: ResMut<ClientPlayers>,
     mut network_mapping: ResMut<NetworkMapping>,
     mut spawn_player: EventReader<SpawnPlayer>,
 ) {

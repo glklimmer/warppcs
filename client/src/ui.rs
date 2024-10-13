@@ -1,57 +1,84 @@
 use bevy::{color::palettes::css::BURLYWOOD, prelude::*};
-use shared::steamworks::SteamworksClient;
-use steamworks::LobbyId;
+use bevy_renet::renet::ClientId;
+use shared::{
+    networking::{MultiplayerRoles, PlayerCommand},
+    steamworks::SteamworksClient,
+};
+use steamworks::{LobbyId, SteamId};
 
-use crate::networking::{ClientLobby, CurrentClientId};
+use crate::{
+    networking::{CurrentClientId, PlayerJoined},
+    ui_widgets::text_input::{
+        TextInputBundle, TextInputPlugin, TextInputSubmitEvent, TextInputSystem, TextInputValue,
+    },
+};
+
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum MainMenuStates {
+    TitleScreen,
+    Singleplayer,
+    Multiplayer,
+    JoinScreen,
+    Lobby,
+}
 
 pub struct MenuPlugin;
 
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
-enum AppState {
-    MainMenu,
-    SinglePlayer,
-    MultiPlayer,
-    JoinLobby,
-    CreateLooby,
-    GameSession,
-}
+#[derive(Event, Clone)]
+pub struct JoinLobbyRequest(pub SteamId);
 
 #[derive(Component, PartialEq)]
 enum Button {
-    SinglePlayer,
-    MultiPlayer,
+    Singleplayer,
+    Multiplayer,
     CreateLobby,
     JoinLobby,
+    Join,
     StartGame,
     InvitePlayer,
-    Back(AppState),
+    Back(MainMenuStates),
 }
 
 #[derive(Component)]
 enum Checkbox {
     Checked,
-    None,
+    Unchecked,
 }
 
 #[derive(Component)]
-struct LobbySlotOwner(u64);
+struct LobbySlotOwner(ClientId);
 
 #[derive(Component)]
 struct LobbySlotName;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_state(AppState::MainMenu);
+        app.add_event::<PlayerJoined>();
+        app.add_event::<JoinLobbyRequest>();
 
-        app.add_systems(OnEnter(AppState::MainMenu), display_main_menu);
+        app.add_plugins(TextInputPlugin);
 
-        app.add_systems(OnEnter(AppState::MultiPlayer), display_multiplayer_buttons);
+        app.add_systems(OnEnter(MainMenuStates::TitleScreen), display_main_menu);
 
-        app.add_systems(OnEnter(AppState::CreateLooby), display_create_lobby);
+        app.add_systems(
+            OnEnter(MainMenuStates::Multiplayer),
+            display_multiplayer_buttons,
+        );
+
+        app.add_systems(OnEnter(MainMenuStates::Lobby), display_lobby);
+
+        app.add_systems(OnEnter(MainMenuStates::JoinScreen), display_join_screen);
 
         app.add_systems(
             Update,
-            (lobby_slot_checkbox, add_player_to_lobby_slot).run_if(in_state(AppState::CreateLooby)),
+            (lobby_slot_checkbox, add_player_to_lobby_slot).run_if(in_state(MainMenuStates::Lobby)),
+        );
+
+        app.add_systems(
+            Update,
+            listener
+                .after(TextInputSystem)
+                .run_if(in_state(MainMenuStates::Lobby)),
         );
 
         app.add_systems(Update, (button_system, change_state_on_button));
@@ -94,11 +121,11 @@ fn display_main_menu(mut commands: Commands) {
                         background_color: NORMAL_BUTTON.into(),
                         ..default()
                     },
-                    Button::SinglePlayer,
+                    Button::Singleplayer,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
-                        "Single Player",
+                        "Singleplayer",
                         TextStyle {
                             font_size: 35.0,
                             color: Color::srgb(0.9, 0.9, 0.9),
@@ -123,7 +150,7 @@ fn display_main_menu(mut commands: Commands) {
                         background_color: NORMAL_BUTTON.into(),
                         ..default()
                     },
-                    Button::MultiPlayer,
+                    Button::Multiplayer,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
@@ -181,21 +208,41 @@ fn button_system(
 
 fn change_state_on_button(
     mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<MainMenuStates>>,
+    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
+    mut player_commands: EventWriter<PlayerCommand>,
+    mut join_lobby_request: EventWriter<JoinLobbyRequest>,
+    lobby_code: Query<&TextInputValue>,
     steam_client: Res<SteamworksClient>,
 ) {
     for (interaction, button) in &mut button_query {
         match *interaction {
             Interaction::Hovered => {}
             Interaction::Pressed => match button {
-                Button::SinglePlayer => next_state.set(AppState::SinglePlayer),
-                Button::MultiPlayer => next_state.set(AppState::MultiPlayer),
-                Button::CreateLobby => next_state.set(AppState::CreateLooby),
-                Button::JoinLobby => next_state.set(AppState::JoinLobby),
-                Button::StartGame => next_state.set(AppState::GameSession),
+                Button::Singleplayer => next_state.set(MainMenuStates::Singleplayer),
+                Button::Multiplayer => next_state.set(MainMenuStates::Multiplayer),
+                Button::CreateLobby => {
+                    multiplayer_roles.set(MultiplayerRoles::Host);
+                }
+                Button::JoinLobby => {
+                    next_state.set(MainMenuStates::JoinScreen);
+                }
+                Button::StartGame => {
+                    // TODO
+                    player_commands.send(PlayerCommand::StartGame);
+                }
                 Button::InvitePlayer => steam_client
                     .friends()
                     .activate_invite_dialog(LobbyId::from_raw(76561198079103566)),
+                Button::Join => match lobby_code.single().0.parse::<u64>() {
+                    Ok(value) => {
+                        join_lobby_request.send(JoinLobbyRequest(SteamId::from_raw(value)));
+                        multiplayer_roles.set(MultiplayerRoles::Client);
+                    }
+                    Err(_) => {
+                        println!("Invalid u64 value.")
+                    }
+                },
                 Button::Back(state) => next_state.set(state.clone()),
             },
             Interaction::None => {}
@@ -297,7 +344,7 @@ fn display_multiplayer_buttons(mut commands: Commands) {
                 background_color: NORMAL_BUTTON.into(),
                 ..default()
             },
-            Button::Back(AppState::MainMenu),
+            Button::Back(MainMenuStates::TitleScreen),
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
@@ -311,7 +358,87 @@ fn display_multiplayer_buttons(mut commands: Commands) {
         });
 }
 
-fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) {
+const BORDER_COLOR_ACTIVE: Color = Color::srgb(0.75, 0.52, 0.99);
+const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
+const BACKGROUND_COLOR: Color = Color::srgb(0.15, 0.15, 0.15);
+
+fn display_join_screen(mut commands: Commands) {
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn((
+                NodeBundle {
+                    style: Style {
+                        width: Val::Px(300.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        padding: UiRect::all(Val::Px(5.0)),
+                        margin: UiRect::bottom(Val::Px(5.0)),
+                        ..default()
+                    },
+                    border_color: BORDER_COLOR_ACTIVE.into(),
+                    background_color: BACKGROUND_COLOR.into(),
+                    ..default()
+                },
+                TextInputBundle::default().with_text_style(TextStyle {
+                    font_size: 40.,
+                    color: TEXT_COLOR,
+                    ..default()
+                }),
+            ));
+        })
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    ButtonBundle {
+                        style: Style {
+                            width: Val::Px(200.0),
+                            height: Val::Px(65.0),
+                            border: UiRect::all(Val::Px(5.0)),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        border_color: BorderColor(Color::BLACK),
+                        background_color: NORMAL_BUTTON.into(),
+                        ..default()
+                    },
+                    Button::Join,
+                ))
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section(
+                        "Join",
+                        TextStyle {
+                            font_size: 35.0,
+                            color: Color::srgb(0.9, 0.9, 0.9),
+                            ..default()
+                        },
+                    ));
+                });
+        });
+}
+
+fn listener(mut events: EventReader<TextInputSubmitEvent>) {
+    for event in events.read() {
+        info!("{:?} submitted: {}", event.entity, event.value);
+    }
+}
+
+fn display_lobby(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    steam_client: Res<SteamworksClient>,
+) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -331,7 +458,7 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
             parent
                 .spawn((ButtonBundle {
                     style: Style {
-                        width: Val::Px(300.0),
+                        width: Val::Px(400.0),
                         height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
                         align_items: AlignItems::Center,
@@ -345,8 +472,9 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
                     ..default()
                 },))
                 .with_children(|parent| {
+                    let client_id = steam_client.user().steam_id().raw();
                     parent.spawn(TextBundle::from_section(
-                        "Code",
+                        format!("Code: {client_id}"),
                         TextStyle {
                             font_size: 35.0,
                             color: Color::srgb(0.9, 0.9, 0.9),
@@ -405,19 +533,6 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
                                 ));
                             });
                     })
-                    // .with_children(|parent| {
-                    //     parent.spawn((
-                    //         TextBundle::from_section(
-                    //             format!("Slot {i}"),
-                    //             TextStyle {
-                    //                 font_size: 35.0,
-                    //                 color: Color::srgb(0.9, 0.9, 0.9),
-                    //                 ..default()
-                    //             },
-                    //         ),
-                    //         LobbySlotName,
-                    //     ));
-                    // })
                     .with_children(|parent| {
                         parent.spawn((
                             ButtonBundle {
@@ -430,8 +545,7 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
                                 image: UiImage::new(asset_server.load("ui/checkbox.png")),
                                 ..Default::default()
                             },
-                            LobbySlotOwner(0),
-                            Checkbox::None,
+                            Checkbox::Unchecked,
                         ));
                     });
             }
@@ -501,7 +615,7 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
                 background_color: NORMAL_BUTTON.into(),
                 ..default()
             },
-            Button::Back(AppState::MultiPlayer),
+            Button::Back(MainMenuStates::Multiplayer),
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
@@ -515,23 +629,26 @@ fn display_create_lobby(mut commands: Commands, asset_server: Res<AssetServer>) 
         });
 }
 
+#[allow(clippy::type_complexity)]
 fn add_player_to_lobby_slot(
-    mut text_query: Query<&mut Text, With<LobbySlotName>>,
-    mut slot_owner_query: Query<&mut LobbySlotOwner>,
+    mut commands: Commands,
+    mut text_query: Query<
+        (Entity, &mut Text, &Parent),
+        (Without<LobbySlotOwner>, With<LobbySlotName>),
+    >,
     mut checkbox_query: Query<&mut Visibility, With<Checkbox>>,
-    lobby: Res<ClientLobby>,
+    mut player_joined: EventReader<PlayerJoined>,
+    slots: Query<&Children>,
 ) {
-    for (i, player) in lobby.players.keys().enumerate() {
-        if let Some(mut text) = text_query.iter_mut().nth(i) {
-            text.sections[0].value = player.to_string();
-        }
-
-        if let Some(mut lobby_slot_owner) = slot_owner_query.iter_mut().nth(i) {
-            lobby_slot_owner.0 = player.raw();
-        }
-
-        if let Some(mut button) = checkbox_query.iter_mut().nth(i) {
-            *button = Visibility::Visible;
+    for event in player_joined.read() {
+        if let Some((entity, mut text, parent)) = (&mut text_query).into_iter().next() {
+            text.sections[0].value = event.0.to_string();
+            commands.entity(entity).insert(LobbySlotOwner(event.0));
+            for child in slots.get(parent.get()).unwrap().iter() {
+                if let Ok(mut checkbox) = checkbox_query.get_mut(*child) {
+                    *checkbox = Visibility::Visible;
+                }
+            }
         }
     }
 }
@@ -547,20 +664,20 @@ fn lobby_slot_checkbox(
     client_id: Res<CurrentClientId>,
 ) {
     for (interactions, mut checkbox_image, mut checkbox, lobby_slot_owner) in &mut checkbox_query {
-        if lobby_slot_owner.0 != client_id.0 {
+        if lobby_slot_owner.0.raw().eq(&client_id.0) {
             continue;
         }
         match *interactions {
             Interaction::Pressed => match *checkbox {
                 Checkbox::Checked => {
                     *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
-                    *checkbox = Checkbox::None;
+                    *checkbox = Checkbox::Unchecked;
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sound/switch_002.ogg"),
                         ..Default::default()
                     });
                 }
-                Checkbox::None => {
+                Checkbox::Unchecked => {
                     *checkbox_image = UiImage::new(asset_server.load("ui/checkbox_checked.png"));
                     *checkbox = Checkbox::Checked;
                     commands.spawn(AudioBundle {

@@ -15,3 +15,9 @@ impl BoxCollider {
         Vec2::new(self.0.x / 2., self.0.y / 2.)
     }
 }
+
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum GameState {
+    MainMenu,
+    GameSession,
+}

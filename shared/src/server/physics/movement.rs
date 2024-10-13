@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::server::ai::{attack::unit_speed, UnitBehaviour};
+use crate::GameState;
 use crate::{
     networking::{PlayerInput, Unit},
     BoxCollider, GRAVITY_G,
@@ -17,10 +18,11 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (apply_velocity, determine_unit_velocity, apply_gravity),
+            (apply_velocity, determine_unit_velocity, apply_gravity)
+                .run_if(in_state(GameState::GameSession)),
         );
 
-        app.add_systems(Update, move_players_system);
+        app.add_systems(OnEnter(GameState::GameSession), move_players_system);
     }
 }
 
