@@ -39,5 +39,5 @@ pub fn join_server(
     commands.insert_resource(client);
     commands.insert_resource(CurrentClientId(steam_client.user().steam_id().raw()));
 
-    next_state.set(GameState::CreateLooby);
+    next_state.set(GameState::JoinLobbyHost);
 }

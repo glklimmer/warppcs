@@ -63,6 +63,7 @@ impl Plugin for MenuPlugin {
         app.add_systems(OnEnter(GameState::MultiPlayer), display_multiplayer_buttons);
 
         app.add_systems(OnEnter(GameState::CreateLooby), display_create_lobby);
+        app.add_systems(OnEnter(GameState::JoinLobbyHost), display_create_lobby);
 
         app.add_systems(OnEnter(GameState::JoinLobby), display_join_lobby);
 

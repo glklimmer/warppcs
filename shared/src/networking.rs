@@ -14,6 +14,7 @@ pub enum GameState {
     SinglePlayer,
     MultiPlayer,
     JoinLobby,
+    JoinLobbyHost,
     CreateLooby,
     GameSession,
 }
