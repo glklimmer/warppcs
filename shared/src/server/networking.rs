@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::map::base::BaseScene;
 use crate::map::{GameScene, GameSceneId, GameSceneType, Layers};
 use crate::networking::{
-    ClientChannel, Facing, GameState, MultiplayerRoles, NetworkEntity, NetworkedEntities, Owner,
+    ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, Owner,
     PlayerCommand, PlayerInput, PlayerSkin, ProjectileType, Rotation, ServerChannel,
     ServerMessages, SpawnPlayer, SpawnUnit, Unit,
 };
@@ -11,7 +11,7 @@ use crate::server::ai::attack::{unit_health, unit_swing_timer};
 use crate::server::ai::UnitBehaviour;
 use crate::server::game_scenes::GameSceneDestination;
 use crate::server::physics::movement::Velocity;
-use crate::BoxCollider;
+use crate::{BoxCollider, GameState};
 
 use bevy::color::palettes::css::{BLUE, RED};
 use bevy_renet::{

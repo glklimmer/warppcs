@@ -7,7 +7,7 @@ use shared::{
 use steamworks::{LobbyId, SteamId};
 
 use crate::{
-    networking::CurrentClientId,
+    networking::{CurrentClientId, PlayerJoined},
     ui_widgets::text_input::{
         TextInputBundle, TextInputPlugin, TextInputSubmitEvent, TextInputSystem, TextInputValue,
     },
@@ -25,18 +25,15 @@ pub enum MainMenuStates {
 pub struct MenuPlugin;
 
 #[derive(Event, Clone)]
-pub struct PlayerJoined(pub ClientId);
-
-#[derive(Event, Clone)]
 pub struct JoinLobbyRequest(pub SteamId);
 
 #[derive(Component, PartialEq)]
 enum Button {
-    SinglePlayer,
-    MultiPlayer,
+    Singleplayer,
+    Multiplayer,
     CreateLobby,
     JoinLobby,
-    JoinLobbyButton,
+    Join,
     StartGame,
     InvitePlayer,
     Back(MainMenuStates),
@@ -68,9 +65,9 @@ impl Plugin for MenuPlugin {
             display_multiplayer_buttons,
         );
 
-        app.add_systems(OnEnter(MainMenuStates::Lobby), display_create_lobby);
+        app.add_systems(OnEnter(MainMenuStates::Lobby), display_lobby);
 
-        app.add_systems(OnEnter(MainMenuStates::JoinScreen), display_join_lobby);
+        app.add_systems(OnEnter(MainMenuStates::JoinScreen), display_join_screen);
 
         app.add_systems(
             Update,
@@ -124,11 +121,11 @@ fn display_main_menu(mut commands: Commands) {
                         background_color: NORMAL_BUTTON.into(),
                         ..default()
                     },
-                    Button::SinglePlayer,
+                    Button::Singleplayer,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
-                        "Single Player",
+                        "Singleplayer",
                         TextStyle {
                             font_size: 35.0,
                             color: Color::srgb(0.9, 0.9, 0.9),
@@ -153,7 +150,7 @@ fn display_main_menu(mut commands: Commands) {
                         background_color: NORMAL_BUTTON.into(),
                         ..default()
                     },
-                    Button::MultiPlayer,
+                    Button::Multiplayer,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
@@ -222,8 +219,8 @@ fn change_state_on_button(
         match *interaction {
             Interaction::Hovered => {}
             Interaction::Pressed => match button {
-                Button::SinglePlayer => next_state.set(MainMenuStates::Singleplayer),
-                Button::MultiPlayer => next_state.set(MainMenuStates::Multiplayer),
+                Button::Singleplayer => next_state.set(MainMenuStates::Singleplayer),
+                Button::Multiplayer => next_state.set(MainMenuStates::Multiplayer),
                 Button::CreateLobby => {
                     multiplayer_roles.set(MultiplayerRoles::Host);
                 }
@@ -237,13 +234,13 @@ fn change_state_on_button(
                 Button::InvitePlayer => steam_client
                     .friends()
                     .activate_invite_dialog(LobbyId::from_raw(76561198079103566)),
-                Button::JoinLobbyButton => match lobby_code.single().0.parse::<u64>() {
+                Button::Join => match lobby_code.single().0.parse::<u64>() {
                     Ok(value) => {
                         join_lobby_request.send(JoinLobbyRequest(SteamId::from_raw(value)));
                         multiplayer_roles.set(MultiplayerRoles::Client);
                     }
                     Err(_) => {
-                        println!("not a steam id")
+                        println!("Invalid u64 value.")
                     }
                 },
                 Button::Back(state) => next_state.set(state.clone()),
@@ -365,7 +362,7 @@ const BORDER_COLOR_ACTIVE: Color = Color::srgb(0.75, 0.52, 0.99);
 const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 const BACKGROUND_COLOR: Color = Color::srgb(0.15, 0.15, 0.15);
 
-fn display_join_lobby(mut commands: Commands) {
+fn display_join_screen(mut commands: Commands) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -416,7 +413,7 @@ fn display_join_lobby(mut commands: Commands) {
                         background_color: NORMAL_BUTTON.into(),
                         ..default()
                     },
-                    Button::JoinLobbyButton,
+                    Button::Join,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
@@ -437,7 +434,7 @@ fn listener(mut events: EventReader<TextInputSubmitEvent>) {
     }
 }
 
-fn display_create_lobby(
+fn display_lobby(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     steam_client: Res<SteamworksClient>,
@@ -632,6 +629,7 @@ fn display_create_lobby(
         });
 }
 
+#[allow(clippy::type_complexity)]
 fn add_player_to_lobby_slot(
     mut commands: Commands,
     mut text_query: Query<
@@ -643,7 +641,7 @@ fn add_player_to_lobby_slot(
     slots: Query<&Children>,
 ) {
     for event in player_joined.read() {
-        for (entity, mut text, parent) in &mut text_query {
+        if let Some((entity, mut text, parent)) = (&mut text_query).into_iter().next() {
             text.sections[0].value = event.0.to_string();
             commands.entity(entity).insert(LobbySlotOwner(event.0));
             for child in slots.get(parent.get()).unwrap().iter() {
@@ -651,7 +649,6 @@ fn add_player_to_lobby_slot(
                     *checkbox = Visibility::Visible;
                 }
             }
-            break;
         }
     }
 }

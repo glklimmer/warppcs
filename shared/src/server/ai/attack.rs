@@ -4,9 +4,9 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 
 use super::UnitBehaviour;
-use crate::networking::GameState;
 use crate::server::networking::ServerLobby;
 use crate::server::physics::movement::Velocity;
+use crate::GameState;
 use crate::{
     map::GameSceneId,
     networking::{

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
-use crate::networking::GameState;
 use crate::server::ai::{attack::unit_speed, UnitBehaviour};
+use crate::GameState;
 use crate::{
     networking::{PlayerInput, Unit},
     BoxCollider, GRAVITY_G,

@@ -15,8 +15,6 @@ use shared::{
 use spawn::{spawn_player, spawn_projectile, spawn_unit};
 use std::collections::HashMap;
 
-use crate::ui::PlayerJoined;
-
 pub mod join_server;
 mod spawn;
 
@@ -54,6 +52,9 @@ pub struct NetworkEvent {
     pub entity: Entity,
     pub change: Change,
 }
+
+#[derive(Event, Clone)]
+pub struct PlayerJoined(pub ClientId);
 
 #[derive(Component)]
 struct PartOfScene;

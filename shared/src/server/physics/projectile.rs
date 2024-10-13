@@ -4,8 +4,8 @@ use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::RenetServer;
 
 use crate::map::GameSceneId;
-use crate::networking::{GameState, Owner, ProjectileType, ServerChannel, ServerMessages};
-use crate::BoxCollider;
+use crate::networking::{Owner, ProjectileType, ServerChannel, ServerMessages};
+use crate::{BoxCollider, GameState};
 
 use crate::server::ai::attack::{projectile_damage, TakeDamage};
 

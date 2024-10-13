@@ -2,10 +2,10 @@ use bevy::prelude::*;
 
 use crate::map::GameSceneId;
 use crate::networking::{
-    GameState, Owner, PlayerSkin, ProjectileType, ServerChannel, ServerMessages, SpawnPlayer,
-    SpawnProjectile, SpawnUnit, Unit,
+    Owner, PlayerSkin, ProjectileType, ServerChannel, ServerMessages, SpawnPlayer, SpawnProjectile,
+    SpawnUnit, Unit,
 };
-use crate::BoxCollider;
+use crate::{BoxCollider, GameState};
 use bevy::math::bounding::Aabb2d;
 use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;

@@ -8,13 +8,7 @@ use crate::map::GameSceneType;
 
 pub const PROTOCOL_ID: u64 = 7;
 
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum GameState {
-    MainMenu,
-    GameSession,
-}
-
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum MultiplayerRoles {
     Host,
     Client,

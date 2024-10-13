@@ -15,9 +15,10 @@ use networking::{
 };
 use renet_steam::bevy::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
 use shared::{
-    networking::{GameState, MultiplayerRoles},
+    networking::MultiplayerRoles,
     server::{create_server::create_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,
+    GameState,
 };
 use ui::{MainMenuStates, MenuPlugin};
 

@@ -3,7 +3,8 @@ use bevy::prelude::*;
 
 use crate::{
     map::GameSceneId,
-    networking::{GameState, Owner, Unit},
+    networking::{Owner, Unit},
+    GameState,
 };
 
 pub mod attack;
