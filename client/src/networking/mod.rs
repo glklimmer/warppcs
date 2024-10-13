@@ -5,7 +5,6 @@ use bevy_renet::{
     renet::{ClientId, RenetClient},
     RenetClientPlugin,
 };
-use shared::steamworks::SteamworksClient;
 use shared::{
     map::{base::BaseScene, GameSceneType},
     networking::{
