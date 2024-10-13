@@ -11,12 +11,14 @@ pub const PROTOCOL_ID: u64 = 7;
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum GameState {
     MainMenu,
-    SinglePlayer,
-    MultiPlayer,
-    JoinLobby,
-    JoinLobbyHost,
-    CreateLooby,
     GameSession,
+}
+
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MultiplayerRoles {
+    Host,
+    Client,
+    NotInGame,
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]

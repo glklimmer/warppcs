@@ -3,9 +3,9 @@ use bevy::prelude::*;
 use crate::map::base::BaseScene;
 use crate::map::{GameScene, GameSceneId, GameSceneType, Layers};
 use crate::networking::{
-    ClientChannel, Facing, GameState, NetworkEntity, NetworkedEntities, Owner, PlayerCommand,
-    PlayerInput, PlayerSkin, ProjectileType, Rotation, ServerChannel, ServerMessages, SpawnPlayer,
-    SpawnUnit, Unit,
+    ClientChannel, Facing, GameState, MultiplayerRoles, NetworkEntity, NetworkedEntities, Owner,
+    PlayerCommand, PlayerInput, PlayerSkin, ProjectileType, Rotation, ServerChannel,
+    ServerMessages, SpawnPlayer, SpawnUnit, Unit,
 };
 use crate::server::ai::attack::{unit_health, unit_swing_timer};
 use crate::server::ai::UnitBehaviour;
@@ -52,12 +52,12 @@ impl Plugin for ServerNetworkPlugin {
 
         app.add_systems(
             Update,
-            server_lobby_system.run_if(in_state(GameState::CreateLooby)),
-        );
-
-        app.add_systems(
-            Update,
-            (server_update_system, server_network_sync).run_if(in_state(GameState::CreateLooby)),
+            (
+                server_update_system,
+                server_network_sync,
+                server_lobby_system,
+            )
+                .run_if(in_state(MultiplayerRoles::Host)),
         );
 
         app.add_systems(

@@ -1,7 +1,7 @@
 use bevy::{color::palettes::css::BURLYWOOD, prelude::*};
 use bevy_renet::renet::ClientId;
 use shared::{
-    networking::{GameState, PlayerCommand},
+    networking::{MultiplayerRoles, PlayerCommand},
     steamworks::SteamworksClient,
 };
 use steamworks::{LobbyId, SteamId};
@@ -13,6 +13,15 @@ use crate::{
     },
 };
 
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum MainMenuStates {
+    TitleScreen,
+    Singleplayer,
+    Multiplayer,
+    JoinScreen,
+    Lobby,
+}
+
 pub struct MenuPlugin;
 
 #[derive(Event, Clone)]
@@ -21,19 +30,16 @@ pub struct PlayerJoined(pub ClientId);
 #[derive(Event, Clone)]
 pub struct JoinLobbyRequest(pub SteamId);
 
-#[derive(Event, Clone)]
-pub struct CreateServerRequest(bool);
-
 #[derive(Component, PartialEq)]
 enum Button {
     SinglePlayer,
     MultiPlayer,
     CreateLobby,
     JoinLobby,
-    JoinLobbyRequest,
+    JoinLobbyButton,
     StartGame,
     InvitePlayer,
-    Back(GameState),
+    Back(MainMenuStates),
 }
 
 #[derive(Component)]
@@ -52,32 +58,30 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlayerJoined>();
         app.add_event::<JoinLobbyRequest>();
-        app.add_event::<CreateServerRequest>();
 
         app.add_plugins(TextInputPlugin);
 
-        app.insert_state(GameState::MainMenu);
+        app.add_systems(OnEnter(MainMenuStates::TitleScreen), display_main_menu);
 
-        app.add_systems(OnEnter(GameState::MainMenu), display_main_menu);
+        app.add_systems(
+            OnEnter(MainMenuStates::Multiplayer),
+            display_multiplayer_buttons,
+        );
 
-        app.add_systems(OnEnter(GameState::MultiPlayer), display_multiplayer_buttons);
+        app.add_systems(OnEnter(MainMenuStates::Lobby), display_create_lobby);
 
-        app.add_systems(OnEnter(GameState::CreateLooby), display_create_lobby);
-        app.add_systems(OnEnter(GameState::JoinLobbyHost), display_create_lobby);
-
-        app.add_systems(OnEnter(GameState::JoinLobby), display_join_lobby);
+        app.add_systems(OnEnter(MainMenuStates::JoinScreen), display_join_lobby);
 
         app.add_systems(
             Update,
-            (lobby_slot_checkbox, add_player_to_lobby_slot)
-                .run_if(in_state(GameState::CreateLooby)),
+            (lobby_slot_checkbox, add_player_to_lobby_slot).run_if(in_state(MainMenuStates::Lobby)),
         );
 
         app.add_systems(
             Update,
             listener
                 .after(TextInputSystem)
-                .run_if(in_state(GameState::JoinLobby)),
+                .run_if(in_state(MainMenuStates::Lobby)),
         );
 
         app.add_systems(Update, (button_system, change_state_on_button));
@@ -207,10 +211,10 @@ fn button_system(
 
 fn change_state_on_button(
     mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut next_state: ResMut<NextState<MainMenuStates>>,
+    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
     mut player_commands: EventWriter<PlayerCommand>,
     mut join_lobby_request: EventWriter<JoinLobbyRequest>,
-    mut create_server_request: EventWriter<CreateServerRequest>,
     lobby_code: Query<&TextInputValue>,
     steam_client: Res<SteamworksClient>,
 ) {
@@ -218,21 +222,25 @@ fn change_state_on_button(
         match *interaction {
             Interaction::Hovered => {}
             Interaction::Pressed => match button {
-                Button::SinglePlayer => next_state.set(GameState::SinglePlayer),
-                Button::MultiPlayer => next_state.set(GameState::MultiPlayer),
+                Button::SinglePlayer => next_state.set(MainMenuStates::Singleplayer),
+                Button::MultiPlayer => next_state.set(MainMenuStates::Multiplayer),
                 Button::CreateLobby => {
-                    create_server_request.send(CreateServerRequest(true));
+                    multiplayer_roles.set(MultiplayerRoles::Host);
                 }
-                Button::JoinLobby => next_state.set(GameState::JoinLobby),
+                Button::JoinLobby => {
+                    next_state.set(MainMenuStates::JoinScreen);
+                }
                 Button::StartGame => {
+                    // TODO
                     player_commands.send(PlayerCommand::StartGame);
                 }
                 Button::InvitePlayer => steam_client
                     .friends()
                     .activate_invite_dialog(LobbyId::from_raw(76561198079103566)),
-                Button::JoinLobbyRequest => match lobby_code.single().0.parse::<u64>() {
+                Button::JoinLobbyButton => match lobby_code.single().0.parse::<u64>() {
                     Ok(value) => {
                         join_lobby_request.send(JoinLobbyRequest(SteamId::from_raw(value)));
+                        multiplayer_roles.set(MultiplayerRoles::Client);
                     }
                     Err(_) => {
                         println!("not a steam id")
@@ -339,7 +347,7 @@ fn display_multiplayer_buttons(mut commands: Commands) {
                 background_color: NORMAL_BUTTON.into(),
                 ..default()
             },
-            Button::Back(GameState::MainMenu),
+            Button::Back(MainMenuStates::TitleScreen),
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
@@ -408,7 +416,7 @@ fn display_join_lobby(mut commands: Commands) {
                         background_color: NORMAL_BUTTON.into(),
                         ..default()
                     },
-                    Button::JoinLobbyRequest,
+                    Button::JoinLobbyButton,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
@@ -610,7 +618,7 @@ fn display_create_lobby(
                 background_color: NORMAL_BUTTON.into(),
                 ..default()
             },
-            Button::Back(GameState::MultiPlayer),
+            Button::Back(MainMenuStates::Multiplayer),
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(

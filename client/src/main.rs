@@ -9,14 +9,17 @@ use bevy_renet::client_connected;
 use camera::CameraPlugin;
 use input::InputPlugin;
 use king::KingPlugin;
-use networking::{join_server::join_server, ClientNetworkingPlugin, Connected};
+use networking::{
+    join_server::{join_own_server, join_server},
+    ClientNetworkingPlugin, Connected,
+};
 use renet_steam::bevy::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
 use shared::{
-    networking::GameState,
+    networking::{GameState, MultiplayerRoles},
     server::{create_server::create_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,
 };
-use ui::{CreateServerRequest, JoinLobbyRequest, MenuPlugin};
+use ui::{MainMenuStates, MenuPlugin};
 
 pub mod animation;
 pub mod camera;
@@ -32,6 +35,10 @@ fn main() {
     app.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
 
     app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()));
+
+    app.insert_state(GameState::MainMenu);
+    app.insert_state(MultiplayerRoles::NotInGame);
+    app.insert_state(MainMenuStates::TitleScreen);
 
     app.add_plugins(KingPlugin);
     app.add_plugins(CameraPlugin);
@@ -63,13 +70,11 @@ fn main() {
     }
 
     app.add_systems(
-        Update,
-        (create_server, join_server)
-            .chain()
-            .run_if(on_event::<CreateServerRequest>()),
+        OnEnter(MultiplayerRoles::Host),
+        (create_server, join_own_server).chain(),
     );
 
-    app.add_systems(Update, join_server.run_if(on_event::<JoinLobbyRequest>()));
+    app.add_systems(Update, join_server.run_if(in_state(GameState::MainMenu)));
 
     app.run();
 }

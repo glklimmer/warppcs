@@ -5,6 +5,7 @@ use bevy_renet::{
     renet::{ClientId, RenetClient},
     RenetClientPlugin,
 };
+use shared::steamworks::SteamworksClient;
 use shared::{
     map::{base::BaseScene, GameSceneType},
     networking::{
@@ -92,6 +93,24 @@ impl Plugin for ClientNetworkingPlugin {
         );
     }
 }
+
+// fn listen_for_game_invites(steam_client: Res<SteamworksClient>, mut commands: Commands) {
+//     let friends = steam_client.friends();
+
+//     for friend in friends.get_friends(FriendFlags::IMMEDIATE) {
+//         if let Some(game_invite) = friend.game_played() {
+//             if game_invite.lobby_id.is_some() {
+//                 println!("Received game invite from: {}", friend.name());
+//                 // Handle the invite here, e.g., join the lobby or show a notification
+//                 // You might want to spawn an event or entity to handle this in your game logic
+//                 commands.spawn(GameInviteEvent {
+//                     friend_name: friend.name().to_string(),
+//                     lobby_id: game_invite.lobby_id.unwrap(),
+//                 });
+//             }
+//         }
+//     }
+//}
 
 #[allow(clippy::too_many_arguments)]
 fn client_sync_players(
