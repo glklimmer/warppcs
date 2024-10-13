@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy::app::ScheduleRunnerPlugin;
 use shared::{
-    server::{create_server::create_server, networking::ServerNetworkPlugin},
+    server::{create_server::create_steam_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,
 };
 
@@ -20,7 +20,7 @@ fn main() {
 
     app.add_plugins(ServerNetworkPlugin);
 
-    app.add_systems(Startup, create_server);
+    app.add_systems(Startup, create_steam_server);
 
     app.run();
 }

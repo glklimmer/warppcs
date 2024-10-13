@@ -1,9 +1,10 @@
 use bevy::{color::palettes::css::BURLYWOOD, prelude::*};
 use bevy_renet::renet::ClientId;
-use shared::{
-    networking::{MultiplayerRoles, PlayerCommand},
-    steamworks::SteamworksClient,
-};
+use shared::networking::{MultiplayerRoles, PlayerCommand};
+
+#[cfg(feature = "steam")]
+use shared::steamworks::SteamworksClient;
+#[cfg(feature = "steam")]
 use steamworks::{LobbyId, SteamId};
 
 use crate::{
@@ -22,10 +23,16 @@ pub enum MainMenuStates {
     Lobby,
 }
 
-pub struct MenuPlugin;
+#[cfg(feature = "netcode")]
+use std::net::SocketAddr;
 
 #[derive(Event, Clone)]
-pub struct JoinLobbyRequest(pub SteamId);
+#[cfg(feature = "steam")]
+pub struct JoinSteamLobby(pub SteamId);
+
+#[derive(Event, Clone)]
+#[cfg(feature = "netcode")]
+pub struct JoinNetcodeLobby(pub SocketAddr);
 
 #[derive(Component, PartialEq)]
 enum Button {
@@ -51,10 +58,11 @@ struct LobbySlotOwner(ClientId);
 #[derive(Component)]
 struct LobbySlotName;
 
+pub struct MenuPlugin;
+
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlayerJoined>();
-        app.add_event::<JoinLobbyRequest>();
 
         app.add_plugins(TextInputPlugin);
 
@@ -64,8 +72,6 @@ impl Plugin for MenuPlugin {
             OnEnter(MainMenuStates::Multiplayer),
             display_multiplayer_buttons,
         );
-
-        app.add_systems(OnEnter(MainMenuStates::Lobby), display_lobby);
 
         app.add_systems(OnEnter(MainMenuStates::JoinScreen), display_join_screen);
 
@@ -81,7 +87,24 @@ impl Plugin for MenuPlugin {
                 .run_if(in_state(MainMenuStates::Lobby)),
         );
 
-        app.add_systems(Update, (button_system, change_state_on_button));
+        app.add_systems(Update, button_system);
+
+        #[cfg(feature = "steam")]
+        {
+            app.add_event::<JoinSteamLobby>();
+
+            app.add_systems(OnEnter(MainMenuStates::Lobby), display_steam_lobby);
+
+            app.add_systems(Update, change_state_on_button_steam);
+        }
+        #[cfg(feature = "netcode")]
+        {
+            app.add_event::<JoinNetcodeLobby>();
+
+            app.add_systems(OnEnter(MainMenuStates::Lobby), display_netcode_lobby);
+
+            app.add_systems(Update, change_state_on_button_netcode);
+        }
     }
 }
 
@@ -206,12 +229,13 @@ fn button_system(
     }
 }
 
-fn change_state_on_button(
+#[cfg(feature = "steam")]
+fn change_state_on_button_steam(
     mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
     mut next_state: ResMut<NextState<MainMenuStates>>,
     mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
     mut player_commands: EventWriter<PlayerCommand>,
-    mut join_lobby_request: EventWriter<JoinLobbyRequest>,
+    mut join_lobby_request: EventWriter<JoinSteamLobby>,
     lobby_code: Query<&TextInputValue>,
     steam_client: Res<SteamworksClient>,
 ) {
@@ -221,12 +245,8 @@ fn change_state_on_button(
             Interaction::Pressed => match button {
                 Button::Singleplayer => next_state.set(MainMenuStates::Singleplayer),
                 Button::Multiplayer => next_state.set(MainMenuStates::Multiplayer),
-                Button::CreateLobby => {
-                    multiplayer_roles.set(MultiplayerRoles::Host);
-                }
-                Button::JoinLobby => {
-                    next_state.set(MainMenuStates::JoinScreen);
-                }
+                Button::CreateLobby => multiplayer_roles.set(MultiplayerRoles::Host),
+                Button::JoinLobby => next_state.set(MainMenuStates::JoinScreen),
                 Button::StartGame => {
                     // TODO
                     player_commands.send(PlayerCommand::StartGame);
@@ -236,13 +256,41 @@ fn change_state_on_button(
                     .activate_invite_dialog(LobbyId::from_raw(76561198079103566)),
                 Button::Join => match lobby_code.single().0.parse::<u64>() {
                     Ok(value) => {
-                        join_lobby_request.send(JoinLobbyRequest(SteamId::from_raw(value)));
+                        join_lobby_request.send(JoinSteamLobby(SteamId::from_raw(value)));
                         multiplayer_roles.set(MultiplayerRoles::Client);
                     }
                     Err(_) => {
                         println!("Invalid u64 value.")
                     }
                 },
+                Button::Back(state) => next_state.set(state.clone()),
+            },
+            Interaction::None => {}
+        }
+    }
+}
+
+#[cfg(feature = "netcode")]
+fn change_state_on_button_netcode(
+    mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
+    mut next_state: ResMut<NextState<MainMenuStates>>,
+    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
+    mut player_commands: EventWriter<PlayerCommand>,
+) {
+    for (interaction, button) in &mut button_query {
+        match *interaction {
+            Interaction::Hovered => {}
+            Interaction::Pressed => match button {
+                Button::Singleplayer => next_state.set(MainMenuStates::Singleplayer),
+                Button::Multiplayer => next_state.set(MainMenuStates::Multiplayer),
+                Button::CreateLobby => multiplayer_roles.set(MultiplayerRoles::Host),
+                Button::JoinLobby => next_state.set(MainMenuStates::JoinScreen),
+                Button::StartGame => {
+                    // TODO
+                    player_commands.send(PlayerCommand::StartGame);
+                }
+                Button::InvitePlayer => todo!(),
+                Button::Join => todo!(),
                 Button::Back(state) => next_state.set(state.clone()),
             },
             Interaction::None => {}
@@ -434,10 +482,11 @@ fn listener(mut events: EventReader<TextInputSubmitEvent>) {
     }
 }
 
-fn display_lobby(
+#[cfg(feature = "steam")]
+fn display_steam_lobby(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     steam_client: Res<SteamworksClient>,
+    asset_server: Res<AssetServer>,
 ) {
     commands
         .spawn(NodeBundle {
@@ -482,6 +531,186 @@ fn display_lobby(
                         },
                     ));
                 });
+        })
+        .with_children(|parent| {
+            for i in 1..5 {
+                parent
+                    .spawn(NodeBundle {
+                        style: Style {
+                            display: Display::Flex,
+                            flex_direction: FlexDirection::Row,
+                            width: Val::Percent(80.0),
+                            height: Val::Percent(20.0),
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::SpaceBetween,
+                            border: UiRect::all(Val::Px(2.0)),
+                            padding: UiRect::all(Val::Px(10.0)),
+                            ..default()
+                        },
+                        border_color: BorderColor(Color::BLACK),
+                        ..Default::default()
+                    })
+                    .with_children(|parent| {
+                        parent
+                            .spawn((
+                                ButtonBundle {
+                                    style: Style {
+                                        width: Val::Px(350.0),
+                                        height: Val::Px(65.0),
+                                        border: UiRect::all(Val::Px(5.0)),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    border_color: BorderColor(Color::BLACK),
+                                    background_color: NORMAL_BUTTON.into(),
+                                    ..default()
+                                },
+                                Button::InvitePlayer,
+                            ))
+                            .with_children(|parent| {
+                                parent.spawn((
+                                    TextBundle::from_section(
+                                        format!("Slot {i}"),
+                                        TextStyle {
+                                            font_size: 35.0,
+                                            color: Color::srgb(0.9, 0.9, 0.9),
+                                            ..default()
+                                        },
+                                    ),
+                                    LobbySlotName,
+                                ));
+                            });
+                    })
+                    .with_children(|parent| {
+                        parent.spawn((
+                            ButtonBundle {
+                                style: Style {
+                                    width: Val::Px(50.),
+                                    height: Val::Px(50.),
+                                    ..Default::default()
+                                },
+                                visibility: Visibility::Hidden,
+                                image: UiImage::new(asset_server.load("ui/checkbox.png")),
+                                ..Default::default()
+                            },
+                            Checkbox::Unchecked,
+                        ));
+                    });
+            }
+        })
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    ButtonBundle {
+                        style: Style {
+                            width: Val::Percent(40.0),
+                            height: Val::Px(65.0),
+                            border: UiRect::all(Val::Px(5.0)),
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            margin: UiRect::top(Val::Px(5.0)),
+                            ..default()
+                        },
+                        border_color: BorderColor(Color::BLACK),
+                        background_color: BURLYWOOD.into(),
+                        ..default()
+                    },
+                    Button::StartGame,
+                ))
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section(
+                        "Start Game",
+                        TextStyle {
+                            font_size: 35.0,
+                            color: Color::srgb(0.9, 0.9, 0.9),
+                            ..default()
+                        },
+                    ));
+                });
+        });
+
+    commands.spawn(NodeBundle {
+        style: Style {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Row,
+            width: Val::Percent(50.0),
+            height: Val::Percent(80.0),
+            align_items: AlignItems::Center,
+            position_type: PositionType::Absolute,
+            border: UiRect::all(Val::Px(2.)),
+            right: Val::Px(0.),
+            ..Default::default()
+        },
+        ..default()
+    });
+
+    commands
+        .spawn((
+            ButtonBundle {
+                style: Style {
+                    width: Val::Px(150.0),
+                    height: Val::Px(50.0),
+                    border: UiRect::all(Val::Px(5.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    align_self: AlignSelf::Start,
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(0.),
+                    bottom: Val::Percent(5.),
+                    ..default()
+                },
+                border_color: BorderColor(Color::BLACK),
+                background_color: NORMAL_BUTTON.into(),
+                ..default()
+            },
+            Button::Back(MainMenuStates::Multiplayer),
+        ))
+        .with_children(|parent| {
+            parent.spawn(TextBundle::from_section(
+                "Back",
+                TextStyle {
+                    font_size: 30.0,
+                    color: Color::srgb(0.9, 0.9, 0.9),
+                    ..default()
+                },
+            ));
+        });
+}
+
+#[cfg(feature = "netcode")]
+fn display_netcode_lobby(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                width: Val::Percent(50.0),
+                height: Val::Percent(80.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                position_type: PositionType::Absolute,
+                top: Val::Percent(5.),
+                ..Default::default()
+            },
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn(ButtonBundle {
+                style: Style {
+                    width: Val::Px(400.0),
+                    height: Val::Px(65.0),
+                    border: UiRect::all(Val::Px(5.0)),
+                    align_items: AlignItems::Center,
+                    align_self: AlignSelf::Center,
+                    margin: UiRect::bottom(Val::Px(5.0)),
+                    right: Val::Px(0.),
+                    ..default()
+                },
+                border_color: BorderColor(Color::BLACK),
+                background_color: NORMAL_BUTTON.into(),
+                ..default()
+            });
         })
         .with_children(|parent| {
             for i in 1..5 {

@@ -1,25 +1,14 @@
 use bevy::prelude::*;
 
-use std::f32::consts::PI;
-
-use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
-
 use animation::AnimationPlugin;
+use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_renet::client_connected;
 use camera::CameraPlugin;
 use input::InputPlugin;
 use king::KingPlugin;
-use networking::{
-    join_server::{join_own_server, join_server},
-    ClientNetworkingPlugin, Connected,
-};
-use renet_steam::bevy::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
-use shared::{
-    networking::MultiplayerRoles,
-    server::{create_server::create_server, networking::ServerNetworkPlugin},
-    steamworks::SteamworksPlugin,
-    GameState,
-};
+use networking::{ClientNetworkPlugin, Connected};
+use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
+use std::f32::consts::PI;
 use ui::{MainMenuStates, MenuPlugin};
 
 pub mod animation;
@@ -33,7 +22,11 @@ pub mod ui_widgets;
 
 fn main() {
     let mut app = App::new();
-    app.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
+    #[cfg(feature = "steam")]
+    {
+        use shared::steamworks::SteamworksPlugin;
+        app.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
+    }
 
     app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()));
 
@@ -49,17 +42,20 @@ fn main() {
 
     app.add_systems(Startup, setup_background);
 
-    app.add_plugins(ClientNetworkingPlugin);
+    app.add_plugins(ServerNetworkPlugin);
+    app.add_plugins(ClientNetworkPlugin);
 
     #[cfg(feature = "steam")]
     {
-        app.add_plugins(ServerNetworkPlugin);
-        app.add_plugins(SteamClientPlugin);
+        use networking::join_server::{join_own_steam_server, join_steam_server};
+        use renet_steam::bevy::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
+        use shared::server::create_server::create_steam_server;
+
         app.add_plugins(SteamServerPlugin);
+        app.add_plugins(SteamClientPlugin);
 
         app.configure_sets(Update, Connected.run_if(client_connected));
 
-        //If any error is found we just panic
         #[allow(clippy::never_loop)]
         fn panic_on_error_system(mut renet_error: EventReader<SteamTransportError>) {
             for e in renet_error.read() {
@@ -68,14 +64,49 @@ fn main() {
         }
 
         app.add_systems(Update, panic_on_error_system.run_if(client_connected));
+
+        app.add_systems(
+            OnEnter(MultiplayerRoles::Host),
+            (create_steam_server, join_own_steam_server).chain(),
+        );
+
+        app.add_systems(
+            Update,
+            join_steam_server.run_if(in_state(GameState::MainMenu)),
+        );
     }
 
-    app.add_systems(
-        OnEnter(MultiplayerRoles::Host),
-        (create_server, join_own_server).chain(),
-    );
+    #[cfg(feature = "netcode")]
+    {
+        use bevy_renet::transport::NetcodeClientPlugin;
+        use bevy_renet::{renet::transport::NetcodeTransportError, transport::NetcodeServerPlugin};
+        use networking::join_server::{join_netcode_server, join_own_netcode_server};
+        use shared::server::create_server::create_netcode_server;
 
-    app.add_systems(Update, join_server.run_if(in_state(GameState::MainMenu)));
+        app.add_plugins(NetcodeServerPlugin);
+        app.add_plugins(NetcodeClientPlugin);
+
+        app.configure_sets(Update, Connected.run_if(client_connected));
+
+        #[allow(clippy::never_loop)]
+        fn panic_on_error_system(mut renet_error: EventReader<NetcodeTransportError>) {
+            for e in renet_error.read() {
+                panic!("{}", e);
+            }
+        }
+
+        app.add_systems(Update, panic_on_error_system.run_if(client_connected));
+
+        app.add_systems(
+            OnEnter(MultiplayerRoles::Host),
+            (create_netcode_server, join_own_netcode_server).chain(),
+        );
+
+        app.add_systems(
+            Update,
+            join_netcode_server.run_if(in_state(GameState::MainMenu)),
+        );
+    }
 
     app.run();
 }

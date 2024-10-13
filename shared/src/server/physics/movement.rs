@@ -22,7 +22,10 @@ impl Plugin for MovementPlugin {
                 .run_if(in_state(GameState::GameSession)),
         );
 
-        app.add_systems(OnEnter(GameState::GameSession), move_players_system);
+        app.add_systems(
+            Update,
+            move_players_system.run_if(in_state(GameState::GameSession)),
+        );
     }
 }
 

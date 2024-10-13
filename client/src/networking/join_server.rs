@@ -1,31 +1,40 @@
 use bevy::prelude::*;
 
 use bevy_renet::renet::RenetClient;
-use renet_steam::SteamClientTransport;
-use shared::{networking::connection_config, steamworks::SteamworksClient};
+use shared::networking::connection_config;
 
-use crate::{
-    networking::CurrentClientId,
-    ui::{JoinLobbyRequest, MainMenuStates},
-};
+use crate::{networking::CurrentClientId, ui::MainMenuStates};
 
-pub fn join_own_server(
-    mut join_lobby: EventWriter<JoinLobbyRequest>,
+#[cfg(feature = "steam")]
+use crate::ui::JoinSteamLobby;
+
+#[cfg(feature = "netcode")]
+use crate::ui::JoinNetcodeLobby;
+
+#[cfg(feature = "steam")]
+use shared::steamworks::SteamworksClient;
+
+#[cfg(feature = "steam")]
+pub fn join_own_steam_server(
+    mut join_lobby: EventWriter<JoinSteamLobby>,
     steam_client: Res<SteamworksClient>,
 ) {
-    join_lobby.send(JoinLobbyRequest(steam_client.user().steam_id()));
+    join_lobby.send(JoinSteamLobby(steam_client.user().steam_id()));
 }
 
-pub fn join_server(
+#[cfg(feature = "steam")]
+pub fn join_steam_server(
     mut commands: Commands,
     steam_client: Res<SteamworksClient>,
-    mut join_lobby: EventReader<JoinLobbyRequest>,
-    mut next_state: ResMut<NextState<MainMenuStates>>,
+    mut join_lobby: EventReader<JoinSteamLobby>,
+    mut ui: ResMut<NextState<MainMenuStates>>,
 ) {
     let server_steam_id = match join_lobby.read().next() {
         Some(value) => value.0,
         None => return,
     };
+
+    use renet_steam::SteamClientTransport;
 
     let client = RenetClient::new(connection_config());
 
@@ -46,5 +55,48 @@ pub fn join_server(
     commands.insert_resource(client);
     commands.insert_resource(CurrentClientId(steam_client.user().steam_id().raw()));
 
-    next_state.set(MainMenuStates::Lobby);
+    ui.set(MainMenuStates::Lobby);
+}
+
+#[cfg(feature = "netcode")]
+pub fn join_own_netcode_server(mut join_lobby: EventWriter<JoinNetcodeLobby>) {
+    join_lobby.send(JoinNetcodeLobby("127.0.0.1:5000".parse().unwrap()));
+}
+
+#[cfg(feature = "netcode")]
+pub fn join_netcode_server(
+    mut commands: Commands,
+    mut join_lobby: EventReader<JoinNetcodeLobby>,
+    mut ui: ResMut<NextState<MainMenuStates>>,
+) {
+    let server_addr = match join_lobby.read().next() {
+        Some(value) => value.0,
+        None => return,
+    };
+
+    use bevy_renet::renet::transport::{ClientAuthentication, NetcodeClientTransport};
+    use shared::networking::PROTOCOL_ID;
+    use std::{net::UdpSocket, time::SystemTime};
+
+    let client = RenetClient::new(connection_config());
+
+    let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
+    let current_time = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap();
+    let client_id = current_time.as_millis() as u64;
+    let authentication = ClientAuthentication::Unsecure {
+        client_id,
+        protocol_id: PROTOCOL_ID,
+        server_addr,
+        user_data: None,
+    };
+
+    let transport = NetcodeClientTransport::new(current_time, authentication, socket).unwrap();
+
+    commands.insert_resource(client);
+    commands.insert_resource(transport);
+    commands.insert_resource(CurrentClientId(client_id));
+
+    ui.set(MainMenuStates::Lobby);
 }
