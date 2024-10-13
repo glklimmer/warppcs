@@ -369,7 +369,6 @@ fn client_send_player_commands(
     mut client: ResMut<RenetClient>,
 ) {
     for command in player_commands.read() {
-        println!("Player Command sended");
         let command_message = bincode::serialize(command).unwrap();
         client.send_message(ClientChannel::Command, command_message);
     }
