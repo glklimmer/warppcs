@@ -49,9 +49,6 @@ pub enum PlayerCommand {
     SpawnUnit(UnitType),
 }
 
-#[derive(Debug, Serialize, Deserialize, Event)]
-pub struct ChangeState(pub GameState);
-
 pub enum ClientChannel {
     Input,
     Command,
