@@ -57,8 +57,12 @@ impl Plugin for ServerNetworkPlugin {
 
         app.add_systems(
             Update,
-            (on_unit_death, server_update_system, server_network_sync)
-                .run_if(in_state(GameState::JoinLobby)),
+            (server_update_system, server_network_sync).run_if(in_state(GameState::CreateLooby)),
+        );
+
+        app.add_systems(
+            Update,
+            (on_unit_death).run_if(in_state(GameState::GameSession)),
         );
 
         app.insert_resource(ServerLobby::default());

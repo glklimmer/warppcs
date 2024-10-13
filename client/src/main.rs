@@ -16,7 +16,7 @@ use shared::{
     server::{create_server::create_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,
 };
-use ui::MenuPlugin;
+use ui::{CreateServerRequest, JoinLobbyRequest, MenuPlugin};
 
 pub mod animation;
 pub mod camera;
@@ -25,6 +25,7 @@ pub mod input;
 pub mod king;
 pub mod networking;
 pub mod ui;
+pub mod ui_widgets;
 
 fn main() {
     let mut app = App::new();
@@ -39,11 +40,6 @@ fn main() {
     app.add_plugins(MenuPlugin);
 
     app.add_systems(Startup, setup_background);
-
-    app.add_systems(
-        OnEnter(GameState::CreateLooby),
-        (create_server, join_server).chain(),
-    );
 
     app.add_plugins(ClientNetworkingPlugin);
 
@@ -66,7 +62,14 @@ fn main() {
         app.add_systems(Update, panic_on_error_system.run_if(client_connected));
     }
 
-    //app.add_systems(Startup, join_server.run_if(on_event::<JoinLobby>()));
+    app.add_systems(
+        Update,
+        (create_server, join_server)
+            .chain()
+            .run_if(on_event::<CreateServerRequest>()),
+    );
+
+    app.add_systems(Update, join_server.run_if(on_event::<JoinLobbyRequest>()));
 
     app.run();
 }

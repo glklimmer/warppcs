@@ -4,14 +4,25 @@ use shared::{
     networking::{GameState, PlayerCommand},
     steamworks::SteamworksClient,
 };
-use steamworks::LobbyId;
+use steamworks::{LobbyId, SteamId};
 
-use crate::networking::CurrentClientId;
+use crate::{
+    networking::CurrentClientId,
+    ui_widgets::text_input::{
+        TextInputBundle, TextInputPlugin, TextInputSubmitEvent, TextInputSystem, TextInputValue,
+    },
+};
 
 pub struct MenuPlugin;
 
 #[derive(Event, Clone)]
 pub struct PlayerJoined(pub ClientId);
+
+#[derive(Event, Clone)]
+pub struct JoinLobbyRequest(pub SteamId);
+
+#[derive(Event, Clone)]
+pub struct CreateServerRequest(bool);
 
 #[derive(Component, PartialEq)]
 enum Button {
@@ -19,6 +30,7 @@ enum Button {
     MultiPlayer,
     CreateLobby,
     JoinLobby,
+    JoinLobbyRequest,
     StartGame,
     InvitePlayer,
     Back(GameState),
@@ -39,6 +51,10 @@ struct LobbySlotName;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlayerJoined>();
+        app.add_event::<JoinLobbyRequest>();
+        app.add_event::<CreateServerRequest>();
+
+        app.add_plugins(TextInputPlugin);
 
         app.insert_state(GameState::MainMenu);
 
@@ -48,10 +64,19 @@ impl Plugin for MenuPlugin {
 
         app.add_systems(OnEnter(GameState::CreateLooby), display_create_lobby);
 
+        app.add_systems(OnEnter(GameState::JoinLobby), display_join_lobby);
+
         app.add_systems(
             Update,
             (lobby_slot_checkbox, add_player_to_lobby_slot)
                 .run_if(in_state(GameState::CreateLooby)),
+        );
+
+        app.add_systems(
+            Update,
+            listener
+                .after(TextInputSystem)
+                .run_if(in_state(GameState::JoinLobby)),
         );
 
         app.add_systems(Update, (button_system, change_state_on_button));
@@ -183,6 +208,9 @@ fn change_state_on_button(
     mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
     mut next_state: ResMut<NextState<GameState>>,
     mut player_commands: EventWriter<PlayerCommand>,
+    mut join_lobby_request: EventWriter<JoinLobbyRequest>,
+    mut create_server_request: EventWriter<CreateServerRequest>,
+    lobby_code: Query<&TextInputValue>,
     steam_client: Res<SteamworksClient>,
 ) {
     for (interaction, button) in &mut button_query {
@@ -191,7 +219,9 @@ fn change_state_on_button(
             Interaction::Pressed => match button {
                 Button::SinglePlayer => next_state.set(GameState::SinglePlayer),
                 Button::MultiPlayer => next_state.set(GameState::MultiPlayer),
-                Button::CreateLobby => next_state.set(GameState::CreateLooby),
+                Button::CreateLobby => {
+                    create_server_request.send(CreateServerRequest(true));
+                }
                 Button::JoinLobby => next_state.set(GameState::JoinLobby),
                 Button::StartGame => {
                     player_commands.send(PlayerCommand::StartGame);
@@ -199,6 +229,14 @@ fn change_state_on_button(
                 Button::InvitePlayer => steam_client
                     .friends()
                     .activate_invite_dialog(LobbyId::from_raw(76561198079103566)),
+                Button::JoinLobbyRequest => match lobby_code.single().0.parse::<u64>() {
+                    Ok(value) => {
+                        join_lobby_request.send(JoinLobbyRequest(SteamId::from_raw(value)));
+                    }
+                    Err(_) => {
+                        println!("not a steam id")
+                    }
+                },
                 Button::Back(state) => next_state.set(state.clone()),
             },
             Interaction::None => {}
@@ -312,6 +350,82 @@ fn display_multiplayer_buttons(mut commands: Commands) {
                 },
             ));
         });
+}
+
+const BORDER_COLOR_ACTIVE: Color = Color::srgb(0.75, 0.52, 0.99);
+const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
+const BACKGROUND_COLOR: Color = Color::srgb(0.15, 0.15, 0.15);
+
+fn display_join_lobby(mut commands: Commands) {
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn((
+                NodeBundle {
+                    style: Style {
+                        width: Val::Px(300.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        padding: UiRect::all(Val::Px(5.0)),
+                        margin: UiRect::bottom(Val::Px(5.0)),
+                        ..default()
+                    },
+                    border_color: BORDER_COLOR_ACTIVE.into(),
+                    background_color: BACKGROUND_COLOR.into(),
+                    ..default()
+                },
+                TextInputBundle::default().with_text_style(TextStyle {
+                    font_size: 40.,
+                    color: TEXT_COLOR,
+                    ..default()
+                }),
+            ));
+        })
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    ButtonBundle {
+                        style: Style {
+                            width: Val::Px(200.0),
+                            height: Val::Px(65.0),
+                            border: UiRect::all(Val::Px(5.0)),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        border_color: BorderColor(Color::BLACK),
+                        background_color: NORMAL_BUTTON.into(),
+                        ..default()
+                    },
+                    Button::JoinLobbyRequest,
+                ))
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section(
+                        "Join",
+                        TextStyle {
+                            font_size: 35.0,
+                            color: Color::srgb(0.9, 0.9, 0.9),
+                            ..default()
+                        },
+                    ));
+                });
+        });
+}
+
+fn listener(mut events: EventReader<TextInputSubmitEvent>) {
+    for event in events.read() {
+        info!("{:?} submitted: {}", event.entity, event.value);
+    }
 }
 
 fn display_create_lobby(
