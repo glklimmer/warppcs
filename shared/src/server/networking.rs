@@ -62,7 +62,9 @@ impl Plugin for ServerNetworkPlugin {
 
         app.add_systems(
             Update,
-            (on_unit_death).run_if(in_state(GameState::GameSession)),
+            (on_unit_death).run_if(
+                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
+            ),
         );
 
         app.insert_resource(ServerLobby::default());

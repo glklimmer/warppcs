@@ -92,17 +92,13 @@ impl Plugin for MenuPlugin {
         #[cfg(feature = "steam")]
         {
             app.add_event::<JoinSteamLobby>();
-
             app.add_systems(OnEnter(MainMenuStates::Lobby), display_steam_lobby);
-
             app.add_systems(Update, change_state_on_button_steam);
         }
         #[cfg(feature = "netcode")]
         {
             app.add_event::<JoinNetcodeLobby>();
-
             app.add_systems(OnEnter(MainMenuStates::Lobby), display_netcode_lobby);
-
             app.add_systems(Update, change_state_on_button_netcode);
         }
     }
@@ -276,6 +272,7 @@ fn change_state_on_button_netcode(
     mut next_state: ResMut<NextState<MainMenuStates>>,
     mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
     mut player_commands: EventWriter<PlayerCommand>,
+    mut join_lobby_request: EventWriter<JoinNetcodeLobby>,
 ) {
     for (interaction, button) in &mut button_query {
         match *interaction {
@@ -284,7 +281,10 @@ fn change_state_on_button_netcode(
                 Button::Singleplayer => next_state.set(MainMenuStates::Singleplayer),
                 Button::Multiplayer => next_state.set(MainMenuStates::Multiplayer),
                 Button::CreateLobby => multiplayer_roles.set(MultiplayerRoles::Host),
-                Button::JoinLobby => next_state.set(MainMenuStates::JoinScreen),
+                Button::JoinLobby => {
+                    join_lobby_request.send(JoinNetcodeLobby("127.0.0.1:5000".parse().unwrap()));
+                    multiplayer_roles.set(MultiplayerRoles::Client);
+                }
                 Button::StartGame => {
                     // TODO
                     player_commands.send(PlayerCommand::StartGame);

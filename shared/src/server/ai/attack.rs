@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 
 use super::UnitBehaviour;
+use crate::networking::MultiplayerRoles;
 use crate::server::networking::ServerLobby;
 use crate::server::physics::movement::Velocity;
 use crate::GameState;
@@ -29,7 +30,9 @@ impl Plugin for AttackPlugin {
 
         app.add_systems(
             Update,
-            (process_attacks, apply_damage).run_if(in_state(GameState::GameSession)),
+            (process_attacks, apply_damage).run_if(
+                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
+            ),
         );
     }
 }

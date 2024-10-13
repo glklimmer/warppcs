@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::networking::MultiplayerRoles;
 use crate::server::ai::{attack::unit_speed, UnitBehaviour};
 use crate::GameState;
 use crate::{
@@ -18,13 +19,16 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (apply_velocity, determine_unit_velocity, apply_gravity)
-                .run_if(in_state(GameState::GameSession)),
+            (apply_velocity, determine_unit_velocity, apply_gravity).run_if(
+                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
+            ),
         );
 
         app.add_systems(
             Update,
-            move_players_system.run_if(in_state(GameState::GameSession)),
+            move_players_system.run_if(
+                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
+            ),
         );
     }
 }
