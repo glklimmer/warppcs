@@ -1,5 +1,6 @@
+use bevy::prelude::*;
+
 use attack::{unit_range, AttackPlugin};
-use bevy::{math::NormedVectorSpace, prelude::*};
 
 use crate::{
     map::GameSceneId,
@@ -7,10 +8,13 @@ use crate::{
     GameState,
 };
 
+use super::buildings::FlagAssignment;
+
 pub mod attack;
 
 #[derive(Debug, Component)]
 pub enum UnitBehaviour {
+    FollowFlag(Entity, Vec2),
     MoveTarget(Vec2),
     AttackTarget(Entity),
     Idle,
@@ -41,10 +45,18 @@ struct TargetInfo {
 }
 
 fn determine_behaviour(
-    mut query: Query<(&mut UnitBehaviour, &GameSceneId, &Transform, &Owner, &Unit)>,
+    mut query: Query<(
+        Entity,
+        &mut UnitBehaviour,
+        &GameSceneId,
+        &Transform,
+        &Owner,
+        &Unit,
+    )>,
     others: Query<(Entity, &GameSceneId, &Transform, &Owner), With<Unit>>,
+    flag: Query<&FlagAssignment>,
 ) {
-    for (mut behaviour, scene_id, transform, owner, unit) in &mut query {
+    for (entity, mut behaviour, scene_id, transform, owner, unit) in &mut query {
         let possible_targets: Vec<TargetInfo> = others
             .iter()
             .filter(|other| other.1.eq(scene_id))
@@ -93,10 +105,18 @@ fn determine_behaviour(
                         }
                     },
                     None => {
-                        if let UnitBehaviour::MoveTarget(target) = *behaviour {
-                            if transform.translation.truncate().distance(target) <= MOVE_EPSILON {
-                                *behaviour = UnitBehaviour::Idle;
+                        let flag = flag.get(entity).unwrap();
+                        match *behaviour {
+                            UnitBehaviour::MoveTarget(target) => {
+                                if transform.translation.truncate().distance(target) <= MOVE_EPSILON
+                                {
+                                    *behaviour = UnitBehaviour::FollowFlag(flag.0, flag.1);
+                                }
                             }
+                            UnitBehaviour::AttackTarget(_) => {
+                                *behaviour = UnitBehaviour::FollowFlag(flag.0, flag.1)
+                            }
+                            _ => {}
                         }
                     }
                 }

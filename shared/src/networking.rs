@@ -77,7 +77,6 @@ pub struct SpawnPlayer {
 #[derive(Debug, Serialize, Deserialize, Event)]
 pub struct SpawnFlag {
     pub entity: Entity,
-    pub translation: [f32; 3],
 }
 
 #[derive(Debug, Serialize, Deserialize, Event)]

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::networking::MultiplayerRoles;
+use crate::server::ai::MOVE_EPSILON;
 use crate::server::ai::{attack::unit_speed, UnitBehaviour};
 use crate::GameState;
 use crate::{
@@ -57,18 +58,40 @@ fn apply_velocity(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>
     }
 }
 
-fn determine_unit_velocity(mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit)>) {
+fn determine_unit_velocity(
+    mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit)>,
+    flag_transform: Query<&Transform, Without<Unit>>,
+) {
     for (mut velocity, transform, behaviour, unit) in &mut query {
         match behaviour {
             UnitBehaviour::Idle | UnitBehaviour::AttackTarget(_) => velocity.0.x = 0.,
             UnitBehaviour::MoveTarget(target) => {
-                let target_right = target.x > transform.translation.x;
-
-                match target_right {
-                    true => velocity.0.x = unit_speed(&unit.unit_type),
-                    false => velocity.0.x = -unit_speed(&unit.unit_type),
-                }
+                set_velocity_with_target(target, transform, &mut velocity, unit);
+            }
+            UnitBehaviour::FollowFlag(flag, offset) => {
+                let target = flag_transform.get(*flag).unwrap().translation.truncate();
+                let target = target + *offset;
+                set_velocity_with_target(&target, transform, &mut velocity, unit);
             }
         }
+    }
+}
+
+fn set_velocity_with_target(
+    target: &Vec2,
+    transform: &Transform,
+    velocity: &mut Mut<Velocity>,
+    unit: &Unit,
+) {
+    if transform.translation.truncate().distance(*target) <= MOVE_EPSILON {
+        velocity.0.x = 0.;
+        return;
+    }
+
+    let target_right = target.x > transform.translation.x;
+
+    match target_right {
+        true => velocity.0.x = unit_speed(&unit.unit_type),
+        false => velocity.0.x = -unit_speed(&unit.unit_type),
     }
 }

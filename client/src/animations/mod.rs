@@ -49,7 +49,7 @@ pub struct FlagBundle {
 }
 
 impl FlagBundle {
-    pub fn new(flag_sprite_sheet: &Res<FlagSpriteSheet>, translation: [f32; 3]) -> Self {
+    pub fn new(flag_sprite_sheet: &Res<FlagSpriteSheet>) -> Self {
         let atlas_layout = flag_sprite_sheet.atlas_layout.clone();
 
         FlagBundle {
@@ -57,8 +57,7 @@ impl FlagBundle {
             sprite_sheet: SpriteBundle {
                 texture: flag_sprite_sheet.texture.clone(),
                 transform: Transform {
-                    translation: Vec3::new(translation[0], translation[1], translation[2]),
-                    scale: Vec3::splat(2.),
+                    translation: Vec3::ZERO,
                     ..Default::default()
                 },
                 ..Default::default()
