@@ -1,15 +1,50 @@
 use bevy::prelude::*;
 
-use super::{ClientPlayers, CurrentClientId, NetworkMapping};
+use super::{ClientPlayers, Connected, CurrentClientId, NetworkMapping};
 use crate::{
-    animation::UnitAnimation,
-    king::{PaladinBundle, PaladinSpriteSheet, WarriorBundle, WarriorSpriteSheet},
+    animations::{
+        animation::UnitAnimation,
+        king::{PaladinBundle, PaladinSpriteSheet, WarriorBundle, WarriorSpriteSheet},
+        FlagBundle, FlagSpriteSheet,
+    },
     networking::{ControlledPlayer, PartOfScene, PlayerEntityMapping},
 };
 use shared::{
-    networking::{PlayerSkin, ProjectileType, SpawnPlayer, SpawnProjectile, SpawnUnit, UnitType},
+    networking::{
+        PlayerSkin, ProjectileType, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit, UnitType,
+    },
     BoxCollider,
 };
+
+pub struct SpawnPlugin;
+
+impl Plugin for SpawnPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<FlagSpriteSheet>();
+
+        app.add_event::<SpawnPlayer>();
+        app.add_event::<SpawnUnit>();
+        app.add_event::<SpawnProjectile>();
+        app.add_event::<SpawnFlag>();
+
+        app.add_systems(
+            FixedUpdate,
+            (spawn_player.run_if(on_event::<SpawnPlayer>())).in_set(Connected),
+        );
+        app.add_systems(
+            FixedUpdate,
+            (spawn_unit.run_if(on_event::<SpawnUnit>())).in_set(Connected),
+        );
+        app.add_systems(
+            FixedUpdate,
+            (spawn_projectile.run_if(on_event::<SpawnProjectile>())).in_set(Connected),
+        );
+        app.add_systems(
+            FixedUpdate,
+            (spawn_flag.run_if(on_event::<SpawnFlag>())).in_set(Connected),
+        );
+    }
+}
 
 pub fn spawn_player(
     mut commands: Commands,
@@ -40,7 +75,7 @@ pub fn spawn_player(
             )),
         };
 
-        if client_id == id.raw() {
+        if client_id.eq(id) {
             client_player_entity.insert((ControlledPlayer, BoxCollider(Vec2::new(50., 90.))));
         }
 
@@ -137,5 +172,35 @@ pub fn spawn_projectile(
             .id();
 
         network_mapping.0.insert(*server_entity, client_entity);
+    }
+}
+
+pub fn spawn_flag(
+    mut commands: Commands,
+    mut network_mapping: ResMut<NetworkMapping>,
+    mut spawn_flag: EventReader<SpawnFlag>,
+    flag_sprite_sheet: Res<FlagSpriteSheet>,
+    // client_id: Res<CurrentClientId>,
+    // lobby: Res<ClientPlayers>,
+) {
+    // let client_id = client_id.0;
+    for spawn in spawn_flag.read() {
+        let SpawnFlag {
+            entity: server_flag_entity,
+            translation,
+        } = spawn;
+
+        let client_flag_entity = commands
+            .spawn((
+                FlagBundle::new(&flag_sprite_sheet, *translation),
+                PartOfScene,
+            ))
+            .id();
+
+        // let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
+
+        network_mapping
+            .0
+            .insert(*server_flag_entity, client_flag_entity);
     }
 }

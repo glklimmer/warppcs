@@ -25,7 +25,7 @@ impl Plugin for MovementPlugin {
         );
 
         app.add_systems(
-            Update,
+            FixedUpdate,
             move_players_system.run_if(
                 in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
             ),

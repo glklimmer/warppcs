@@ -2,10 +2,9 @@ use bevy::prelude::*;
 
 use shared::networking::{Facing, Rotation};
 
-use super::{
-    king::{AnimationReferences, AnimationSetting},
-    networking::{Change, NetworkEvent},
-};
+use crate::networking::{Change, NetworkEvent};
+
+use super::king::{AnimationConfig, AnimationReferences, AnimationSetting};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy)]
 pub enum UnitAnimation {
@@ -36,6 +35,7 @@ impl Plugin for AnimationPlugin {
         app.add_systems(
             Update,
             (
+                advance_animation_minimal,
                 advance_animation,
                 set_animation_settings,
                 set_next_animation,
@@ -44,6 +44,32 @@ impl Plugin for AnimationPlugin {
                 mirror_sprite,
             ),
         );
+    }
+}
+
+fn advance_animation_minimal(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut query: Query<(
+        Entity,
+        &mut AnimationConfig,
+        &mut TextureAtlas,
+        Option<&FullAnimation>,
+    )>,
+) {
+    for (entity, mut animation_config, mut atlas, maybe_full) in &mut query {
+        animation_config.frame_timer.tick(time.delta());
+
+        if animation_config.frame_timer.just_finished() {
+            atlas.index = if atlas.index == animation_config.last_sprite_index {
+                if maybe_full.is_some() {
+                    commands.entity(entity).remove::<FullAnimation>();
+                }
+                animation_config.first_sprite_index
+            } else {
+                atlas.index - 1
+            };
+        }
     }
 }
 

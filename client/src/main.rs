@@ -1,21 +1,19 @@
+use animations::AnimationsPlugin;
 use bevy::prelude::*;
 
-use animation::AnimationPlugin;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_renet::client_connected;
 use camera::CameraPlugin;
 use input::InputPlugin;
-use king::KingPlugin;
 use networking::{ClientNetworkPlugin, Connected};
 use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
 use std::f32::consts::PI;
 use ui::{MainMenuStates, MenuPlugin};
 
-pub mod animation;
+pub mod animations;
 pub mod camera;
 pub mod gizmos;
 pub mod input;
-pub mod king;
 pub mod networking;
 pub mod ui;
 pub mod ui_widgets;
@@ -34,10 +32,9 @@ fn main() {
     app.insert_state(MultiplayerRoles::NotInGame);
     app.insert_state(MainMenuStates::TitleScreen);
 
-    app.add_plugins(KingPlugin);
     app.add_plugins(CameraPlugin);
     app.add_plugins(InputPlugin);
-    app.add_plugins(AnimationPlugin);
+    app.add_plugins(AnimationsPlugin);
     app.add_plugins(MenuPlugin);
 
     app.add_systems(Startup, setup_background);
