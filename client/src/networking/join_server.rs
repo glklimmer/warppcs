@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::RenetClient;
+use bevy_renet::renet::{ClientId, RenetClient};
 use shared::networking::connection_config;
 
 use crate::{networking::CurrentClientId, ui::MainMenuStates};
@@ -53,7 +53,9 @@ pub fn join_steam_server(
 
     commands.insert_resource(transport);
     commands.insert_resource(client);
-    commands.insert_resource(CurrentClientId(steam_client.user().steam_id().raw()));
+    commands.insert_resource(CurrentClientId(ClientId::from_raw(
+        steam_client.user().steam_id().raw(),
+    )));
 
     ui.set(MainMenuStates::Lobby);
 }
@@ -96,7 +98,7 @@ pub fn join_netcode_server(
 
     commands.insert_resource(client);
     commands.insert_resource(transport);
-    commands.insert_resource(CurrentClientId(client_id));
+    commands.insert_resource(CurrentClientId(ClientId::from_raw(client_id)));
 
     ui.set(MainMenuStates::Lobby);
 }

@@ -1,5 +1,5 @@
 use attack::{unit_range, AttackPlugin};
-use bevy::prelude::*;
+use bevy::{math::NormedVectorSpace, prelude::*};
 
 use crate::{
     map::GameSceneId,
@@ -23,7 +23,7 @@ impl Plugin for AIPlugin {
         app.add_plugins(AttackPlugin);
 
         app.add_systems(
-            Update, // TODO: This should be less then update
+            FixedUpdate, // TODO: This should be less then update
             determine_behaviour.run_if(
                 in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
             ),
@@ -32,6 +32,7 @@ impl Plugin for AIPlugin {
 }
 
 pub const SIGHT_RANGE: f32 = 800.;
+pub const MOVE_EPSILON: f32 = 1.;
 
 struct TargetInfo {
     entity: Entity,
@@ -63,8 +64,8 @@ fn determine_behaviour(
             .filter(|other| other.distance <= unit_range(&unit.unit_type))
             .min_by(|a, b| a.distance.total_cmp(&b.distance));
 
-        if let Some(nearest_enemy) = possible_nearest_enemy {
-            match *behaviour {
+        match possible_nearest_enemy {
+            Some(nearest_enemy) => match *behaviour {
                 UnitBehaviour::AttackTarget(enemy) => {
                     if nearest_enemy.entity != enemy {
                         *behaviour = UnitBehaviour::AttackTarget(nearest_enemy.entity);
@@ -73,22 +74,30 @@ fn determine_behaviour(
                 _ => {
                     *behaviour = UnitBehaviour::AttackTarget(nearest_enemy.entity);
                 }
-            }
-        } else {
-            let possible_enemy_in_sight = possible_targets
-                .iter()
-                .filter(|other| other.distance <= SIGHT_RANGE)
-                .min_by(|a, b| a.distance.total_cmp(&b.distance));
+            },
+            None => {
+                let possible_enemy_in_sight = possible_targets
+                    .iter()
+                    .filter(|other| other.distance <= SIGHT_RANGE)
+                    .min_by(|a, b| a.distance.total_cmp(&b.distance));
 
-            if let Some(enemy_in_sight) = possible_enemy_in_sight {
-                match *behaviour {
-                    UnitBehaviour::MoveTarget(target) => {
-                        if enemy_in_sight.translation != target {
+                match possible_enemy_in_sight {
+                    Some(enemy_in_sight) => match *behaviour {
+                        UnitBehaviour::MoveTarget(target) => {
+                            if enemy_in_sight.translation != target {
+                                *behaviour = UnitBehaviour::MoveTarget(enemy_in_sight.translation);
+                            }
+                        }
+                        _ => {
                             *behaviour = UnitBehaviour::MoveTarget(enemy_in_sight.translation);
                         }
-                    }
-                    _ => {
-                        *behaviour = UnitBehaviour::MoveTarget(enemy_in_sight.translation);
+                    },
+                    None => {
+                        if let UnitBehaviour::MoveTarget(target) = *behaviour {
+                            if transform.translation.truncate().distance(target) <= MOVE_EPSILON {
+                                *behaviour = UnitBehaviour::Idle;
+                            }
+                        }
                     }
                 }
             }

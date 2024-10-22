@@ -17,9 +17,6 @@ pub struct AnimationsAtlasLayout {
     pub attack: Handle<TextureAtlasLayout>,
 }
 
-#[derive(Component)]
-pub struct AnimationTimer(pub Timer);
-
 #[derive(Component, Debug)]
 pub struct AnimationSetting {
     pub state: UnitAnimation,

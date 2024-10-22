@@ -29,7 +29,7 @@ impl Plugin for AttackPlugin {
         app.add_event::<TakeDamage>();
 
         app.add_systems(
-            Update,
+            FixedUpdate,
             (process_attacks, apply_damage).run_if(
                 in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
             ),

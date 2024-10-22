@@ -5,6 +5,7 @@ use bevy_renet::{
     renet::{ClientId, RenetClient},
     RenetClientPlugin,
 };
+use shared::networking::SpawnFlag;
 use shared::GameState;
 use shared::{
     map::{base::BaseScene, GameSceneType},
@@ -13,7 +14,7 @@ use shared::{
         ServerMessages, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
 };
-use spawn::{spawn_player, spawn_projectile, spawn_unit};
+use spawn::{spawn_player, spawn_projectile, spawn_unit, SpawnPlugin};
 use std::collections::HashMap;
 
 pub mod join_server;
@@ -31,7 +32,7 @@ pub struct ClientPlayers {
 pub struct ControlledPlayer;
 
 #[derive(Debug, Resource)]
-pub struct CurrentClientId(pub u64);
+pub struct CurrentClientId(pub ClientId);
 
 #[derive(Debug)]
 pub struct PlayerEntityMapping {
@@ -65,20 +66,12 @@ pub struct ClientNetworkPlugin;
 impl Plugin for ClientNetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(RenetClientPlugin);
-
-        // #[cfg(not(feature = "steam"))]
-        // add_netcode_network(app);
-
-        // #[cfg(feature = "steam")]
-        // add_steam_network(app);
+        app.add_plugins(SpawnPlugin);
 
         app.insert_resource(NetworkMapping::default());
         app.insert_resource(ClientPlayers::default());
 
         app.add_event::<NetworkEvent>();
-        app.add_event::<SpawnPlayer>();
-        app.add_event::<SpawnUnit>();
-        app.add_event::<SpawnProjectile>();
 
         app.add_systems(
             Update,
@@ -86,9 +79,6 @@ impl Plugin for ClientNetworkPlugin {
                 client_sync_players,
                 client_send_input,
                 client_send_player_commands,
-                spawn_player,
-                spawn_unit,
-                spawn_projectile,
             )
                 .in_set(Connected),
         );
@@ -125,6 +115,7 @@ fn client_sync_players(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut spawn_player: EventWriter<SpawnPlayer>,
+    mut spawn_flag: EventWriter<SpawnFlag>,
     mut spawn_unit: EventWriter<SpawnUnit>,
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut player_joined: EventWriter<PlayerJoined>,
@@ -135,6 +126,15 @@ fn client_sync_players(
         match server_message {
             ServerMessages::SpawnPlayer(spawn) => {
                 spawn_player.send(spawn);
+            }
+            ServerMessages::SpawnUnit(spawn) => {
+                spawn_unit.send(spawn);
+            }
+            ServerMessages::SpawnProjectile(spawn) => {
+                spawn_projectile.send(spawn);
+            }
+            ServerMessages::SpawnFlag(spawn) => {
+                spawn_flag.send(spawn);
             }
             ServerMessages::PlayerRemove { id } => {
                 println!("Player {} disconnected.", id);
@@ -157,9 +157,6 @@ fn client_sync_players(
                     });
                 }
             }
-            ServerMessages::SpawnUnit(spawn) => {
-                spawn_unit.send(spawn);
-            }
             ServerMessages::DespawnEntity {
                 entity: server_entity,
             } => {
@@ -168,9 +165,6 @@ fn client_sync_players(
                         entity.despawn();
                     }
                 }
-            }
-            ServerMessages::SpawnProjectile(spawn) => {
-                spawn_projectile.send(spawn);
             }
             ServerMessages::LoadGameScene {
                 game_scene_type: map_type,
@@ -312,7 +306,6 @@ fn client_sync_players(
                     }
                     GameSceneType::Camp => todo!(),
                 };
-                println!("revieved {} players", players.len());
                 players.into_iter().for_each(|spawn| {
                     spawn_player.send(spawn);
                 });

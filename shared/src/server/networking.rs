@@ -21,6 +21,7 @@ use bevy_renet::{
 use std::collections::HashMap;
 
 use super::ai::AIPlugin;
+use super::buildings::BuildingsPlugins;
 use super::game_scenes::GameScenesPlugin;
 use super::physics::PhysicsPlugin;
 
@@ -49,9 +50,10 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(AIPlugin);
         app.add_plugins(PhysicsPlugin);
         app.add_plugins(GameScenesPlugin);
+        app.add_plugins(BuildingsPlugins);
 
         app.add_systems(
-            Update,
+            FixedUpdate,
             (
                 server_update_system,
                 server_network_sync,
@@ -61,7 +63,7 @@ impl Plugin for ServerNetworkPlugin {
         );
 
         app.add_systems(
-            Update,
+            FixedUpdate,
             (on_unit_death).run_if(
                 in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
             ),

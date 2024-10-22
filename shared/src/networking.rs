@@ -75,6 +75,12 @@ pub struct SpawnPlayer {
 }
 
 #[derive(Debug, Serialize, Deserialize, Event)]
+pub struct SpawnFlag {
+    pub entity: Entity,
+    pub translation: [f32; 3],
+}
+
+#[derive(Debug, Serialize, Deserialize, Event)]
 pub struct SpawnUnit {
     pub owner: Owner,
     pub entity: Entity,
@@ -96,6 +102,7 @@ pub enum ServerMessages {
         id: ClientId,
     },
     SpawnPlayer(SpawnPlayer),
+    SpawnFlag(SpawnFlag),
     SpawnUnit(SpawnUnit),
     SpawnProjectile(SpawnProjectile),
     PlayerRemove {

@@ -893,7 +893,7 @@ fn lobby_slot_checkbox(
     client_id: Res<CurrentClientId>,
 ) {
     for (interactions, mut checkbox_image, mut checkbox, lobby_slot_owner) in &mut checkbox_query {
-        if lobby_slot_owner.0.raw().eq(&client_id.0) {
+        if lobby_slot_owner.0.eq(&client_id.0) {
             continue;
         }
         match *interactions {
