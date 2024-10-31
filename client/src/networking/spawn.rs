@@ -180,24 +180,21 @@ pub fn spawn_flag(
     mut network_mapping: ResMut<NetworkMapping>,
     mut spawn_flag: EventReader<SpawnFlag>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
-    // client_id: Res<CurrentClientId>,
-    // lobby: Res<ClientPlayers>,
+    client_id: Res<CurrentClientId>,
+    lobby: Res<ClientPlayers>,
 ) {
-    // let client_id = client_id.0;
+    let client_id = client_id.0;
     for spawn in spawn_flag.read() {
         let SpawnFlag {
             entity: server_flag_entity,
-            translation,
         } = spawn;
 
         let client_flag_entity = commands
-            .spawn((
-                FlagBundle::new(&flag_sprite_sheet, *translation),
-                PartOfScene,
-            ))
+            .spawn((FlagBundle::new(&flag_sprite_sheet), PartOfScene))
             .id();
 
-        // let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
+        let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
+        commands.entity(player_entity).add_child(client_flag_entity);
 
         network_mapping
             .0

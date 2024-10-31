@@ -40,7 +40,6 @@ pub enum PlayerCommand {
     StartGame,
     Interact,
     MeleeAttack,
-    SpawnUnit(UnitType),
 }
 
 pub enum ClientChannel {
@@ -77,7 +76,6 @@ pub struct SpawnPlayer {
 #[derive(Debug, Serialize, Deserialize, Event)]
 pub struct SpawnFlag {
     pub entity: Entity,
-    pub translation: [f32; 3],
 }
 
 #[derive(Debug, Serialize, Deserialize, Event)]

@@ -13,6 +13,7 @@ use crate::{map::GameSceneId, BoxCollider};
 use super::ai::attack::{unit_health, unit_swing_timer};
 use super::ai::UnitBehaviour;
 use super::networking::{InteractEvent, ServerLobby};
+use super::physics::attachment::AttachedTo;
 use super::physics::movement::Velocity;
 
 #[derive(Event)]
@@ -73,7 +74,7 @@ fn check_recruit(
 }
 
 #[derive(Component)]
-struct Flag;
+pub struct FlagAssignment(pub Entity, pub Vec2);
 
 fn recruit(
     mut commands: Commands,
@@ -94,12 +95,19 @@ fn recruit(
         );
         let flag_entity = commands
             .spawn((
-                Transform::from_translation(flag_translation),
-                Flag,
-                Owner(event.client_id),
-                event.scene_id,
+                Transform::from_translation(Vec3::ZERO),
+                AttachedTo(*player_entity),
             ))
             .id();
+        let message = ServerMessages::SpawnFlag(SpawnFlag {
+            entity: flag_entity,
+        });
+        let message = bincode::serialize(&message).unwrap();
+        server.send_message(
+            event.client_id,
+            ServerChannel::ServerMessages,
+            message.clone(),
+        );
 
         let unit_type = match event.building_type {
             Building::Archer => UnitType::Archer,
@@ -115,15 +123,15 @@ fn recruit(
         let owner = Owner(event.client_id);
 
         for unit_number in 1..=4 {
+            let offset = Vec2::new(40. * (unit_number - 3) as f32 + 20., 0.);
             let unit_entity = commands
                 .spawn((
                     Transform::from_translation(flag_translation),
                     unit.clone(),
                     owner,
                     Velocity::default(),
-                    UnitBehaviour::MoveTarget(
-                        flag_translation.xy() + Vec2::new(40. * (unit_number - 3) as f32 + 20., 0.),
-                    ),
+                    FlagAssignment(flag_entity, offset),
+                    UnitBehaviour::FollowFlag(flag_entity, offset),
                     BoxCollider(Vec2::new(50., 90.)),
                     event.scene_id,
                 ))
@@ -140,18 +148,6 @@ fn recruit(
                 if event.scene_id.eq(player_scene_id) {
                     server.send_message(*client_id, ServerChannel::ServerMessages, message.clone());
                 }
-            }
-        }
-
-        let message = ServerMessages::SpawnFlag(SpawnFlag {
-            entity: flag_entity,
-            translation: flag_translation.into(),
-        });
-        let message = bincode::serialize(&message).unwrap();
-        for (client_id, entity) in lobby.players.iter() {
-            let player_scene_id = scene_ids.get(*entity).unwrap();
-            if event.scene_id.eq(player_scene_id) {
-                server.send_message(*client_id, ServerChannel::ServerMessages, message.clone());
             }
         }
     }

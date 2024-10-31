@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use shared::networking::{PlayerCommand, PlayerInput, UnitType};
+use shared::networking::{PlayerCommand, PlayerInput};
 
 pub struct InputPlugin;
 
@@ -32,16 +32,5 @@ fn player_input(
 
     if keyboard_input.just_pressed(KeyCode::KeyF) {
         player_commands.send(PlayerCommand::Interact);
-    }
-
-    // actually Y
-    if keyboard_input.just_pressed(KeyCode::KeyZ) {
-        player_commands.send(PlayerCommand::SpawnUnit(UnitType::Archer));
-    }
-    if keyboard_input.just_pressed(KeyCode::KeyX) {
-        player_commands.send(PlayerCommand::SpawnUnit(UnitType::Shieldwarrior));
-    }
-    if keyboard_input.just_pressed(KeyCode::KeyC) {
-        player_commands.send(PlayerCommand::SpawnUnit(UnitType::Pikeman));
     }
 }

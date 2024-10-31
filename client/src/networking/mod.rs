@@ -14,7 +14,7 @@ use shared::{
         ServerMessages, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
 };
-use spawn::{spawn_player, spawn_projectile, spawn_unit, SpawnPlugin};
+use spawn::SpawnPlugin;
 use std::collections::HashMap;
 
 pub mod join_server;
