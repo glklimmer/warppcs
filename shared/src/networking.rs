@@ -40,7 +40,6 @@ pub enum PlayerCommand {
     StartGame,
     Interact,
     MeleeAttack,
-    SpawnUnit(UnitType),
 }
 
 pub enum ClientChannel {

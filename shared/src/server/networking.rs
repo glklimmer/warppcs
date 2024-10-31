@@ -5,10 +5,8 @@ use crate::map::{GameScene, GameSceneId, GameSceneType, Layers};
 use crate::networking::{
     ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, Owner,
     PlayerCommand, PlayerInput, PlayerSkin, ProjectileType, Rotation, ServerChannel,
-    ServerMessages, SpawnPlayer, SpawnUnit, Unit,
+    ServerMessages, SpawnPlayer, Unit,
 };
-use crate::server::ai::attack::{unit_health, unit_swing_timer};
-use crate::server::ai::UnitBehaviour;
 use crate::server::game_scenes::GameSceneDestination;
 use crate::server::physics::movement::Velocity;
 use crate::{BoxCollider, GameState};
@@ -120,8 +118,6 @@ fn server_update_system(
     mut commands: Commands,
     lobby: Res<ServerLobby>,
     mut server: ResMut<RenetServer>,
-    transforms: Query<&Transform>,
-    scene_ids: Query<&GameSceneId>,
     mut game_world: ResMut<GameWorld>,
     mut interact: EventWriter<InteractEvent>,
     mut next_state: ResMut<NextState<GameState>>,
@@ -137,51 +133,6 @@ fn server_update_system(
                         };
                         let message = bincode::serialize(&message).unwrap();
                         server.broadcast_message(ServerChannel::ServerMessages, message);
-                    }
-                }
-                PlayerCommand::SpawnUnit(unit_type) => {
-                    println!(
-                        "Received spawn unit from client {}: {:?}",
-                        client_id, unit_type
-                    );
-
-                    let player_entity = lobby.players.get(&client_id).unwrap();
-                    let player_transform = transforms.get(*player_entity).unwrap();
-                    let scene_id = scene_ids.get(*player_entity).unwrap();
-                    let unit = Unit {
-                        health: unit_health(&unit_type),
-                        swing_timer: unit_swing_timer(&unit_type),
-                        unit_type: unit_type.clone(),
-                    };
-
-                    let unit_entity = commands
-                        .spawn((
-                            Transform::from_translation(player_transform.translation),
-                            unit,
-                            Owner(client_id),
-                            Velocity::default(),
-                            UnitBehaviour::Idle,
-                            BoxCollider(Vec2::new(50., 90.)),
-                            *scene_id,
-                        ))
-                        .id();
-
-                    let message = ServerMessages::SpawnUnit(SpawnUnit {
-                        entity: unit_entity,
-                        owner: Owner(client_id),
-                        unit_type,
-                        translation: player_transform.translation.into(),
-                    });
-                    let message = bincode::serialize(&message).unwrap();
-                    for (client_id, entity) in lobby.players.iter() {
-                        let player_scene_id = scene_ids.get(*entity).unwrap();
-                        if scene_id.eq(player_scene_id) {
-                            server.send_message(
-                                *client_id,
-                                ServerChannel::ServerMessages,
-                                message.clone(),
-                            );
-                        }
                     }
                 }
                 PlayerCommand::StartGame => {
