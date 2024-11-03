@@ -3,11 +3,21 @@ use bevy::prelude::*;
 
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_renet::client_connected;
+#[cfg(dev)]
+use bevy_renet::renet::RenetClient;
 use camera::CameraPlugin;
 use input::InputPlugin;
 use networking::{ClientNetworkPlugin, Connected};
+#[cfg(dev)]
+use shared::networking::PlayerCommand;
 use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
+use std::env;
 use std::f32::consts::PI;
+#[cfg(feature = "netcode")]
+use ui::JoinNetcodeLobby;
+#[cfg(feature = "steam")]
+use ui::JoinSteamLobby;
+
 use ui::{MainMenuStates, MenuPlugin};
 
 pub mod animations;
@@ -19,6 +29,16 @@ pub mod ui;
 pub mod ui_widgets;
 
 fn main() {
+    #[cfg(dev)]
+    {
+        println!("Running on Dev mode");
+    }
+
+    #[cfg(prod)]
+    {
+        println!("Running on Prod mode");
+    }
+
     let mut app = App::new();
     #[cfg(feature = "steam")]
     {
@@ -69,7 +89,7 @@ fn main() {
 
         app.add_systems(
             Update,
-            join_steam_server.run_if(in_state(GameState::MainMenu)),
+            join_steam_server.run_if(on_event::<JoinSteamLobby>()),
         );
     }
 
@@ -101,7 +121,7 @@ fn main() {
 
         app.add_systems(
             Update,
-            join_netcode_server.run_if(in_state(GameState::MainMenu)),
+            join_netcode_server.run_if(on_event::<JoinNetcodeLobby>()),
         );
     }
 
