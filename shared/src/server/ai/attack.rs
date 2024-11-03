@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 
 use super::UnitBehaviour;
+use crate::map::Layers;
 use crate::networking::MultiplayerRoles;
 use crate::server::networking::ServerLobby;
 use crate::server::physics::movement::Velocity;
@@ -99,6 +100,8 @@ fn process_attacks(
         if let UnitBehaviour::AttackTarget(target_entity) = behaviour {
             unit.swing_timer.tick(time.delta());
             if unit.swing_timer.finished() {
+                let scene_id = scene_ids.get(*target_entity).unwrap();
+
                 match unit.unit_type {
                     UnitType::Shieldwarrior | UnitType::Pikeman => {
                         println!("Swinging at target: {}", target_entity);
@@ -108,9 +111,12 @@ fn process_attacks(
                         });
                     }
                     UnitType::Archer => {
-                        let arrow_transform = Transform::from_translation(
-                            transform.translation + Vec3::new(0., 1., 0.),
+                        let arrow_position = Vec3::new(
+                            transform.translation.x,
+                            transform.translation.y + 1.,
+                            Layers::Projectile.as_f32(),
                         );
+                        let arrow_transform = Transform::from_translation(arrow_position);
                         let projectile_type = ProjectileType::Arrow;
 
                         let target_pos = if let Ok(target_transform) = position.get(*target_entity)
@@ -144,7 +150,6 @@ fn process_attacks(
                         let speed = v0_squared.sqrt();
 
                         let velocity = Velocity(Vec2::from_angle(theta) * speed);
-                        let scene_id = scene_ids.get(*target_entity).unwrap();
 
                         let arrow = commands.spawn((
                             arrow_transform,
@@ -154,6 +159,7 @@ fn process_attacks(
                             BoxCollider(Vec2::new(20., 20.)),
                             *scene_id,
                         ));
+                        println!("arrow spawn: {:?}", scene_id);
 
                         let message = ServerMessages::SpawnProjectile(SpawnProjectile {
                             entity: arrow.id(),

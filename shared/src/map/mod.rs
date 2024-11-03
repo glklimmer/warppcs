@@ -28,6 +28,7 @@ pub enum Layers {
     Background,
     Building,
     Unit,
+    Projectile,
     Flag,
     Player,
 }

@@ -29,19 +29,16 @@ impl Plugin for SpawnPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (spawn_player.run_if(on_event::<SpawnPlayer>())).in_set(Connected),
-        );
-        app.add_systems(
-            FixedUpdate,
-            (spawn_unit.run_if(on_event::<SpawnUnit>())).in_set(Connected),
-        );
-        app.add_systems(
-            FixedUpdate,
-            (spawn_projectile.run_if(on_event::<SpawnProjectile>())).in_set(Connected),
-        );
-        app.add_systems(
-            FixedUpdate,
-            (spawn_flag.run_if(on_event::<SpawnFlag>())).in_set(Connected),
+            (
+                (
+                    spawn_player.run_if(on_event::<SpawnPlayer>()),
+                    spawn_flag.run_if(on_event::<SpawnFlag>()),
+                )
+                    .chain(),
+                spawn_unit.run_if(on_event::<SpawnUnit>()),
+                spawn_projectile.run_if(on_event::<SpawnProjectile>()),
+            )
+                .in_set(Connected),
         );
     }
 }

@@ -173,17 +173,20 @@ fn client_sync_players(mut params: ClientSyncPlayersParams) {
                 }
             }
             ServerMessages::DespawnEntity {
-                entity: server_entity,
+                entities: server_entities,
             } => {
-                if let Some(client_entity) = params.network_mapping.0.remove(&server_entity) {
-                    if let Some(mut entity) = params.commands.get_entity(client_entity) {
-                        entity.despawn();
+                for server_entity in server_entities {
+                    if let Some(client_entity) = params.network_mapping.0.remove(&server_entity) {
+                        if let Some(mut entity) = params.commands.get_entity(client_entity) {
+                            entity.despawn();
+                        }
                     }
                 }
             }
             ServerMessages::LoadGameScene {
                 game_scene_type: map_type,
                 players,
+                flag,
                 units,
                 projectiles,
             } => {
@@ -331,6 +334,9 @@ fn client_sync_players(mut params: ClientSyncPlayersParams) {
                 players.into_iter().for_each(|spawn| {
                     params.spawn_player.send(spawn);
                 });
+                if let Some(flag) = flag {
+                    params.spawn_flag.send(flag);
+                }
                 units.into_iter().for_each(|spawn| {
                     params.spawn_unit.send(spawn);
                 });
@@ -359,6 +365,13 @@ fn client_sync_players(mut params: ClientSyncPlayersParams) {
             }
             ServerMessages::PlayerLeftLobby { id } => {
                 params.player_left.send(PlayerLeftLobby(id));
+            }
+            ServerMessages::SpawnGroup { player, units } => {
+                params.spawn_player.send(player);
+
+                for unit in units {
+                    params.spawn_unit.send(unit);
+                }
             }
         }
     }

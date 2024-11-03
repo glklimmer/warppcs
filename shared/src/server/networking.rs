@@ -229,6 +229,7 @@ fn server_update_system(
                             }],
                             units: Vec::new(),
                             projectiles: Vec::new(),
+                            flag: None,
                         };
                         let message = bincode::serialize(&message).unwrap();
                         server.send_message(*client_id, ServerChannel::ServerMessages, message);
@@ -330,7 +331,9 @@ fn on_unit_death(
         if unit.health <= 0. {
             commands.entity(entity).despawn_recursive();
 
-            let message = ServerMessages::DespawnEntity { entity };
+            let message = ServerMessages::DespawnEntity {
+                entities: vec![entity],
+            };
             let unit_dead_message = bincode::serialize(&message).unwrap();
             server.broadcast_message(ServerChannel::ServerMessages, unit_dead_message);
         }
