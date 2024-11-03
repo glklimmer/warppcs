@@ -40,6 +40,7 @@ pub enum PlayerCommand {
     StartGame,
     Interact,
     MeleeAttack,
+    LobbyReadyState(Checkbox),
 }
 
 pub enum ClientChannel {
@@ -94,10 +95,24 @@ pub struct SpawnProjectile {
     pub direction: [f32; 2],
 }
 
+#[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq)]
+pub enum Checkbox {
+    Checked,
+    Unchecked,
+}
+
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
-    PlayerJoined {
+    PlayerJoinedLobby {
         id: ClientId,
+        ready_state: Checkbox,
+    },
+    PlayerLeftLobby {
+        id: ClientId,
+    },
+    LobbyPlayerReadyState {
+        id: ClientId,
+        ready_state: Checkbox,
     },
     SpawnPlayer(SpawnPlayer),
     SpawnFlag(SpawnFlag),

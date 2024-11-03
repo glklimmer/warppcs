@@ -3,7 +3,10 @@ use bevy::prelude::*;
 use bevy_renet::renet::{ClientId, RenetClient};
 use shared::networking::connection_config;
 
-use crate::{networking::CurrentClientId, ui::MainMenuStates};
+use crate::{
+    networking::{CurrentClientId, PlayerCommand},
+    ui::MainMenuStates,
+};
 
 #[cfg(feature = "steam")]
 use crate::ui::JoinSteamLobby;
@@ -42,22 +45,18 @@ pub fn join_steam_server(
 
     println!("From Client {}", steam_client.friends().name());
 
-    let transport = SteamClientTransport::new(&steam_client, &server_steam_id);
-    let transport = match transport {
-        Ok(transport) => transport,
-        Err(e) => {
-            println!("Id {:?}", server_steam_id);
-            panic!("Error when trying to create SteamClientTransport: {}", e)
+    match SteamClientTransport::new(&steam_client, &server_steam_id) {
+        Ok(transport) => {
+            commands.insert_resource(transport);
+            commands.insert_resource(client);
+            commands.insert_resource(CurrentClientId(ClientId::from_raw(
+                steam_client.user().steam_id().raw(),
+            )));
+            #[cfg(prod)]
+            ui.set(MainMenuStates::Lobby);
         }
-    };
-
-    commands.insert_resource(transport);
-    commands.insert_resource(client);
-    commands.insert_resource(CurrentClientId(ClientId::from_raw(
-        steam_client.user().steam_id().raw(),
-    )));
-
-    ui.set(MainMenuStates::Lobby);
+        Err(error) => println!("join_netcode_server error {}", error),
+    }
 }
 
 #[cfg(feature = "netcode")]
@@ -69,7 +68,7 @@ pub fn join_own_netcode_server(mut join_lobby: EventWriter<JoinNetcodeLobby>) {
 pub fn join_netcode_server(
     mut commands: Commands,
     mut join_lobby: EventReader<JoinNetcodeLobby>,
-    mut ui: ResMut<NextState<MainMenuStates>>,
+    #[cfg(prod)] mut ui: ResMut<NextState<MainMenuStates>>,
 ) {
     let server_addr = match join_lobby.read().next() {
         Some(value) => value.0,
@@ -77,7 +76,7 @@ pub fn join_netcode_server(
     };
 
     use bevy_renet::renet::transport::{ClientAuthentication, NetcodeClientTransport};
-    use shared::networking::PROTOCOL_ID;
+    use shared::networking::{PlayerCommand, PROTOCOL_ID};
     use std::{net::UdpSocket, time::SystemTime};
 
     let client = RenetClient::new(connection_config());
@@ -94,11 +93,14 @@ pub fn join_netcode_server(
         user_data: None,
     };
 
-    let transport = NetcodeClientTransport::new(current_time, authentication, socket).unwrap();
-
-    commands.insert_resource(client);
-    commands.insert_resource(transport);
-    commands.insert_resource(CurrentClientId(ClientId::from_raw(client_id)));
-
-    ui.set(MainMenuStates::Lobby);
+    match NetcodeClientTransport::new(current_time, authentication, socket) {
+        Ok(transport) => {
+            commands.insert_resource(client);
+            commands.insert_resource(transport);
+            commands.insert_resource(CurrentClientId(ClientId::from_raw(client_id)));
+            #[cfg(prod)]
+            ui.set(MainMenuStates::Lobby);
+        }
+        Err(error) => println!("join_netcode_server error {}", error),
+    }
 }
