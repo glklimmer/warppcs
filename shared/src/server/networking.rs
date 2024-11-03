@@ -21,6 +21,9 @@ use std::collections::HashMap;
 use super::ai::AIPlugin;
 use super::buildings::BuildingsPlugins;
 use super::game_scenes::GameScenesPlugin;
+use super::lobby::{
+    GameLobby, LobbyPlugin, PlayerChangedReady, PlayerJoinedLobby, PlayerLeavedLobby,
+};
 use super::physics::PhysicsPlugin;
 
 #[derive(Debug, Default, Resource)]
@@ -69,6 +72,7 @@ impl Plugin for ServerNetworkPlugin {
 
         app.insert_resource(ServerLobby::default());
         app.add_plugins(RenetServerPlugin);
+        app.add_plugins(LobbyPlugin);
 
         app.insert_resource(GameWorld::default());
     }
@@ -79,24 +83,21 @@ fn server_lobby_system(
     mut server_events: EventReader<ServerEvent>,
     mut lobby: ResMut<ServerLobby>,
     mut server: ResMut<RenetServer>,
+    mut player_joined: EventWriter<PlayerJoinedLobby>,
+    mut player_left: EventWriter<PlayerLeavedLobby>,
 ) {
     for event in server_events.read() {
         match event {
             ServerEvent::ClientConnected { client_id } => {
                 println!("Player {} connected.", client_id);
-                for player in lobby.players.iter() {
-                    let message =
-                        bincode::serialize(&ServerMessages::PlayerJoined { id: *player.0 })
-                            .unwrap();
-                    server.send_message(*client_id, ServerChannel::ServerMessages, message)
-                }
+
                 let player_entity = commands
                     .spawn((ServerPlayer(*client_id), BoxCollider(Vec2::new(50., 90.))))
                     .id();
+
                 lobby.players.insert(*client_id, player_entity);
-                let message =
-                    bincode::serialize(&ServerMessages::PlayerJoined { id: *client_id }).unwrap();
-                server.broadcast_message(ServerChannel::ServerMessages, message)
+
+                player_joined.send(PlayerJoinedLobby(*client_id));
             }
             ServerEvent::ClientDisconnected { client_id, reason } => {
                 println!("Player {} disconnected: {}", client_id, reason);
@@ -108,6 +109,8 @@ fn server_lobby_system(
                 let message =
                     bincode::serialize(&ServerMessages::PlayerRemove { id: *client_id }).unwrap();
                 server.broadcast_message(ServerChannel::ServerMessages, message);
+
+                player_left.send(PlayerLeavedLobby(*client_id));
             }
         }
     }
@@ -121,6 +124,8 @@ fn server_update_system(
     mut game_world: ResMut<GameWorld>,
     mut interact: EventWriter<InteractEvent>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut player_checkbox: EventWriter<PlayerChangedReady>,
+    game_lobby: Res<GameLobby>,
 ) {
     for client_id in server.clients_id() {
         while let Some(message) = server.receive_message(client_id, ClientChannel::Command) {
@@ -136,6 +141,10 @@ fn server_update_system(
                     }
                 }
                 PlayerCommand::StartGame => {
+                    #[cfg(prod)]
+                    if !game_lobby.all_ready() {
+                        continue;
+                    }
                     println!("Starting game...");
                     for (client_id, player_entity) in lobby.players.iter() {
                         let (game_scene_id, skin, color, left_destination, right_destination) =
@@ -249,6 +258,13 @@ fn server_update_system(
                 }
                 PlayerCommand::Interact => {
                     interact.send(InteractEvent(client_id));
+                }
+
+                PlayerCommand::LobbyReadyState(checkbox_state) => {
+                    player_checkbox.send(PlayerChangedReady {
+                        id: client_id,
+                        ready_state: checkbox_state,
+                    });
                 }
             }
         }
