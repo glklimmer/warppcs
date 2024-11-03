@@ -1,0 +1,3 @@
+[env]
+MODE = { value = "DEV" }
+STEAM_ID = { value = "76561198130394626" }
