@@ -1,6 +1,7 @@
+use bevy::color::palettes::css::RED;
 use bevy::{color::palettes::css::YELLOW, prelude::*};
 
-use bevy::sprite::Mesh2dHandle;
+use bevy::sprite::{Anchor, Mesh2dHandle};
 use bevy_renet::{
     renet::{ClientId, RenetClient},
     RenetClientPlugin,
@@ -270,7 +271,36 @@ fn client_sync_players(
                             ),
                             PartOfScene,
                         ));
-
+                        commands.spawn((
+                            base.left_gold_farm,
+                            (
+                                Mesh2dHandle(
+                                    meshes
+                                        .add(Rectangle::from_size(base.left_gold_farm.collider.0)),
+                                ),
+                                materials.add(Color::srgb(212., 215., 0.)),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
+                        commands.spawn((
+                            base.right_gold_farm,
+                            (
+                                Mesh2dHandle(
+                                    meshes
+                                        .add(Rectangle::from_size(base.right_gold_farm.collider.0)),
+                                ),
+                                materials.add(Color::srgb(212., 215., 0.)),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
+                            ),
+                            PartOfScene,
+                        ));
                         commands.spawn((
                             base.left_spawn_point,
                             (
@@ -279,7 +309,7 @@ fn client_sync_players(
                                         base.left_spawn_point.collider.0,
                                     )),
                                 ),
-                                materials.add(Color::from(YELLOW)),
+                                materials.add(Color::from(RED)),
                                 GlobalTransform::default(),
                                 Visibility::default(),
                                 InheritedVisibility::default(),
@@ -292,10 +322,10 @@ fn client_sync_players(
                             (
                                 Mesh2dHandle(
                                     meshes.add(Rectangle::from_size(
-                                        base.left_spawn_point.collider.0,
+                                        base.right_spawn_point.collider.0,
                                     )),
                                 ),
-                                materials.add(Color::from(YELLOW)),
+                                materials.add(Color::from(RED)),
                                 GlobalTransform::default(),
                                 Visibility::default(),
                                 InheritedVisibility::default(),
@@ -320,6 +350,9 @@ fn client_sync_players(
             }
             ServerMessages::PlayerJoined { id } => {
                 player_joined.send(PlayerJoined(id));
+            }
+            ServerMessages::ChangeGoldAmount(gold_amount) => {
+                commands.spawn(gold_amount);
             }
         }
     }

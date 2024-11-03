@@ -15,6 +15,9 @@ pub enum MultiplayerRoles {
     NotInGame,
 }
 
+#[derive(Component, Debug, Serialize, Deserialize)]
+pub struct GoldAmount(pub u64);
+
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
 pub struct PlayerInput {
     pub left: bool,
@@ -118,6 +121,7 @@ pub enum ServerMessages {
     MeleeAttack {
         entity: Entity,
     },
+    ChangeGoldAmount(GoldAmount),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::{ClientId, RenetServer};
 
-use crate::map::base::Building;
+use crate::map::base::{Building, UpgradableBuilding};
 use crate::map::Layers;
 use crate::networking::{
     Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, Unit, UnitType,
@@ -31,10 +31,42 @@ impl Plugin for BuildingsPlugins {
 
         app.add_systems(
             FixedUpdate,
-            (check_recruit).run_if(on_event::<InteractEvent>()),
+            (check_recruit, check_goldfarm).run_if(on_event::<InteractEvent>()),
         );
 
         app.add_systems(FixedUpdate, recruit.run_if(on_event::<RecruitEvent>()));
+    }
+}
+
+fn check_goldfarm(
+    lobby: Res<ServerLobby>,
+    player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
+    building: Query<(&Transform, &BoxCollider, &GameSceneId, &UpgradableBuilding)>,
+    //mut recruit: EventWriter<RecruitEvent>,
+    mut interactions: EventReader<InteractEvent>,
+) {
+    for event in interactions.read() {
+        let client_id = event.0;
+        let player_entity = lobby.players.get(&client_id).unwrap();
+
+        let (player_transform, player_collider, player_scene) = player.get(*player_entity).unwrap();
+        for (building_transform, building_collider, builing_scene, building) in building.iter() {
+            if player_scene.ne(builing_scene) {
+                continue;
+            }
+            let player_bounds = Aabb2d::new(
+                player_transform.translation.truncate(),
+                player_collider.half_size(),
+            );
+            let zone_bounds = Aabb2d::new(
+                building_transform.translation.truncate(),
+                building_collider.half_size(),
+            );
+            // Send Event and check if upgradable
+            if player_bounds.intersects(&zone_bounds) {
+                println!("Interacted with {:?}", building);
+            }
+        }
     }
 }
 

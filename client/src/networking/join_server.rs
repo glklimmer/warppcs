@@ -3,13 +3,13 @@ use bevy::prelude::*;
 use bevy_renet::renet::{ClientId, RenetClient};
 use shared::networking::connection_config;
 
-use crate::{networking::CurrentClientId, ui::MainMenuStates};
+use crate::{menu::MainMenuStates, networking::CurrentClientId};
 
 #[cfg(feature = "steam")]
 use crate::ui::JoinSteamLobby;
 
 #[cfg(feature = "netcode")]
-use crate::ui::JoinNetcodeLobby;
+use crate::menu::JoinNetcodeLobby;
 
 #[cfg(feature = "steam")]
 use shared::steamworks::SteamworksClient;

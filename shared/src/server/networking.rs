@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::map::base::BaseScene;
 use crate::map::{GameScene, GameSceneId, GameSceneType, Layers};
 use crate::networking::{
-    ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, Owner,
+    ClientChannel, Facing, GoldAmount, MultiplayerRoles, NetworkEntity, NetworkedEntities, Owner,
     PlayerCommand, PlayerInput, PlayerSkin, ProjectileType, Rotation, ServerChannel,
     ServerMessages, SpawnPlayer, Unit,
 };
@@ -91,7 +91,11 @@ fn server_lobby_system(
                     server.send_message(*client_id, ServerChannel::ServerMessages, message)
                 }
                 let player_entity = commands
-                    .spawn((ServerPlayer(*client_id), BoxCollider(Vec2::new(50., 90.))))
+                    .spawn((
+                        ServerPlayer(*client_id),
+                        BoxCollider(Vec2::new(50., 90.)),
+                        GoldAmount(100),
+                    ))
                     .id();
                 lobby.players.insert(*client_id, player_entity);
                 let message =
@@ -179,6 +183,8 @@ fn server_update_system(
                         commands.spawn((base.pikeman_building, server_components));
                         commands.spawn((base.left_wall, server_components));
                         commands.spawn((base.right_wall, server_components));
+                        commands.spawn((base.left_gold_farm, server_components));
+                        commands.spawn((base.right_gold_farm, server_components));
 
                         commands.spawn((
                             base.left_spawn_point,
@@ -208,6 +214,7 @@ fn server_update_system(
                             Velocity::default(),
                             game_scene_id,
                             skin,
+                            GoldAmount(100),
                         ));
 
                         let message = ServerMessages::LoadGameScene {
