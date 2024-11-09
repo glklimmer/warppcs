@@ -74,6 +74,9 @@ fn check_recruit(
 }
 
 #[derive(Component)]
+pub struct FlagHolder(pub Entity);
+
+#[derive(Component)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
 
 fn recruit(
@@ -99,6 +102,10 @@ fn recruit(
                 AttachedTo(*player_entity),
             ))
             .id();
+        commands
+            .entity(*player_entity)
+            .insert(FlagHolder(flag_entity));
+
         let message = ServerMessages::SpawnFlag(SpawnFlag {
             entity: flag_entity,
         });

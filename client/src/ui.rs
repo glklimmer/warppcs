@@ -25,7 +25,6 @@ pub enum MainMenuStates {
     None,
 }
 
-use std::env;
 #[cfg(feature = "netcode")]
 use std::net::SocketAddr;
 

@@ -81,7 +81,9 @@ fn projectile_collision(
                     damage: projectile_damage(projectile_type),
                 });
                 commands.entity(entity).despawn();
-                let despawn = ServerMessages::DespawnEntity { entity };
+                let despawn = ServerMessages::DespawnEntity {
+                    entities: vec![entity],
+                };
                 let message = bincode::serialize(&despawn).unwrap();
                 server.broadcast_message(ServerChannel::ServerMessages, message);
             }
@@ -102,7 +104,9 @@ fn delayed_despawn(
         if timer.just_finished() {
             commands.entity(entity).despawn();
 
-            let despawn = ServerMessages::DespawnEntity { entity };
+            let despawn = ServerMessages::DespawnEntity {
+                entities: vec![entity],
+            };
             let message = bincode::serialize(&despawn).unwrap();
             server.broadcast_message(ServerChannel::ServerMessages, message);
         }

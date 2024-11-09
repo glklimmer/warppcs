@@ -122,13 +122,18 @@ pub enum ServerMessages {
         id: ClientId,
     },
     DespawnEntity {
-        entity: Entity,
+        entities: Vec<Entity>,
     },
     LoadGameScene {
         game_scene_type: GameSceneType,
         players: Vec<SpawnPlayer>,
+        flag: Option<SpawnFlag>,
         units: Vec<SpawnUnit>,
         projectiles: Vec<SpawnProjectile>,
+    },
+    SpawnGroup {
+        player: SpawnPlayer,
+        units: Vec<SpawnUnit>,
     },
     MeleeAttack {
         entity: Entity,
