@@ -18,6 +18,8 @@ use shared::{
 use spawn::SpawnPlugin;
 use std::collections::HashMap;
 
+use crate::ui::UpdateGoldAmount;
+
 pub mod join_server;
 mod spawn;
 
@@ -121,6 +123,7 @@ fn client_sync_players(
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut player_joined: EventWriter<PlayerJoined>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut update_gold_amount: EventWriter<UpdateGoldAmount>,
 ) {
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
         let server_message = bincode::deserialize(&message).unwrap();
@@ -352,7 +355,8 @@ fn client_sync_players(
                 player_joined.send(PlayerJoined(id));
             }
             ServerMessages::ChangeGoldAmount(gold_amount) => {
-                commands.spawn(gold_amount);
+                println!("Client Gold Amoutn {}", gold_amount.0);
+                update_gold_amount.send(UpdateGoldAmount { gold_amount });
             }
         }
     }

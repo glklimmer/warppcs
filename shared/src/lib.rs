@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use std::default;
+
+use bevy::prelude::{default, *};
 
 pub mod map;
 pub mod networking;
@@ -16,8 +18,9 @@ impl BoxCollider {
     }
 }
 
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
+    #[default]
     MainMenu,
     GameSession,
 }

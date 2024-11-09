@@ -11,9 +11,9 @@ use crate::{
 };
 use shared::{
     networking::{
-        GoldAmount, PlayerSkin, ProjectileType, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
-        UnitType,
+        PlayerSkin, ProjectileType, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit, UnitType,
     },
+    server::economy::GoldAmount,
     BoxCollider,
 };
 
@@ -77,11 +77,7 @@ pub fn spawn_player(
         };
 
         if client_id.eq(id) {
-            client_player_entity.insert((
-                ControlledPlayer,
-                BoxCollider(Vec2::new(50., 90.)),
-                GoldAmount(100),
-            ));
+            client_player_entity.insert((ControlledPlayer, BoxCollider(Vec2::new(50., 90.))));
         }
 
         let player_info = PlayerEntityMapping {

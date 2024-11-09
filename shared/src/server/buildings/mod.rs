@@ -23,11 +23,19 @@ struct RecruitEvent {
     building_type: Building,
 }
 
+#[derive(Event, PartialEq, Eq)]
+pub struct EnableUpgradableBuilding {
+    pub client_id: ClientId,
+    pub scene_id: GameSceneId,
+    pub building_type: UpgradableBuilding,
+}
+
 pub struct BuildingsPlugins;
 
 impl Plugin for BuildingsPlugins {
     fn build(&self, app: &mut App) {
         app.add_event::<RecruitEvent>();
+        app.add_event::<EnableUpgradableBuilding>();
 
         app.add_systems(
             FixedUpdate,
@@ -42,7 +50,7 @@ fn check_goldfarm(
     lobby: Res<ServerLobby>,
     player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
     building: Query<(&Transform, &BoxCollider, &GameSceneId, &UpgradableBuilding)>,
-    //mut recruit: EventWriter<RecruitEvent>,
+    mut enable: EventWriter<EnableUpgradableBuilding>,
     mut interactions: EventReader<InteractEvent>,
 ) {
     for event in interactions.read() {
@@ -62,9 +70,16 @@ fn check_goldfarm(
                 building_transform.translation.truncate(),
                 building_collider.half_size(),
             );
-            // Send Event and check if upgradable
+
+            // Send Event
             if player_bounds.intersects(&zone_bounds) {
-                println!("Interacted with {:?}", building);
+                println!("Sending Uupgrad Build");
+
+                enable.send(EnableUpgradableBuilding {
+                    client_id,
+                    scene_id: *player_scene,
+                    building_type: *building,
+                });
             }
         }
     }

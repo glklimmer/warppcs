@@ -1,8 +1,10 @@
 use bevy::prelude::*;
-use shared::{networking::GoldAmount, GameState};
+use shared::{server::economy::GoldAmount, GameState};
 
 #[derive(Event)]
-pub struct UpdateGoldAmount(pub GoldAmount);
+pub struct UpdateGoldAmount {
+    pub gold_amount: GoldAmount,
+}
 
 #[derive(Component)]
 pub struct GoldAmountDisplay;
@@ -14,11 +16,16 @@ impl Plugin for UiPlugin {
         app.add_event::<UpdateGoldAmount>();
 
         app.add_systems(OnEnter(GameState::GameSession), setup_ui);
+
+        app.add_systems(
+            Update,
+            update_gold_amount.run_if(on_event::<UpdateGoldAmount>()),
+        );
     }
 }
 
-fn setup_ui(mut commands: Commands, mut gold_query: Query<&GoldAmount>) {
-    let gold_amount = gold_query.single_mut();
+fn setup_ui(mut commands: Commands, gold_query: Query<&GoldAmount>) {
+    let gold_amount = gold_query.single();
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -48,4 +55,12 @@ fn setup_ui(mut commands: Commands, mut gold_query: Query<&GoldAmount>) {
         });
 }
 
-fn update_gold_amount(mut gold_query: Query<&GoldAmount>) {}
+fn update_gold_amount(
+    mut gold_event: EventReader<UpdateGoldAmount>,
+    mut gold_display_query: Query<&mut Text, With<GoldAmountDisplay>>,
+) {
+    for event in gold_event.read() {
+        let mut gold_display = gold_display_query.single_mut();
+        gold_display.sections[0].value = format!("Gold Amount {:?}", event.gold_amount.0);
+    }
+}

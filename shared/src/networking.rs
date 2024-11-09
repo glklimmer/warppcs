@@ -4,7 +4,7 @@ use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::map::GameSceneType;
+use crate::{map::GameSceneType, server::economy::GoldAmount};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -14,9 +14,6 @@ pub enum MultiplayerRoles {
     Client,
     NotInGame,
 }
-
-#[derive(Component, Debug, Serialize, Deserialize)]
-pub struct GoldAmount(pub u64);
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
 pub struct PlayerInput {

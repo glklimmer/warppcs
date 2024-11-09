@@ -13,7 +13,7 @@ pub enum MainBuildingLevel {
     Third,
 }
 
-#[derive(Component, Copy, Clone)]
+#[derive(Component, Copy, Clone, PartialEq, Eq)]
 pub enum BuildStatus {
     None,
     Built,
@@ -26,7 +26,7 @@ pub enum Building {
     Pikeman,
 }
 
-#[derive(Component, Copy, Clone, Debug)]
+#[derive(Component, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum UpgradableBuilding {
     Wall,
     Tower,

@@ -3,10 +3,11 @@ use bevy::prelude::*;
 use crate::map::base::BaseScene;
 use crate::map::{GameScene, GameSceneId, GameSceneType, Layers};
 use crate::networking::{
-    ClientChannel, Facing, GoldAmount, MultiplayerRoles, NetworkEntity, NetworkedEntities, Owner,
+    ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, Owner,
     PlayerCommand, PlayerInput, PlayerSkin, ProjectileType, Rotation, ServerChannel,
     ServerMessages, SpawnPlayer, Unit,
 };
+use crate::server::economy::GoldAmount;
 use crate::server::game_scenes::GameSceneDestination;
 use crate::server::physics::movement::Velocity;
 use crate::{BoxCollider, GameState};
@@ -20,6 +21,7 @@ use std::collections::HashMap;
 
 use super::ai::AIPlugin;
 use super::buildings::BuildingsPlugins;
+use super::economy::EconomyPlugin;
 use super::game_scenes::GameScenesPlugin;
 use super::physics::PhysicsPlugin;
 
@@ -49,6 +51,7 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(PhysicsPlugin);
         app.add_plugins(GameScenesPlugin);
         app.add_plugins(BuildingsPlugins);
+        app.add_plugins(EconomyPlugin);
 
         app.add_systems(
             FixedUpdate,
@@ -91,11 +94,7 @@ fn server_lobby_system(
                     server.send_message(*client_id, ServerChannel::ServerMessages, message)
                 }
                 let player_entity = commands
-                    .spawn((
-                        ServerPlayer(*client_id),
-                        BoxCollider(Vec2::new(50., 90.)),
-                        GoldAmount(100),
-                    ))
+                    .spawn((ServerPlayer(*client_id), BoxCollider(Vec2::new(50., 90.))))
                     .id();
                 lobby.players.insert(*client_id, player_entity);
                 let message =
@@ -208,13 +207,14 @@ fn server_update_system(
 
                         // Create Player entity
                         let transform = Transform::from_xyz(0., 50., Layers::Player.as_f32());
+                        let gold_amount = GoldAmount(100);
                         commands.entity(*player_entity).insert((
                             transform,
                             PlayerInput::default(),
                             Velocity::default(),
                             game_scene_id,
                             skin,
-                            GoldAmount(100),
+                            gold_amount.clone(),
                         ));
 
                         let message = ServerMessages::LoadGameScene {
@@ -228,6 +228,10 @@ fn server_update_system(
                             units: Vec::new(),
                             projectiles: Vec::new(),
                         };
+                        let message = bincode::serialize(&message).unwrap();
+                        server.send_message(*client_id, ServerChannel::ServerMessages, message);
+
+                        let message = ServerMessages::ChangeGoldAmount(gold_amount);
                         let message = bincode::serialize(&message).unwrap();
                         server.send_message(*client_id, ServerChannel::ServerMessages, message);
                     }
