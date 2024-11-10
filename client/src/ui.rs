@@ -10,6 +10,9 @@ use shared::steamworks::SteamworksClient;
 #[cfg(feature = "steam")]
 use steamworks::{LobbyId, SteamId};
 
+#[cfg(dev)]
+use std::env;
+
 use crate::{
     networking::CurrentClientId,
     ui_widgets::text_input::{TextInputBundle, TextInputPlugin, TextInputValue},
@@ -999,6 +1002,7 @@ fn add_player_to_lobby_slot(
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn remove_player_from_lobby(
     mut commands: Commands,
     mut text_query: Query<
