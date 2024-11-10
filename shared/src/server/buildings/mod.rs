@@ -24,10 +24,11 @@ struct RecruitEvent {
 }
 
 #[derive(Event, PartialEq, Eq)]
-pub struct EnableUpgradableBuilding {
+pub struct UpgradableBuildingInteraction {
     pub client_id: ClientId,
     pub scene_id: GameSceneId,
     pub building_type: UpgradableBuilding,
+    pub entity: Entity,
 }
 
 pub struct BuildingsPlugins;
@@ -35,7 +36,7 @@ pub struct BuildingsPlugins;
 impl Plugin for BuildingsPlugins {
     fn build(&self, app: &mut App) {
         app.add_event::<RecruitEvent>();
-        app.add_event::<EnableUpgradableBuilding>();
+        app.add_event::<UpgradableBuildingInteraction>();
 
         app.add_systems(
             FixedUpdate,
@@ -49,8 +50,14 @@ impl Plugin for BuildingsPlugins {
 fn check_goldfarm(
     lobby: Res<ServerLobby>,
     player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
-    building: Query<(&Transform, &BoxCollider, &GameSceneId, &UpgradableBuilding)>,
-    mut enable: EventWriter<EnableUpgradableBuilding>,
+    building: Query<(
+        Entity,
+        &Transform,
+        &BoxCollider,
+        &GameSceneId,
+        &UpgradableBuilding,
+    )>,
+    mut enable: EventWriter<UpgradableBuildingInteraction>,
     mut interactions: EventReader<InteractEvent>,
 ) {
     for event in interactions.read() {
@@ -58,7 +65,9 @@ fn check_goldfarm(
         let player_entity = lobby.players.get(&client_id).unwrap();
 
         let (player_transform, player_collider, player_scene) = player.get(*player_entity).unwrap();
-        for (building_transform, building_collider, builing_scene, building) in building.iter() {
+        for (entity, building_transform, building_collider, builing_scene, building) in
+            building.iter()
+        {
             if player_scene.ne(builing_scene) {
                 continue;
             }
@@ -71,14 +80,12 @@ fn check_goldfarm(
                 building_collider.half_size(),
             );
 
-            // Send Event
             if player_bounds.intersects(&zone_bounds) {
-                println!("Sending Uupgrad Build");
-
-                enable.send(EnableUpgradableBuilding {
+                enable.send(UpgradableBuildingInteraction {
                     client_id,
                     scene_id: *player_scene,
                     building_type: *building,
+                    entity,
                 });
             }
         }

@@ -1,6 +1,4 @@
-use std::default;
-
-use bevy::prelude::{default, *};
+use bevy::prelude::*;
 
 pub mod map;
 pub mod networking;

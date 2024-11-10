@@ -9,34 +9,32 @@ use crate::{
     GameState,
 };
 
-use super::{
-    buildings::EnableUpgradableBuilding,
-    networking::{ServerLobby, ServerPlayer},
-};
+use super::{buildings::UpgradableBuildingInteraction, networking::ServerLobby};
 
-#[derive(Resource)]
-pub struct GoldTimer {
+const GOLD_PER_TICK: u16 = 10;
+const GOLD_TIMER: f32 = 10.;
+
+#[derive(Component)]
+pub struct GoldFarmTimer {
     pub timer: Timer,
 }
 
-impl Default for GoldTimer {
+impl Default for GoldFarmTimer {
     fn default() -> Self {
         Self {
-            timer: Timer::from_seconds(10.0, TimerMode::Repeating),
+            timer: Timer::from_seconds(GOLD_TIMER, TimerMode::Repeating),
         }
     }
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
-pub struct GoldAmount(pub u64);
+pub struct GoldAmount(pub u16);
 
 impl Plugin for EconomyPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<GoldTimer>();
-
         app.add_systems(
             FixedUpdate,
-            enable_goldfarm.run_if(on_event::<EnableUpgradableBuilding>()),
+            enable_goldfarm.run_if(on_event::<UpgradableBuildingInteraction>()),
         );
 
         app.add_systems(
@@ -48,13 +46,11 @@ impl Plugin for EconomyPlugin {
 
 fn enable_goldfarm(
     mut commands: Commands,
-    mut lobby: Res<ServerLobby>,
-    mut enable: EventReader<EnableUpgradableBuilding>,
+    lobby: Res<ServerLobby>,
+    mut enable: EventReader<UpgradableBuildingInteraction>,
     mut gold_player_query: Query<(Entity, &mut GoldAmount)>,
     mut gold_farms_query: Query<(
-        Entity,
         &mut BuildStatus,
-        &UpgradableBuilding,
         //&Upgradable,
         &Owner,
     )>,
@@ -74,67 +70,51 @@ fn enable_goldfarm(
             continue;
         }
 
-        for (entity, mut status, building, owner) in &mut gold_farms_query {
-            if building.eq(&UpgradableBuilding::GoldFarm) {
-                if owner.0.ne(&client_id) {
-                    continue;
-                }
+        let (mut status, owner) = gold_farms_query.get_mut(event.entity).unwrap();
 
-                gold_amount.0 -= 50;
-                *status = BuildStatus::Built;
-                let message = ServerMessages::ChangeGoldAmount(gold_amount.clone());
-                let message = bincode::serialize(&message).unwrap();
-                server.send_message(client_id, ServerChannel::ServerMessages, message);
-
-                println!("received");
-                break;
+        if status.eq(&BuildStatus::None) {
+            if owner.0.ne(&client_id) {
+                continue;
             }
 
-            // TODO check for upgrade level
-            // if buidling.eq(&UpgradableBuilding::GoldFarm) {
-            // if gold_amount.0.gt(&50) && status.ne(&BuildStatus::Built) {
-            //     println!("Bought Farm");
-            //     gold_amount.0 -= 50;
-            //     *status = BuildStatus::Built;
+            gold_amount.0 -= 50;
 
-            //     commands.entity(entity).insert(Upgradable::First);
+            *status = BuildStatus::Built;
+            commands
+                .entity(event.entity)
+                .insert((Upgradable::First, GoldFarmTimer::default()));
 
-            //     let message = ServerMessages::ChangeGoldAmount(gold_amount.clone());
-            //     let message = bincode::serialize(&message).unwrap();
-            //     server.send_message(client_id, ServerChannel::ServerMessages, message)
-            // }
-            // }
+            let message = ServerMessages::ChangeGoldAmount(gold_amount.clone());
+            let message = bincode::serialize(&message).unwrap();
+            server.send_message(client_id, ServerChannel::ServerMessages, message);
         }
     }
 }
 
 fn give_gold(
     time: Res<Time>,
-    mut gold_timer: ResMut<GoldTimer>,
     lobby: Res<ServerLobby>,
+    mut gold_farms_query: Query<(&BuildStatus, &mut GoldFarmTimer, &Owner)>,
     mut gold_player_query: Query<(Entity, &mut GoldAmount)>,
-    mut gold_farms_query: Query<
-        (&BuildStatus, &UpgradableBuilding, &Owner),
-        With<UpgradableBuilding>,
-    >,
     mut server: ResMut<RenetServer>,
 ) {
-    // Tick the timer forward in time
-    gold_timer.timer.tick(time.delta());
+    for (status, mut farm_timer, owner) in &mut gold_farms_query {
+        if !status.eq(&BuildStatus::Built) {
+            continue;
+        }
 
-    // Only process gold giving when the timer has finished
-    if !gold_timer.timer.just_finished() {
-        return;
-    }
+        // Tick this specific farm's timer
+        farm_timer.timer.tick(time.delta());
 
-    for (status, building, owner) in &mut gold_farms_query {
-        if building.eq(&UpgradableBuilding::GoldFarm) && status.eq(&BuildStatus::Built) {
+        // Check if this farm's timer is finished
+        if farm_timer.timer.just_finished() {
             let player_entity = lobby.players.get(&owner.0).unwrap();
             let (_, mut gold_amount) = gold_player_query.get_mut(*player_entity).unwrap();
-            gold_amount.0 += 10;
+            gold_amount.0 += GOLD_PER_TICK;
+
             let message = ServerMessages::ChangeGoldAmount(gold_amount.clone());
             let message = bincode::serialize(&message).unwrap();
-            server.send_message(owner.0, ServerChannel::ServerMessages, message)
+            server.send_message(owner.0, ServerChannel::ServerMessages, message);
         }
     }
 }
