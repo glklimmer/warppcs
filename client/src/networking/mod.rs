@@ -355,7 +355,6 @@ fn client_sync_players(
                 player_joined.send(PlayerJoined(id));
             }
             ServerMessages::ChangeGoldAmount(gold_amount) => {
-                println!("Client Gold Amoutn {}", gold_amount.0);
                 update_gold_amount.send(UpdateGoldAmount { gold_amount });
             }
         }

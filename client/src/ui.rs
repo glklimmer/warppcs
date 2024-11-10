@@ -24,8 +24,7 @@ impl Plugin for UiPlugin {
     }
 }
 
-fn setup_ui(mut commands: Commands, gold_query: Query<&GoldAmount>) {
-    let gold_amount = gold_query.single();
+fn setup_ui(mut commands: Commands) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -43,7 +42,7 @@ fn setup_ui(mut commands: Commands, gold_query: Query<&GoldAmount>) {
         .with_children(|parent| {
             parent.spawn((
                 TextBundle::from_section(
-                    format!("Gold Amount {:?}", gold_amount.0),
+                    format!("Gold Amount: 0"),
                     TextStyle {
                         font_size: 25.0,
                         color: Color::srgb(0.9, 0.9, 0.9),

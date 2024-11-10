@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     map::base::{BuildStatus, Upgradable, UpgradableBuilding},
-    networking::{Owner, ServerChannel, ServerMessages},
+    networking::{MultiplayerRoles, Owner, ServerChannel, ServerMessages},
     GameState,
 };
 
@@ -39,7 +39,9 @@ impl Plugin for EconomyPlugin {
 
         app.add_systems(
             FixedUpdate,
-            give_gold.run_if(in_state(GameState::GameSession)),
+            (gold_farm_output).run_if(
+                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
+            ),
         );
     }
 }
@@ -91,7 +93,7 @@ fn enable_goldfarm(
     }
 }
 
-fn give_gold(
+fn gold_farm_output(
     time: Res<Time>,
     lobby: Res<ServerLobby>,
     mut gold_farms_query: Query<(&BuildStatus, &mut GoldFarmTimer, &Owner)>,
