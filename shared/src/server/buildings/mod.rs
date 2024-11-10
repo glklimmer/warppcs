@@ -65,16 +65,19 @@ fn check_goldfarm(
         let player_entity = lobby.players.get(&client_id).unwrap();
 
         let (player_transform, player_collider, player_scene) = player.get(*player_entity).unwrap();
+
+        let player_bounds = Aabb2d::new(
+            player_transform.translation.truncate(),
+            player_collider.half_size(),
+        );
+
         for (entity, building_transform, building_collider, builing_scene, building) in
             building.iter()
         {
             if player_scene.ne(builing_scene) {
                 continue;
             }
-            let player_bounds = Aabb2d::new(
-                player_transform.translation.truncate(),
-                player_collider.half_size(),
-            );
+
             let zone_bounds = Aabb2d::new(
                 building_transform.translation.truncate(),
                 building_collider.half_size(),
@@ -104,14 +107,17 @@ fn check_recruit(
         let player_entity = lobby.players.get(&client_id).unwrap();
 
         let (player_transform, player_collider, player_scene) = player.get(*player_entity).unwrap();
+
+        let player_bounds = Aabb2d::new(
+            player_transform.translation.truncate(),
+            player_collider.half_size(),
+        );
+
         for (building_transform, building_collider, builing_scene, building) in building.iter() {
             if player_scene.ne(builing_scene) {
                 continue;
             }
-            let player_bounds = Aabb2d::new(
-                player_transform.translation.truncate(),
-                player_collider.half_size(),
-            );
+
             let zone_bounds = Aabb2d::new(
                 building_transform.translation.truncate(),
                 building_collider.half_size(),
