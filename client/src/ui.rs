@@ -1,7 +1,10 @@
 use bevy::{color::palettes::css::BURLYWOOD, prelude::*};
-use bevy_renet::renet::{transport::NetcodeClientTransport, ClientId, RenetClient};
+use bevy_renet::{
+    client_just_disconnected,
+    renet::{transport::NetcodeClientTransport, ClientId, RenetClient},
+};
 use shared::{
-    networking::{Checkbox, ClientChannel, MultiplayerRoles, PlayerCommand},
+    networking::{Checkbox, ClientChannel, MultiplayerRoles, PlayerCommand, ServerMessages},
     GameState,
 };
 
@@ -14,7 +17,7 @@ use steamworks::{LobbyId, SteamId};
 use std::env;
 
 use crate::{
-    networking::CurrentClientId,
+    networking::{CurrentClientId, NetworkEvent},
     ui_widgets::text_input::{TextInputBundle, TextInputPlugin, TextInputValue},
 };
 
@@ -39,12 +42,6 @@ pub struct JoinSteamLobby(pub SteamId);
 #[cfg(feature = "netcode")]
 pub struct JoinNetcodeLobby(pub SocketAddr);
 
-#[derive(Event, Clone)]
-pub struct PlayerCheckbox {
-    pub id: ClientId,
-    pub checkbox_state: Checkbox,
-}
-
 #[derive(Component, PartialEq)]
 enum Button {
     Singleplayer,
@@ -66,25 +63,12 @@ struct LobbySlotOwner(ClientId);
 struct LobbySlotName(u8);
 
 #[derive(Event, Clone)]
-pub struct PlayerJoinedLobby {
-    pub id: ClientId,
-    pub ready_state: Checkbox,
-}
-
-#[derive(Event, Clone)]
 pub struct CleanMenuUI {}
-
-#[derive(Event, Clone)]
-pub struct PlayerLeftLobby(pub ClientId);
 
 pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PlayerJoinedLobby>();
-        app.add_event::<PlayerLeftLobby>();
-        app.add_event::<PlayerCheckbox>();
-
         app.add_plugins(TextInputPlugin);
 
         app.add_systems(OnEnter(MainMenuStates::TitleScreen), display_main_menu);
@@ -100,23 +84,20 @@ impl Plugin for MenuPlugin {
         app.add_systems(OnExit(MainMenuStates::JoinScreen), clean_ui);
 
         app.add_systems(
-            Update,
-            (add_player_to_lobby_slot).run_if(on_event::<PlayerJoinedLobby>()),
-        );
-
-        app.add_systems(
-            Update,
-            (update_players_checkbox).run_if(on_event::<PlayerCheckbox>()),
-        );
-
-        app.add_systems(
-            Update,
-            (remove_player_from_lobby).run_if(on_event::<PlayerLeftLobby>()),
+            FixedUpdate,
+            (
+                add_player_to_lobby_slot,
+                update_players_checkbox,
+                remove_player_from_lobby,
+            )
+                .run_if(on_event::<NetworkEvent>()),
         );
 
         app.add_systems(Update, button_system);
 
         app.add_systems(OnEnter(GameState::GameSession), clean_ui);
+
+        app.add_systems(Update, disconnect_client.run_if(client_just_disconnected));
 
         #[cfg(feature = "steam")]
         {
@@ -967,7 +948,7 @@ fn add_player_to_lobby_slot(
         (Entity, &mut Visibility, &LobbySlotName, &mut UiImage),
         (With<Checkbox>, Without<LobbySlotOwner>),
     >,
-    mut player_joined: EventReader<PlayerJoinedLobby>,
+    mut network_events: EventReader<NetworkEvent>,
     asset_server: Res<AssetServer>,
 ) {
     let mut text_query_sorted = (&mut text_query)
@@ -978,24 +959,25 @@ fn add_player_to_lobby_slot(
         .into_iter()
         .sort_by_key::<&LobbySlotName, _>(|slot| slot.0);
 
-    for new_player in player_joined.read() {
-        if let Some((entity, mut text, _)) = text_query_sorted.next() {
-            text.sections[0].value = new_player.id.to_string();
-            commands
-                .entity(entity)
-                .insert(LobbySlotOwner(new_player.id));
-        }
-        if let Some((entity, mut checkbox, _, mut checkbox_image)) = checkbox_query_sorted.next() {
-            *checkbox = Visibility::Visible;
-            commands
-                .entity(entity)
-                .insert(LobbySlotOwner(new_player.id));
-            match new_player.ready_state {
-                Checkbox::Checked => {
-                    *checkbox_image = UiImage::new(asset_server.load("ui/checkbox_checked.png"));
-                }
-                Checkbox::Unchecked => {
-                    *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+    for event in network_events.read() {
+        if let ServerMessages::PlayerJoinedLobby { id, ready_state } = &event.message {
+            if let Some((entity, mut text, _)) = text_query_sorted.next() {
+                text.sections[0].value = id.to_string();
+                commands.entity(entity).insert(LobbySlotOwner(*id));
+            }
+            if let Some((entity, mut checkbox, _, mut checkbox_image)) =
+                checkbox_query_sorted.next()
+            {
+                *checkbox = Visibility::Visible;
+                commands.entity(entity).insert(LobbySlotOwner(*id));
+                match ready_state {
+                    Checkbox::Checked => {
+                        *checkbox_image =
+                            UiImage::new(asset_server.load("ui/checkbox_checked.png"));
+                    }
+                    Checkbox::Unchecked => {
+                        *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+                    }
                 }
             }
         }
@@ -1020,42 +1002,47 @@ fn remove_player_from_lobby(
         (With<Checkbox>, With<LobbySlotOwner>),
     >,
     asset_server: Res<AssetServer>,
-    mut player_left: EventReader<PlayerLeftLobby>,
+    mut network_events: EventReader<NetworkEvent>,
 ) {
-    for player_left in player_left.read() {
-        for (entity, mut text, lobby, slot) in &mut text_query {
-            if lobby.0.eq(&player_left.0) {
-                commands.entity(entity).remove::<LobbySlotOwner>();
-                text.sections[0].value = format!("Slot {}", slot.0);
+    for event in network_events.read() {
+        if let ServerMessages::PlayerLeftLobby { id } = &event.message {
+            for (entity, mut text, lobby, slot) in &mut text_query {
+                if lobby.0.eq(id) {
+                    commands.entity(entity).remove::<LobbySlotOwner>();
+                    text.sections[0].value = format!("Slot {}", slot.0);
+                }
             }
-        }
-        for (entity, mut visibility, mut checkbox_image, mut checkbox, lobb) in &mut checkbox_query
-        {
-            if lobb.0.eq(&player_left.0) {
-                commands.entity(entity).remove::<LobbySlotOwner>();
-                *visibility = Visibility::Hidden;
-                *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
-                *checkbox = Checkbox::Unchecked;
+            for (entity, mut visibility, mut checkbox_image, mut checkbox, lobb) in
+                &mut checkbox_query
+            {
+                if lobb.0.eq(id) {
+                    commands.entity(entity).remove::<LobbySlotOwner>();
+                    *visibility = Visibility::Hidden;
+                    *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+                    *checkbox = Checkbox::Unchecked;
+                }
             }
         }
     }
 }
 
 fn update_players_checkbox(
-    mut player_checkbox: EventReader<PlayerCheckbox>,
+    mut network_events: EventReader<NetworkEvent>,
     mut checkbox_query: Query<(&LobbySlotOwner, &mut UiImage), With<Checkbox>>,
     asset_server: Res<AssetServer>,
 ) {
-    for check in player_checkbox.read() {
-        for (lobby_slot_owner, mut checkbox_image) in &mut checkbox_query {
-            if lobby_slot_owner.0.eq(&check.id) {
-                match check.checkbox_state {
-                    Checkbox::Checked => {
-                        *checkbox_image =
-                            UiImage::new(asset_server.load("ui/checkbox_checked.png"));
-                    }
-                    Checkbox::Unchecked => {
-                        *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+    for event in network_events.read() {
+        if let ServerMessages::LobbyPlayerReadyState { id, ready_state } = &event.message {
+            for (lobby_slot_owner, mut checkbox_image) in &mut checkbox_query {
+                if lobby_slot_owner.0.eq(id) {
+                    match ready_state {
+                        Checkbox::Checked => {
+                            *checkbox_image =
+                                UiImage::new(asset_server.load("ui/checkbox_checked.png"));
+                        }
+                        Checkbox::Unchecked => {
+                            *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+                        }
                     }
                 }
             }
@@ -1114,4 +1101,13 @@ fn lobby_slot_checkbox(
             Interaction::None => {}
         }
     }
+}
+
+fn disconnect_client(
+    mut menu_state: ResMut<NextState<MainMenuStates>>,
+    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
+) {
+    println!("Disconnecting");
+    menu_state.set(MainMenuStates::Multiplayer);
+    multiplayer_roles.set(MultiplayerRoles::NotInGame);
 }

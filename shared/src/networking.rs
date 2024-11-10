@@ -66,7 +66,7 @@ pub enum PlayerSkin {
     Monster,
 }
 
-#[derive(Debug, Serialize, Deserialize, Event)]
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnPlayer {
     pub id: ClientId,
     pub entity: Entity,
@@ -74,12 +74,12 @@ pub struct SpawnPlayer {
     pub skin: PlayerSkin,
 }
 
-#[derive(Debug, Serialize, Deserialize, Event)]
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnFlag {
     pub entity: Entity,
 }
 
-#[derive(Debug, Serialize, Deserialize, Event)]
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnUnit {
     pub owner: Owner,
     pub entity: Entity,
@@ -87,7 +87,7 @@ pub struct SpawnUnit {
     pub translation: [f32; 3],
 }
 
-#[derive(Debug, Serialize, Deserialize, Event)]
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnProjectile {
     pub entity: Entity,
     pub projectile_type: ProjectileType,
@@ -118,7 +118,7 @@ pub enum ServerMessages {
     SpawnFlag(SpawnFlag),
     SpawnUnit(SpawnUnit),
     SpawnProjectile(SpawnProjectile),
-    PlayerRemove {
+    PlayerDisconnected {
         id: ClientId,
     },
     DespawnEntity {

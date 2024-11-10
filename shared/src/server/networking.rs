@@ -107,7 +107,8 @@ fn server_lobby_system(
                 }
 
                 let message =
-                    bincode::serialize(&ServerMessages::PlayerRemove { id: *client_id }).unwrap();
+                    bincode::serialize(&ServerMessages::PlayerDisconnected { id: *client_id })
+                        .unwrap();
                 server.broadcast_message(ServerChannel::ServerMessages, message);
 
                 player_left.send(PlayerLeavedLobby(*client_id));
