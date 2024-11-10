@@ -3,6 +3,8 @@ use bevy_renet::renet::ClientId;
 use shared::networking::{MultiplayerRoles, PlayerCommand};
 
 #[cfg(feature = "steam")]
+use crate::ui_widgets::text_input::TextInputValue;
+#[cfg(feature = "steam")]
 use shared::steamworks::SteamworksClient;
 #[cfg(feature = "steam")]
 use steamworks::{LobbyId, SteamId};
@@ -10,7 +12,7 @@ use steamworks::{LobbyId, SteamId};
 use crate::{
     networking::{CurrentClientId, PlayerJoined},
     ui_widgets::text_input::{
-        TextInputBundle, TextInputPlugin, TextInputSubmitEvent, TextInputSystem, TextInputValue,
+        TextInputBundle, TextInputPlugin, TextInputSubmitEvent, TextInputSystem,
     },
 };
 

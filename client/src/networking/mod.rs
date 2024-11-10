@@ -1,7 +1,7 @@
 use bevy::color::palettes::css::RED;
-use bevy::{color::palettes::css::YELLOW, prelude::*};
+use bevy::prelude::*;
 
-use bevy::sprite::{Anchor, Mesh2dHandle};
+use bevy::sprite::Mesh2dHandle;
 use bevy_renet::{
     renet::{ClientId, RenetClient},
     RenetClientPlugin,

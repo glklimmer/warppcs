@@ -13,7 +13,6 @@ use shared::{
     networking::{
         PlayerSkin, ProjectileType, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit, UnitType,
     },
-    server::economy::GoldAmount,
     BoxCollider,
 };
 
