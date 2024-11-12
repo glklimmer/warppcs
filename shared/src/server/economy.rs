@@ -82,9 +82,10 @@ fn enable_goldfarm(
             gold_amount.0 -= 50;
 
             *status = BuildStatus::Built;
+            // Add Upgradable::First Later
             commands
                 .entity(event.entity)
-                .insert((Upgradable::First, GoldFarmTimer::default()));
+                .insert(GoldFarmTimer::default());
 
             let message = ServerMessages::ChangeGoldAmount(gold_amount.clone());
             let message = bincode::serialize(&message).unwrap();
