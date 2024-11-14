@@ -95,7 +95,7 @@ pub struct SpawnProjectile {
     pub direction: [f32; 2],
 }
 
-#[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq, Copy)]
 pub enum Checkbox {
     Checked,
     Unchecked,
