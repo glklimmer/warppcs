@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use shared::networking::{Facing, Rotation};
+use shared::networking::{Facing, Rotation, ServerMessages};
 
-use crate::networking::{Change, NetworkEvent};
+use crate::networking::{NetworkEvent, NetworkMapping};
 
 use super::king::{AnimationConfig, AnimationReferences, AnimationSetting};
 
@@ -26,11 +26,26 @@ pub struct AnimationTrigger {
 #[derive(Component)]
 struct FullAnimation;
 
+pub enum Change {
+    Rotation(Rotation),
+    Movement(bool),
+    Attack,
+}
+
+#[derive(Event)]
+pub struct EntityChangeEvent {
+    pub entity: Entity,
+    pub change: Change,
+}
+
 pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<AnimationTrigger>();
+        app.add_event::<EntityChangeEvent>();
+
+        app.add_systems(FixedUpdate, trigger_meele_attack);
 
         app.add_systems(
             Update,
@@ -44,6 +59,26 @@ impl Plugin for AnimationPlugin {
                 mirror_sprite,
             ),
         );
+    }
+}
+
+fn trigger_meele_attack(
+    mut network_events: EventReader<NetworkEvent>,
+    mut change: EventWriter<EntityChangeEvent>,
+    network_mapping: Res<NetworkMapping>,
+) {
+    for event in network_events.read() {
+        if let ServerMessages::MeleeAttack {
+            entity: server_entity,
+        } = event.message
+        {
+            if let Some(client_entity) = network_mapping.0.get(&server_entity) {
+                change.send(EntityChangeEvent {
+                    entity: *client_entity,
+                    change: Change::Attack,
+                });
+            }
+        }
     }
 }
 
@@ -102,7 +137,7 @@ fn advance_animation(
 fn set_next_animation(
     mut commands: Commands,
     mut animation: Query<(&mut AnimationSetting, Option<&FullAnimation>)>,
-    mut network_events: EventReader<NetworkEvent>,
+    mut network_events: EventReader<EntityChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger>,
 ) {
     for event in network_events.read() {
@@ -155,7 +190,7 @@ fn is_full_animation(animation: &UnitAnimation) -> bool {
     }
 }
 
-fn set_unit_facing(mut commands: Commands, mut movements: EventReader<NetworkEvent>) {
+fn set_unit_facing(mut commands: Commands, mut movements: EventReader<EntityChangeEvent>) {
     for event in movements.read() {
         if let Change::Rotation(Rotation::LeftRight {
             facing: Some(new_facing),
@@ -170,7 +205,7 @@ fn set_unit_facing(mut commands: Commands, mut movements: EventReader<NetworkEve
 
 fn set_free_orientation(
     mut query: Query<&mut Transform>,
-    mut movements: EventReader<NetworkEvent>,
+    mut movements: EventReader<EntityChangeEvent>,
 ) {
     for event in movements.read() {
         if let Change::Rotation(Rotation::Free { angle }) = &event.change {

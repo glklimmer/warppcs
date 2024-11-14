@@ -1,20 +1,25 @@
 use bevy::prelude::*;
 
-use super::{ClientPlayers, Connected, CurrentClientId, NetworkMapping};
 use crate::{
     animations::{
         animation::UnitAnimation,
         king::{PaladinBundle, PaladinSpriteSheet, WarriorBundle, WarriorSpriteSheet},
         FlagBundle, FlagSpriteSheet,
     },
-    networking::{ControlledPlayer, PartOfScene, PlayerEntityMapping},
+    networking::{
+        ClientPlayers, Connected, ControlledPlayer, CurrentClientId, NetworkEvent, NetworkMapping,
+        PlayerEntityMapping,
+    },
 };
 use shared::{
     networking::{
-        PlayerSkin, ProjectileType, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit, UnitType,
+        PlayerSkin, ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile,
+        SpawnUnit, UnitType,
     },
     BoxCollider,
 };
+
+use super::PartOfScene;
 
 pub struct SpawnPlugin;
 
@@ -30,27 +35,61 @@ impl Plugin for SpawnPlugin {
         app.add_systems(
             FixedUpdate,
             (
+                spawn,
                 (
-                    spawn_player.run_if(on_event::<SpawnPlayer>()),
-                    spawn_flag.run_if(on_event::<SpawnFlag>()),
+                    (spawn_player, spawn_flag).chain(),
+                    spawn_unit,
+                    spawn_projectile,
                 )
                     .chain(),
-                spawn_unit.run_if(on_event::<SpawnUnit>()),
-                spawn_projectile.run_if(on_event::<SpawnProjectile>()),
             )
+                .run_if(on_event::<NetworkEvent>())
                 .in_set(Connected),
         );
     }
 }
 
-pub fn spawn_player(
+fn spawn(
+    mut network_events: EventReader<NetworkEvent>,
+    mut spawn_player: EventWriter<SpawnPlayer>,
+    mut spawn_unit: EventWriter<SpawnUnit>,
+    mut spawn_projectile: EventWriter<SpawnProjectile>,
+    mut spawn_flag: EventWriter<SpawnFlag>,
+) {
+    for event in network_events.read() {
+        match &event.message {
+            ServerMessages::SpawnPlayer(spawn) => {
+                spawn_player.send(spawn.clone());
+            }
+            ServerMessages::SpawnUnit(spawn) => {
+                spawn_unit.send(spawn.clone());
+            }
+            ServerMessages::SpawnProjectile(spawn) => {
+                spawn_projectile.send(spawn.clone());
+            }
+            ServerMessages::SpawnFlag(spawn) => {
+                spawn_flag.send(spawn.clone());
+            }
+            ServerMessages::SpawnGroup { player, units } => {
+                spawn_player.send(player.clone());
+
+                for unit in units {
+                    spawn_unit.send(unit.clone());
+                }
+            }
+            _ => (),
+        }
+    }
+}
+
+fn spawn_player(
     mut commands: Commands,
+    mut spawn_player: EventReader<SpawnPlayer>,
     client_id: Res<CurrentClientId>,
     warrior_sprite_sheet: Res<WarriorSpriteSheet>,
     paladin_sprite_sheet: Res<PaladinSpriteSheet>,
     mut lobby: ResMut<ClientPlayers>,
     mut network_mapping: ResMut<NetworkMapping>,
-    mut spawn_player: EventReader<SpawnPlayer>,
 ) {
     let client_id = client_id.0;
     for spawn in spawn_player.read() {
@@ -88,7 +127,7 @@ pub fn spawn_player(
     }
 }
 
-pub fn spawn_unit(
+fn spawn_unit(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut spawn_unit: EventReader<SpawnUnit>,
@@ -130,7 +169,7 @@ pub fn spawn_unit(
     }
 }
 
-pub fn spawn_projectile(
+fn spawn_projectile(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut network_mapping: ResMut<NetworkMapping>,
@@ -172,7 +211,7 @@ pub fn spawn_projectile(
     }
 }
 
-pub fn spawn_flag(
+fn spawn_flag(
     mut commands: Commands,
     mut network_mapping: ResMut<NetworkMapping>,
     mut spawn_flag: EventReader<SpawnFlag>,
