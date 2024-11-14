@@ -12,9 +12,10 @@ use crate::{map::GameSceneId, BoxCollider};
 
 use super::ai::attack::{unit_health, unit_swing_timer};
 use super::ai::UnitBehaviour;
-use super::networking::{InteractEvent, ServerLobby};
+use super::networking::ServerLobby;
 use super::physics::attachment::AttachedTo;
 use super::physics::movement::Velocity;
+use super::players::InteractEvent;
 
 #[derive(Event)]
 struct RecruitEvent {

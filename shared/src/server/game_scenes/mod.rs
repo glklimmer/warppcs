@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use start_game::StartGamePlugin;
 
 use crate::map::GameSceneId;
 use crate::networking::{
@@ -11,8 +12,11 @@ use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;
 
 use super::buildings::{FlagAssignment, FlagHolder};
-use super::networking::{GameWorld, InteractEvent, ServerLobby, ServerPlayer};
+use super::networking::{GameWorld, ServerLobby, ServerPlayer};
 use super::physics::movement::Velocity;
+use super::players::InteractEvent;
+
+pub mod start_game;
 
 #[derive(Component, Clone)]
 pub struct GameSceneDestination {
@@ -30,6 +34,8 @@ pub struct GameScenesPlugin;
 
 impl Plugin for GameScenesPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(StartGamePlugin);
+
         app.add_event::<TravelEvent>();
 
         app.add_systems(
