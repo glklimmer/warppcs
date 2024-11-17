@@ -4,7 +4,7 @@ use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::map::GameSceneType;
+use crate::{map::GameSceneType, server::economy::GoldAmount};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -138,6 +138,7 @@ pub enum ServerMessages {
     MeleeAttack {
         entity: Entity,
     },
+    ChangeGoldAmount(GoldAmount),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

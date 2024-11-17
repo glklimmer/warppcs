@@ -5,6 +5,8 @@ use crate::networking::{
     ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, PlayerCommand,
     PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages, Unit,
 };
+use crate::server::economy::GoldAmount;
+use crate::server::game_scenes::GameSceneDestination;
 use crate::server::physics::movement::Velocity;
 use crate::{BoxCollider, GameState};
 
@@ -16,6 +18,7 @@ use std::collections::HashMap;
 
 use super::ai::AIPlugin;
 use super::buildings::BuildingsPlugins;
+use super::economy::EconomyPlugin;
 use super::game_scenes::GameScenesPlugin;
 use super::lobby::{LobbyPlugin, PlayerJoinedLobby, PlayerLeftLobby};
 use super::physics::PhysicsPlugin;
@@ -50,12 +53,7 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(PhysicsPlugin);
         app.add_plugins(GameScenesPlugin);
         app.add_plugins(BuildingsPlugins);
-        app.add_plugins(PlayerPlugin);
-
-        app.add_systems(
-            FixedPreUpdate,
-            (receive_client_messages,).run_if(in_state(MultiplayerRoles::Host)),
-        );
+        app.add_plugins(EconomyPlugin);
 
         app.add_systems(
             FixedUpdate,

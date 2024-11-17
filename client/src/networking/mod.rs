@@ -1,3 +1,4 @@
+use bevy::color::palettes::css::RED;
 use bevy::prelude::*;
 
 use bevy_renet::{
@@ -10,7 +11,7 @@ use shared::networking::{
 };
 use std::collections::HashMap;
 
-use crate::animations::animation::{Change, EntityChangeEvent};
+use crate::ui::UpdateGoldAmount;
 
 pub mod join_server;
 

@@ -32,6 +32,3 @@ pub enum Layers {
     Flag,
     Player,
 }
-
-#[derive(Component)]
-pub struct Goldmine;

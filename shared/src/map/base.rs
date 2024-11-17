@@ -13,7 +13,7 @@ pub enum MainBuildingLevel {
     Third,
 }
 
-#[derive(Component, Copy, Clone)]
+#[derive(Component, Copy, Clone, PartialEq, Eq)]
 pub enum BuildStatus {
     None,
     Built,
@@ -26,15 +26,15 @@ pub enum Building {
     Pikeman,
 }
 
-#[derive(Component, Copy, Clone)]
+#[derive(Component, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum UpgradableBuilding {
     Wall,
     Tower,
+    GoldFarm,
 }
 
 #[derive(Component, Copy, Clone)]
 pub enum Upgradable {
-    None,
     First,
     Second,
     Third,
@@ -105,7 +105,6 @@ impl BuildingBundle {
 #[derive(Bundle, Copy, Clone)]
 pub struct UpgradableBuildingBundle {
     pub building: UpgradableBuilding,
-    pub upgrade: Upgradable,
     pub collider: BoxCollider,
     pub build_status: BuildStatus,
     pub transform: Transform,
@@ -115,7 +114,6 @@ impl UpgradableBuildingBundle {
     pub fn wall(x: f32) -> Self {
         UpgradableBuildingBundle {
             building: UpgradableBuilding::Wall,
-            upgrade: Upgradable::None,
             collider: BoxCollider(Vec2::new(50., 75.)),
             build_status: BuildStatus::None,
             transform: Transform::from_xyz(x, 75. / 2., Layers::Building.as_f32()),
@@ -125,10 +123,18 @@ impl UpgradableBuildingBundle {
     pub fn tower() -> Self {
         UpgradableBuildingBundle {
             building: UpgradableBuilding::Tower,
-            upgrade: Upgradable::None,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::None,
             transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
+        }
+    }
+
+    pub fn gold_farm(x: f32) -> Self {
+        UpgradableBuildingBundle {
+            building: UpgradableBuilding::GoldFarm,
+            collider: BoxCollider(Vec2::new(200., 50.)),
+            build_status: BuildStatus::None,
+            transform: Transform::from_xyz(x, 25., Layers::Building.as_f32()),
         }
     }
 }
@@ -141,6 +147,8 @@ pub struct BaseScene {
     pub pikeman_building: BuildingBundle,
     pub left_wall: UpgradableBuildingBundle,
     pub right_wall: UpgradableBuildingBundle,
+    pub left_gold_farm: UpgradableBuildingBundle,
+    pub right_gold_farm: UpgradableBuildingBundle,
     pub left_spawn_point: SpawnPointBundle,
     pub right_spawn_point: SpawnPointBundle,
 }
@@ -154,6 +162,8 @@ impl BaseScene {
             pikeman_building: BuildingBundle::pikeman(),
             left_wall: UpgradableBuildingBundle::wall(-800.),
             right_wall: UpgradableBuildingBundle::wall(1050.),
+            left_gold_farm: UpgradableBuildingBundle::gold_farm(-1450.),
+            right_gold_farm: UpgradableBuildingBundle::gold_farm(1450.),
             left_spawn_point: SpawnPointBundle::new(-1200.),
             right_spawn_point: SpawnPointBundle::new(1200.),
         }
