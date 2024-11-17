@@ -1,21 +1,17 @@
+use bevy::prelude::*;
+
+use bevy_renet::renet::{transport::NetcodeServerTransport, ClientId, RenetServer};
 use std::collections::BTreeMap;
 
-use bevy::prelude::*;
-use bevy_renet::renet::{transport::NetcodeServerTransport, ClientId, RenetServer};
+use crate::networking::{Checkbox, MultiplayerRoles, PlayerCommand, ServerChannel, ServerMessages};
 
-use crate::networking::{Checkbox, MultiplayerRoles, ServerChannel, ServerMessages};
+use super::networking::NetworkEvent;
 
 #[derive(Event)]
 pub struct PlayerJoinedLobby(pub ClientId);
 
 #[derive(Event)]
-pub struct PlayerLeavedLobby(pub ClientId);
-
-#[derive(Event)]
-pub struct PlayerChangedReady {
-    pub id: ClientId,
-    pub ready_state: Checkbox,
-}
+pub struct PlayerLeftLobby(pub ClientId);
 
 #[derive(Default, Resource)]
 pub struct GameLobby {
@@ -36,13 +32,9 @@ impl Plugin for LobbyPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GameLobby>();
         app.add_event::<PlayerJoinedLobby>();
-        app.add_event::<PlayerLeavedLobby>();
-        app.add_event::<PlayerChangedReady>();
+        app.add_event::<PlayerLeftLobby>();
 
-        app.add_systems(
-            FixedUpdate,
-            lobby_check.run_if(on_event::<PlayerChangedReady>()),
-        );
+        app.add_systems(FixedUpdate, lobby_check.run_if(on_event::<NetworkEvent>()));
 
         app.add_systems(
             FixedUpdate,
@@ -51,7 +43,7 @@ impl Plugin for LobbyPlugin {
 
         app.add_systems(
             FixedUpdate,
-            remove_player.run_if(on_event::<PlayerLeavedLobby>()),
+            remove_player.run_if(on_event::<PlayerLeftLobby>()),
         );
     }
 }
@@ -79,7 +71,7 @@ fn update_lobby(
         for player in &mut game_lobby.players.iter() {
             let message = bincode::serialize(&ServerMessages::PlayerJoinedLobby {
                 id: *player.0,
-                ready_state: player.1.clone(),
+                ready_state: *player.1,
             })
             .unwrap();
 
@@ -91,28 +83,28 @@ fn update_lobby(
 fn lobby_check(
     mut server: ResMut<RenetServer>,
     mut game_lobby: ResMut<GameLobby>,
-    mut player_checkbox: EventReader<PlayerChangedReady>,
+    mut network_events: EventReader<NetworkEvent>,
 ) {
-    for player in player_checkbox.read() {
-        game_lobby
-            .players
-            .insert(player.id, player.ready_state.clone());
+    for event in network_events.read() {
+        let client_id = event.client_id;
+        if let PlayerCommand::LobbyReadyState(ready_state) = &event.message {
+            game_lobby.players.insert(client_id, *ready_state);
 
-        let message = ServerMessages::LobbyPlayerReadyState {
-            id: player.id,
-            ready_state: player.ready_state.clone(),
-        };
+            let message = ServerMessages::LobbyPlayerReadyState {
+                id: client_id,
+                ready_state: *ready_state,
+            };
 
-        let player_state_message = bincode::serialize(&message).unwrap();
-
-        server.broadcast_message(ServerChannel::ServerMessages, player_state_message);
+            let player_state_message = bincode::serialize(&message).unwrap();
+            server.broadcast_message(ServerChannel::ServerMessages, player_state_message);
+        }
     }
 }
 
 fn remove_player(
     mut commands: Commands,
     mut ready_players: ResMut<GameLobby>,
-    mut player_left: EventReader<PlayerLeavedLobby>,
+    mut player_left: EventReader<PlayerLeftLobby>,
     mut server: ResMut<RenetServer>,
     mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
 ) {
