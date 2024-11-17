@@ -39,7 +39,7 @@ fn setup_ui(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((
                 TextBundle::from_section(
-                    format!("Gold Amount: 0"),
+                    "GOLD DISPLAY".to_string(),
                     TextStyle {
                         font_size: 25.0,
                         color: Color::srgb(0.9, 0.9, 0.9),
@@ -56,9 +56,9 @@ fn update_gold_amount(
     mut gold_display_query: Query<&mut Text, With<GoldAmountDisplay>>,
 ) {
     for event in network_events.read() {
-        if let ServerMessages::ChangeGoldAmount(gold_amount) = &event.message {
+        if let ServerMessages::SyncInventory(inventory) = &event.message {
             let mut gold_display = gold_display_query.single_mut();
-            gold_display.sections[0].value = format!("Gold Amount {:?}", gold_amount.0);
+            gold_display.sections[0].value = format!("Gold Amount {:?}", inventory.gold);
         }
     }
 }

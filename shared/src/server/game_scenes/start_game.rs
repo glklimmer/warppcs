@@ -6,7 +6,7 @@ use bevy_renet::renet::RenetServer;
 use crate::map::base::BaseScene;
 use crate::map::{GameScene, GameSceneType, Layers};
 use crate::networking::{Owner, PlayerInput, ServerChannel, ServerMessages, SpawnPlayer};
-use crate::server::economy::GoldAmount;
+use crate::server::economy::Inventory;
 use crate::server::networking::ServerLobby;
 use crate::server::physics::movement::Velocity;
 use crate::GameState;
@@ -100,7 +100,7 @@ fn start_game(
 
                 // Create Player entity
                 let transform = Transform::from_xyz(0., 50., Layers::Player.as_f32());
-                let gold_amount = GoldAmount(100);
+                let gold_amount = Inventory { gold: 100 };
                 commands.entity(*player_entity).insert((
                     transform,
                     PlayerInput::default(),
@@ -125,7 +125,7 @@ fn start_game(
                 let message = bincode::serialize(&message).unwrap();
                 server.send_message(*client_id, ServerChannel::ServerMessages, message);
 
-                let message = ServerMessages::ChangeGoldAmount(gold_amount);
+                let message = ServerMessages::SyncInventory(gold_amount);
                 let message = bincode::serialize(&message).unwrap();
                 server.send_message(*client_id, ServerChannel::ServerMessages, message);
             }

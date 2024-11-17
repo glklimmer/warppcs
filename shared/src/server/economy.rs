@@ -4,12 +4,15 @@ use bevy_renet::renet::RenetServer;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    map::base::{BuildStatus, UpgradableBuilding},
+    map::base::Building,
     networking::{MultiplayerRoles, Owner, ServerChannel, ServerMessages},
     GameState,
 };
 
-use super::{buildings::UpgradableBuildingInteraction, networking::ServerLobby};
+use super::{
+    buildings::{BuildingConstruction, BuildingUpgrade},
+    networking::ServerLobby,
+};
 
 const GOLD_PER_TICK: u16 = 10;
 const GOLD_TIMER: f32 = 10.;
@@ -28,13 +31,15 @@ impl Default for GoldFarmTimer {
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
-pub struct GoldAmount(pub u16);
+pub struct Inventory {
+    pub gold: u16,
+}
 
 impl Plugin for EconomyPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            enable_goldfarm.run_if(on_event::<UpgradableBuildingInteraction>()),
+            enable_goldfarm.run_if(on_event::<BuildingConstruction>()),
         );
 
         app.add_systems(
@@ -46,76 +51,34 @@ impl Plugin for EconomyPlugin {
     }
 }
 
-fn enable_goldfarm(
-    mut commands: Commands,
-    lobby: Res<ServerLobby>,
-    mut enable: EventReader<UpgradableBuildingInteraction>,
-    mut gold_player_query: Query<(Entity, &mut GoldAmount)>,
-    mut gold_farms_query: Query<(
-        &mut BuildStatus,
-        //&Upgradable,
-        &Owner,
-    )>,
-
-    mut server: ResMut<RenetServer>,
-) {
-    for event in enable.read() {
-        if event.building_type.ne(&UpgradableBuilding::GoldFarm) {
+fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingUpgrade>) {
+    for build in builds.read() {
+        if build.0.building_type.ne(&Building::GoldFarm) {
             continue;
         }
 
-        let client_id = event.client_id;
-        let player_entity = lobby.players.get(&client_id).unwrap();
-        let (_, mut gold_amount) = gold_player_query.get_mut(*player_entity).unwrap();
-
-        if !gold_amount.0.gt(&50) {
-            continue;
-        }
-
-        let (mut status, owner) = gold_farms_query.get_mut(event.entity).unwrap();
-
-        if status.eq(&BuildStatus::None) {
-            if owner.0.ne(&client_id) {
-                continue;
-            }
-
-            gold_amount.0 -= 50;
-
-            *status = BuildStatus::Built;
-            // Add Upgradable::First Later
-            commands
-                .entity(event.entity)
-                .insert(GoldFarmTimer::default());
-
-            let message = ServerMessages::ChangeGoldAmount(gold_amount.clone());
-            let message = bincode::serialize(&message).unwrap();
-            server.send_message(client_id, ServerChannel::ServerMessages, message);
-        }
+        commands
+            .entity(build.0.entity)
+            .insert(GoldFarmTimer::default());
     }
 }
 
 fn gold_farm_output(
     time: Res<Time>,
     lobby: Res<ServerLobby>,
-    mut gold_farms_query: Query<(&BuildStatus, &mut GoldFarmTimer, &Owner)>,
-    mut gold_player_query: Query<(Entity, &mut GoldAmount)>,
+    mut gold_farms_query: Query<(&mut GoldFarmTimer, &Owner)>,
+    mut inventory: Query<&mut Inventory>,
     mut server: ResMut<RenetServer>,
 ) {
-    for (status, mut farm_timer, owner) in &mut gold_farms_query {
-        if !status.eq(&BuildStatus::Built) {
-            continue;
-        }
-
-        // Tick this specific farm's timer
+    for (mut farm_timer, owner) in &mut gold_farms_query {
         farm_timer.timer.tick(time.delta());
 
-        // Check if this farm's timer is finished
         if farm_timer.timer.just_finished() {
             let player_entity = lobby.players.get(&owner.0).unwrap();
-            let (_, mut gold_amount) = gold_player_query.get_mut(*player_entity).unwrap();
-            gold_amount.0 += GOLD_PER_TICK;
+            let mut inventory = inventory.get_mut(*player_entity).unwrap();
+            inventory.gold += GOLD_PER_TICK;
 
-            let message = ServerMessages::ChangeGoldAmount(gold_amount.clone());
+            let message = ServerMessages::SyncInventory(inventory.clone());
             let message = bincode::serialize(&message).unwrap();
             server.send_message(owner.0, ServerChannel::ServerMessages, message);
         }
