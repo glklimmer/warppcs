@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["netcode"]
+default = ["steam"]
 steam = ["dep:renet_steam", "steamworks"]
 netcode = []
 

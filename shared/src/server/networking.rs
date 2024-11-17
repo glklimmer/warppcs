@@ -5,8 +5,6 @@ use crate::networking::{
     ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, PlayerCommand,
     PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages, Unit,
 };
-use crate::server::economy::GoldAmount;
-use crate::server::game_scenes::GameSceneDestination;
 use crate::server::physics::movement::Velocity;
 use crate::{BoxCollider, GameState};
 
@@ -53,6 +51,7 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(PhysicsPlugin);
         app.add_plugins(GameScenesPlugin);
         app.add_plugins(BuildingsPlugins);
+        app.add_plugins(PlayerPlugin);
         app.add_plugins(EconomyPlugin);
 
         app.add_systems(

@@ -140,7 +140,34 @@ fn load_game_scene(
                         ),
                         PartOfScene,
                     ));
-
+                    commands.spawn((
+                        base.left_gold_farm,
+                        (
+                            Mesh2dHandle(
+                                meshes.add(Rectangle::from_size(base.left_gold_farm.collider.0)),
+                            ),
+                            materials.add(Color::srgb(212., 215., 0.)),
+                            GlobalTransform::default(),
+                            Visibility::default(),
+                            InheritedVisibility::default(),
+                            ViewVisibility::default(),
+                        ),
+                        PartOfScene,
+                    ));
+                    commands.spawn((
+                        base.right_gold_farm,
+                        (
+                            Mesh2dHandle(
+                                meshes.add(Rectangle::from_size(base.right_gold_farm.collider.0)),
+                            ),
+                            materials.add(Color::srgb(212., 215., 0.)),
+                            GlobalTransform::default(),
+                            Visibility::default(),
+                            InheritedVisibility::default(),
+                            ViewVisibility::default(),
+                        ),
+                        PartOfScene,
+                    ));
                     commands.spawn((
                         base.left_spawn_point,
                         (

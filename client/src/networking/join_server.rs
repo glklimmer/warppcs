@@ -3,10 +3,11 @@ use bevy::prelude::*;
 use bevy_renet::renet::{ClientId, RenetClient};
 use shared::networking::connection_config;
 
-use crate::{menu::MainMenuStates, networking::CurrentClientId};
-
 #[cfg(feature = "steam")]
-use crate::ui::JoinSteamLobby;
+use crate::menu::JoinSteamLobby;
+#[cfg(prod)]
+use crate::menu::MainMenuStates;
+use crate::networking::CurrentClientId;
 
 #[cfg(feature = "netcode")]
 use crate::menu::JoinNetcodeLobby;
@@ -27,7 +28,7 @@ pub fn join_steam_server(
     mut commands: Commands,
     steam_client: Res<SteamworksClient>,
     mut join_lobby: EventReader<JoinSteamLobby>,
-    mut ui: ResMut<NextState<MainMenuStates>>,
+    #[cfg(prod)] mut ui: ResMut<NextState<MainMenuStates>>,
 ) {
     let server_steam_id = match join_lobby.read().next() {
         Some(value) => value.0,

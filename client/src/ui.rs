@@ -1,10 +1,7 @@
 use bevy::prelude::*;
-use shared::{server::economy::GoldAmount, GameState};
+use shared::{networking::ServerMessages, GameState};
 
-#[derive(Event)]
-pub struct UpdateGoldAmount {
-    pub gold_amount: GoldAmount,
-}
+use crate::networking::{Connected, NetworkEvent};
 
 #[derive(Component)]
 pub struct GoldAmountDisplay;
@@ -13,13 +10,13 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<UpdateGoldAmount>();
-
         app.add_systems(OnEnter(GameState::GameSession), setup_ui);
 
         app.add_systems(
-            Update,
-            update_gold_amount.run_if(on_event::<UpdateGoldAmount>()),
+            FixedUpdate,
+            update_gold_amount
+                .run_if(on_event::<NetworkEvent>())
+                .in_set(Connected),
         );
     }
 }
@@ -55,20 +52,13 @@ fn setup_ui(mut commands: Commands) {
 }
 
 fn update_gold_amount(
-    mut gold_event: EventReader<UpdateGoldAmount>,
+    mut network_events: EventReader<NetworkEvent>,
     mut gold_display_query: Query<&mut Text, With<GoldAmountDisplay>>,
 ) {
-    for event in gold_event.read() {
-        let mut gold_display = gold_display_query.single_mut();
-        gold_display.sections[0].value = format!("Gold Amount {:?}", event.gold_amount.0);
+    for event in network_events.read() {
+        if let ServerMessages::ChangeGoldAmount(gold_amount) = &event.message {
+            let mut gold_display = gold_display_query.single_mut();
+            gold_display.sections[0].value = format!("Gold Amount {:?}", gold_amount.0);
+        }
     }
-}
-
-fn disconnect_client(
-    mut menu_state: ResMut<NextState<MainMenuStates>>,
-    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
-) {
-    println!("Disconnecting");
-    menu_state.set(MainMenuStates::Multiplayer);
-    multiplayer_roles.set(MultiplayerRoles::NotInGame);
 }

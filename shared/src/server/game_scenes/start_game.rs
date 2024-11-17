@@ -6,6 +6,7 @@ use bevy_renet::renet::RenetServer;
 use crate::map::base::BaseScene;
 use crate::map::{GameScene, GameSceneType, Layers};
 use crate::networking::{Owner, PlayerInput, ServerChannel, ServerMessages, SpawnPlayer};
+use crate::server::economy::GoldAmount;
 use crate::server::networking::ServerLobby;
 use crate::server::physics::movement::Velocity;
 use crate::GameState;
@@ -83,7 +84,8 @@ fn start_game(
                 commands.spawn((base.pikeman_building, server_components));
                 commands.spawn((base.left_wall, server_components));
                 commands.spawn((base.right_wall, server_components));
-
+                commands.spawn((base.left_gold_farm, server_components));
+                commands.spawn((base.right_gold_farm, server_components));
                 commands.spawn((base.left_spawn_point, server_components, left_destination));
                 commands.spawn((base.right_spawn_point, server_components, right_destination));
 
@@ -98,12 +100,14 @@ fn start_game(
 
                 // Create Player entity
                 let transform = Transform::from_xyz(0., 50., Layers::Player.as_f32());
+                let gold_amount = GoldAmount(100);
                 commands.entity(*player_entity).insert((
                     transform,
                     PlayerInput::default(),
                     Velocity::default(),
                     game_scene_id,
                     skin,
+                    gold_amount.clone(),
                 ));
 
                 let message = ServerMessages::LoadGameScene {
@@ -118,6 +122,10 @@ fn start_game(
                     projectiles: Vec::new(),
                     flag: None,
                 };
+                let message = bincode::serialize(&message).unwrap();
+                server.send_message(*client_id, ServerChannel::ServerMessages, message);
+
+                let message = ServerMessages::ChangeGoldAmount(gold_amount);
                 let message = bincode::serialize(&message).unwrap();
                 server.send_message(*client_id, ServerChannel::ServerMessages, message);
             }
