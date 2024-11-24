@@ -8,15 +8,8 @@ use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlug
 use std::f32::consts::PI;
 use ui::UiPlugin;
 
-#[cfg(feature = "netcode")]
-use menu::JoinNetcodeLobby;
 #[cfg(feature = "steam")]
 use menu::JoinSteamLobby;
-
-#[cfg(dev)]
-use bevy_renet::renet::RenetClient;
-#[cfg(dev)]
-use shared::networking::PlayerCommand;
 
 use animations::AnimationsPlugin;
 use camera::CameraPlugin;
@@ -34,16 +27,6 @@ pub mod ui;
 pub mod ui_widgets;
 
 fn main() {
-    #[cfg(dev)]
-    {
-        println!("Running on Dev mode");
-    }
-
-    #[cfg(prod)]
-    {
-        println!("Running on Prod mode");
-    }
-
     let mut app = App::new();
     #[cfg(feature = "steam")]
     {
@@ -104,8 +87,9 @@ fn main() {
     {
         use bevy_renet::transport::NetcodeClientPlugin;
         use bevy_renet::{renet::transport::NetcodeTransportError, transport::NetcodeServerPlugin};
-        use networking::join_server::{join_netcode_server, join_own_netcode_server};
+        use networking::join_server::join_netcode_server;
         use shared::server::create_server::create_netcode_server;
+        use std::env;
 
         app.add_plugins(NetcodeServerPlugin);
         app.add_plugins(NetcodeClientPlugin);
@@ -121,15 +105,18 @@ fn main() {
 
         app.add_systems(Update, panic_on_error_system.run_if(client_connected));
 
-        app.add_systems(
-            OnEnter(MultiplayerRoles::Host),
-            (create_netcode_server, join_own_netcode_server).chain(),
-        );
+        let args: Vec<String> = env::args().collect();
 
-        app.add_systems(
-            Update,
-            join_netcode_server.run_if(on_event::<JoinNetcodeLobby>()),
-        );
+        if args.contains(&String::from("server")) {
+            println!("Starting server");
+            app.add_systems(
+                Startup,
+                (create_netcode_server, join_netcode_server).chain(),
+            );
+        } else {
+            println!("Joining server");
+            app.add_systems(Startup, join_netcode_server);
+        }
     }
 
     app.run();

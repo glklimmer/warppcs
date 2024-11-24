@@ -55,13 +55,13 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(EconomyPlugin);
 
         app.add_systems(
+            FixedPreUpdate,
+            (receive_client_messages).run_if(in_state(MultiplayerRoles::Host)),
+        );
+
+        app.add_systems(
             FixedUpdate,
-            (
-                receive_client_messages,
-                sync_networked_entities,
-                client_connections,
-            )
-                .run_if(in_state(MultiplayerRoles::Host)),
+            (sync_networked_entities, client_connections).run_if(in_state(MultiplayerRoles::Host)),
         );
 
         app.add_systems(

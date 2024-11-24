@@ -7,6 +7,7 @@ use crate::map::base::BaseScene;
 use crate::map::{GameScene, GameSceneType, Layers};
 use crate::networking::{Owner, PlayerInput, ServerChannel, ServerMessages, SpawnPlayer};
 use crate::server::economy::Inventory;
+use crate::server::lobby::GameLobby;
 use crate::server::networking::ServerLobby;
 use crate::server::physics::movement::Velocity;
 use crate::GameState;
@@ -34,10 +35,10 @@ fn start_game(
     mut server: ResMut<RenetServer>,
     mut next_state: ResMut<NextState<GameState>>,
     lobby: Res<ServerLobby>,
+    game_lobby: Res<GameLobby>,
 ) {
     for event in network_events.read() {
         if let PlayerCommand::StartGame = &event.message {
-            #[cfg(prod)]
             if !game_lobby.all_ready() {
                 continue;
             }

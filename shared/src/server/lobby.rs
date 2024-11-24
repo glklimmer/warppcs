@@ -59,14 +59,14 @@ fn update_lobby(
         for player in &mut game_lobby.players.iter() {
             let message = bincode::serialize(&ServerMessages::PlayerJoinedLobby {
                 id: new_player.0,
-                ready_state: Checkbox::Unchecked,
+                ready_state: Checkbox::Checked,
             })
             .unwrap();
 
             server.send_message(*player.0, ServerChannel::ServerMessages, message);
         }
 
-        game_lobby.players.insert(new_player.0, Checkbox::Unchecked);
+        game_lobby.players.insert(new_player.0, Checkbox::Checked);
 
         for player in &mut game_lobby.players.iter() {
             let message = bincode::serialize(&ServerMessages::PlayerJoinedLobby {

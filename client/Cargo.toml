@@ -19,7 +19,3 @@ renet_steam = { version = "0.0.2", features = ["bevy"], optional = true }
 steamworks = { version = "0.11", optional = true }
 shared = { path = "../shared", features = ["client"] }
 arboard = "3.4.1"
-dotenv = "0.15.0"
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dev)', 'cfg(prod)'] }
