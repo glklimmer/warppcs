@@ -6,6 +6,7 @@ use std::env;
 
 use crate::map::scenes::base::BaseScene;
 use crate::map::scenes::fight::FightScene;
+use crate::map::base::{BaseScene, RecruitmentBuilding};
 use crate::map::{GameScene, GameSceneType, Layers};
 use crate::networking::{
     Inventory, Owner, PlayerInput, ServerChannel, ServerMessages, SpawnPlayer,
