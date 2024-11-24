@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use shared::{networking::ServerMessages, GameState};
 
-use crate::networking::{Connected, NetworkEvent};
+use crate::networking::NetworkEvent;
 
 #[derive(Component)]
 pub struct GoldAmountDisplay;
@@ -14,9 +14,7 @@ impl Plugin for UiPlugin {
 
         app.add_systems(
             FixedUpdate,
-            update_gold_amount
-                .run_if(on_event::<NetworkEvent>())
-                .in_set(Connected),
+            update_gold_amount.run_if(in_state(GameState::GameSession)),
         );
     }
 }
