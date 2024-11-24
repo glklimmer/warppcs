@@ -1,4 +1,5 @@
-use bevy::{color::palettes::css::BURLYWOOD, prelude::*};
+use bevy::prelude::*;
+
 use bevy_renet::{
     client_just_disconnected,
     renet::{transport::NetcodeClientTransport, ClientId, RenetClient},
@@ -9,16 +10,18 @@ use shared::{
 };
 
 #[cfg(feature = "steam")]
+use bevy::color::palettes::css::BURLYWOOD;
+#[cfg(feature = "steam")]
 use shared::steamworks::SteamworksClient;
 #[cfg(feature = "steam")]
 use steamworks::{LobbyId, SteamId};
 
-#[cfg(dev)]
-use std::env;
+#[cfg(feature = "steam")]
+use crate::ui_widgets::text_input::TextInputValue;
 
 use crate::{
     networking::{CurrentClientId, NetworkEvent},
-    ui_widgets::text_input::{TextInputBundle, TextInputPlugin, TextInputValue},
+    ui_widgets::text_input::{TextInputBundle, TextInputPlugin},
 };
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
@@ -31,16 +34,9 @@ pub enum MainMenuStates {
     None,
 }
 
-#[cfg(feature = "netcode")]
-use std::net::SocketAddr;
-
 #[derive(Event, Clone)]
 #[cfg(feature = "steam")]
 pub struct JoinSteamLobby(pub SteamId);
-
-#[derive(Event, Clone)]
-#[cfg(feature = "netcode")]
-pub struct JoinNetcodeLobby(pub SocketAddr);
 
 #[derive(Component, PartialEq)]
 enum Button {
@@ -52,8 +48,6 @@ enum Button {
     StartGame,
     InvitePlayer,
     Back(MainMenuStates),
-    #[cfg(dev)]
-    QuickJoin,
 }
 
 #[derive(Component)]
@@ -104,12 +98,6 @@ impl Plugin for MenuPlugin {
             app.add_event::<JoinSteamLobby>();
             app.add_systems(OnEnter(MainMenuStates::Lobby), display_steam_lobby);
             app.add_systems(Update, change_state_on_button_steam);
-        }
-        #[cfg(feature = "netcode")]
-        {
-            app.add_event::<JoinNetcodeLobby>();
-            app.add_systems(OnEnter(MainMenuStates::Lobby), display_netcode_lobby);
-            app.add_systems(Update, change_state_on_button_netcode);
         }
 
         app.add_systems(OnExit(MainMenuStates::Lobby), clean_ui);
@@ -199,36 +187,6 @@ fn display_main_menu(mut commands: Commands) {
                         },
                     ));
                 });
-            #[cfg(dev)]
-            {
-                parent
-                    .spawn((
-                        ButtonBundle {
-                            style: Style {
-                                width: Val::Px(350.0),
-                                height: Val::Px(65.0),
-                                border: UiRect::all(Val::Px(5.0)),
-                                justify_content: JustifyContent::Center,
-                                align_items: AlignItems::Center,
-                                ..default()
-                            },
-                            border_color: BorderColor(Color::BLACK),
-                            background_color: NORMAL_BUTTON.into(),
-                            ..default()
-                        },
-                        Button::QuickJoin,
-                    ))
-                    .with_children(|parent| {
-                        parent.spawn(TextBundle::from_section(
-                            "QuickJoin",
-                            TextStyle {
-                                font_size: 35.0,
-                                color: Color::srgb(0.9, 0.9, 0.9),
-                                ..default()
-                            },
-                        ));
-                    });
-            }
         });
 }
 
@@ -288,24 +246,9 @@ fn change_state_on_button_steam(
             Interaction::Pressed => match button {
                 Button::Singleplayer => next_state.set(MainMenuStates::Singleplayer),
                 Button::Multiplayer => {
-                    #[cfg(prod)]
-                    {
-                        next_state.set(MainMenuStates::Multiplayer);
-                    }
-                    #[cfg(dev)]
-                    {
-                        multiplayer_roles.set(MultiplayerRoles::Host);
-                    }
+                    next_state.set(MainMenuStates::Multiplayer);
                 }
                 Button::CreateLobby => multiplayer_roles.set(MultiplayerRoles::Host),
-                #[cfg(dev)]
-                Button::QuickJoin => match env::var("STEAM_ID").unwrap().parse::<u64>() {
-                    Ok(steam_id) => {
-                        join_lobby_request.send(JoinSteamLobby(SteamId::from_raw(steam_id)));
-                        multiplayer_roles.set(MultiplayerRoles::Client);
-                    }
-                    Err(_) => println!("Invalid SteamID u64 value."),
-                },
                 Button::JoinLobby => next_state.set(MainMenuStates::JoinScreen),
                 Button::StartGame => {
                     player_commands.send(PlayerCommand::StartGame);
@@ -322,51 +265,6 @@ fn change_state_on_button_steam(
                         println!("Invalid SteamID u64 value.")
                     }
                 },
-                Button::Back(state) => next_state.set(state.clone()),
-            },
-            Interaction::None => {}
-        }
-    }
-}
-
-#[cfg(feature = "netcode")]
-fn change_state_on_button_netcode(
-    mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
-    mut next_state: ResMut<NextState<MainMenuStates>>,
-    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
-    mut player_commands: EventWriter<PlayerCommand>,
-    mut join_lobby_request: EventWriter<JoinNetcodeLobby>,
-) {
-    for (interaction, button) in &mut button_query {
-        match *interaction {
-            Interaction::Hovered => {}
-            Interaction::Pressed => match button {
-                Button::Singleplayer => next_state.set(MainMenuStates::Singleplayer),
-                Button::Multiplayer => {
-                    #[cfg(prod)]
-                    {
-                        next_state.set(MainMenuStates::Multiplayer);
-                    }
-                    #[cfg(dev)]
-                    {
-                        multiplayer_roles.set(MultiplayerRoles::Host);
-                    }
-                }
-                Button::CreateLobby => multiplayer_roles.set(MultiplayerRoles::Host),
-                #[cfg(dev)]
-                Button::QuickJoin => {
-                    join_lobby_request.send(JoinNetcodeLobby("127.0.0.1:5000".parse().unwrap()));
-                    multiplayer_roles.set(MultiplayerRoles::Client);
-                }
-                Button::JoinLobby => {
-                    join_lobby_request.send(JoinNetcodeLobby("127.0.0.1:5000".parse().unwrap()));
-                    multiplayer_roles.set(MultiplayerRoles::Client);
-                }
-                Button::StartGame => {
-                    player_commands.send(PlayerCommand::StartGame);
-                }
-                Button::InvitePlayer => println!("invite player"),
-                Button::Join => todo!(),
                 Button::Back(state) => next_state.set(state.clone()),
             },
             Interaction::None => {}
@@ -674,198 +572,6 @@ fn display_steam_lobby(
                 .spawn((
                     ButtonBundle {
                         style: Style {
-                            width: Val::Percent(40.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            align_items: AlignItems::Center,
-                            justify_content: JustifyContent::Center,
-                            margin: UiRect::top(Val::Px(5.0)),
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: BURLYWOOD.into(),
-                        ..default()
-                    },
-                    Button::StartGame,
-                ))
-                .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Start Game",
-                        TextStyle {
-                            font_size: 35.0,
-                            color: Color::srgb(0.9, 0.9, 0.9),
-                            ..default()
-                        },
-                    ));
-                });
-        });
-
-    commands.spawn(NodeBundle {
-        style: Style {
-            display: Display::Flex,
-            flex_direction: FlexDirection::Row,
-            width: Val::Percent(50.0),
-            height: Val::Percent(80.0),
-            align_items: AlignItems::Center,
-            position_type: PositionType::Absolute,
-            border: UiRect::all(Val::Px(2.)),
-            right: Val::Px(0.),
-            ..Default::default()
-        },
-        ..default()
-    });
-
-    commands
-        .spawn((
-            ButtonBundle {
-                style: Style {
-                    width: Val::Px(150.0),
-                    height: Val::Px(50.0),
-                    border: UiRect::all(Val::Px(5.0)),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    align_self: AlignSelf::Start,
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(0.),
-                    bottom: Val::Percent(5.),
-                    ..default()
-                },
-                border_color: BorderColor(Color::BLACK),
-                background_color: NORMAL_BUTTON.into(),
-                ..default()
-            },
-            Button::Back(MainMenuStates::Multiplayer),
-        ))
-        .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                "Back",
-                TextStyle {
-                    font_size: 30.0,
-                    color: Color::srgb(0.9, 0.9, 0.9),
-                    ..default()
-                },
-            ));
-        });
-}
-
-#[cfg(feature = "netcode")]
-fn display_netcode_lobby(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    role: Res<State<MultiplayerRoles>>,
-) {
-    use shared::networking::Checkbox;
-
-    commands
-        .spawn(NodeBundle {
-            style: Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                width: Val::Percent(50.0),
-                height: Val::Percent(80.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                position_type: PositionType::Absolute,
-                top: Val::Percent(5.),
-                ..Default::default()
-            },
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn(ButtonBundle {
-                style: Style {
-                    width: Val::Px(400.0),
-                    height: Val::Px(65.0),
-                    border: UiRect::all(Val::Px(5.0)),
-                    align_items: AlignItems::Center,
-                    align_self: AlignSelf::Center,
-                    margin: UiRect::bottom(Val::Px(5.0)),
-                    right: Val::Px(0.),
-                    ..default()
-                },
-                border_color: BorderColor(Color::BLACK),
-                background_color: NORMAL_BUTTON.into(),
-                ..default()
-            });
-        })
-        .with_children(|parent| {
-            for i in 1..5 {
-                parent
-                    .spawn(NodeBundle {
-                        style: Style {
-                            display: Display::Flex,
-                            flex_direction: FlexDirection::Row,
-                            width: Val::Percent(80.0),
-                            height: Val::Percent(20.0),
-                            align_items: AlignItems::Center,
-                            justify_content: JustifyContent::SpaceBetween,
-                            border: UiRect::all(Val::Px(2.0)),
-                            padding: UiRect::all(Val::Px(10.0)),
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        ..Default::default()
-                    })
-                    .with_children(|parent| {
-                        parent
-                            .spawn((
-                                ButtonBundle {
-                                    style: Style {
-                                        width: Val::Px(350.0),
-                                        height: Val::Px(65.0),
-                                        border: UiRect::all(Val::Px(5.0)),
-                                        justify_content: JustifyContent::Center,
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    border_color: BorderColor(Color::BLACK),
-                                    background_color: NORMAL_BUTTON.into(),
-                                    ..default()
-                                },
-                                Button::InvitePlayer,
-                            ))
-                            .with_children(|parent| {
-                                parent.spawn((
-                                    TextBundle::from_section(
-                                        format!("Slot {i}"),
-                                        TextStyle {
-                                            font_size: 35.0,
-                                            color: Color::srgb(0.9, 0.9, 0.9),
-                                            ..default()
-                                        },
-                                    ),
-                                    LobbySlotName(i),
-                                ));
-                            });
-                    })
-                    .with_children(|parent| {
-                        parent.spawn((
-                            ButtonBundle {
-                                style: Style {
-                                    width: Val::Px(50.),
-                                    height: Val::Px(50.),
-                                    ..Default::default()
-                                },
-                                visibility: Visibility::Hidden,
-                                image: UiImage::new(asset_server.load("ui/checkbox.png")),
-                                ..Default::default()
-                            },
-                            LobbySlotName(i),
-                            Checkbox::Unchecked,
-                        ));
-                    });
-            }
-        })
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            display: if role.eq(&MultiplayerRoles::Host) {
-                                Display::Flex
-                            } else {
-                                Display::None
-                            },
                             width: Val::Percent(40.0),
                             height: Val::Px(65.0),
                             border: UiRect::all(Val::Px(5.0)),

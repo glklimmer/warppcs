@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy_renet::renet::RenetServer;
 
-use crate::networking::connection_config;
+use crate::networking::{connection_config, MultiplayerRoles};
 
 pub fn create_steam_server(mut commands: Commands) {
     use crate::steamworks::SteamworksClient;
@@ -26,7 +26,10 @@ pub fn create_steam_server(mut commands: Commands) {
     });
 }
 
-pub fn create_netcode_server(mut commands: Commands) {
+pub fn create_netcode_server(
+    mut commands: Commands,
+    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
+) {
     use crate::networking::PROTOCOL_ID;
     use bevy_renet::renet::transport::{
         NetcodeServerTransport, ServerAuthentication, ServerConfig,
@@ -51,4 +54,6 @@ pub fn create_netcode_server(mut commands: Commands) {
     let transport = NetcodeServerTransport::new(server_config, socket).unwrap();
     commands.insert_resource(server);
     commands.insert_resource(transport);
+
+    multiplayer_roles.set(MultiplayerRoles::Host)
 }
