@@ -9,10 +9,7 @@ use crate::{
     GameState,
 };
 
-use super::{
-    buildings::{BuildingConstruction, BuildingUpgrade},
-    networking::ServerLobby,
-};
+use super::{buildings::BuildingConstruction, networking::ServerLobby};
 
 const GOLD_PER_TICK: u16 = 10;
 const GOLD_TIMER: f32 = 10.;
@@ -51,11 +48,13 @@ impl Plugin for EconomyPlugin {
     }
 }
 
-fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingUpgrade>) {
+fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingConstruction>) {
     for build in builds.read() {
         if build.0.building_type.ne(&Building::GoldFarm) {
             continue;
         }
+
+        println!("Bought Gold Farm");
 
         commands
             .entity(build.0.entity)
