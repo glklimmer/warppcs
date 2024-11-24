@@ -2,21 +2,21 @@ use bevy::prelude::*;
 
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_renet::client_connected;
+use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
 use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
 use std::f32::consts::PI;
+use ui::UiPlugin;
+
 #[cfg(feature = "netcode")]
-use ui::JoinNetcodeLobby;
+use menu::JoinNetcodeLobby;
 #[cfg(feature = "steam")]
-use ui::JoinSteamLobby;
-use ui::{MainMenuStates, MenuPlugin};
+use menu::JoinSteamLobby;
 
 #[cfg(dev)]
 use bevy_renet::renet::RenetClient;
 #[cfg(dev)]
 use shared::networking::PlayerCommand;
-#[cfg(dev)]
-use std::env;
 
 use animations::AnimationsPlugin;
 use camera::CameraPlugin;
@@ -28,6 +28,7 @@ pub mod camera;
 pub mod entities;
 pub mod gizmos;
 pub mod input;
+pub mod menu;
 pub mod networking;
 pub mod ui;
 pub mod ui_widgets;
@@ -61,6 +62,7 @@ fn main() {
     app.add_plugins(AnimationsPlugin);
     app.add_plugins(MenuPlugin);
     app.add_plugins(EntitiesPlugin);
+    app.add_plugins(UiPlugin);
 
     app.add_systems(Startup, setup_background);
 
