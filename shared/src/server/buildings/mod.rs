@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::{ClientId, RenetServer};
 
-use crate::map::base::{BuildStatus, Building, Cost};
+use crate::map::buildings::{BuildStatus, Building, Cost};
 use crate::map::Layers;
 use crate::networking::{
     Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, Unit, UnitType,

@@ -4,7 +4,7 @@ use bevy_renet::renet::RenetServer;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    map::base::Building,
+    map::buildings::Building,
     networking::{MultiplayerRoles, Owner, ServerChannel, ServerMessages},
     GameState,
 };
