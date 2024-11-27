@@ -4,11 +4,11 @@ use attack::{unit_range, AttackPlugin};
 
 use crate::{
     map::GameSceneId,
-    networking::{MultiplayerRoles, Owner, Unit},
+    networking::{MultiplayerRoles, Owner},
     GameState,
 };
 
-use super::buildings::FlagAssignment;
+use super::{buildings::FlagAssignment, entities::Unit};
 
 pub mod attack;
 

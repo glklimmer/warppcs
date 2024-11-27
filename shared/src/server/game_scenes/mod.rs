@@ -4,7 +4,7 @@ use start_game::StartGamePlugin;
 use crate::map::GameSceneId;
 use crate::networking::{
     MultiplayerRoles, Owner, PlayerSkin, ProjectileType, ServerChannel, ServerMessages, SpawnFlag,
-    SpawnPlayer, SpawnProjectile, SpawnUnit, Unit,
+    SpawnPlayer, SpawnProjectile, SpawnUnit,
 };
 use crate::{BoxCollider, GameState};
 use bevy::math::bounding::Aabb2d;
@@ -12,6 +12,7 @@ use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;
 
 use super::buildings::{FlagAssignment, FlagHolder};
+use super::entities::Unit;
 use super::networking::{GameWorld, ServerLobby, ServerPlayer};
 use super::physics::movement::Velocity;
 use super::players::InteractEvent;

@@ -3,10 +3,10 @@ use bevy::prelude::*;
 use crate::map::{GameScene, GameSceneId};
 use crate::networking::{
     ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, PlayerCommand,
-    PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages, Unit,
+    PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
 };
 use crate::server::physics::movement::Velocity;
-use crate::{BoxCollider, GameState};
+use crate::BoxCollider;
 
 use bevy_renet::{
     renet::{ClientId, RenetServer, ServerEvent},
@@ -17,6 +17,7 @@ use std::collections::HashMap;
 use super::ai::AIPlugin;
 use super::buildings::BuildingsPlugins;
 use super::economy::EconomyPlugin;
+use super::entities::EntityPlugin;
 use super::game_scenes::GameScenesPlugin;
 use super::lobby::{LobbyPlugin, PlayerJoinedLobby, PlayerLeftLobby};
 use super::physics::PhysicsPlugin;
@@ -53,6 +54,7 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(BuildingsPlugins);
         app.add_plugins(PlayerPlugin);
         app.add_plugins(EconomyPlugin);
+        app.add_plugins(EntityPlugin);
 
         app.add_systems(
             FixedPreUpdate,
@@ -62,13 +64,6 @@ impl Plugin for ServerNetworkPlugin {
         app.add_systems(
             FixedUpdate,
             (sync_networked_entities, client_connections).run_if(in_state(MultiplayerRoles::Host)),
-        );
-
-        app.add_systems(
-            FixedUpdate,
-            (on_unit_death).run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
         );
 
         app.insert_resource(ServerLobby::default());
@@ -186,22 +181,4 @@ fn sync_networked_entities(
 
     let sync_message = bincode::serialize(&networked_entities).unwrap();
     server.broadcast_message(ServerChannel::NetworkedEntities, sync_message);
-}
-
-fn on_unit_death(
-    mut server: ResMut<RenetServer>,
-    mut commands: Commands,
-    query: Query<(Entity, &Unit)>,
-) {
-    for (entity, unit) in query.iter() {
-        if unit.health <= 0. {
-            commands.entity(entity).despawn_recursive();
-
-            let message = ServerMessages::DespawnEntity {
-                entities: vec![entity],
-            };
-            let unit_dead_message = bincode::serialize(&message).unwrap();
-            server.broadcast_message(ServerChannel::ServerMessages, unit_dead_message);
-        }
-    }
 }

@@ -6,32 +6,24 @@ use bevy_renet::renet::RenetServer;
 use super::UnitBehaviour;
 use crate::map::Layers;
 use crate::networking::MultiplayerRoles;
+use crate::server::entities::health::TakeDamage;
+use crate::server::entities::Unit;
 use crate::server::networking::ServerLobby;
 use crate::server::physics::movement::Velocity;
 use crate::GameState;
 use crate::{
     map::GameSceneId,
-    networking::{
-        Owner, ProjectileType, ServerChannel, ServerMessages, SpawnProjectile, Unit, UnitType,
-    },
+    networking::{Owner, ProjectileType, ServerChannel, ServerMessages, SpawnProjectile, UnitType},
     BoxCollider, GRAVITY_G,
 };
 
 pub struct AttackPlugin;
 
-#[derive(Event)]
-pub struct TakeDamage {
-    pub target_entity: Entity,
-    pub damage: f32,
-}
-
 impl Plugin for AttackPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<TakeDamage>();
-
         app.add_systems(
             FixedUpdate,
-            (process_attacks, apply_damage).run_if(
+            (process_attacks).run_if(
                 in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
             ),
         );
@@ -90,9 +82,9 @@ fn process_attacks(
     mut commands: Commands,
     mut server: ResMut<RenetServer>,
     mut query: Query<(&UnitBehaviour, &mut Unit, &Owner, &Transform)>,
+    mut attack_events: EventWriter<TakeDamage>,
     position: Query<&Transform>,
     scene_ids: Query<&GameSceneId>,
-    mut attack_events: EventWriter<TakeDamage>,
     lobby: Res<ServerLobby>,
     time: Res<Time>,
 ) {
@@ -181,15 +173,6 @@ fn process_attacks(
                     }
                 }
             }
-        }
-    }
-}
-
-fn apply_damage(mut query: Query<&mut Unit>, mut attack_events: EventReader<TakeDamage>) {
-    for event in attack_events.read() {
-        if let Ok(mut unit) = query.get_mut(event.target_entity) {
-            unit.health -= event.damage;
-            println!("New health: {}.", unit.health);
         }
     }
 }
