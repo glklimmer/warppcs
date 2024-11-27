@@ -3,11 +3,9 @@ use bevy::prelude::*;
 use crate::networking::MultiplayerRoles;
 use crate::server::ai::MOVE_EPSILON;
 use crate::server::ai::{attack::unit_speed, UnitBehaviour};
+use crate::server::entities::Unit;
 use crate::GameState;
-use crate::{
-    networking::{PlayerInput, Unit},
-    BoxCollider, GRAVITY_G,
-};
+use crate::{networking::PlayerInput, BoxCollider, GRAVITY_G};
 
 #[derive(Debug, Default, Component, Copy, Clone)]
 pub struct Velocity(pub Vec2);
