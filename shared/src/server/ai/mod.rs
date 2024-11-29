@@ -8,7 +8,7 @@ use crate::{
     GameState,
 };
 
-use super::{buildings::FlagAssignment, entities::Unit};
+use super::{buildings::recruiting::FlagAssignment, entities::Unit};
 
 pub mod attack;
 

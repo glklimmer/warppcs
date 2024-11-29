@@ -16,7 +16,6 @@ use std::collections::HashMap;
 
 use super::ai::AIPlugin;
 use super::buildings::BuildingsPlugins;
-use super::economy::EconomyPlugin;
 use super::entities::EntityPlugin;
 use super::game_scenes::GameScenesPlugin;
 use super::lobby::{LobbyPlugin, PlayerJoinedLobby, PlayerLeftLobby};
@@ -53,7 +52,6 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(GameScenesPlugin);
         app.add_plugins(BuildingsPlugins);
         app.add_plugins(PlayerPlugin);
-        app.add_plugins(EconomyPlugin);
         app.add_plugins(EntityPlugin);
 
         app.add_systems(

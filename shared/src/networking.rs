@@ -4,7 +4,7 @@ use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::{map::GameSceneType, server::economy::Inventory};
+use crate::map::GameSceneType;
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -57,6 +57,11 @@ pub enum ProjectileType {
 pub enum PlayerSkin {
     Warrior,
     Monster,
+}
+
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
+pub struct Inventory {
+    pub gold: u16,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]

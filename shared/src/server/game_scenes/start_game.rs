@@ -7,8 +7,9 @@ use std::env;
 use crate::map::scenes::base::BaseScene;
 use crate::map::scenes::fight::FightScene;
 use crate::map::{GameScene, GameSceneType, Layers};
-use crate::networking::{Owner, PlayerInput, ServerChannel, ServerMessages, SpawnPlayer};
-use crate::server::economy::Inventory;
+use crate::networking::{
+    Inventory, Owner, PlayerInput, ServerChannel, ServerMessages, SpawnPlayer,
+};
 use crate::server::lobby::GameLobby;
 use crate::server::networking::ServerLobby;
 use crate::server::physics::movement::Velocity;
