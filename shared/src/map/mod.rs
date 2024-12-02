@@ -3,7 +3,8 @@ use bevy::prelude::*;
 use enum_as_f32_macro::enum_as_f32;
 use serde::{Deserialize, Serialize};
 
-pub mod base;
+pub mod buildings;
+pub mod scenes;
 pub mod spawn_point;
 
 #[derive(Component, Clone, Copy, Eq, PartialEq, Hash, Deserialize, Serialize, Debug)]
@@ -12,6 +13,7 @@ pub struct GameSceneId(pub u64);
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub enum GameSceneType {
     Base(Color),
+    Fight,
     Camp,
 }
 

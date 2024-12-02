@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::{spawn_point::SpawnPointBundle, Layers};
+use super::Layers;
 use crate::BoxCollider;
 
 #[derive(Component, Copy, Clone)]
@@ -43,19 +43,13 @@ pub struct MainBuildingBundle {
 }
 
 impl MainBuildingBundle {
-    pub fn new() -> Self {
+    pub fn new(x: f32) -> Self {
         MainBuildingBundle {
             base: MainBuilding,
             collider: BoxCollider(Vec2::new(200., 100.)),
             main_building_level: MainBuildingLevel::First,
-            transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 50., Layers::Building.as_f32()),
         }
-    }
-}
-
-impl Default for MainBuildingBundle {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -69,32 +63,32 @@ pub struct BuildingBundle {
 }
 
 impl BuildingBundle {
-    pub fn archer() -> Self {
+    pub fn archer(x: f32) -> Self {
         BuildingBundle {
             building: Building::Archer,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(400., 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 50., Layers::Building.as_f32()),
             cost: Cost { gold: 200 },
         }
     }
 
-    pub fn warrior() -> Self {
+    pub fn warrior(x: f32) -> Self {
         BuildingBundle {
             building: Building::Warrior,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(-400., 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 50., Layers::Building.as_f32()),
             cost: Cost { gold: 200 },
         }
     }
 
-    pub fn pikeman() -> Self {
+    pub fn pikeman(x: f32) -> Self {
         BuildingBundle {
             building: Building::Pikeman,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(650., 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 50., Layers::Building.as_f32()),
             cost: Cost { gold: 200 },
         }
     }
@@ -127,42 +121,5 @@ impl BuildingBundle {
             transform: Transform::from_xyz(x, 25., Layers::Building.as_f32()),
             cost: Cost { gold: 50 },
         }
-    }
-}
-
-#[derive(Copy, Clone)]
-pub struct BaseScene {
-    pub main_building: MainBuildingBundle,
-    pub archer_building: BuildingBundle,
-    pub warrior_building: BuildingBundle,
-    pub pikeman_building: BuildingBundle,
-    pub left_wall: BuildingBundle,
-    pub right_wall: BuildingBundle,
-    pub left_gold_farm: BuildingBundle,
-    pub right_gold_farm: BuildingBundle,
-    pub left_spawn_point: SpawnPointBundle,
-    pub right_spawn_point: SpawnPointBundle,
-}
-
-impl BaseScene {
-    pub fn new() -> Self {
-        BaseScene {
-            main_building: MainBuildingBundle::new(),
-            archer_building: BuildingBundle::archer(),
-            warrior_building: BuildingBundle::warrior(),
-            pikeman_building: BuildingBundle::pikeman(),
-            left_wall: BuildingBundle::wall(-800.),
-            right_wall: BuildingBundle::wall(1050.),
-            left_gold_farm: BuildingBundle::gold_farm(-1450.),
-            right_gold_farm: BuildingBundle::gold_farm(1450.),
-            left_spawn_point: SpawnPointBundle::new(-1200.),
-            right_spawn_point: SpawnPointBundle::new(1200.),
-        }
-    }
-}
-
-impl Default for BaseScene {
-    fn default() -> Self {
-        Self::new()
     }
 }
