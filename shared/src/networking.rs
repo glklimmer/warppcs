@@ -28,13 +28,6 @@ pub enum UnitType {
     Archer,
 }
 
-#[derive(Component, Clone)]
-pub struct Unit {
-    pub health: f32,
-    pub unit_type: UnitType,
-    pub swing_timer: Timer,
-}
-
 #[derive(Debug, Serialize, Deserialize, Event)]
 pub enum PlayerCommand {
     StartGame,

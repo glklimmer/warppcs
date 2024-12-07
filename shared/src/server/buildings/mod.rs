@@ -5,14 +5,14 @@ use bevy_renet::renet::{ClientId, RenetServer};
 
 use crate::map::buildings::{BuildStatus, Building, Cost};
 use crate::map::Layers;
-use crate::networking::{
-    Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, Unit, UnitType,
-};
+use crate::networking::{Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, UnitType};
 use crate::{map::GameSceneId, BoxCollider};
 
 use super::ai::attack::{unit_health, unit_swing_timer};
 use super::ai::UnitBehaviour;
 use super::economy::Inventory;
+use super::entities::health::Health;
+use super::entities::Unit;
 use super::networking::ServerLobby;
 use super::physics::attachment::AttachedTo;
 use super::physics::movement::Velocity;
@@ -251,9 +251,11 @@ fn recruit(
         };
 
         let unit = Unit {
-            health: unit_health(&unit_type),
             swing_timer: unit_swing_timer(&unit_type),
             unit_type: unit_type.clone(),
+        };
+        let health = Health {
+            hitpoints: unit_health(&unit_type),
         };
         let owner = Owner(event.client_id);
 
@@ -263,6 +265,7 @@ fn recruit(
                 .spawn((
                     Transform::from_translation(flag_translation),
                     unit.clone(),
+                    health.clone(),
                     owner,
                     Velocity::default(),
                     FlagAssignment(flag_entity, offset),

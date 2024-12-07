@@ -5,9 +5,9 @@ use bevy_renet::renet::RenetServer;
 
 use crate::map::GameSceneId;
 use crate::networking::{MultiplayerRoles, Owner, ProjectileType, ServerChannel, ServerMessages};
+use crate::server::ai::attack::projectile_damage;
+use crate::server::entities::health::TakeDamage;
 use crate::{BoxCollider, GameState};
-
-use crate::server::ai::attack::{projectile_damage, TakeDamage};
 
 use super::movement::Velocity;
 
