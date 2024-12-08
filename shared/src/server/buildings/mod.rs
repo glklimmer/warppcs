@@ -8,11 +8,6 @@ use recruiting::{check_recruit, recruit, RecruitEvent};
 use crate::map::buildings::{BuildStatus, Building, Cost};
 use crate::networking::{Inventory, MultiplayerRoles, Owner, ServerChannel, ServerMessages};
 use crate::GameState;
-use crate::map::base::{BuildStatus, Building, Cost, RecruitmentBuilding};
-use crate::map::Layers;
-use crate::networking::{
-    Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, Unit, UnitType,
-};
 use crate::{map::GameSceneId, BoxCollider};
 
 use super::networking::ServerLobby;
