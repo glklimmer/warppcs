@@ -11,7 +11,7 @@ use bevy::math::bounding::Aabb2d;
 use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;
 
-use super::buildings::{FlagAssignment, FlagHolder};
+use super::buildings::recruiting::{FlagAssignment, FlagHolder};
 use super::entities::Unit;
 use super::networking::{GameWorld, ServerLobby, ServerPlayer};
 use super::physics::movement::Velocity;

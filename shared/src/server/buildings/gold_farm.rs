@@ -1,15 +1,13 @@
-pub struct EconomyPlugin;
 use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     map::buildings::Building,
-    networking::{MultiplayerRoles, Owner, ServerChannel, ServerMessages},
-    GameState,
+    networking::{Inventory, Owner, ServerChannel, ServerMessages},
+    server::networking::ServerLobby,
 };
 
-use super::{buildings::BuildingConstruction, networking::ServerLobby};
+use super::BuildingConstruction;
 
 const GOLD_PER_TICK: u16 = 10;
 const GOLD_TIMER: f32 = 10.;
@@ -27,28 +25,7 @@ impl Default for GoldFarmTimer {
     }
 }
 
-#[derive(Component, Debug, Serialize, Deserialize, Clone)]
-pub struct Inventory {
-    pub gold: u16,
-}
-
-impl Plugin for EconomyPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            enable_goldfarm.run_if(on_event::<BuildingConstruction>()),
-        );
-
-        app.add_systems(
-            FixedUpdate,
-            (gold_farm_output).run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
-        );
-    }
-}
-
-fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingConstruction>) {
+pub fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingConstruction>) {
     for build in builds.read() {
         if build.0.building_type.ne(&Building::GoldFarm) {
             continue;
@@ -62,12 +39,12 @@ fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingConst
     }
 }
 
-fn gold_farm_output(
-    time: Res<Time>,
-    lobby: Res<ServerLobby>,
+pub fn gold_farm_output(
     mut gold_farms_query: Query<(&mut GoldFarmTimer, &Owner)>,
     mut inventory: Query<&mut Inventory>,
     mut server: ResMut<RenetServer>,
+    time: Res<Time>,
+    lobby: Res<ServerLobby>,
 ) {
     for (mut farm_timer, owner) in &mut gold_farms_query {
         farm_timer.timer.tick(time.delta());
