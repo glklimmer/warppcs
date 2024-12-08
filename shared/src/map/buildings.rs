@@ -7,6 +7,9 @@ use crate::BoxCollider;
 pub struct MainBuilding;
 
 #[derive(Component, Copy, Clone)]
+pub struct RecruitmentBuilding;
+
+#[derive(Component, Copy, Clone)]
 pub enum MainBuildingLevel {
     First,
     Second,

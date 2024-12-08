@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::{ClientId, RenetServer};
 
+use crate::map::buildings::RecruitmentBuilding;
 use crate::{
     map::{buildings::Building, GameSceneId, Layers},
     networking::{Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, UnitType},
@@ -120,7 +121,7 @@ pub fn recruit(
 pub fn check_recruit(
     lobby: Res<ServerLobby>,
     player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
-    building: Query<(&Transform, &BoxCollider, &GameSceneId, &Building)>,
+    building: Query<(&Transform, &BoxCollider, &GameSceneId, &Building), With<RecruitmentBuilding>>,
     mut recruit: EventWriter<RecruitEvent>,
     mut interactions: EventReader<InteractEvent>,
 ) {
