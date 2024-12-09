@@ -4,6 +4,7 @@ use bevy::color::palettes::css::{BLUE, RED};
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
+use crate::map::buildings::RecruitmentBuilding;
 use crate::map::scenes::base::BaseScene;
 use crate::map::scenes::fight::FightScene;
 use crate::map::{GameScene, GameSceneType, Layers};
@@ -68,18 +69,42 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     let base = FightScene::new();
     let server_components = (Owner(*left_client_id), GameSceneId(1));
     commands.spawn((base.left_main_building, server_components));
-    commands.spawn((base.left_archer_building, server_components));
-    commands.spawn((base.left_warrior_building, server_components));
-    commands.spawn((base.left_pikeman_building, server_components));
+    commands.spawn((
+        base.left_archer_building,
+        server_components,
+        RecruitmentBuilding,
+    ));
+    commands.spawn((
+        base.left_warrior_building,
+        server_components,
+        RecruitmentBuilding,
+    ));
+    commands.spawn((
+        base.left_pikeman_building,
+        server_components,
+        RecruitmentBuilding,
+    ));
     commands.spawn((base.left_left_wall, server_components));
     commands.spawn((base.left_right_wall, server_components));
     commands.spawn((base.left_gold_farm, server_components));
 
     let server_components = (Owner(*right_client_id), GameSceneId(1));
     commands.spawn((base.right_main_building, server_components));
-    commands.spawn((base.right_archer_building, server_components));
-    commands.spawn((base.right_warrior_building, server_components));
-    commands.spawn((base.right_pikeman_building, server_components));
+    commands.spawn((
+        base.right_archer_building,
+        server_components,
+        RecruitmentBuilding,
+    ));
+    commands.spawn((
+        base.right_warrior_building,
+        server_components,
+        RecruitmentBuilding,
+    ));
+    commands.spawn((
+        base.right_pikeman_building,
+        server_components,
+        RecruitmentBuilding,
+    ));
     commands.spawn((base.right_left_wall, server_components));
     commands.spawn((base.right_right_wall, server_components));
     commands.spawn((base.right_gold_farm, server_components));
@@ -183,9 +208,17 @@ fn duel_map(
         let base = BaseScene::new();
         let server_components = (Owner(*client_id), game_scene_id);
         commands.spawn((base.main_building, server_components));
-        commands.spawn((base.archer_building, server_components));
-        commands.spawn((base.warrior_building, server_components));
-        commands.spawn((base.pikeman_building, server_components));
+        commands.spawn((base.archer_building, server_components, RecruitmentBuilding));
+        commands.spawn((
+            base.warrior_building,
+            server_components,
+            RecruitmentBuilding,
+        ));
+        commands.spawn((
+            base.pikeman_building,
+            server_components,
+            RecruitmentBuilding,
+        ));
         commands.spawn((base.left_wall, server_components));
         commands.spawn((base.right_wall, server_components));
 
