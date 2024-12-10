@@ -27,7 +27,7 @@ fn despawn_entity(
         } = &event.message
         {
             for server_entity in server_entities {
-                if let Some(client_entity) = network_mapping.0.remove(&server_entity) {
+                if let Some(client_entity) = network_mapping.0.remove(server_entity) {
                     if let Some(mut entity) = commands.get_entity(client_entity) {
                         entity.despawn();
                     }

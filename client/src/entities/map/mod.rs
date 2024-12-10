@@ -38,6 +38,7 @@ fn load_game_scene(
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut spawn_flag: EventWriter<SpawnFlag>,
     entities: Query<Entity, With<PartOfScene>>,
+    asset_server: Res<AssetServer>,
 ) {
     for event in network_events.read() {
         if let ServerMessages::LoadGameScene {
@@ -57,21 +58,23 @@ fn load_game_scene(
             match map_type {
                 GameSceneType::Fight => {
                     let fight = FightScene::new();
-                    commands.spawn((
-                        fight.left_main_building,
-                        (
-                            Mesh2dHandle(
-                                meshes
-                                    .add(Rectangle::from_size(fight.left_main_building.collider.0)),
+                    commands
+                        .spawn((
+                            fight.left_main_building,
+                            (
+                                asset_server.load::<Image>("aseprite/buildings/main_house_red.png"),
+                                Sprite::default(),
+                                GlobalTransform::default(),
+                                Visibility::default(),
+                                InheritedVisibility::default(),
+                                ViewVisibility::default(),
                             ),
-                            materials.add(Color::from(RED)),
-                            GlobalTransform::default(),
-                            Visibility::default(),
-                            InheritedVisibility::default(),
-                            ViewVisibility::default(),
-                        ),
-                        PartOfScene,
-                    ));
+                            PartOfScene,
+                        ))
+                        .insert(Transform {
+                            scale: Vec3::splat(3.0),
+                            ..fight.left_main_building.transform
+                        });
                     commands.spawn((
                         fight.left_archer_building,
                         (

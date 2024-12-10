@@ -51,7 +51,7 @@ impl MainBuildingBundle {
             base: MainBuilding,
             collider: BoxCollider(Vec2::new(200., 100.)),
             main_building_level: MainBuildingLevel::First,
-            transform: Transform::from_xyz(x, 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 90., Layers::Building.as_f32()),
         }
     }
 }
