@@ -8,11 +8,11 @@ default = ["steam"]
 steam = ["dep:renet_steam", "steamworks"]
 
 [dependencies]
-bevy = { version = "0.14.1", features = ["dynamic_linking"] }
+bevy = { version = "0.15.0", features = ["dynamic_linking"] }
 bevy_renet = { version = "0.0.12", features = ["serde"] }
 bincode = "1.3.3"
-fastrand = "2.1.1"
-serde = { version = "1.0.209", features = ["derive"] }
+fastrand = "2.3.0"
+serde = { version = "1.0.215", features = ["derive"] }
 renet_steam = { version = "0.0.2", features = ["bevy"], optional = true }
 steamworks = { version = "0.11", optional = true }
 shared = { path = "../shared", features = ["server"] }
