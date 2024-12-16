@@ -6,7 +6,10 @@ use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
 
 use crate::map::buildings::{BuildStatus, Building, Cost};
-use crate::networking::{Inventory, MultiplayerRoles, Owner, ServerChannel, ServerMessages};
+use crate::map::scenes::base::SceneBuildingIndicator;
+use crate::networking::{
+    BuildingUpdate, Inventory, MultiplayerRoles, Owner, ServerChannel, ServerMessages,
+};
 use crate::GameState;
 use crate::{map::GameSceneId, BoxCollider};
 
@@ -64,7 +67,7 @@ impl Plugin for BuildingsPlugins {
 #[allow(clippy::type_complexity)]
 fn check_building_interaction(
     lobby: Res<ServerLobby>,
-    player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
+    player: Query<(&Transform, &BoxCollider, &GameSceneId, &Inventory)>,
     building: Query<(
         Entity,
         &Transform,
@@ -75,7 +78,6 @@ fn check_building_interaction(
         &Owner,
         &Cost,
     )>,
-    inventory: Query<&Inventory>,
     mut build: EventWriter<BuildingConstruction>,
     mut upgrade: EventWriter<BuildingUpgrade>,
     mut interactions: EventReader<InteractEvent>,
@@ -84,7 +86,8 @@ fn check_building_interaction(
         let client_id = event.0;
         let player_entity = lobby.players.get(&client_id).unwrap();
 
-        let (player_transform, player_collider, player_scene) = player.get(*player_entity).unwrap();
+        let (player_transform, player_collider, player_scene, inventory) =
+            player.get(*player_entity).unwrap();
 
         let player_bounds = Aabb2d::new(
             player_transform.translation.truncate(),
@@ -116,7 +119,6 @@ fn check_building_interaction(
                     continue;
                 }
 
-                let inventory = inventory.get(*player_entity).unwrap();
                 if !inventory.gold.gt(&cost.gold) {
                     continue;
                 }
@@ -144,15 +146,39 @@ fn check_building_interaction(
 
 fn construct_building(
     mut builds: EventReader<BuildingConstruction>,
-    mut building: Query<(&mut BuildStatus, &Cost)>,
+    mut building: Query<(
+        &mut BuildStatus,
+        &Cost,
+        &GameSceneId,
+        &SceneBuildingIndicator,
+    )>,
     mut inventory: Query<&mut Inventory>,
     mut server: ResMut<RenetServer>,
+    lobby: Res<ServerLobby>,
+    scene_ids: Query<&GameSceneId>,
 ) {
     for build in builds.read() {
-        let (mut status, cost) = building.get_mut(build.0.entity).unwrap();
+        let (mut status, cost, game_scene_id, building_indicator) =
+            building.get_mut(build.0.entity).unwrap();
         *status = BuildStatus::Built;
 
-        // TODO: send building construction to clients
+        println!("Building constructed: {:?}", building_indicator);
+
+        let message = ServerMessages::BuildingUpdate(BuildingUpdate {
+            indicator: *building_indicator,
+            status: *status,
+        });
+        let message = bincode::serialize(&message).unwrap();
+        for (other_client_id, other_entity) in lobby.players.iter() {
+            let other_scene_id = scene_ids.get(*other_entity).unwrap();
+            if game_scene_id.eq(other_scene_id) {
+                server.send_message(
+                    *other_client_id,
+                    ServerChannel::ServerMessages,
+                    message.clone(),
+                );
+            }
+        }
 
         let mut inventory = inventory.get_mut(build.0.player_entity).unwrap();
         inventory.gold -= cost.gold;

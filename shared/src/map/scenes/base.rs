@@ -1,9 +1,18 @@
+use bevy::prelude::Component;
+use serde::{Deserialize, Serialize};
+
 use crate::map::{
     buildings::{BuildingBundle, MainBuildingBundle},
     spawn_point::SpawnPointBundle,
 };
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Component, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum SceneBuildingIndicator {
+    Base(BaseSceneIndicator),
+    Fight(),
+}
+
+#[derive(Clone)]
 pub struct BaseScene {
     pub main_building: MainBuildingBundle,
     pub archer_building: BuildingBundle,
@@ -15,6 +24,20 @@ pub struct BaseScene {
     pub right_gold_farm: BuildingBundle,
     pub left_spawn_point: SpawnPointBundle,
     pub right_spawn_point: SpawnPointBundle,
+}
+
+#[derive(Copy, Clone, Component, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum BaseSceneIndicator {
+    MainBuilding,
+    ArcherBuilding,
+    WarriorBuilding,
+    PikemanBuilding,
+    LeftWall,
+    RightWall,
+    LeftGoldFarm,
+    RightGoldFarm,
+    LeftSpawnPoint,
+    RightSpawnPoint,
 }
 
 impl BaseScene {

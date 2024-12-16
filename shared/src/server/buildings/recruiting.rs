@@ -3,10 +3,12 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::{ClientId, RenetServer};
 
-use crate::map::buildings::RecruitmentBuilding;
 use crate::{
-    map::{buildings::Building, GameSceneId, Layers},
-    networking::{Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, UnitType},
+    map::{
+        buildings::{BuildStatus, Building, RecruitmentBuilding},
+        GameSceneId, Layers,
+    },
+    networking::{Inventory, Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, UnitType},
     server::{
         ai::{
             attack::{unit_health, unit_swing_timer},
@@ -74,7 +76,9 @@ pub fn recruit(
             Building::Archer => UnitType::Archer,
             Building::Warrior => UnitType::Shieldwarrior,
             Building::Pikeman => UnitType::Pikeman,
-            Building::Wall | Building::Tower | Building::GoldFarm => continue,
+            Building::Wall | Building::Tower | Building::GoldFarm | Building::MainBuilding => {
+                continue
+            }
         };
 
         let unit = Unit {
@@ -118,10 +122,21 @@ pub fn recruit(
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn check_recruit(
     lobby: Res<ServerLobby>,
-    player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
-    building: Query<(&Transform, &BoxCollider, &GameSceneId, &Building), With<RecruitmentBuilding>>,
+    player: Query<(&Transform, &BoxCollider, &GameSceneId, &Inventory)>,
+    building: Query<
+        (
+            &Transform,
+            &BoxCollider,
+            &GameSceneId,
+            &Building,
+            &BuildStatus,
+            &Owner,
+        ),
+        With<RecruitmentBuilding>,
+    >,
     mut recruit: EventWriter<RecruitEvent>,
     mut interactions: EventReader<InteractEvent>,
 ) {
@@ -129,15 +144,46 @@ pub fn check_recruit(
         let client_id = event.0;
         let player_entity = lobby.players.get(&client_id).unwrap();
 
-        let (player_transform, player_collider, player_scene) = player.get(*player_entity).unwrap();
+        let (player_transform, player_collider, player_scene, inventory) =
+            player.get(*player_entity).unwrap();
 
         let player_bounds = Aabb2d::new(
             player_transform.translation.truncate(),
             player_collider.half_size(),
         );
 
-        for (building_transform, building_collider, builing_scene, building) in building.iter() {
+        for (
+            building_transform,
+            building_collider,
+            builing_scene,
+            building,
+            building_status,
+            building_owner,
+        ) in building.iter()
+        {
+            if building_owner.0.ne(&client_id) {
+                // println!(
+                //     "Building not same owner. Building: {}, player: {}",
+                //     building_owner.0, client_id
+                // );
+                // // continue;
+            }
             if player_scene.ne(builing_scene) {
+                continue;
+            }
+            if BuildStatus::Built.ne(building_status) {
+                continue;
+            }
+
+            let gold_cost: u16 = match building {
+                Building::MainBuilding | Building::Wall | Building::Tower | Building::GoldFarm => {
+                    continue
+                }
+                Building::Archer => 10,
+                Building::Warrior => 10,
+                Building::Pikeman => 10,
+            };
+            if !inventory.gold.gt(&gold_cost) {
                 continue;
             }
 
