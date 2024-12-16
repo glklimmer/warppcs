@@ -1,10 +1,12 @@
 use bevy::prelude::*;
 use start_game::StartGamePlugin;
 
+use crate::map::buildings::BuildStatus;
+use crate::map::scenes::base::SceneBuildingIndicator;
 use crate::map::GameSceneId;
 use crate::networking::{
-    MultiplayerRoles, Owner, PlayerSkin, ProjectileType, ServerChannel, ServerMessages, SpawnFlag,
-    SpawnPlayer, SpawnProjectile, SpawnUnit,
+    BuildingUpdate, MultiplayerRoles, Owner, PlayerSkin, ProjectileType, ServerChannel,
+    ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
 };
 use crate::{BoxCollider, GameState};
 use bevy::math::bounding::Aabb2d;
@@ -103,6 +105,7 @@ fn travel(
     scene_ids: Query<&GameSceneId>,
     units: Query<(&GameSceneId, &Owner, Entity, &Unit, &Transform)>,
     projectiles: Query<(&GameSceneId, Entity, &ProjectileType, &Transform, &Velocity)>,
+    buildings: Query<(&GameSceneId, &SceneBuildingIndicator, &BuildStatus)>,
     transforms: Query<&Transform>,
     server_players: Query<&ServerPlayer>,
     flag_holders: Query<&FlagHolder>,
@@ -233,12 +236,22 @@ fn travel(
             )
             .collect();
 
+        let buildings = buildings
+            .iter()
+            .filter(|(scene, ..)| target_game_scene_id.eq(*scene))
+            .map(|(_, indicator, status)| BuildingUpdate {
+                indicator: *indicator,
+                status: *status,
+            })
+            .collect();
+
         let message = ServerMessages::LoadGameScene {
             game_scene_type: game_scene.game_scene_type,
             players,
             flag,
             units,
             projectiles,
+            buildings,
         };
         let message = bincode::serialize(&message).unwrap();
         server.send_message(client_id, ServerChannel::ServerMessages, message);

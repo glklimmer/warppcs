@@ -1,10 +1,8 @@
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use super::Layers;
 use crate::BoxCollider;
-
-#[derive(Component, Copy, Clone)]
-pub struct MainBuilding;
 
 #[derive(Component, Copy, Clone)]
 pub struct RecruitmentBuilding;
@@ -16,7 +14,7 @@ pub enum MainBuildingLevel {
     Third,
 }
 
-#[derive(Component, Copy, Clone, PartialEq, Eq)]
+#[derive(Component, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BuildStatus {
     Marker,
     Built,
@@ -29,6 +27,7 @@ pub struct Cost {
 
 #[derive(Component, Copy, Clone, PartialEq, Eq)]
 pub enum Building {
+    MainBuilding,
     Archer,
     Warrior,
     Pikeman,
@@ -37,9 +36,15 @@ pub enum Building {
     GoldFarm,
 }
 
+#[derive(Component, Clone, Copy)]
+pub struct BuildingTextures {
+    pub marker: &'static str,
+    pub built: &'static str,
+}
+
 #[derive(Bundle, Copy, Clone)]
 pub struct MainBuildingBundle {
-    pub base: MainBuilding,
+    pub base: Building,
     pub collider: BoxCollider,
     pub main_building_level: MainBuildingLevel,
     pub transform: Transform,
@@ -48,21 +53,22 @@ pub struct MainBuildingBundle {
 impl MainBuildingBundle {
     pub fn new(x: f32) -> Self {
         MainBuildingBundle {
-            base: MainBuilding,
+            base: Building::MainBuilding,
             collider: BoxCollider(Vec2::new(200., 100.)),
             main_building_level: MainBuildingLevel::First,
-            transform: Transform::from_xyz(x, 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 90., Layers::Building.as_f32()),
         }
     }
 }
 
-#[derive(Bundle, Copy, Clone)]
+#[derive(Bundle, Clone, Copy)]
 pub struct BuildingBundle {
     pub building: Building,
     pub collider: BoxCollider,
     pub build_status: BuildStatus,
     pub transform: Transform,
     pub cost: Cost,
+    pub textures: BuildingTextures,
 }
 
 impl BuildingBundle {
@@ -71,8 +77,12 @@ impl BuildingBundle {
             building: Building::Archer,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
             cost: Cost { gold: 200 },
+            textures: BuildingTextures {
+                marker: "aseprite/buildings/archer_plot.png",
+                built: "aseprite/buildings/archer_house.png",
+            },
         }
     }
 
@@ -81,8 +91,12 @@ impl BuildingBundle {
             building: Building::Warrior,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
             cost: Cost { gold: 200 },
+            textures: BuildingTextures {
+                marker: "aseprite/buildings/warrior_plot.png",
+                built: "aseprite/buildings/warrior_house.png",
+            },
         }
     }
 
@@ -91,8 +105,12 @@ impl BuildingBundle {
             building: Building::Pikeman,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
             cost: Cost { gold: 200 },
+            textures: BuildingTextures {
+                marker: "aseprite/buildings/pike_man_plot.png",
+                built: "aseprite/buildings/pike_man_house.png",
+            },
         }
     }
 
@@ -101,8 +119,12 @@ impl BuildingBundle {
             building: Building::Wall,
             collider: BoxCollider(Vec2::new(50., 75.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75. / 2., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
             cost: Cost { gold: 100 },
+            textures: BuildingTextures {
+                marker: "aseprite/buildings/wall_basic.png",
+                built: "aseprite/buildings/wall_first_upgrade.png",
+            },
         }
     }
 
@@ -113,6 +135,10 @@ impl BuildingBundle {
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
             cost: Cost { gold: 150 },
+            textures: BuildingTextures {
+                marker: "aseprite/buildings/warrior_plot.png",
+                built: "aseprite/buildings/warrior_house.png",
+            },
         }
     }
 
@@ -123,6 +149,10 @@ impl BuildingBundle {
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 25., Layers::Building.as_f32()),
             cost: Cost { gold: 50 },
+            textures: BuildingTextures {
+                marker: "aseprite/buildings/warrior_plot.png",
+                built: "aseprite/buildings/warrior_house.png",
+            },
         }
     }
 }

@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::map::buildings::{BuildingBundle, MainBuildingBundle};
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 pub struct FightScene {
     pub left_main_building: MainBuildingBundle,
     pub left_archer_building: BuildingBundle,

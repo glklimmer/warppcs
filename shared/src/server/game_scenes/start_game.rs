@@ -5,7 +5,7 @@ use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
 use crate::map::buildings::RecruitmentBuilding;
-use crate::map::scenes::base::BaseScene;
+use crate::map::scenes::base::{BaseScene, BaseSceneIndicator, SceneBuildingIndicator};
 use crate::map::scenes::fight::FightScene;
 use crate::map::{GameScene, GameSceneType, Layers};
 use crate::networking::{
@@ -111,7 +111,7 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
 
     // Create Player entities
     let left_transform = Transform::from_xyz(-1500., 50., Layers::Player.as_f32());
-    let inventory = Inventory { gold: 100 };
+    let inventory = Inventory { gold: 1000 };
     commands.entity(*left_player_entity).insert((
         left_transform,
         PlayerInput::default(),
@@ -159,6 +159,7 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
         players,
         units: Vec::new(),
         projectiles: Vec::new(),
+        buildings: Vec::new(),
         flag: None,
     };
     let message = bincode::serialize(&message).unwrap();
@@ -207,26 +208,63 @@ fn duel_map(
         // Create Game Scene
         let base = BaseScene::new();
         let server_components = (Owner(*client_id), game_scene_id);
-        commands.spawn((base.main_building, server_components));
-        commands.spawn((base.archer_building, server_components, RecruitmentBuilding));
+        commands.spawn((
+            base.main_building,
+            server_components,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
+        ));
+        commands.spawn((
+            base.archer_building,
+            server_components,
+            RecruitmentBuilding,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::ArcherBuilding),
+        ));
         commands.spawn((
             base.warrior_building,
             server_components,
             RecruitmentBuilding,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::WarriorBuilding),
         ));
         commands.spawn((
             base.pikeman_building,
             server_components,
             RecruitmentBuilding,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::PikemanBuilding),
         ));
-        commands.spawn((base.left_wall, server_components));
-        commands.spawn((base.right_wall, server_components));
+        commands.spawn((
+            base.left_wall,
+            server_components,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftWall),
+        ));
+        commands.spawn((
+            base.right_wall,
+            server_components,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::RightWall),
+        ));
 
-        commands.spawn((base.left_spawn_point, server_components, left_destination));
-        commands.spawn((base.right_spawn_point, server_components, right_destination));
+        commands.spawn((
+            base.left_spawn_point,
+            server_components,
+            left_destination,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftSpawnPoint),
+        ));
+        commands.spawn((
+            base.right_spawn_point,
+            server_components,
+            right_destination,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
+        ));
 
-        commands.spawn((base.left_gold_farm, server_components));
-        commands.spawn((base.right_gold_farm, server_components));
+        commands.spawn((
+            base.left_gold_farm,
+            server_components,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
+        ));
+        commands.spawn((
+            base.right_gold_farm,
+            server_components,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
+        ));
 
         let game_scene_type = GameSceneType::Base(Color::from(color));
         let game_scene = GameScene {
@@ -239,7 +277,7 @@ fn duel_map(
 
         // Create Player entity
         let transform = Transform::from_xyz(0., 50., Layers::Player.as_f32());
-        let inventory = Inventory { gold: 100 };
+        let inventory = Inventory { gold: 1000 };
         commands.entity(*player_entity).insert((
             transform,
             PlayerInput::default(),
@@ -259,6 +297,7 @@ fn duel_map(
             }],
             units: Vec::new(),
             projectiles: Vec::new(),
+            buildings: Vec::new(),
             flag: None,
         };
         let message = bincode::serialize(&message).unwrap();

@@ -4,7 +4,11 @@ use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::map::GameSceneType;
+use crate::map::{
+    buildings::BuildStatus,
+    scenes::base::{BaseSceneIndicator, SceneBuildingIndicator},
+    GameSceneType,
+};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -93,6 +97,12 @@ pub struct SpawnProjectile {
     pub direction: [f32; 2],
 }
 
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct BuildingUpdate {
+    pub indicator: SceneBuildingIndicator,
+    pub status: BuildStatus,
+}
+
 #[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq, Copy)]
 pub enum Checkbox {
     Checked,
@@ -128,6 +138,7 @@ pub enum ServerMessages {
         flag: Option<SpawnFlag>,
         units: Vec<SpawnUnit>,
         projectiles: Vec<SpawnProjectile>,
+        buildings: Vec<BuildingUpdate>,
     },
     SpawnGroup {
         player: SpawnPlayer,
@@ -137,6 +148,7 @@ pub enum ServerMessages {
         entity: Entity,
     },
     SyncInventory(Inventory),
+    BuildingUpdate(BuildingUpdate),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
