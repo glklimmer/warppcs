@@ -5,6 +5,7 @@ use bevy_renet::renet::{ClientId, RenetServer};
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
 
+use crate::networking::GameSceneAware;
 use crate::{
     map::{
         buildings::{BuildStatus, Building, Cost},
@@ -154,6 +155,9 @@ fn check_building_interaction(
                     BuildStatus::Built => {
                         upgrade.send(BuildingUpgrade(info));
                     }
+                    BuildStatus::Destroyed => {
+                        build.send(BuildingConstruction(info));
+                    }
                 }
             }
         }
@@ -161,6 +165,7 @@ fn check_building_interaction(
 }
 
 fn construct_building(
+    mut commands: Commands,
     mut builds: EventReader<BuildingConstruction>,
     mut building: Query<(
         &mut BuildStatus,
@@ -174,31 +179,21 @@ fn construct_building(
     scene_ids: Query<&GameSceneId>,
 ) {
     for build in builds.read() {
-        match building.get_mut(build.0.entity) {
-            Ok(_) => (),
-            Err(e) => println!("Error: {}", e),
-        }
         let (mut status, cost, game_scene_id, building_indicator) =
             building.get_mut(build.0.entity).unwrap();
         *status = BuildStatus::Built;
 
+        commands
+            .entity(build.0.entity)
+            .insert(building_health(&build.0.building_type));
+
         println!("Building constructed: {:?}", building_indicator);
 
-        let message = ServerMessages::BuildingUpdate(BuildingUpdate {
+        ServerMessages::BuildingUpdate(BuildingUpdate {
             indicator: *building_indicator,
             status: *status,
-        });
-        let message = bincode::serialize(&message).unwrap();
-        for (other_client_id, other_entity) in lobby.players.iter() {
-            let other_scene_id = scene_ids.get(*other_entity).unwrap();
-            if game_scene_id.eq(other_scene_id) {
-                server.send_message(
-                    *other_client_id,
-                    ServerChannel::ServerMessages,
-                    message.clone(),
-                );
-            }
-        }
+        })
+        .send_to_all_in_game_scene(&mut server, &lobby, &scene_ids, game_scene_id);
 
         let mut inventory = inventory.get_mut(build.0.player_entity).unwrap();
         inventory.gold -= cost.gold;

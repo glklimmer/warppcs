@@ -18,6 +18,7 @@ pub enum MainBuildingLevel {
 pub enum BuildStatus {
     Marker,
     Built,
+    Destroyed,
 }
 
 #[derive(Component, Copy, Clone)]

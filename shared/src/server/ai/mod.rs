@@ -8,7 +8,10 @@ use crate::{
     GameState,
 };
 
-use super::{buildings::recruiting::FlagAssignment, entities::Unit};
+use super::{
+    buildings::recruiting::FlagAssignment,
+    entities::{health::Health, Unit},
+};
 
 pub mod attack;
 
@@ -53,7 +56,7 @@ fn determine_behaviour(
         &Owner,
         &Unit,
     )>,
-    others: Query<(Entity, &GameSceneId, &Transform, &Owner), With<Unit>>,
+    others: Query<(Entity, &GameSceneId, &Transform, &Owner), With<Health>>,
     flag: Query<&FlagAssignment>,
 ) {
     for (entity, mut behaviour, scene_id, transform, owner, unit) in &mut query {

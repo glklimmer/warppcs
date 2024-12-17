@@ -374,6 +374,7 @@ fn building_texture(
         Some(update) => match update.status {
             BuildStatus::Marker => building_bundle.textures.marker,
             BuildStatus::Built => building_bundle.textures.built,
+            BuildStatus::Destroyed => building_bundle.textures.marker,
         },
         None => building_bundle.textures.marker,
     };
@@ -397,6 +398,7 @@ fn update_building(
                 let texture = match status {
                     BuildStatus::Marker => textures.marker,
                     BuildStatus::Built => textures.built,
+                    BuildStatus::Destroyed => textures.marker,
                 };
 
                 let texture = asset_server.load::<Image>(texture);
