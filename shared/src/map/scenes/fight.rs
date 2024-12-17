@@ -1,6 +1,7 @@
-use serde::{Deserialize, Serialize};
+use bevy::prelude::*;
 
 use crate::map::buildings::{BuildingBundle, MainBuildingBundle};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy)]
 pub struct FightScene {
@@ -19,6 +20,24 @@ pub struct FightScene {
     pub right_left_wall: BuildingBundle,
     pub right_right_wall: BuildingBundle,
     pub right_gold_farm: BuildingBundle,
+}
+
+#[derive(Copy, Clone, Component, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum FightSceneIndicator {
+    LeftMainBuilding,
+    LeftArcherBuilding,
+    LeftWarriorBuilding,
+    LeftPikemanBuilding,
+    LeftLeftWall,
+    LeftRightWall,
+    LeftGoldFarm,
+    RightMainBuilding,
+    RightArcherBuilding,
+    RightWarriorBuilding,
+    RightPikemanBuilding,
+    RightLeftWall,
+    RightRightWall,
+    RightGoldFarm,
 }
 
 impl FightScene {

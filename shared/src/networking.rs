@@ -4,11 +4,7 @@ use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::map::{
-    buildings::BuildStatus,
-    scenes::base::{BaseSceneIndicator, SceneBuildingIndicator},
-    GameSceneType,
-};
+use crate::map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneType};
 
 pub const PROTOCOL_ID: u64 = 7;
 
