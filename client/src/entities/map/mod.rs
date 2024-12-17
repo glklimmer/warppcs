@@ -1,14 +1,22 @@
 use bevy::prelude::*;
 
-use bevy::color::palettes::css::YELLOW;
-
-use bevy::sprite::Mesh2dHandle;
-use shared::map::buildings::{BuildStatus, BuildingBundle, BuildingTextures};
-use shared::map::scenes::base::{BaseScene, BaseSceneIndicator, SceneBuildingIndicator};
-use shared::map::scenes::fight::FightScene;
-use shared::networking::{BuildingUpdate, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit};
-use shared::GameState;
-use shared::{map::GameSceneType, networking::ServerMessages};
+use bevy::{color::palettes::css::YELLOW, sprite::Mesh2dHandle};
+use shared::map::scenes::fight::FightSceneIndicator;
+use shared::{
+    map::{
+        buildings::{BuildStatus, BuildingBundle, BuildingTextures},
+        scenes::{
+            base::{BaseScene, BaseSceneIndicator},
+            fight::FightScene,
+            SceneBuildingIndicator,
+        },
+        GameSceneType,
+    },
+    networking::{
+        BuildingUpdate, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+    },
+    GameState,
+};
 
 use crate::networking::{Connected, NetworkEvent};
 
@@ -63,6 +71,7 @@ fn load_game_scene(
                     commands
                         .spawn((
                             fight.left_main_building,
+                            SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
                             (
                                 asset_server.load::<Image>("aseprite/buildings/main_house_red.png"),
                                 Sprite::default(),
@@ -77,110 +86,54 @@ fn load_game_scene(
                             scale: Vec3::splat(3.0),
                             ..fight.left_main_building.transform
                         });
-                    commands
-                        .spawn((
-                            fight.left_archer_building,
-                            (
-                                asset_server
-                                    .load::<Image>(fight.left_archer_building.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.left_archer_building.transform
-                        });
-                    commands
-                        .spawn((
-                            fight.left_warrior_building,
-                            (
-                                asset_server
-                                    .load::<Image>(fight.left_warrior_building.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.left_warrior_building.transform
-                        });
-                    commands
-                        .spawn((
-                            fight.left_pikeman_building,
-                            (
-                                asset_server
-                                    .load::<Image>(fight.left_pikeman_building.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.left_pikeman_building.transform
-                        });
-                    commands
-                        .spawn((
-                            fight.left_left_wall,
-                            (
-                                asset_server.load::<Image>(fight.left_left_wall.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.left_left_wall.transform
-                        });
-                    commands
-                        .spawn((
-                            fight.left_right_wall,
-                            (
-                                asset_server.load::<Image>(fight.left_right_wall.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.left_right_wall.transform
-                        });
-                    commands.spawn((
+
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.left_archer_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftArcherBuilding),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.left_warrior_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftWarriorBuilding),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.left_pikeman_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftPikemanBuilding),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.left_left_wall,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftLeftWall),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.left_right_wall,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftRightWall),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
                         fight.left_gold_farm,
-                        (
-                            asset_server.load::<Image>(fight.left_gold_farm.textures.marker),
-                            Sprite::default(),
-                            GlobalTransform::default(),
-                            Visibility::default(),
-                            InheritedVisibility::default(),
-                            ViewVisibility::default(),
-                        ),
-                        PartOfScene,
-                    ));
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
+                    );
 
                     commands
                         .spawn((
                             fight.right_main_building,
+                            SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
                             (
                                 asset_server
                                     .load::<Image>("aseprite/buildings/main_house_blue.png"),
@@ -196,106 +149,48 @@ fn load_game_scene(
                             scale: Vec3::splat(3.0),
                             ..fight.right_main_building.transform
                         });
-                    commands
-                        .spawn((
-                            fight.right_archer_building,
-                            (
-                                asset_server
-                                    .load::<Image>(fight.right_archer_building.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.right_archer_building.transform
-                        });
-                    commands
-                        .spawn((
-                            fight.right_warrior_building,
-                            (
-                                asset_server
-                                    .load::<Image>(fight.right_warrior_building.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.right_warrior_building.transform
-                        });
-                    commands
-                        .spawn((
-                            fight.right_pikeman_building,
-                            (
-                                asset_server
-                                    .load::<Image>(fight.right_pikeman_building.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.right_pikeman_building.transform
-                        });
-                    commands
-                        .spawn((
-                            fight.right_left_wall,
-                            (
-                                asset_server.load::<Image>(fight.right_left_wall.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.right_left_wall.transform
-                        });
-                    commands
-                        .spawn((
-                            fight.right_right_wall,
-                            (
-                                asset_server.load::<Image>(fight.right_right_wall.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.right_right_wall.transform
-                        });
-                    commands.spawn((
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.right_archer_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightArcherBuilding),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.right_warrior_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightWarriorBuilding),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.right_pikeman_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightPikemanBuilding),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.right_left_wall,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightLeftWall),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
+                        fight.right_right_wall,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightRightWall),
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
                         fight.right_gold_farm,
-                        (
-                            asset_server.load::<Image>(fight.right_gold_farm.textures.marker),
-                            Sprite::default(),
-                            GlobalTransform::default(),
-                            Visibility::default(),
-                            InheritedVisibility::default(),
-                            ViewVisibility::default(),
-                        ),
-                        PartOfScene,
-                    ));
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightGoldFarm),
+                    );
                 }
                 GameSceneType::Base(color) => {
                     let base = BaseScene::new();

@@ -1,23 +1,24 @@
 use bevy::prelude::*;
 use start_game::StartGamePlugin;
 
-use crate::map::buildings::BuildStatus;
-use crate::map::scenes::base::SceneBuildingIndicator;
-use crate::map::GameSceneId;
-use crate::networking::{
-    BuildingUpdate, MultiplayerRoles, Owner, PlayerSkin, ProjectileType, ServerChannel,
-    ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+use crate::{
+    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
+    networking::{
+        BuildingUpdate, MultiplayerRoles, Owner, PlayerSkin, ProjectileType, ServerChannel,
+        ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+    },
+    BoxCollider, GameState,
 };
-use crate::{BoxCollider, GameState};
-use bevy::math::bounding::Aabb2d;
-use bevy::math::bounding::IntersectsVolume;
+use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::RenetServer;
 
-use super::buildings::recruiting::{FlagAssignment, FlagHolder};
-use super::entities::Unit;
-use super::networking::{GameWorld, ServerLobby, ServerPlayer};
-use super::physics::movement::Velocity;
-use super::players::InteractEvent;
+use super::{
+    buildings::recruiting::{FlagAssignment, FlagHolder},
+    entities::Unit,
+    networking::{GameWorld, ServerLobby, ServerPlayer},
+    physics::movement::Velocity,
+    players::InteractEvent,
+};
 
 pub mod start_game;
 

@@ -5,16 +5,19 @@ use bevy_renet::renet::{ClientId, RenetServer};
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
 
-use crate::map::buildings::{BuildStatus, Building, Cost};
-use crate::map::scenes::base::SceneBuildingIndicator;
-use crate::networking::{
-    BuildingUpdate, Inventory, MultiplayerRoles, Owner, ServerChannel, ServerMessages,
+use crate::{
+    map::{
+        buildings::{BuildStatus, Building, Cost},
+        scenes::SceneBuildingIndicator,
+        GameSceneId,
+    },
+    networking::{
+        BuildingUpdate, Inventory, MultiplayerRoles, Owner, ServerChannel, ServerMessages,
+    },
+    BoxCollider, GameState,
 };
-use crate::GameState;
-use crate::{map::GameSceneId, BoxCollider};
 
-use super::networking::ServerLobby;
-use super::players::InteractEvent;
+use super::{entities::health::Health, networking::ServerLobby, players::InteractEvent};
 
 mod gold_farm;
 
@@ -62,6 +65,19 @@ impl Plugin for BuildingsPlugins {
             ),
         );
     }
+}
+
+pub fn building_health(building_type: &Building) -> Health {
+    let hitpoints = match building_type {
+        Building::MainBuilding => 1200.,
+        Building::Archer => 800.,
+        Building::Warrior => 800.,
+        Building::Pikeman => 800.,
+        Building::Wall => 600.,
+        Building::Tower => 400.,
+        Building::GoldFarm => 600.,
+    };
+    Health { hitpoints }
 }
 
 #[allow(clippy::type_complexity)]
@@ -158,6 +174,10 @@ fn construct_building(
     scene_ids: Query<&GameSceneId>,
 ) {
     for build in builds.read() {
+        match building.get_mut(build.0.entity) {
+            Ok(_) => (),
+            Err(e) => println!("Error: {}", e),
+        }
         let (mut status, cost, game_scene_id, building_indicator) =
             building.get_mut(build.0.entity).unwrap();
         *status = BuildStatus::Built;
