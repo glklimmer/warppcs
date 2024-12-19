@@ -3,9 +3,17 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 
 use crate::{
-    networking::{MultiplayerRoles, ServerChannel, ServerMessages},
+    map::{
+        buildings::{BuildStatus, Building},
+        scenes::SceneBuildingIndicator,
+        GameSceneId,
+    },
+    networking::{BuildingUpdate, GameSceneAware, MultiplayerRoles, ServerChannel, ServerMessages},
+    server::networking::ServerLobby,
     GameState,
 };
+
+use super::Unit;
 
 #[derive(Component, Clone)]
 pub struct Health {
@@ -28,7 +36,7 @@ impl Plugin for HealthPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (on_unit_death).run_if(
+            (on_unit_death, on_building_destroy).run_if(
                 in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
             ),
         );
@@ -47,17 +55,38 @@ fn apply_damage(mut query: Query<&mut Health>, mut attack_events: EventReader<Ta
 fn on_unit_death(
     mut server: ResMut<RenetServer>,
     mut commands: Commands,
-    query: Query<(Entity, &Health)>,
+    query: Query<(Entity, &Health, &GameSceneId), With<Unit>>,
+    lobby: Res<ServerLobby>,
+    scene_ids: Query<&GameSceneId>,
 ) {
-    for (entity, health) in query.iter() {
+    for (entity, health, game_scene_id) in query.iter() {
         if health.hitpoints <= 0. {
             commands.entity(entity).despawn_recursive();
 
-            let message = ServerMessages::DespawnEntity {
+            ServerMessages::DespawnEntity {
                 entities: vec![entity],
-            };
-            let unit_dead_message = bincode::serialize(&message).unwrap();
-            server.broadcast_message(ServerChannel::ServerMessages, unit_dead_message);
+            }
+            .send_to_all_in_game_scene(&mut server, &lobby, &scene_ids, game_scene_id);
+        }
+    }
+}
+
+fn on_building_destroy(
+    mut server: ResMut<RenetServer>,
+    mut commands: Commands,
+    query: Query<(Entity, &Health, &GameSceneId, &SceneBuildingIndicator)>,
+    lobby: Res<ServerLobby>,
+    scene_ids: Query<&GameSceneId>,
+) {
+    for (entity, health, game_scene_id, indicator) in query.iter() {
+        if health.hitpoints <= 0. {
+            commands.entity(entity).despawn_recursive();
+
+            ServerMessages::BuildingUpdate(BuildingUpdate {
+                indicator: *indicator,
+                status: BuildStatus::Destroyed,
+            })
+            .send_to_all_in_game_scene(&mut server, &lobby, &scene_ids, game_scene_id);
         }
     }
 }
