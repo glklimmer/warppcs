@@ -4,8 +4,8 @@ use start_game::StartGamePlugin;
 use crate::{
     map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
     networking::{
-        BuildingUpdate, MultiplayerRoles, Owner, PlayerSkin, ProjectileType, ServerChannel,
-        ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        BuildingUpdate, GameSceneAware, MultiplayerRoles, Owner, PlayerSkin, ProjectileType,
+        ServerChannel, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     BoxCollider, GameState,
 };
@@ -147,19 +147,13 @@ fn travel(
             let mut units: Vec<Entity> = group.units.iter().map(|unit| unit.0).collect();
             entities.append(&mut units);
         }
-        let message = ServerMessages::DespawnEntity { entities };
-        let message = bincode::serialize(&message).unwrap();
         let current_game_scene_id = scene_ids.get(player_entity).unwrap();
-        for (other_client_id, other_entity) in lobby.players.iter() {
-            let other_scene_id = scene_ids.get(*other_entity).unwrap();
-            if current_game_scene_id.eq(other_scene_id) {
-                server.send_message(
-                    *other_client_id,
-                    ServerChannel::ServerMessages,
-                    message.clone(),
-                );
-            }
-        }
+        ServerMessages::DespawnEntity { entities }.send_to_all_in_game_scene(
+            &mut server,
+            &lobby,
+            &scene_ids,
+            current_game_scene_id,
+        );
 
         // Travel Player, flag and units to new game scene
         let target_transform = Transform::from_translation(target_position);
@@ -270,7 +264,7 @@ fn travel(
                 });
             }
         }
-        let message = ServerMessages::SpawnGroup {
+        ServerMessages::SpawnGroup {
             player: SpawnPlayer {
                 id: client_id,
                 entity: player_entity,
@@ -278,17 +272,7 @@ fn travel(
                 skin: *skin,
             },
             units: unit_spawns,
-        };
-        let message = bincode::serialize(&message).unwrap();
-        for (other_client_id, other_entity) in lobby.players.iter() {
-            let other_scene_id = scene_ids.get(*other_entity).unwrap();
-            if target_game_scene_id.eq(other_scene_id) {
-                server.send_message(
-                    *other_client_id,
-                    ServerChannel::ServerMessages,
-                    message.clone(),
-                );
-            }
         }
+        .send_to_all_in_game_scene(&mut server, &lobby, &scene_ids, &target_game_scene_id);
     }
 }

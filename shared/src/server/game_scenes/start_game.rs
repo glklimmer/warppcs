@@ -76,28 +76,24 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     commands.spawn((
         base.left_main_building,
         server_components,
-        building_health(&base.left_main_building.base),
         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
     ));
     commands.spawn((
         base.left_archer_building,
         server_components,
         RecruitmentBuilding,
-        building_health(&base.left_archer_building.building),
         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftArcherBuilding),
     ));
     commands.spawn((
         base.left_warrior_building,
         server_components,
         RecruitmentBuilding,
-        building_health(&base.left_warrior_building.building),
         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftWarriorBuilding),
     ));
     commands.spawn((
         base.left_pikeman_building,
         server_components,
         RecruitmentBuilding,
-        building_health(&base.left_pikeman_building.building),
         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftPikemanBuilding),
     ));
     commands.spawn((
@@ -115,7 +111,6 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     commands.spawn((
         base.left_gold_farm,
         server_components,
-        building_health(&base.left_gold_farm.building),
         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
     ));
 
@@ -123,28 +118,24 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     commands.spawn((
         base.right_main_building,
         server_components,
-        building_health(&base.right_main_building.base),
         SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
     ));
     commands.spawn((
         base.right_archer_building,
         server_components,
         RecruitmentBuilding,
-        building_health(&base.right_archer_building.building),
         SceneBuildingIndicator::Fight(FightSceneIndicator::RightArcherBuilding),
     ));
     commands.spawn((
         base.right_warrior_building,
         server_components,
         RecruitmentBuilding,
-        building_health(&base.right_warrior_building.building),
         SceneBuildingIndicator::Fight(FightSceneIndicator::RightWarriorBuilding),
     ));
     commands.spawn((
         base.right_pikeman_building,
         server_components,
         RecruitmentBuilding,
-        building_health(&base.right_pikeman_building.building),
         SceneBuildingIndicator::Fight(FightSceneIndicator::RightPikemanBuilding),
     ));
     commands.spawn((
@@ -162,7 +153,6 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     commands.spawn((
         base.right_gold_farm,
         server_components,
-        building_health(&base.right_gold_farm.building),
         SceneBuildingIndicator::Fight(FightSceneIndicator::RightGoldFarm),
     ));
 
@@ -269,28 +259,24 @@ fn duel_map(
             base.main_building,
             server_components,
             SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
-            building_health(&base.main_building.base),
         ));
         commands.spawn((
             base.archer_building,
             server_components,
             RecruitmentBuilding,
             SceneBuildingIndicator::Base(BaseSceneIndicator::ArcherBuilding),
-            building_health(&base.archer_building.building),
         ));
         commands.spawn((
             base.warrior_building,
             server_components,
             RecruitmentBuilding,
             SceneBuildingIndicator::Base(BaseSceneIndicator::WarriorBuilding),
-            building_health(&base.warrior_building.building),
         ));
         commands.spawn((
             base.pikeman_building,
             server_components,
             RecruitmentBuilding,
             SceneBuildingIndicator::Base(BaseSceneIndicator::PikemanBuilding),
-            building_health(&base.pikeman_building.building),
         ));
         commands.spawn((
             base.left_wall,
@@ -309,13 +295,11 @@ fn duel_map(
             base.left_gold_farm,
             server_components,
             SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
-            building_health(&base.left_gold_farm.building),
         ));
         commands.spawn((
             base.right_gold_farm,
             server_components,
             SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
-            building_health(&base.right_gold_farm.building),
         ));
 
         commands.spawn((
