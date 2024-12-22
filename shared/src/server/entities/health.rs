@@ -3,11 +3,7 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 
 use crate::{
-    map::{
-        buildings::{BuildStatus, Building},
-        scenes::SceneBuildingIndicator,
-        GameSceneId,
-    },
+    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
     networking::{BuildingUpdate, GameSceneAware, MultiplayerRoles, ServerChannel, ServerMessages},
     server::networking::ServerLobby,
     GameState,

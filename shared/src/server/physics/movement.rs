@@ -1,11 +1,14 @@
-use bevy::prelude::*;
-
-use crate::networking::MultiplayerRoles;
+use crate::map::GameSceneId;
+use crate::networking::{MultiplayerRoles, Owner};
 use crate::server::ai::MOVE_EPSILON;
 use crate::server::ai::{attack::unit_speed, UnitBehaviour};
+use crate::server::buildings::BuildingBounds;
+use crate::server::entities::health::Health;
 use crate::server::entities::Unit;
 use crate::GameState;
 use crate::{networking::PlayerInput, BoxCollider, GRAVITY_G};
+use bevy::math::bounding::{Aabb2d, IntersectsVolume};
+use bevy::prelude::*;
 
 #[derive(Debug, Default, Component, Copy, Clone)]
 pub struct Velocity(pub Vec2);
@@ -42,11 +45,44 @@ fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, ti
     }
 }
 
-fn move_players_system(mut query: Query<(&PlayerInput, &mut Velocity)>) {
-    for (input, mut velocity) in query.iter_mut() {
+fn move_players_system(
+    mut query: Query<(
+        &PlayerInput,
+        &mut Velocity,
+        &Transform,
+        &BoxCollider,
+        &GameSceneId,
+        &Owner,
+    )>,
+    building_bounds: Query<(&BuildingBounds, &GameSceneId, &Owner), With<Health>>,
+) {
+    for (input, mut velocity, player_transform, player_collider, player_scene, client_owner) in
+        query.iter_mut()
+    {
         let x = (input.right as i8 - input.left as i8) as f32;
         let direction = Vec2::new(x, 0.).normalize_or_zero();
-        velocity.0 = direction * PLAYER_MOVE_SPEED;
+        let desired_velocity = direction * PLAYER_MOVE_SPEED;
+
+        let future_position = player_transform.translation.truncate() + direction;
+        let future_bounds = Aabb2d::new(future_position, player_collider.half_size());
+
+        let mut would_collide = false;
+        for (building, builing_scene, owner) in building_bounds.iter() {
+            if player_scene.ne(builing_scene) || owner.0.eq(&client_owner.0) {
+                continue;
+            }
+
+            if building.bound.intersects(&future_bounds) {
+                would_collide = true;
+                break;
+            }
+        }
+
+        velocity.0 = if would_collide {
+            Vec2::ZERO
+        } else {
+            desired_velocity
+        };
     }
 }
 
