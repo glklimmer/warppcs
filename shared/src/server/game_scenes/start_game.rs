@@ -4,24 +4,29 @@ use bevy::color::palettes::css::{BLUE, RED};
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
-use crate::map::buildings::RecruitmentBuilding;
-use crate::map::scenes::base::{BaseScene, BaseSceneIndicator, SceneBuildingIndicator};
-use crate::map::scenes::fight::FightScene;
-use crate::map::{GameScene, GameSceneType, Layers};
-use crate::networking::{
-    Inventory, Owner, PlayerInput, ServerChannel, ServerMessages, SpawnPlayer,
-};
-use crate::server::lobby::GameLobby;
-use crate::server::networking::ServerLobby;
-use crate::server::physics::movement::Velocity;
-use crate::GameState;
+use crate::map::scenes::fight::FightSceneIndicator;
 use crate::{
-    map::GameSceneId,
-    networking::{PlayerCommand, PlayerSkin},
-    server::{
-        game_scenes::GameSceneDestination,
-        networking::{GameWorld, NetworkEvent},
+    map::{
+        buildings::RecruitmentBuilding,
+        scenes::{
+            base::{BaseScene, BaseSceneIndicator},
+            fight::FightScene,
+            SceneBuildingIndicator,
+        },
+        GameScene, GameSceneId, GameSceneType, Layers,
     },
+    networking::{
+        Inventory, Owner, PlayerCommand, PlayerInput, PlayerSkin, ServerChannel, ServerMessages,
+        SpawnPlayer,
+    },
+    server::{
+        buildings::building_health,
+        game_scenes::GameSceneDestination,
+        lobby::GameLobby,
+        networking::{GameWorld, NetworkEvent, ServerLobby},
+        physics::movement::Velocity,
+    },
+    GameState,
 };
 
 pub struct StartGamePlugin;
@@ -68,46 +73,88 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     // Create Fight Scene
     let base = FightScene::new();
     let server_components = (Owner(*left_client_id), GameSceneId(1));
-    commands.spawn((base.left_main_building, server_components));
+    commands.spawn((
+        base.left_main_building,
+        server_components,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
+    ));
     commands.spawn((
         base.left_archer_building,
         server_components,
         RecruitmentBuilding,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftArcherBuilding),
     ));
     commands.spawn((
         base.left_warrior_building,
         server_components,
         RecruitmentBuilding,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftWarriorBuilding),
     ));
     commands.spawn((
         base.left_pikeman_building,
         server_components,
         RecruitmentBuilding,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftPikemanBuilding),
     ));
-    commands.spawn((base.left_left_wall, server_components));
-    commands.spawn((base.left_right_wall, server_components));
-    commands.spawn((base.left_gold_farm, server_components));
+    commands.spawn((
+        base.left_left_wall,
+        server_components,
+        building_health(&base.left_left_wall.building),
+        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftLeftWall),
+    ));
+    commands.spawn((
+        base.left_right_wall,
+        server_components,
+        building_health(&base.left_right_wall.building),
+        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftRightWall),
+    ));
+    commands.spawn((
+        base.left_gold_farm,
+        server_components,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
+    ));
 
     let server_components = (Owner(*right_client_id), GameSceneId(1));
-    commands.spawn((base.right_main_building, server_components));
+    commands.spawn((
+        base.right_main_building,
+        server_components,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
+    ));
     commands.spawn((
         base.right_archer_building,
         server_components,
         RecruitmentBuilding,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::RightArcherBuilding),
     ));
     commands.spawn((
         base.right_warrior_building,
         server_components,
         RecruitmentBuilding,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::RightWarriorBuilding),
     ));
     commands.spawn((
         base.right_pikeman_building,
         server_components,
         RecruitmentBuilding,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::RightPikemanBuilding),
     ));
-    commands.spawn((base.right_left_wall, server_components));
-    commands.spawn((base.right_right_wall, server_components));
-    commands.spawn((base.right_gold_farm, server_components));
+    commands.spawn((
+        base.right_left_wall,
+        server_components,
+        building_health(&base.right_left_wall.building),
+        SceneBuildingIndicator::Fight(FightSceneIndicator::RightLeftWall),
+    ));
+    commands.spawn((
+        base.right_right_wall,
+        server_components,
+        building_health(&base.right_right_wall.building),
+        SceneBuildingIndicator::Fight(FightSceneIndicator::RightRightWall),
+    ));
+    commands.spawn((
+        base.right_gold_farm,
+        server_components,
+        SceneBuildingIndicator::Fight(FightSceneIndicator::RightGoldFarm),
+    ));
 
     // Create Player entities
     let left_transform = Transform::from_xyz(-1500., 50., Layers::Player.as_f32());
@@ -235,11 +282,24 @@ fn duel_map(
             base.left_wall,
             server_components,
             SceneBuildingIndicator::Base(BaseSceneIndicator::LeftWall),
+            building_health(&base.left_wall.building),
         ));
         commands.spawn((
             base.right_wall,
             server_components,
             SceneBuildingIndicator::Base(BaseSceneIndicator::RightWall),
+            building_health(&base.right_wall.building),
+        ));
+
+        commands.spawn((
+            base.left_gold_farm,
+            server_components,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
+        ));
+        commands.spawn((
+            base.right_gold_farm,
+            server_components,
+            SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
         ));
 
         commands.spawn((
@@ -253,17 +313,6 @@ fn duel_map(
             server_components,
             right_destination,
             SceneBuildingIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
-        ));
-
-        commands.spawn((
-            base.left_gold_farm,
-            server_components,
-            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
-        ));
-        commands.spawn((
-            base.right_gold_farm,
-            server_components,
-            SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
         ));
 
         let game_scene_type = GameSceneType::Base(Color::from(color));

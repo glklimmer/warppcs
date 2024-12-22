@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_renet::renet::RenetServer;
 
 use crate::{
-    map::{buildings::Building, GameSceneId},
+    map::buildings::Building,
     networking::{Inventory, Owner, ServerChannel, ServerMessages},
     server::networking::ServerLobby,
 };
