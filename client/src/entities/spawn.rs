@@ -4,6 +4,7 @@ use crate::{
     animations::{
         animation::UnitAnimation,
         king::{PaladinBundle, PaladinSpriteSheet, WarriorBundle, WarriorSpriteSheet},
+        units::ArcherSpriteSheet,
         FlagBundle, FlagSpriteSheet,
     },
     networking::{
@@ -132,6 +133,7 @@ fn spawn_unit(
     asset_server: Res<AssetServer>,
     mut spawn_unit: EventReader<SpawnUnit>,
     mut network_mapping: ResMut<NetworkMapping>,
+    archer_sprite: Res<ArcherSpriteSheet>,
 ) {
     for spawn in spawn_unit.read() {
         let SpawnUnit {
@@ -142,9 +144,9 @@ fn spawn_unit(
         } = spawn;
 
         let texture = match unit_type {
-            UnitType::Shieldwarrior => asset_server.load("aseprite/shield_warrior.png"),
-            UnitType::Pikeman => asset_server.load("aseprite/pike_man.png"),
-            UnitType::Archer => asset_server.load("aseprite/archer.png"),
+            UnitType::Shieldwarrior => asset_server.load("sprites/shield_warrior.png"),
+            UnitType::Pikeman => asset_server.load("sprites/pike_man.png"),
+            UnitType::Archer => asset_server.load("sprites/humans/Outline/MiniArcherMan.png"),
         };
 
         let client_unit_entity = commands
@@ -183,7 +185,7 @@ fn spawn_projectile(
             direction,
         } = spawn;
         let texture = match projectile_type {
-            ProjectileType::Arrow => asset_server.load("aseprite/arrow.png"),
+            ProjectileType::Arrow => asset_server.load("sprites/arrow.png"),
         };
 
         let direction: Vec2 = (*direction).into();

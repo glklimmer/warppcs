@@ -2,9 +2,11 @@ use bevy::prelude::*;
 
 use animation::AnimationPlugin;
 use king::{AnimationConfig, KingPlugin};
+use units::UnitsPlugin;
 
 pub mod animation;
 pub mod king;
+pub mod units;
 
 pub struct AnimationsPlugin;
 
@@ -13,6 +15,7 @@ impl Plugin for AnimationsPlugin {
         app.add_plugins(AnimationPlugin);
 
         app.add_plugins(KingPlugin);
+        app.add_plugins(UnitsPlugin);
     }
 }
 
@@ -25,7 +28,7 @@ pub struct FlagSpriteSheet {
 impl FromWorld for FlagSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture_handle: Handle<Image> = asset_server.load("aseprite/flag.png");
+        let texture_handle: Handle<Image> = asset_server.load("sprites/flag.png");
         let layout = TextureAtlasLayout::from_grid(UVec2::new(48, 64), 8, 1, None, None);
 
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
