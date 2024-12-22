@@ -334,6 +334,7 @@ fn duel_map(
             game_scene_id,
             skin,
             inventory.clone(),
+            Owner(*client_id),
         ));
 
         let message = ServerMessages::LoadGameScene {

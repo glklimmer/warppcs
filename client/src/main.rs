@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_renet::client_connected;
+use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
 use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
@@ -46,6 +47,8 @@ fn main() {
     app.add_plugins(MenuPlugin);
     app.add_plugins(EntitiesPlugin);
     app.add_plugins(UiPlugin);
+
+    app.add_plugins(GizmosPlugin);
 
     app.add_systems(Startup, setup_background);
 
