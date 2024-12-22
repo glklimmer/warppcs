@@ -68,7 +68,11 @@ fn move_players_system(
 
         let mut would_collide = false;
         for (building, builing_scene, owner) in building_bounds.iter() {
-            if player_scene.ne(builing_scene) || owner.0.eq(&client_owner.0) {
+            if player_scene.ne(builing_scene) {
+                continue;
+            }
+
+            if owner.0.eq(&client_owner.0) {
                 continue;
             }
 
