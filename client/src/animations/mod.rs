@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+
 use flag::{FlagAnimation, FlagSpriteSheet};
 use king::{KingAnimation, KingSpriteSheet};
 
@@ -36,11 +37,12 @@ pub struct SpriteAnimationBundle {
 }
 
 impl SpriteAnimationBundle {
-    pub fn new(
+    pub fn new<E: EnumIter>(
         translation: &[f32; 3],
-        texture: &Handle<Image>,
-        animation: &SpriteSheetAnimation,
+        sprite_sheet: &SpriteSheet<E>,
+        animation: E,
     ) -> Self {
+        let animation = sprite_sheet.animations.get(animation);
         SpriteAnimationBundle {
             sprite: SpriteBundle {
                 transform: Transform {
@@ -48,7 +50,7 @@ impl SpriteAnimationBundle {
                     scale: Vec3::splat(3.0),
                     ..default()
                 },
-                texture: texture.clone(),
+                texture: sprite_sheet.texture.clone(),
                 ..default()
             },
             texture_atlas: TextureAtlas {

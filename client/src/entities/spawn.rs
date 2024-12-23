@@ -100,13 +100,12 @@ fn spawn_player(
             skin,
         } = spawn;
 
-        let idle = king_sprite_sheet
-            .sprite_sheet
-            .animations
-            .get(KingAnimation::Idle);
-
         let mut client_player_entity = commands.spawn((
-            SpriteAnimationBundle::new(translation, &king_sprite_sheet.sprite_sheet.texture, idle),
+            SpriteAnimationBundle::new(
+                translation,
+                &king_sprite_sheet.sprite_sheet,
+                KingAnimation::Idle,
+            ),
             PartOfScene,
         ));
 
@@ -141,11 +140,10 @@ fn spawn_unit(
         } = spawn;
 
         let sprite_sheet = sprite_sheets.sprite_sheets.get(*unit_type);
-        let idle = sprite_sheet.animations.get(UnitAnimation::Idle);
 
         let client_unit_entity = commands
             .spawn((
-                SpriteAnimationBundle::new(translation, &sprite_sheet.texture, idle),
+                SpriteAnimationBundle::new(translation, sprite_sheet, UnitAnimation::Idle),
                 *owner,
                 PartOfScene,
             ))
@@ -213,17 +211,12 @@ fn spawn_flag(
             entity: server_flag_entity,
         } = spawn;
 
-        let wave = flag_sprite_sheet
-            .sprite_sheet
-            .animations
-            .get(FlagAnimation::Wave);
-
         let client_flag_entity = commands
             .spawn((
                 SpriteAnimationBundle::new(
                     &[0., 0., Layers::Flag.as_f32()],
-                    &flag_sprite_sheet.sprite_sheet.texture,
-                    wave,
+                    &flag_sprite_sheet.sprite_sheet,
+                    FlagAnimation::Wave,
                 ),
                 PartOfScene,
             ))
