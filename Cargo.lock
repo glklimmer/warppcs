@@ -1422,7 +1422,6 @@ dependencies = [
  "bevy",
  "bevy_renet",
  "bincode",
- "enum_map",
  "fastrand",
  "renet_steam",
  "serde",
@@ -1782,7 +1781,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "enum_map"
+name = "enum_mappable"
 version = "0.1.0"
 dependencies = [
  "quote",
@@ -3501,7 +3500,7 @@ dependencies = [
  "bevy_renet",
  "bincode",
  "enum_as_f32_macro",
- "enum_map",
+ "enum_mappable",
  "fastrand",
  "renet_steam",
  "serde",

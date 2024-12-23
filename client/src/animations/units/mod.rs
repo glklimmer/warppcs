@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
-use enum_map::Mappable;
-use shared::enum_map::{EnumIter, EnumMap};
+use shared::enum_map::*;
 
 pub struct UnitsPlugin;
 

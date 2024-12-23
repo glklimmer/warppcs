@@ -1,3 +1,5 @@
+pub use enum_mappable::Mappable;
+
 /// A generic EnumMap for any enum that implements `EnumIter`.
 pub struct EnumMap<E, T>
 where
