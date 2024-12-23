@@ -2,10 +2,10 @@ use bevy::prelude::*;
 
 use crate::{
     animations::{
-        animation::UnitAnimation,
-        king::{PaladinBundle, PaladinSpriteSheet, WarriorBundle, WarriorSpriteSheet},
-        units::ArcherSpriteSheet,
-        FlagBundle, FlagSpriteSheet,
+        flag::{FlagAnimation, FlagSpriteSheet},
+        king::{KingAnimation, KingSpriteSheet},
+        units::{UnitAnimation, UnitSpriteSheets},
+        SpriteAnimationBundle,
     },
     networking::{
         ClientPlayers, Connected, ControlledPlayer, CurrentClientId, NetworkEvent, NetworkMapping,
@@ -13,9 +13,9 @@ use crate::{
     },
 };
 use shared::{
+    map::Layers,
     networking::{
-        PlayerSkin, ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile,
-        SpawnUnit, UnitType,
+        ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     BoxCollider,
 };
@@ -86,11 +86,10 @@ fn spawn(
 fn spawn_player(
     mut commands: Commands,
     mut spawn_player: EventReader<SpawnPlayer>,
-    client_id: Res<CurrentClientId>,
-    warrior_sprite_sheet: Res<WarriorSpriteSheet>,
-    paladin_sprite_sheet: Res<PaladinSpriteSheet>,
     mut lobby: ResMut<ClientPlayers>,
     mut network_mapping: ResMut<NetworkMapping>,
+    client_id: Res<CurrentClientId>,
+    king_sprite_sheet: Res<KingSpriteSheet>,
 ) {
     let client_id = client_id.0;
     for spawn in spawn_player.read() {
@@ -101,16 +100,15 @@ fn spawn_player(
             skin,
         } = spawn;
 
-        let mut client_player_entity = match skin {
-            PlayerSkin::Warrior => commands.spawn((
-                PaladinBundle::new(&paladin_sprite_sheet, *translation, UnitAnimation::Idle),
-                PartOfScene,
-            )),
-            PlayerSkin::Monster => commands.spawn((
-                WarriorBundle::new(&warrior_sprite_sheet, *translation, UnitAnimation::Idle),
-                PartOfScene,
-            )),
-        };
+        let idle = king_sprite_sheet
+            .sprite_sheet
+            .animations
+            .get(KingAnimation::Idle);
+
+        let mut client_player_entity = commands.spawn((
+            SpriteAnimationBundle::new(translation, &king_sprite_sheet.sprite_sheet.texture, idle),
+            PartOfScene,
+        ));
 
         if client_id.eq(id) {
             client_player_entity.insert((ControlledPlayer, BoxCollider(Vec2::new(50., 90.))));
@@ -130,10 +128,9 @@ fn spawn_player(
 
 fn spawn_unit(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut spawn_unit: EventReader<SpawnUnit>,
     mut network_mapping: ResMut<NetworkMapping>,
-    archer_sprite: Res<ArcherSpriteSheet>,
+    sprite_sheets: Res<UnitSpriteSheets>,
 ) {
     for spawn in spawn_unit.read() {
         let SpawnUnit {
@@ -143,23 +140,12 @@ fn spawn_unit(
             unit_type,
         } = spawn;
 
-        let texture = match unit_type {
-            UnitType::Shieldwarrior => asset_server.load("sprites/shield_warrior.png"),
-            UnitType::Pikeman => asset_server.load("sprites/pike_man.png"),
-            UnitType::Archer => asset_server.load("sprites/humans/Outline/MiniArcherMan.png"),
-        };
+        let sprite_sheet = sprite_sheets.sprite_sheets.get(*unit_type);
+        let idle = sprite_sheet.animations.get(UnitAnimation::Idle);
 
         let client_unit_entity = commands
             .spawn((
-                SpriteBundle {
-                    transform: Transform {
-                        translation: (*translation).into(),
-                        scale: Vec3::splat(3.0),
-                        ..default()
-                    },
-                    texture,
-                    ..default()
-                },
+                SpriteAnimationBundle::new(translation, &sprite_sheet.texture, idle),
                 *owner,
                 PartOfScene,
             ))
@@ -227,8 +213,20 @@ fn spawn_flag(
             entity: server_flag_entity,
         } = spawn;
 
+        let wave = flag_sprite_sheet
+            .sprite_sheet
+            .animations
+            .get(FlagAnimation::Wave);
+
         let client_flag_entity = commands
-            .spawn((FlagBundle::new(&flag_sprite_sheet), PartOfScene))
+            .spawn((
+                SpriteAnimationBundle::new(
+                    &[0., 0., Layers::Flag.as_f32()],
+                    &flag_sprite_sheet.sprite_sheet.texture,
+                    wave,
+                ),
+                PartOfScene,
+            ))
             .id();
 
         let player_entity = lobby.players.get(&client_id).unwrap().client_entity;

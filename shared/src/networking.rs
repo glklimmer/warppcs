@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use super::enum_map::*;
 use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, RenetServer, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -24,7 +25,7 @@ pub struct PlayerInput {
     pub right: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
 pub enum UnitType {
     Shieldwarrior,
     Pikeman,

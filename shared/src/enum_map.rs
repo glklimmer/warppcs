@@ -1,6 +1,7 @@
 pub use enum_mappable::Mappable;
 
 /// A generic EnumMap for any enum that implements `EnumIter`.
+#[derive(Clone)]
 pub struct EnumMap<E, T>
 where
     E: EnumIter,

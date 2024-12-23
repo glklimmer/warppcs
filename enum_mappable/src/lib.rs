@@ -31,10 +31,8 @@ pub fn derive_mappable(input: TokenStream) -> TokenStream {
         });
     }
 
-    // 3) The total number of variants
     let len = array_elems.len();
 
-    // 4) Build the final expanded code
     let expanded = quote! {
         impl #name {
             pub const ALL: [#name; #len] = [
