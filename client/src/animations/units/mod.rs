@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use enum_map::Mappable;
+use shared::enum_map::{EnumIter, EnumMap};
 
 pub struct UnitsPlugin;
 
@@ -84,8 +85,18 @@ impl FromWorld for ArcherSpriteSheet {
                 last_sprite_index: 11,
                 frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
             },
-            Animation::Hit => todo!(),
-            Animation::Death => todo!(),
+            Animation::Hit => AnimationConfig {
+                layout_handle: idle.clone(),
+                first_sprite_index: 0,
+                last_sprite_index: 4,
+                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+            },
+            Animation::Death => AnimationConfig {
+                layout_handle: idle.clone(),
+                first_sprite_index: 0,
+                last_sprite_index: 4,
+                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+            },
         });
 
         ArcherSpriteSheet {
@@ -94,28 +105,3 @@ impl FromWorld for ArcherSpriteSheet {
         }
     }
 }
-
-// impl EnumIter for Animation {
-//     const COUNT: usize = 5;
-//
-//     fn all_variants() -> &'static [Self] {
-//         static ALL: [Animation; 5] = [
-//             Animation::Idle,
-//             Animation::Walk,
-//             Animation::Attack,
-//             Animation::Hit,
-//             Animation::Death,
-//         ];
-//         &ALL
-//     }
-//
-//     fn as_index(&self) -> usize {
-//         match *self {
-//             Animation::Idle => 0,
-//             Animation::Walk => 1,
-//             Animation::Attack => 2,
-//             Animation::Hit => 3,
-//             Animation::Death => 4,
-//         }
-//     }
-// }

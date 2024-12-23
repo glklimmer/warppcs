@@ -36,9 +36,8 @@ pub trait EnumIter: Copy + 'static {
     const COUNT: usize;
 
     /// Return an array of all variants.
-    /// (Could also return an iterator, but array is simpler for this example.)
     fn all_variants() -> &'static [Self];
 
-    /// Convert `Self` into an index (0..COUNT).
+    /// Maps `Self` into an index (0..COUNT).
     fn as_index(&self) -> usize;
 }

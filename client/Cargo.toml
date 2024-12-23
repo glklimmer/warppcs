@@ -18,4 +18,5 @@ serde = { version = "1.0.209", features = ["derive"] }
 renet_steam = { version = "0.0.2", features = ["bevy"], optional = true }
 steamworks = { version = "0.11", optional = true }
 shared = { path = "../shared", features = ["client"] }
+enum_map = { path = "../enum_map" }
 arboard = "3.4.1"
