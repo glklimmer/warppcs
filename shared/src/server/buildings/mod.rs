@@ -5,6 +5,7 @@ use bevy_renet::renet::{ClientId, RenetServer};
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
 
+use crate::map::spawn_point::{SpawnPoint, SpawnPointBound};
 use crate::networking::GameSceneAware;
 use crate::{
     map::{
@@ -18,6 +19,7 @@ use crate::{
     BoxCollider, GameState,
 };
 
+use super::game_scenes::GameSceneDestination;
 use super::{entities::health::Health, networking::ServerLobby, players::InteractEvent};
 
 mod gold_farm;
@@ -93,10 +95,19 @@ pub fn building_health(building_type: &Building) -> Health {
 fn precalculate_building_bounds(
     mut commands: Commands,
     building: Query<(Entity, &Transform, &BoxCollider), With<Building>>,
+    zones: Query<(Entity, &Transform, &BoxCollider), With<SpawnPoint>>,
 ) {
     for (entity, building_transform, building_collider) in building.iter() {
-        println!("Calculating bounds");
         commands.entity(entity).insert(BuildingBounds {
+            bound: Aabb2d::new(
+                building_transform.translation.truncate(),
+                building_collider.half_size(),
+            ),
+        });
+    }
+
+    for (entity, building_transform, building_collider) in zones.iter() {
+        commands.entity(entity).insert(SpawnPointBound {
             bound: Aabb2d::new(
                 building_transform.translation.truncate(),
                 building_collider.half_size(),
@@ -105,27 +116,13 @@ fn precalculate_building_bounds(
     }
 }
 
-pub fn building_health(building_type: &Building) -> Health {
-    let hitpoints = match building_type {
-        Building::MainBuilding => 1200.,
-        Building::Archer => 800.,
-        Building::Warrior => 800.,
-        Building::Pikeman => 800.,
-        Building::Wall => 600.,
-        Building::Tower => 400.,
-        Building::GoldFarm => 600.,
-    };
-    Health { hitpoints }
-}
-
 #[allow(clippy::type_complexity)]
 fn check_building_interaction(
     lobby: Res<ServerLobby>,
     player: Query<(&Transform, &BoxCollider, &GameSceneId, &Inventory)>,
     building: Query<(
         Entity,
-        &Transform,
-        &BoxCollider,
+        &BuildingBounds,
         &GameSceneId,
         &Building,
         &BuildStatus,
@@ -148,27 +145,14 @@ fn check_building_interaction(
             player_collider.half_size(),
         );
 
-        for (
-            entity,
-            building_transform,
-            building_collider,
-            builing_scene,
-            building,
-            status,
-            owner,
-            cost,
-        ) in building.iter()
+        for (entity, building_bounds, builing_scene, building, status, owner, cost) in
+            building.iter()
         {
             if player_scene.ne(builing_scene) {
                 continue;
             }
 
-            let zone_bounds = Aabb2d::new(
-                building_transform.translation.truncate(),
-                building_collider.half_size(),
-            );
-
-            if player_bounds.intersects(&zone_bounds) {
+            if player_bounds.intersects(&building_bounds.bound) {
                 if owner.0.ne(&client_id) {
                     continue;
                 }

@@ -2,7 +2,10 @@ use bevy::prelude::*;
 use start_game::StartGamePlugin;
 
 use crate::{
-    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
+    map::{
+        buildings::BuildStatus, scenes::SceneBuildingIndicator, spawn_point::SpawnPointBound,
+        GameSceneId,
+    },
     networking::{
         BuildingUpdate, GameSceneAware, MultiplayerRoles, Owner, PlayerSkin, ProjectileType,
         ServerChannel, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
@@ -54,12 +57,7 @@ impl Plugin for GameScenesPlugin {
 fn check_travel(
     lobby: Res<ServerLobby>,
     player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
-    zones: Query<(
-        &Transform,
-        &BoxCollider,
-        &GameSceneDestination,
-        &GameSceneId,
-    )>,
+    zones: Query<(&SpawnPointBound, &GameSceneDestination, &GameSceneId)>,
     mut travel: EventWriter<TravelEvent>,
     mut interactions: EventReader<InteractEvent>,
 ) {
@@ -68,19 +66,17 @@ fn check_travel(
         let player_entity = lobby.players.get(&client_id).unwrap();
 
         let (player_transform, player_collider, player_scene) = player.get(*player_entity).unwrap();
-        for (zone_transform, zone_collider, destination, zone_scene) in zones.iter() {
+        let player_bounds = Aabb2d::new(
+            player_transform.translation.truncate(),
+            player_collider.half_size(),
+        );
+
+        for (zone_bound, destination, zone_scene) in zones.iter() {
             if player_scene.ne(zone_scene) {
                 continue;
             }
-            let player_bounds = Aabb2d::new(
-                player_transform.translation.truncate(),
-                player_collider.half_size(),
-            );
-            let zone_bounds = Aabb2d::new(
-                zone_transform.translation.truncate(),
-                zone_collider.half_size(),
-            );
-            if player_bounds.intersects(&zone_bounds) {
+
+            if player_bounds.intersects(&zone_bound.bound) {
                 travel.send(TravelEvent {
                     entity: *player_entity,
                     target: destination.clone(),

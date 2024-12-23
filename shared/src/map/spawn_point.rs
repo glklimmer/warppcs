@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{math::bounding::Aabb2d, prelude::*};
 
 use crate::BoxCollider;
 
@@ -10,6 +10,11 @@ pub struct SpawnPointBundle {
     pub spawn_point: SpawnPoint,
     pub collider: BoxCollider,
     pub transform: Transform,
+}
+
+#[derive(Component, Clone)]
+pub struct SpawnPointBound {
+    pub bound: Aabb2d,
 }
 
 impl SpawnPointBundle {
