@@ -147,6 +147,7 @@ fn spawn_unit(
             .spawn((
                 SpriteAnimationBundle::new(translation, sprite_sheet, UnitAnimation::Idle, 3.),
                 UnitAnimation::Idle,
+                *unit_type,
                 *owner,
                 PartOfScene,
             ))

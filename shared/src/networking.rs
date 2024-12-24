@@ -22,7 +22,7 @@ pub struct PlayerInput {
     pub right: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
+#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
 pub enum UnitType {
     Shieldwarrior,
     Pikeman,

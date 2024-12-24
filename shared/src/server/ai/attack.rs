@@ -1,20 +1,19 @@
 use std::f32::consts::FRAC_PI_4;
 
 use bevy::prelude::*;
-use bevy_renet::renet::RenetServer;
 
 use super::UnitBehaviour;
-use crate::map::Layers;
-use crate::networking::MultiplayerRoles;
-use crate::server::entities::health::TakeDamage;
-use crate::server::entities::Unit;
-use crate::server::networking::{SendServerMessage, ServerLobby};
-use crate::server::physics::movement::Velocity;
-use crate::GameState;
 use crate::{
-    map::GameSceneId,
-    networking::{Owner, ProjectileType, ServerChannel, ServerMessages, SpawnProjectile, UnitType},
-    BoxCollider, GRAVITY_G,
+    map::{GameSceneId, Layers},
+    networking::{
+        MultiplayerRoles, Owner, ProjectileType, ServerMessages, SpawnProjectile, UnitType,
+    },
+    server::{
+        entities::{health::TakeDamage, Unit},
+        networking::SendServerMessage,
+        physics::movement::Velocity,
+    },
+    BoxCollider, GameState, GRAVITY_G,
 };
 
 pub struct AttackPlugin;
