@@ -11,53 +11,35 @@ pub fn archer(world: &mut World) -> SpriteSheet<UnitAnimation> {
     let texture: Handle<Image> = asset_server.load("sprites/humans/Outline/MiniArcherMan.png");
     let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
-    let idle = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
+    let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
         UVec2::splat(32),
-        0,
-        4,
-        None,
-        None,
-    ));
-
-    let walk = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-        UVec2::splat(32),
-        0,
-        6,
-        None,
-        Some(UVec2::new(0, 32)),
-    ));
-
-    let attack = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-        UVec2::splat(32),
-        0,
         11,
+        7,
         None,
-        Some(UVec2::new(0, 32 * 3)),
+        None,
     ));
 
     let animations = EnumMap::new(|c| match c {
         UnitAnimation::Idle => SpriteSheetAnimation {
-            layout: idle.clone(),
             first_sprite_index: 0,
             last_sprite_index: 3,
             frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
         },
         UnitAnimation::Walk => SpriteSheetAnimation {
-            layout: walk.clone(),
-            first_sprite_index: 0,
-            last_sprite_index: 5,
+            first_sprite_index: 11,
+            last_sprite_index: 16,
             frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
         },
         UnitAnimation::Attack => SpriteSheetAnimation {
-            layout: attack.clone(),
-            first_sprite_index: 0,
-            last_sprite_index: 10,
+            first_sprite_index: 22,
+            last_sprite_index: 32,
             frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
         },
     });
 
     SpriteSheet {
         texture,
+        layout,
         animations,
     }
 }

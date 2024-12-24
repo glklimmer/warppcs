@@ -35,7 +35,7 @@ impl FromWorld for UnitSpriteSheets {
     }
 }
 
-pub fn set_next_unit_animation(
+pub fn next_unit_animation(
     mut commands: Commands,
     mut query: Query<(&mut UnitAnimation, Option<&FullAnimation>)>,
     mut network_events: EventReader<EntityChangeEvent>,
@@ -91,7 +91,7 @@ fn is_full_animation(animation: &UnitAnimation) -> bool {
     }
 }
 
-pub fn set_unit_animation_layout(
+pub fn set_unit_sprite_animation(
     mut query: Query<(&Unit, &mut SpriteSheetAnimation, &mut TextureAtlas)>,
     mut animation_changed: EventReader<AnimationTrigger<UnitAnimation>>,
     sprite_sheets: Res<UnitSpriteSheets>,
@@ -104,11 +104,8 @@ pub fn set_unit_animation_layout(
                 .animations
                 .get(new_animation.state);
 
-            atlas.layout = animation.layout.clone();
             atlas.index = animation.first_sprite_index;
-
-            sprite_animation.frame_timer = animation.frame_timer.clone();
-            sprite_animation.frame_timer.reset();
+            *sprite_animation = animation.clone();
         }
     }
 }

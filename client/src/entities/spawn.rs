@@ -106,6 +106,7 @@ fn spawn_player(
                 &king_sprite_sheet.sprite_sheet,
                 KingAnimation::Idle,
             ),
+            KingAnimation::Idle,
             PartOfScene,
         ));
 
@@ -144,6 +145,7 @@ fn spawn_unit(
         let client_unit_entity = commands
             .spawn((
                 SpriteAnimationBundle::new(translation, sprite_sheet, UnitAnimation::Idle),
+                UnitAnimation::Idle,
                 *owner,
                 PartOfScene,
             ))
@@ -218,6 +220,7 @@ fn spawn_flag(
                     &flag_sprite_sheet.sprite_sheet,
                     FlagAnimation::Wave,
                 ),
+                FlagAnimation::Wave,
                 PartOfScene,
             ))
             .id();

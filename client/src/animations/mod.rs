@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use flag::{FlagAnimation, FlagSpriteSheet};
-use king::{KingAnimation, KingSpriteSheet};
+use king::{next_king_animation, set_king_sprite_animation, KingAnimation, KingSpriteSheet};
 
 use crate::networking::{NetworkEvent, NetworkMapping};
 
@@ -9,7 +9,7 @@ use shared::{
     enum_map::*,
     networking::{Facing, Rotation, ServerMessages},
 };
-use units::{set_next_unit_animation, set_unit_animation_layout, UnitAnimation, UnitSpriteSheets};
+use units::{next_unit_animation, set_unit_sprite_animation, UnitAnimation, UnitSpriteSheets};
 
 pub mod flag;
 pub mod king;
@@ -18,12 +18,12 @@ pub mod units;
 #[derive(Clone)]
 pub struct SpriteSheet<E: EnumIter> {
     pub texture: Handle<Image>,
+    pub layout: Handle<TextureAtlasLayout>,
     pub animations: EnumMap<E, SpriteSheetAnimation>,
 }
 
 #[derive(Component, Clone)]
 pub struct SpriteSheetAnimation {
-    pub layout: Handle<TextureAtlasLayout>,
     pub first_sprite_index: usize,
     pub last_sprite_index: usize,
     pub frame_timer: Timer,
@@ -54,7 +54,7 @@ impl SpriteAnimationBundle {
                 ..default()
             },
             texture_atlas: TextureAtlas {
-                layout: animation.layout.clone(),
+                layout: sprite_sheet.layout.clone(),
                 index: animation.first_sprite_index,
             },
             initial_animation: animation.clone(),
@@ -107,9 +107,9 @@ impl Plugin for AnimationPlugin {
         app.add_systems(
             Update,
             (
+                (set_unit_sprite_animation, next_unit_animation),
+                (set_king_sprite_animation, next_king_animation),
                 advance_animation,
-                set_unit_animation_layout,
-                set_next_unit_animation,
                 set_unit_facing,
                 set_free_orientation,
                 mirror_sprite,
@@ -152,6 +152,10 @@ fn advance_animation(
         animation.frame_timer.tick(time.delta());
 
         if animation.frame_timer.just_finished() {
+            println!(
+                "last: {}, current: {}",
+                animation.last_sprite_index, atlas.index
+            );
             atlas.index = if atlas.index == animation.last_sprite_index {
                 if maybe_full.is_some() {
                     commands.entity(entity).remove::<FullAnimation>();

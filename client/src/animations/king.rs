@@ -25,61 +25,33 @@ impl FromWorld for KingSpriteSheet {
         let texture: Handle<Image> = asset_server.load("sprites/humans/Outline/MiniKingMan.png");
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
-        let idle = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
+        let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::splat(32),
-            0,
-            4,
+            10,
+            7,
             None,
             None,
-        ));
-
-        let drink = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-            UVec2::splat(32),
-            0,
-            5,
-            None,
-            Some(UVec2::new(0, 32)),
-        ));
-
-        let walk = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-            UVec2::splat(32),
-            0,
-            6,
-            None,
-            Some(UVec2::new(0, 32 * 2)),
-        ));
-
-        let attack = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-            UVec2::splat(32),
-            0,
-            11,
-            None,
-            Some(UVec2::new(0, 32 * 3)),
         ));
 
         let animations = EnumMap::new(|c| match c {
             KingAnimation::Idle => SpriteSheetAnimation {
-                layout: idle.clone(),
                 first_sprite_index: 0,
                 last_sprite_index: 3,
                 frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
             },
             KingAnimation::Drink => SpriteSheetAnimation {
-                layout: drink.clone(),
-                first_sprite_index: 0,
-                last_sprite_index: 4,
+                first_sprite_index: 10,
+                last_sprite_index: 14,
                 frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
             },
             KingAnimation::Walk => SpriteSheetAnimation {
-                layout: walk.clone(),
-                first_sprite_index: 0,
-                last_sprite_index: 5,
+                first_sprite_index: 20,
+                last_sprite_index: 25,
                 frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
             },
             KingAnimation::Attack => SpriteSheetAnimation {
-                layout: attack.clone(),
-                first_sprite_index: 0,
-                last_sprite_index: 10,
+                first_sprite_index: 30,
+                last_sprite_index: 39,
                 frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
             },
         });
@@ -87,13 +59,14 @@ impl FromWorld for KingSpriteSheet {
         KingSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
+                layout,
                 animations,
             },
         }
     }
 }
 
-pub fn set_next_king_animation(
+pub fn next_king_animation(
     mut commands: Commands,
     mut query: Query<(&mut KingAnimation, Option<&FullAnimation>)>,
     mut network_events: EventReader<EntityChangeEvent>,
@@ -151,7 +124,7 @@ fn is_full_animation(animation: &KingAnimation) -> bool {
     }
 }
 
-pub fn set_unit_animation_layout(
+pub fn set_king_sprite_animation(
     mut query: Query<(&mut SpriteSheetAnimation, &mut TextureAtlas)>,
     mut animation_changed: EventReader<AnimationTrigger<KingAnimation>>,
     king_sprite_sheet: Res<KingSpriteSheet>,
@@ -163,11 +136,8 @@ pub fn set_unit_animation_layout(
                 .animations
                 .get(new_animation.state);
 
-            atlas.layout = animation.layout.clone();
             atlas.index = animation.first_sprite_index;
-
-            sprite_animation.frame_timer = animation.frame_timer.clone();
-            sprite_animation.frame_timer.reset();
+            *sprite_animation = animation.clone();
         }
     }
 }
