@@ -50,8 +50,8 @@ impl FromWorld for KingSpriteSheet {
                 frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
             },
             KingAnimation::Attack => SpriteSheetAnimation {
-                first_sprite_index: 30,
-                last_sprite_index: 39,
+                first_sprite_index: 40,
+                last_sprite_index: 49,
                 frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
             },
         });

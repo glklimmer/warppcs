@@ -1,10 +1,13 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::{ClientId, RenetServer};
+use bevy_renet::renet::ClientId;
 
-use crate::networking::{PlayerCommand, ServerChannel, ServerMessages};
+use crate::{
+    map::GameSceneId,
+    networking::{PlayerCommand, ServerMessages},
+};
 
-use super::networking::{NetworkEvent, ServerLobby};
+use super::networking::{NetworkEvent, SendServerMessage, ServerLobby};
 
 #[derive(Event)]
 pub struct InteractEvent(pub ClientId);
@@ -24,18 +27,21 @@ impl Plugin for PlayerPlugin {
 
 fn attack(
     mut network_events: EventReader<NetworkEvent>,
-    mut server: ResMut<RenetServer>,
+    mut sender: EventWriter<SendServerMessage>,
+    scene_ids: Query<&GameSceneId>,
     lobby: Res<ServerLobby>,
 ) {
     for event in network_events.read() {
         let client_id = event.client_id;
         if let PlayerCommand::MeleeAttack = &event.message {
             if let Some(player_entity) = lobby.players.get(&client_id) {
-                let message = ServerMessages::MeleeAttack {
-                    entity: *player_entity,
-                };
-                let message = bincode::serialize(&message).unwrap();
-                server.broadcast_message(ServerChannel::ServerMessages, message);
+                let game_scene_id = scene_ids.get(*player_entity).unwrap();
+                sender.send(SendServerMessage {
+                    message: ServerMessages::MeleeAttack {
+                        entity: *player_entity,
+                    },
+                    game_scene_id: *game_scene_id,
+                });
             }
         }
     }

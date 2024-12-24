@@ -4,8 +4,8 @@ use start_game::StartGamePlugin;
 use crate::{
     map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
     networking::{
-        BuildingUpdate, GameSceneAware, MultiplayerRoles, Owner, PlayerSkin, ProjectileType,
-        ServerChannel, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        BuildingUpdate, MultiplayerRoles, Owner, PlayerSkin, ProjectileType, ServerChannel,
+        ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     BoxCollider, GameState,
 };
@@ -15,7 +15,7 @@ use bevy_renet::renet::RenetServer;
 use super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
     entities::Unit,
-    networking::{GameWorld, ServerLobby, ServerPlayer},
+    networking::{GameWorld, SendServerMessage, ServerLobby, ServerPlayer},
     physics::movement::Velocity,
     players::InteractEvent,
 };
@@ -100,6 +100,7 @@ fn travel(
     mut commands: Commands,
     mut traveling: EventReader<TravelEvent>,
     mut server: ResMut<RenetServer>,
+    mut sender: EventWriter<SendServerMessage>,
     lobby: Res<ServerLobby>,
     game_world: Res<GameWorld>,
     player_skins: Query<&PlayerSkin>,
@@ -148,12 +149,11 @@ fn travel(
             entities.append(&mut units);
         }
         let current_game_scene_id = scene_ids.get(player_entity).unwrap();
-        ServerMessages::DespawnEntity { entities }.send_to_all_in_game_scene(
-            &mut server,
-            &lobby,
-            &scene_ids,
-            current_game_scene_id,
-        );
+
+        sender.send(SendServerMessage {
+            message: ServerMessages::DespawnEntity { entities },
+            game_scene_id: *current_game_scene_id,
+        });
 
         // Travel Player, flag and units to new game scene
         let target_transform = Transform::from_translation(target_position);
@@ -264,15 +264,17 @@ fn travel(
                 });
             }
         }
-        ServerMessages::SpawnGroup {
-            player: SpawnPlayer {
-                id: client_id,
-                entity: player_entity,
-                translation: target_transform.translation.into(),
-                skin: *skin,
+        sender.send(SendServerMessage {
+            message: ServerMessages::SpawnGroup {
+                player: SpawnPlayer {
+                    id: client_id,
+                    entity: player_entity,
+                    translation: target_transform.translation.into(),
+                    skin: *skin,
+                },
+                units: unit_spawns,
             },
-            units: unit_spawns,
-        }
-        .send_to_all_in_game_scene(&mut server, &lobby, &scene_ids, &target_game_scene_id);
+            game_scene_id: target_game_scene_id,
+        });
     }
 }

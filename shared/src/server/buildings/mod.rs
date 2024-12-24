@@ -5,7 +5,6 @@ use bevy_renet::renet::{ClientId, RenetServer};
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
 
-use crate::networking::GameSceneAware;
 use crate::{
     map::{
         buildings::{BuildStatus, Building, Cost},
@@ -18,6 +17,7 @@ use crate::{
     BoxCollider, GameState,
 };
 
+use super::networking::SendServerMessage;
 use super::{entities::health::Health, networking::ServerLobby, players::InteractEvent};
 
 mod gold_farm;
@@ -175,8 +175,7 @@ fn construct_building(
     )>,
     mut inventory: Query<&mut Inventory>,
     mut server: ResMut<RenetServer>,
-    lobby: Res<ServerLobby>,
-    scene_ids: Query<&GameSceneId>,
+    mut sender: EventWriter<SendServerMessage>,
 ) {
     for build in builds.read() {
         let (mut status, cost, game_scene_id, building_indicator) =
@@ -189,11 +188,13 @@ fn construct_building(
 
         println!("Building constructed: {:?}", building_indicator);
 
-        ServerMessages::BuildingUpdate(BuildingUpdate {
-            indicator: *building_indicator,
-            status: *status,
-        })
-        .send_to_all_in_game_scene(&mut server, &lobby, &scene_ids, game_scene_id);
+        sender.send(SendServerMessage {
+            message: ServerMessages::BuildingUpdate(BuildingUpdate {
+                indicator: *building_indicator,
+                status: *status,
+            }),
+            game_scene_id: *game_scene_id,
+        });
 
         let mut inventory = inventory.get_mut(build.0.player_entity).unwrap();
         inventory.gold -= cost.gold;

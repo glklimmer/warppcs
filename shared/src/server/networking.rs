@@ -41,11 +41,18 @@ pub struct NetworkEvent {
     pub message: PlayerCommand,
 }
 
+#[derive(Event)]
+pub struct SendServerMessage {
+    pub message: ServerMessages,
+    pub game_scene_id: GameSceneId,
+}
+
 pub struct ServerNetworkPlugin;
 
 impl Plugin for ServerNetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<NetworkEvent>();
+        app.add_event::<SendServerMessage>();
 
         app.add_plugins(AIPlugin);
         app.add_plugins(PhysicsPlugin);
@@ -62,6 +69,11 @@ impl Plugin for ServerNetworkPlugin {
         app.add_systems(
             FixedUpdate,
             (sync_networked_entities, client_connections).run_if(in_state(MultiplayerRoles::Host)),
+        );
+
+        app.add_systems(
+            FixedPostUpdate,
+            (send_server_messages).run_if(on_event::<SendServerMessage>()),
         );
 
         app.insert_resource(ServerLobby::default());
@@ -179,4 +191,29 @@ fn sync_networked_entities(
 
     let sync_message = bincode::serialize(&networked_entities).unwrap();
     server.broadcast_message(ServerChannel::NetworkedEntities, sync_message);
+}
+
+fn send_server_messages(
+    mut server: ResMut<RenetServer>,
+    mut queue: EventReader<SendServerMessage>,
+    scene_ids: Query<&GameSceneId>,
+    lobby: Res<ServerLobby>,
+) {
+    for SendServerMessage {
+        message,
+        game_scene_id,
+    } in queue.read()
+    {
+        let message = bincode::serialize(message).unwrap();
+        for (other_client_id, other_entity) in lobby.players.iter() {
+            let other_scene_id = scene_ids.get(*other_entity).unwrap();
+            if game_scene_id.eq(other_scene_id) {
+                server.send_message(
+                    *other_client_id,
+                    ServerChannel::ServerMessages,
+                    message.clone(),
+                );
+            }
+        }
+    }
 }
