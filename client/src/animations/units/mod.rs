@@ -1,13 +1,17 @@
 use bevy::prelude::*;
 
 use archer::archer;
+use pikeman::pikeman;
 use shared::{enum_map::*, networking::UnitType, server::entities::Unit};
+use shieldwarrior::shieldwarrior;
 
 use super::{
     AnimationTrigger, Change, EntityChangeEvent, FullAnimation, SpriteSheet, SpriteSheetAnimation,
 };
 
 pub mod archer;
+pub mod pikeman;
+pub mod shieldwarrior;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable)]
 pub enum UnitAnimation {
@@ -23,11 +27,13 @@ pub struct UnitSpriteSheets {
 
 impl FromWorld for UnitSpriteSheets {
     fn from_world(world: &mut World) -> Self {
+        let shieldwarrior = shieldwarrior(world);
+        let pikeman = pikeman(world);
         let archer = archer(world);
 
         let sprite_sheets = EnumMap::new(|c| match c {
-            UnitType::Shieldwarrior => archer.clone(),
-            UnitType::Pikeman => archer.clone(),
+            UnitType::Shieldwarrior => shieldwarrior.clone(),
+            UnitType::Pikeman => pikeman.clone(),
             UnitType::Archer => archer.clone(),
         });
 

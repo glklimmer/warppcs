@@ -41,13 +41,14 @@ impl SpriteAnimationBundle {
         translation: &[f32; 3],
         sprite_sheet: &SpriteSheet<E>,
         animation: E,
+        scale: f32,
     ) -> Self {
         let animation = sprite_sheet.animations.get(animation);
         SpriteAnimationBundle {
             sprite: SpriteBundle {
                 transform: Transform {
                     translation: (*translation).into(),
-                    scale: Vec3::splat(3.0),
+                    scale: Vec3::splat(scale),
                     ..default()
                 },
                 texture: sprite_sheet.texture.clone(),
@@ -152,10 +153,6 @@ fn advance_animation(
         animation.frame_timer.tick(time.delta());
 
         if animation.frame_timer.just_finished() {
-            println!(
-                "last: {}, current: {}",
-                animation.last_sprite_index, atlas.index
-            );
             atlas.index = if atlas.index == animation.last_sprite_index {
                 if maybe_full.is_some() {
                     commands.entity(entity).remove::<FullAnimation>();
