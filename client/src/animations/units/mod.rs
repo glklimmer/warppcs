@@ -6,7 +6,8 @@ use shared::{enum_map::*, networking::UnitType};
 use shieldwarrior::shieldwarrior;
 
 use super::{
-    AnimationTrigger, Change, EntityChangeEvent, FullAnimation, SpriteSheet, SpriteSheetAnimation,
+    AnimationTrigger, Change, EntityChangeEvent, FullAnimation, PlayOnce, SpriteSheet,
+    SpriteSheetAnimation,
 };
 
 pub mod archer;
@@ -18,6 +19,8 @@ pub enum UnitAnimation {
     Idle,
     Walk,
     Attack,
+    Hit,
+    Death,
 }
 
 #[derive(Resource)]
@@ -49,6 +52,10 @@ pub fn next_unit_animation(
 ) {
     for event in network_events.read() {
         if let Ok((mut current_animation, maybe_full)) = query.get_mut(event.entity) {
+            if let UnitAnimation::Death = *current_animation {
+                return;
+            }
+
             let maybe_new_animation = match &event.change {
                 Change::Movement(moving) => match moving {
                     true => Some(UnitAnimation::Walk),
@@ -56,6 +63,8 @@ pub fn next_unit_animation(
                 },
                 Change::Attack => Some(UnitAnimation::Attack),
                 Change::Rotation(_) => None,
+                Change::Hit => Some(UnitAnimation::Hit),
+                Change::Death => Some(UnitAnimation::Death),
             };
 
             if let Some(new_animation) = maybe_new_animation {
@@ -67,14 +76,15 @@ pub fn next_unit_animation(
                     if is_full_animation(&new_animation) {
                         commands.entity(event.entity).insert(FullAnimation);
                     }
+
+                    if let UnitAnimation::Death = new_animation {
+                        commands.entity(event.entity).insert(PlayOnce);
+                    }
+
                     animation_trigger.send(AnimationTrigger {
                         entity: event.entity,
                         state: new_animation,
                     });
-
-                    if is_full_animation(&new_animation) {
-                        break;
-                    }
                 }
             }
         }
@@ -86,6 +96,8 @@ fn is_interupt_animation(animation: &UnitAnimation) -> bool {
         UnitAnimation::Idle => false,
         UnitAnimation::Walk => false,
         UnitAnimation::Attack => true,
+        UnitAnimation::Hit => false,
+        UnitAnimation::Death => true,
     }
 }
 
@@ -94,6 +106,8 @@ fn is_full_animation(animation: &UnitAnimation) -> bool {
         UnitAnimation::Idle => false,
         UnitAnimation::Walk => false,
         UnitAnimation::Attack => true,
+        UnitAnimation::Hit => true,
+        UnitAnimation::Death => true,
     }
 }
 

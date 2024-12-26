@@ -31,8 +31,18 @@ pub fn archer(world: &mut World) -> SpriteSheet<UnitAnimation> {
             frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
         },
         UnitAnimation::Attack => SpriteSheetAnimation {
-            first_sprite_index: 22,
-            last_sprite_index: 32,
+            first_sprite_index: 33,
+            last_sprite_index: 42,
+            frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+        },
+        UnitAnimation::Hit => SpriteSheetAnimation {
+            first_sprite_index: 55,
+            last_sprite_index: 57,
+            frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+        },
+        UnitAnimation::Death => SpriteSheetAnimation {
+            first_sprite_index: 66,
+            last_sprite_index: 69,
             frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
         },
     });

@@ -83,7 +83,7 @@ pub fn recruit(
 
         let unit = Unit {
             swing_timer: unit_swing_timer(&unit_type),
-            unit_type: unit_type.clone(),
+            unit_type,
         };
         let health = Health {
             hitpoints: unit_health(&unit_type),
@@ -108,7 +108,7 @@ pub fn recruit(
             let message = ServerMessages::SpawnUnit(SpawnUnit {
                 entity: unit_entity,
                 owner,
-                unit_type: unit_type.clone(),
+                unit_type,
                 translation: player_transform.translation.into(),
             });
             let message = bincode::serialize(&message).unwrap();

@@ -146,6 +146,12 @@ pub enum ServerMessages {
     },
     SyncInventory(Inventory),
     BuildingUpdate(BuildingUpdate),
+    EntityHit {
+        entity: Entity,
+    },
+    EntityDeath {
+        entity: Entity,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

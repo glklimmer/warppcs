@@ -7,12 +7,9 @@ use crate::map::GameSceneId;
 use crate::networking::{MultiplayerRoles, Owner, ProjectileType, ServerChannel, ServerMessages};
 use crate::server::ai::attack::projectile_damage;
 use crate::server::entities::health::TakeDamage;
-use crate::{BoxCollider, GameState};
+use crate::{BoxCollider, DelayedDespawn, GameState};
 
 use super::movement::Velocity;
-
-#[derive(Component)]
-struct DelayedDespawn(Timer);
 
 pub struct ProjectilePlugin;
 
@@ -21,12 +18,6 @@ impl Plugin for ProjectilePlugin {
         app.add_systems(
             FixedUpdate,
             projectile_collision.run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
-        );
-        app.add_systems(
-            PostUpdate,
-            delayed_despawn.run_if(
                 in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
             ),
         );
@@ -87,28 +78,6 @@ fn projectile_collision(
                 let message = bincode::serialize(&despawn).unwrap();
                 server.broadcast_message(ServerChannel::ServerMessages, message);
             }
-        }
-    }
-}
-
-fn delayed_despawn(
-    mut commands: Commands,
-    mut query: Query<(Entity, &mut DelayedDespawn)>,
-    mut server: ResMut<RenetServer>,
-    time: Res<Time>,
-) {
-    for (entity, mut delayed) in &mut query {
-        let timer = &mut delayed.0;
-        timer.tick(time.delta());
-
-        if timer.just_finished() {
-            commands.entity(entity).despawn();
-
-            let despawn = ServerMessages::DespawnEntity {
-                entities: vec![entity],
-            };
-            let message = bincode::serialize(&despawn).unwrap();
-            server.broadcast_message(ServerChannel::ServerMessages, message);
         }
     }
 }
