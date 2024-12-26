@@ -1,15 +1,9 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::RenetServer;
-
 use crate::{
-    map::{
-        buildings::{BuildStatus, Building},
-        scenes::SceneBuildingIndicator,
-        GameSceneId,
-    },
-    networking::{BuildingUpdate, GameSceneAware, MultiplayerRoles, ServerChannel, ServerMessages},
-    server::networking::ServerLobby,
+    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
+    networking::{BuildingUpdate, MultiplayerRoles, ServerMessages},
+    server::networking::SendServerMessage,
     GameState,
 };
 
@@ -53,40 +47,40 @@ fn apply_damage(mut query: Query<&mut Health>, mut attack_events: EventReader<Ta
 }
 
 fn on_unit_death(
-    mut server: ResMut<RenetServer>,
     mut commands: Commands,
+    mut sender: EventWriter<SendServerMessage>,
     query: Query<(Entity, &Health, &GameSceneId), With<Unit>>,
-    lobby: Res<ServerLobby>,
-    scene_ids: Query<&GameSceneId>,
 ) {
     for (entity, health, game_scene_id) in query.iter() {
         if health.hitpoints <= 0. {
             commands.entity(entity).despawn_recursive();
 
-            ServerMessages::DespawnEntity {
-                entities: vec![entity],
-            }
-            .send_to_all_in_game_scene(&mut server, &lobby, &scene_ids, game_scene_id);
+            sender.send(SendServerMessage {
+                message: ServerMessages::DespawnEntity {
+                    entities: vec![entity],
+                },
+                game_scene_id: *game_scene_id,
+            });
         }
     }
 }
 
 fn on_building_destroy(
-    mut server: ResMut<RenetServer>,
     mut commands: Commands,
+    mut sender: EventWriter<SendServerMessage>,
     query: Query<(Entity, &Health, &GameSceneId, &SceneBuildingIndicator)>,
-    lobby: Res<ServerLobby>,
-    scene_ids: Query<&GameSceneId>,
 ) {
     for (entity, health, game_scene_id, indicator) in query.iter() {
         if health.hitpoints <= 0. {
             commands.entity(entity).despawn_recursive();
 
-            ServerMessages::BuildingUpdate(BuildingUpdate {
-                indicator: *indicator,
-                status: BuildStatus::Destroyed,
-            })
-            .send_to_all_in_game_scene(&mut server, &lobby, &scene_ids, game_scene_id);
+            sender.send(SendServerMessage {
+                message: ServerMessages::BuildingUpdate(BuildingUpdate {
+                    indicator: *indicator,
+                    status: BuildStatus::Destroyed,
+                }),
+                game_scene_id: *game_scene_id,
+            });
         }
     }
 }

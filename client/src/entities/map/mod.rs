@@ -73,7 +73,7 @@ fn load_game_scene(
                             fight.left_main_building,
                             SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
                             (
-                                asset_server.load::<Image>("aseprite/buildings/main_house_red.png"),
+                                asset_server.load::<Image>("sprites/buildings/main_house_red.png"),
                                 Sprite::default(),
                                 GlobalTransform::default(),
                                 Visibility::default(),
@@ -135,8 +135,7 @@ fn load_game_scene(
                             fight.right_main_building,
                             SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
                             (
-                                asset_server
-                                    .load::<Image>("aseprite/buildings/main_house_blue.png"),
+                                asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
                                 Sprite::default(),
                                 GlobalTransform::default(),
                                 Visibility::default(),
@@ -199,8 +198,7 @@ fn load_game_scene(
                             base.main_building,
                             SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
                             (
-                                asset_server
-                                    .load::<Image>("aseprite/buildings/main_house_blue.png"),
+                                asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
                                 Sprite::default(),
                                 GlobalTransform::default(),
                                 Visibility::default(),
