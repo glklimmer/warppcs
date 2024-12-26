@@ -81,8 +81,8 @@ impl BuildingBundle {
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
             cost: Cost { gold: 200 },
             textures: BuildingTextures {
-                marker: "aseprite/buildings/archer_plot.png",
-                built: "aseprite/buildings/archer_house.png",
+                marker: "sprites/buildings/archer_plot.png",
+                built: "sprites/buildings/archer_house.png",
             },
         }
     }
@@ -95,8 +95,8 @@ impl BuildingBundle {
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
             cost: Cost { gold: 200 },
             textures: BuildingTextures {
-                marker: "aseprite/buildings/warrior_plot.png",
-                built: "aseprite/buildings/warrior_house.png",
+                marker: "sprites/buildings/warrior_plot.png",
+                built: "sprites/buildings/warrior_house.png",
             },
         }
     }
@@ -109,8 +109,8 @@ impl BuildingBundle {
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
             cost: Cost { gold: 200 },
             textures: BuildingTextures {
-                marker: "aseprite/buildings/pike_man_plot.png",
-                built: "aseprite/buildings/pike_man_house.png",
+                marker: "sprites/buildings/pike_man_plot.png",
+                built: "sprites/buildings/pike_man_house.png",
             },
         }
     }
@@ -123,8 +123,8 @@ impl BuildingBundle {
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
             cost: Cost { gold: 100 },
             textures: BuildingTextures {
-                marker: "aseprite/buildings/wall_basic.png",
-                built: "aseprite/buildings/wall_first_upgrade.png",
+                marker: "sprites/buildings/wall_basic.png",
+                built: "sprites/buildings/wall_first_upgrade.png",
             },
         }
     }
@@ -137,8 +137,8 @@ impl BuildingBundle {
             transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
             cost: Cost { gold: 150 },
             textures: BuildingTextures {
-                marker: "aseprite/buildings/warrior_plot.png",
-                built: "aseprite/buildings/warrior_house.png",
+                marker: "sprites/buildings/warrior_plot.png",
+                built: "sprites/buildings/warrior_house.png",
             },
         }
     }
@@ -151,8 +151,8 @@ impl BuildingBundle {
             transform: Transform::from_xyz(x, 25., Layers::Building.as_f32()),
             cost: Cost { gold: 50 },
             textures: BuildingTextures {
-                marker: "aseprite/buildings/warrior_plot.png",
-                built: "aseprite/buildings/warrior_house.png",
+                marker: "sprites/buildings/warrior_plot.png",
+                built: "sprites/buildings/warrior_house.png",
             },
         }
     }

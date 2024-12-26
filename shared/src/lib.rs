@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+pub mod enum_map;
 pub mod map;
 pub mod networking;
 pub mod server;

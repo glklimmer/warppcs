@@ -11,7 +11,7 @@ use ui::UiPlugin;
 #[cfg(feature = "steam")]
 use menu::JoinSteamLobby;
 
-use animations::AnimationsPlugin;
+use animations::AnimationPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
@@ -42,7 +42,7 @@ fn main() {
 
     app.add_plugins(CameraPlugin);
     app.add_plugins(InputPlugin);
-    app.add_plugins(AnimationsPlugin);
+    app.add_plugins(AnimationPlugin);
     app.add_plugins(MenuPlugin);
     app.add_plugins(EntitiesPlugin);
     app.add_plugins(UiPlugin);

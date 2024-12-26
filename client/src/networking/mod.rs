@@ -10,7 +10,7 @@ use shared::networking::{
 };
 use std::collections::HashMap;
 
-use crate::animations::animation::{Change, EntityChangeEvent};
+use crate::animations::{Change, EntityChangeEvent};
 
 pub mod join_server;
 

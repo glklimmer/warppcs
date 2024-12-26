@@ -1,20 +1,19 @@
 use std::f32::consts::FRAC_PI_4;
 
 use bevy::prelude::*;
-use bevy_renet::renet::RenetServer;
 
 use super::UnitBehaviour;
-use crate::map::Layers;
-use crate::networking::MultiplayerRoles;
-use crate::server::entities::health::TakeDamage;
-use crate::server::entities::Unit;
-use crate::server::networking::ServerLobby;
-use crate::server::physics::movement::Velocity;
-use crate::GameState;
 use crate::{
-    map::GameSceneId,
-    networking::{Owner, ProjectileType, ServerChannel, ServerMessages, SpawnProjectile, UnitType},
-    BoxCollider, GRAVITY_G,
+    map::{GameSceneId, Layers},
+    networking::{
+        MultiplayerRoles, Owner, ProjectileType, ServerMessages, SpawnProjectile, UnitType,
+    },
+    server::{
+        entities::{health::TakeDamage, Unit},
+        networking::SendServerMessage,
+        physics::movement::Velocity,
+    },
+    BoxCollider, GameState, GRAVITY_G,
 };
 
 pub struct AttackPlugin;
@@ -80,19 +79,25 @@ pub fn projectile_damage(projectile_type: &ProjectileType) -> f32 {
 #[allow(clippy::too_many_arguments)]
 fn process_attacks(
     mut commands: Commands,
-    mut server: ResMut<RenetServer>,
-    mut query: Query<(&UnitBehaviour, &mut Unit, &Owner, &Transform)>,
+    mut query: Query<(
+        Entity,
+        &UnitBehaviour,
+        &mut Unit,
+        &Owner,
+        &Transform,
+        &GameSceneId,
+    )>,
     mut attack_events: EventWriter<TakeDamage>,
+    mut sender: EventWriter<SendServerMessage>,
     position: Query<&Transform>,
     scene_ids: Query<&GameSceneId>,
-    lobby: Res<ServerLobby>,
     time: Res<Time>,
 ) {
-    for (behaviour, mut unit, owner, transform) in query.iter_mut() {
+    for (entity, behaviour, mut unit, owner, transform, game_scene_id) in query.iter_mut() {
         if let UnitBehaviour::AttackTarget(target_entity) = behaviour {
             unit.swing_timer.tick(time.delta());
             if unit.swing_timer.finished() {
-                let scene_id = scene_ids.get(*target_entity).unwrap();
+                let target_scene_id = scene_ids.get(*target_entity).unwrap();
 
                 match unit.unit_type {
                     UnitType::Shieldwarrior | UnitType::Pikeman => {
@@ -100,6 +105,10 @@ fn process_attacks(
                         attack_events.send(TakeDamage {
                             target_entity: *target_entity,
                             damage: unit_damage(&unit.unit_type),
+                        });
+                        sender.send(SendServerMessage {
+                            message: ServerMessages::MeleeAttack { entity },
+                            game_scene_id: *game_scene_id,
                         });
                     }
                     UnitType::Archer => {
@@ -149,27 +158,19 @@ fn process_attacks(
                             projectile_type,
                             velocity,
                             BoxCollider(Vec2::new(20., 20.)),
-                            *scene_id,
+                            *target_scene_id,
                         ));
-                        println!("arrow spawn: {:?}", scene_id);
+                        println!("arrow spawn: {:?}", target_scene_id);
 
-                        let message = ServerMessages::SpawnProjectile(SpawnProjectile {
-                            entity: arrow.id(),
-                            projectile_type,
-                            translation: arrow_transform.translation.into(),
-                            direction: velocity.0.into(),
+                        sender.send(SendServerMessage {
+                            message: ServerMessages::SpawnProjectile(SpawnProjectile {
+                                entity: arrow.id(),
+                                projectile_type,
+                                translation: arrow_transform.translation.into(),
+                                direction: velocity.0.into(),
+                            }),
+                            game_scene_id: *target_scene_id,
                         });
-                        let message = bincode::serialize(&message).unwrap();
-                        for (client_id, entity) in lobby.players.iter() {
-                            let player_scene_id = scene_ids.get(*entity).unwrap();
-                            if scene_id.eq(player_scene_id) {
-                                server.send_message(
-                                    *client_id,
-                                    ServerChannel::ServerMessages,
-                                    message.clone(),
-                                );
-                            }
-                        }
                     }
                 }
             }

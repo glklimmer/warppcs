@@ -1,13 +1,11 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, RenetServer, SendType};
+use super::enum_map::*;
+use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::{
-    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId, GameSceneType},
-    server::networking::ServerLobby,
-};
+use crate::map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneType};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -24,7 +22,7 @@ pub struct PlayerInput {
     pub right: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
 pub enum UnitType {
     Shieldwarrior,
     Pikeman,
@@ -148,38 +146,6 @@ pub enum ServerMessages {
     },
     SyncInventory(Inventory),
     BuildingUpdate(BuildingUpdate),
-}
-
-pub trait GameSceneAware {
-    fn send_to_all_in_game_scene(
-        &self,
-        server: &mut ResMut<RenetServer>,
-        lobby: &Res<ServerLobby>,
-        scene_ids: &Query<&GameSceneId>,
-        game_scene_id: &GameSceneId,
-    );
-}
-
-impl GameSceneAware for ServerMessages {
-    fn send_to_all_in_game_scene(
-        &self,
-        server: &mut ResMut<RenetServer>,
-        lobby: &Res<ServerLobby>,
-        scene_ids: &Query<&GameSceneId>,
-        game_scene_id: &GameSceneId,
-    ) {
-        let message = bincode::serialize(&self).unwrap();
-        for (other_client_id, other_entity) in lobby.players.iter() {
-            let other_scene_id = scene_ids.get(*other_entity).unwrap();
-            if game_scene_id.eq(other_scene_id) {
-                server.send_message(
-                    *other_client_id,
-                    ServerChannel::ServerMessages,
-                    message.clone(),
-                );
-            }
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
