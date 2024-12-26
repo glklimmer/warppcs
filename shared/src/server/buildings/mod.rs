@@ -105,6 +105,19 @@ fn precalculate_building_bounds(
     }
 }
 
+pub fn building_health(building_type: &Building) -> Health {
+    let hitpoints = match building_type {
+        Building::MainBuilding => 1200.,
+        Building::Archer => 800.,
+        Building::Warrior => 800.,
+        Building::Pikeman => 800.,
+        Building::Wall => 600.,
+        Building::Tower => 400.,
+        Building::GoldFarm => 600.,
+    };
+    Health { hitpoints }
+}
+
 #[allow(clippy::type_complexity)]
 fn check_building_interaction(
     lobby: Res<ServerLobby>,
