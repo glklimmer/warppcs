@@ -35,6 +35,16 @@ pub fn pikeman(world: &mut World) -> SpriteSheet<UnitAnimation> {
             last_sprite_index: 27,
             frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
         },
+        UnitAnimation::Hit => SpriteSheetAnimation {
+            first_sprite_index: 28,
+            last_sprite_index: 30,
+            frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+        },
+        UnitAnimation::Death => SpriteSheetAnimation {
+            first_sprite_index: 35,
+            last_sprite_index: 39,
+            frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+        },
     });
 
     SpriteSheet {

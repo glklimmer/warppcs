@@ -35,6 +35,16 @@ pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
             last_sprite_index: 23,
             frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
         },
+        UnitAnimation::Hit => SpriteSheetAnimation {
+            first_sprite_index: 30,
+            last_sprite_index: 32,
+            frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+        },
+        UnitAnimation::Death => SpriteSheetAnimation {
+            first_sprite_index: 36,
+            last_sprite_index: 39,
+            frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+        },
     });
 
     SpriteSheet {
