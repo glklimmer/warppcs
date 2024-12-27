@@ -41,15 +41,17 @@ pub const SIGHT_RANGE: f32 = 800.;
 pub const MOVE_EPSILON: f32 = 1.;
 
 pub fn unit_tree(unit_type: &UnitType, flag: Entity) -> BehaviorTreeBundle {
+    println!("unit_tree");
+    let unit_range = unit_range(unit_type);
     BehaviorTreeBundle::from_root(ConditionalLoop::new(
         Selector::new(vec![
             Box::new(Sequence::new(vec![
-                Box::new(EnemyWithinRange::new(unit_range(unit_type))),
-                Box::new(Attack::new(unit_range(unit_type))),
+                Box::new(EnemyWithinRange::new(unit_range)),
+                Box::new(Attack::new(unit_range)),
             ])),
             Box::new(Sequence::new(vec![
                 Box::new(EnemyWithinRange::new(SIGHT_RANGE)),
-                Box::new(Approach::new(unit_range(unit_type))),
+                Box::new(Approach::new(unit_range)),
             ])),
             Box::new(Sequence::new(vec![Box::new(FollowFlag::new(flag))])),
         ]),
@@ -70,6 +72,7 @@ fn look_for_nearest_target(
     others: Query<(Entity, &GameSceneId, &Transform, &Owner), With<Health>>,
 ) {
     for (entity, scene_id, transform, owner, unit) in query.iter() {
+        println!("look_for_nearest_target");
         let maybe_nearest_target = others
             .iter()
             .filter(|other| other.1.eq(scene_id))
@@ -98,6 +101,7 @@ struct EnemyWithinRange {
 impl EnemyWithinRange {
     pub fn new(range: f32) -> Self {
         let checker = move |In(entity): In<Entity>, query: Query<Option<&TargetInfo>>| {
+            println!("EnemyWithinRange");
             let maybe_target = query.get(entity).unwrap();
 
             match maybe_target {
@@ -121,6 +125,7 @@ struct Attack {
 impl Attack {
     pub fn new(unit_attack_range: f32) -> Self {
         let checker = move |In(entity): In<Entity>, query: Query<Option<&TargetInfo>>| {
+            println!("Attack");
             let maybe_target = query.get(entity).unwrap();
 
             match maybe_target {
@@ -157,6 +162,7 @@ struct Approach {
 impl Approach {
     pub fn new(unit_attack_range: f32) -> Self {
         let checker = move |In(entity): In<Entity>, query: Query<Option<&TargetInfo>>| {
+            println!("Approach");
             let maybe_target = query.get(entity).unwrap();
 
             match maybe_target {
@@ -193,6 +199,7 @@ struct FollowFlag {
 impl FollowFlag {
     pub fn new(flag: Entity) -> Self {
         let checker = move |In(entity): In<Entity>, query: Query<&Transform>| {
+            println!("FollowFlag");
             let unit_transform = query.get(entity).unwrap();
             let flag = query.get(flag).unwrap();
 
@@ -209,12 +216,13 @@ impl FollowFlag {
         let task = TaskBridge::new(checker)
             .on_event(
                 TaskEvent::Enter,
-                move |In(entity), mut commands: Commands, query: Query<Option<&TargetInfo>>| {
-                    let maybe_target = query.get(entity).unwrap();
-                    if let Some(target) = maybe_target {
-                        commands
-                            .entity(entity)
-                            .insert(UnitBehaviour::FollowFlag(flag, target.translation));
+                move |In(entity), mut commands: Commands, query: Query<&Transform>| {
+                    let maybe_flag_transform = query.get(flag);
+                    if let Ok(flag_transform) = maybe_flag_transform {
+                        commands.entity(entity).insert(UnitBehaviour::FollowFlag(
+                            flag,
+                            flag_transform.translation.truncate(),
+                        ));
                     }
                 },
             )
