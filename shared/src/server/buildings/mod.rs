@@ -38,10 +38,6 @@ struct BuildingConstruction(pub CommonBuildingInfo);
 #[derive(Event)]
 pub struct BuildingUpgrade(pub CommonBuildingInfo);
 
-#[derive(Component, Clone)]
-pub struct BuildingBounds {
-    pub bound: Aabb2d,
-}
 pub struct BuildingsPlugins;
 
 impl Plugin for BuildingsPlugins {
@@ -69,11 +65,6 @@ impl Plugin for BuildingsPlugins {
                 in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
             ),
         );
-
-        app.add_systems(
-            OnEnter(GameState::GameSession),
-            precalculate_building_bounds.run_if(in_state(MultiplayerRoles::Host)),
-        );
     }
 }
 
@@ -88,21 +79,6 @@ pub fn building_health(building_type: &Building) -> Health {
         Building::GoldFarm => 600.,
     };
     Health { hitpoints }
-}
-
-fn precalculate_building_bounds(
-    mut commands: Commands,
-    building: Query<(Entity, &Transform, &BoxCollider), With<Building>>,
-) {
-    for (entity, building_transform, building_collider) in building.iter() {
-        println!("Calculating bounds");
-        commands.entity(entity).insert(BuildingBounds {
-            bound: Aabb2d::new(
-                building_transform.translation.truncate(),
-                building_collider.half_size(),
-            ),
-        });
-    }
 }
 
 #[allow(clippy::type_complexity)]

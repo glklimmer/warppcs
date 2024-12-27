@@ -48,7 +48,7 @@ fn main() {
     app.add_plugins(EntitiesPlugin);
     app.add_plugins(UiPlugin);
 
-    app.add_plugins(GizmosPlugin);
+    //app.add_plugins(GizmosPlugin);
 
     app.add_systems(Startup, setup_background);
 

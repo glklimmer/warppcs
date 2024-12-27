@@ -2,7 +2,6 @@ use crate::map::GameSceneId;
 use crate::networking::{MultiplayerRoles, Owner};
 use crate::server::ai::MOVE_EPSILON;
 use crate::server::ai::{attack::unit_speed, UnitBehaviour};
-use crate::server::buildings::BuildingBounds;
 use crate::server::entities::health::Health;
 use crate::server::entities::Unit;
 use crate::GameState;
@@ -54,7 +53,7 @@ fn move_players_system(
         &GameSceneId,
         &Owner,
     )>,
-    building_bounds: Query<(&BuildingBounds, &GameSceneId, &Owner), With<Health>>,
+    building_bounds: Query<(&Transform, &BoxCollider, &GameSceneId, &Owner), With<Health>>,
 ) {
     for (input, mut velocity, player_transform, player_collider, player_scene, client_owner) in
         query.iter_mut()
@@ -67,7 +66,8 @@ fn move_players_system(
         let future_bounds = Aabb2d::new(future_position, player_collider.half_size());
 
         let mut would_collide = false;
-        for (building, builing_scene, owner) in building_bounds.iter() {
+        for (building_transform, building_collider, builing_scene, owner) in building_bounds.iter()
+        {
             if player_scene.ne(builing_scene) {
                 continue;
             }
@@ -76,7 +76,12 @@ fn move_players_system(
                 continue;
             }
 
-            if building.bound.intersects(&future_bounds) {
+            let building_bounds = Aabb2d::new(
+                building_transform.translation.truncate(),
+                building_collider.half_size(),
+            );
+
+            if building_bounds.intersects(&future_bounds) {
                 would_collide = true;
                 break;
             }
