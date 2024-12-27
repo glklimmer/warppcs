@@ -9,7 +9,7 @@ use crate::{
     GameState,
 };
 
-use super::entities::{health::Health, Unit};
+use super::entities::health::Health;
 
 pub mod attack;
 
@@ -43,20 +43,17 @@ pub const MOVE_EPSILON: f32 = 1.;
 pub fn unit_tree(unit_type: &UnitType, flag: Entity) -> BehaviorTreeBundle {
     println!("unit_tree");
     let unit_range = unit_range(unit_type);
-    BehaviorTreeBundle::from_root(ConditionalLoop::new(
-        Selector::new(vec![
-            Box::new(Sequence::new(vec![
-                Box::new(EnemyWithinRange::new(unit_range)),
-                Box::new(Attack::new(unit_range)),
-            ])),
-            Box::new(Sequence::new(vec![
-                Box::new(EnemyWithinRange::new(SIGHT_RANGE)),
-                Box::new(Approach::new(unit_range)),
-            ])),
-            Box::new(Sequence::new(vec![Box::new(FollowFlag::new(flag))])),
-        ]),
-        |In(_)| true,
-    ))
+    BehaviorTreeBundle::from_root(Selector::new(vec![
+        Box::new(Sequence::new(vec![
+            Box::new(EnemyWithinRange::new(unit_range)),
+            Box::new(Attack::new(unit_range)),
+        ])),
+        Box::new(Sequence::new(vec![
+            Box::new(EnemyWithinRange::new(SIGHT_RANGE)),
+            Box::new(Approach::new(unit_range)),
+        ])),
+        Box::new(Sequence::new(vec![Box::new(FollowFlag::new(flag))])),
+    ]))
 }
 
 #[derive(Debug, Component, Clone)]
@@ -68,10 +65,10 @@ struct TargetInfo {
 
 fn look_for_nearest_target(
     mut commands: Commands,
-    query: Query<(Entity, &GameSceneId, &Transform, &Owner, &Unit)>,
+    query: Query<(Entity, &GameSceneId, &Transform, &Owner)>,
     others: Query<(Entity, &GameSceneId, &Transform, &Owner), With<Health>>,
 ) {
-    for (entity, scene_id, transform, owner, unit) in query.iter() {
+    for (entity, scene_id, transform, owner) in query.iter() {
         println!("look_for_nearest_target");
         let maybe_nearest_target = others
             .iter()
@@ -85,7 +82,7 @@ fn look_for_nearest_target(
                     .distance(other.2.translation.truncate()),
                 translation: other.2.translation.truncate(),
             })
-            .filter(|other| other.distance <= unit_range(&unit.unit_type))
+            .filter(|other| other.distance <= SIGHT_RANGE)
             .min_by(|a, b| a.distance.total_cmp(&b.distance));
         match maybe_nearest_target {
             Some(nearast_target) => commands.entity(entity).insert(nearast_target),
