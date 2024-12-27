@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::{ClientId, RenetServer};
 
+use crate::server::ai::unit_tree;
 use crate::{
     map::{
         buildings::{BuildStatus, Building, RecruitmentBuilding},
@@ -92,6 +93,8 @@ pub fn recruit(
 
         for unit_number in 1..=4 {
             let offset = Vec2::new(40. * (unit_number - 3) as f32 + 20., 0.);
+            let behaviour_tree = unit_tree(&unit_type, flag_entity);
+
             let unit_entity = commands
                 .spawn((
                     Transform::from_translation(flag_translation),
@@ -103,6 +106,7 @@ pub fn recruit(
                     UnitBehaviour::FollowFlag(flag_entity, offset),
                     BoxCollider(Vec2::new(50., 90.)),
                     event.scene_id,
+                    behaviour_tree,
                 ))
                 .id();
             let message = ServerMessages::SpawnUnit(SpawnUnit {

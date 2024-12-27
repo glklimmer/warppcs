@@ -17,3 +17,4 @@ fastrand = "2.1.1"
 serde = { version = "1.0.209", features = ["derive"] }
 renet_steam = { version = "0.0.2", features = ["bevy"] }
 steamworks = { version = "0.11" }
+bevior_tree = "0.6.0"
