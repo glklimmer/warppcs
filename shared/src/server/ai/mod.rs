@@ -9,7 +9,7 @@ use crate::{
     GameState,
 };
 
-use super::entities::health::Health;
+use super::{buildings::recruiting::FlagAssignment, entities::health::Health};
 
 pub mod attack;
 
@@ -25,7 +25,10 @@ pub struct AIPlugin;
 
 impl Plugin for AIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(BehaviorTreePlugin::default());
+        app.add_plugins(BehaviorTreePlugin::default().in_schedule(FixedPostUpdate));
+        app.insert_resource(BTTickTimer::new(2.0))
+            .add_systems(Update, update_bt_timer);
+
         app.add_plugins(AttackPlugin);
 
         app.add_systems(
@@ -41,19 +44,54 @@ pub const SIGHT_RANGE: f32 = 800.;
 pub const MOVE_EPSILON: f32 = 1.;
 
 pub fn unit_tree(unit_type: &UnitType, flag: Entity) -> BehaviorTreeBundle {
-    println!("unit_tree");
     let unit_range = unit_range(unit_type);
-    BehaviorTreeBundle::from_root(Selector::new(vec![
-        Box::new(Sequence::new(vec![
-            Box::new(EnemyWithinRange::new(unit_range)),
-            Box::new(Attack::new(unit_range)),
-        ])),
-        Box::new(Sequence::new(vec![
-            Box::new(EnemyWithinRange::new(SIGHT_RANGE)),
-            Box::new(Approach::new(unit_range)),
-        ])),
-        Box::new(Sequence::new(vec![Box::new(FollowFlag::new(flag))])),
-    ]))
+
+    BehaviorTreeBundle::from_root(ConditionalLoop::new(
+        Selector::new(vec![
+            Box::new(Sequence::new(vec![
+                Box::new(EnemyWithinRange::new(unit_range)),
+                Box::new(Attack::new(unit_range)),
+            ])),
+            Box::new(Sequence::new(vec![
+                Box::new(EnemyWithinRange::new(SIGHT_RANGE)),
+                Box::new(Approach::new(unit_range)),
+            ])),
+            Box::new(Sequence::new(vec![Box::new(FollowFlag::new(flag))])),
+        ]),
+        run_bt_on_timer,
+    ))
+}
+
+#[derive(Resource)]
+struct BTTickTimer {
+    timer: Timer,
+    pub is_ready: bool,
+}
+
+impl BTTickTimer {
+    pub fn new(duration_secs: f32) -> Self {
+        BTTickTimer {
+            timer: Timer::from_seconds(duration_secs, TimerMode::Repeating),
+            is_ready: false,
+        }
+    }
+}
+
+fn run_bt_on_timer(
+    In((_entity, _loop_state)): In<(Entity, LoopState)>,
+    bt_timer: Res<BTTickTimer>,
+) -> bool {
+    !bt_timer.is_ready
+}
+
+fn update_bt_timer(mut bt_timer: ResMut<BTTickTimer>, time: Res<Time>) {
+    bt_timer.timer.tick(time.delta());
+    if bt_timer.timer.finished() {
+        bt_timer.is_ready = true;
+        bt_timer.timer.reset();
+    } else {
+        bt_timer.is_ready = false;
+    }
 }
 
 #[derive(Debug, Component, Clone)]
@@ -69,7 +107,6 @@ fn look_for_nearest_target(
     others: Query<(Entity, &GameSceneId, &Transform, &Owner), With<Health>>,
 ) {
     for (entity, scene_id, transform, owner) in query.iter() {
-        println!("look_for_nearest_target");
         let maybe_nearest_target = others
             .iter()
             .filter(|other| other.1.eq(scene_id))
@@ -98,7 +135,7 @@ struct EnemyWithinRange {
 impl EnemyWithinRange {
     pub fn new(range: f32) -> Self {
         let checker = move |In(entity): In<Entity>, query: Query<Option<&TargetInfo>>| {
-            println!("EnemyWithinRange");
+            println!("EnemyWithinRange check: {}", entity);
             let maybe_target = query.get(entity).unwrap();
 
             match maybe_target {
@@ -122,7 +159,6 @@ struct Attack {
 impl Attack {
     pub fn new(unit_attack_range: f32) -> Self {
         let checker = move |In(entity): In<Entity>, query: Query<Option<&TargetInfo>>| {
-            println!("Attack");
             let maybe_target = query.get(entity).unwrap();
 
             match maybe_target {
@@ -137,6 +173,7 @@ impl Attack {
             .on_event(
                 TaskEvent::Enter,
                 move |In(entity), mut commands: Commands, query: Query<Option<&TargetInfo>>| {
+                    println!("Enter Attack: {}", entity);
                     let maybe_target = query.get(entity).unwrap();
                     if let Some(target) = maybe_target {
                         commands
@@ -145,8 +182,8 @@ impl Attack {
                     }
                 },
             )
-            .on_event(TaskEvent::Exit, |In(entity), mut commands: Commands| {
-                commands.entity(entity).remove::<UnitBehaviour>();
+            .on_event(TaskEvent::Exit, |In(entity)| {
+                println!("Exit Attack: {}", entity);
             });
         Self { delegate: task }
     }
@@ -159,7 +196,6 @@ struct Approach {
 impl Approach {
     pub fn new(unit_attack_range: f32) -> Self {
         let checker = move |In(entity): In<Entity>, query: Query<Option<&TargetInfo>>| {
-            println!("Approach");
             let maybe_target = query.get(entity).unwrap();
 
             match maybe_target {
@@ -174,6 +210,7 @@ impl Approach {
             .on_event(
                 TaskEvent::Enter,
                 move |In(entity), mut commands: Commands, query: Query<Option<&TargetInfo>>| {
+                    println!("Enter Approach: {}", entity);
                     let maybe_target = query.get(entity).unwrap();
                     if let Some(target) = maybe_target {
                         commands
@@ -182,8 +219,8 @@ impl Approach {
                     }
                 },
             )
-            .on_event(TaskEvent::Exit, |In(entity), mut commands: Commands| {
-                commands.entity(entity).remove::<UnitBehaviour>();
+            .on_event(TaskEvent::Exit, |In(entity)| {
+                println!("Exit Approach: {}", entity);
             });
         Self { delegate: task }
     }
@@ -195,36 +232,40 @@ struct FollowFlag {
 }
 impl FollowFlag {
     pub fn new(flag: Entity) -> Self {
-        let checker = move |In(entity): In<Entity>, query: Query<&Transform>| {
-            println!("FollowFlag");
-            let unit_transform = query.get(entity).unwrap();
-            let flag = query.get(flag).unwrap();
+        let checker =
+            move |In(entity): In<Entity>, query: Query<(&Transform, Option<&FlagAssignment>)>| {
+                let (unit_transform, _) = query.get(entity).unwrap();
+                let (flag, maybe_assignment) = query.get(flag).unwrap();
 
-            match flag
-                .translation
-                .truncate()
-                .distance(unit_transform.translation.truncate())
-                > MOVE_EPSILON
-            {
-                true => TaskStatus::Running,
-                false => TaskStatus::Complete(NodeResult::Success),
-            }
-        };
+                if maybe_assignment.is_none() {
+                    return TaskStatus::Complete(NodeResult::Failure);
+                }
+
+                match flag
+                    .translation
+                    .truncate()
+                    .distance(unit_transform.translation.truncate())
+                    > MOVE_EPSILON
+                {
+                    true => TaskStatus::Running,
+                    false => TaskStatus::Complete(NodeResult::Success),
+                }
+            };
         let task = TaskBridge::new(checker)
             .on_event(
                 TaskEvent::Enter,
-                move |In(entity), mut commands: Commands, query: Query<&Transform>| {
-                    let maybe_flag_transform = query.get(flag);
-                    if let Ok(flag_transform) = maybe_flag_transform {
-                        commands.entity(entity).insert(UnitBehaviour::FollowFlag(
-                            flag,
-                            flag_transform.translation.truncate(),
-                        ));
+                move |In(entity), mut commands: Commands, query: Query<&FlagAssignment>| {
+                    println!("Enter FollowFlag: {}", entity);
+                    let maybe_flag = query.get(flag);
+                    if let Ok(flag) = maybe_flag {
+                        commands
+                            .entity(entity)
+                            .insert(UnitBehaviour::FollowFlag(flag.0, flag.1));
                     }
                 },
             )
-            .on_event(TaskEvent::Exit, |In(entity), mut commands: Commands| {
-                commands.entity(entity).remove::<UnitBehaviour>();
+            .on_event(TaskEvent::Exit, |In(entity)| {
+                println!("Exit FollowFlag: {}", entity);
             });
         Self { delegate: task }
     }
