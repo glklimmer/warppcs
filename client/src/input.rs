@@ -2,13 +2,15 @@ use bevy::prelude::*;
 
 use shared::networking::{PlayerCommand, PlayerInput};
 
+use crate::gizmos::GizmosSettings;
+
 pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerInput::default());
         app.add_event::<PlayerCommand>();
-        app.add_systems(Update, player_input);
+        app.add_systems(Update, (player_input, gizmos_settings));
     }
 }
 
@@ -32,5 +34,14 @@ fn player_input(
 
     if keyboard_input.just_pressed(KeyCode::KeyF) {
         player_commands.send(PlayerCommand::Interact);
+    }
+}
+
+fn gizmos_settings(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut settings: ResMut<GizmosSettings>,
+) {
+    if keyboard_input.just_pressed(KeyCode::KeyY) {
+        settings.on = !settings.on;
     }
 }
