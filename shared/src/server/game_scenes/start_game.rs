@@ -166,6 +166,7 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
         GameSceneId(1),
         PlayerSkin::Warrior,
         inventory.clone(),
+        Owner(*left_client_id),
     ));
 
     let message = ServerMessages::SyncInventory(inventory.clone());
@@ -180,6 +181,7 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
         GameSceneId(1),
         PlayerSkin::Monster,
         inventory.clone(),
+        Owner(*right_client_id),
     ));
 
     let message = ServerMessages::SyncInventory(inventory);
@@ -334,6 +336,7 @@ fn duel_map(
             game_scene_id,
             skin,
             inventory.clone(),
+            Owner(*client_id),
         ));
 
         let message = ServerMessages::LoadGameScene {
