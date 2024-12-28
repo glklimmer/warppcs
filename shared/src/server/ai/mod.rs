@@ -41,6 +41,9 @@ impl Plugin for AIPlugin {
 pub const SIGHT_RANGE: f32 = 800.;
 pub const MOVE_EPSILON: f32 = 1.;
 
+const AVOID_DISTANCE: f32 = 8.;
+
+#[derive(Debug)]
 struct TargetInfo {
     entity: Entity,
     distance: f32,
@@ -60,6 +63,40 @@ fn determine_behaviour(
     flag: Query<&FlagAssignment>,
 ) {
     for (entity, mut behaviour, scene_id, transform, owner, unit) in &mut query {
+        // avoid others while attacking
+        let maybe_nearest = others
+            .iter()
+            .filter(|other| other.1.eq(scene_id))
+            .filter(|other| other.0.ne(&entity))
+            .map(|other| TargetInfo {
+                entity: other.0,
+                distance: transform
+                    .translation
+                    .truncate()
+                    .distance(other.2.translation.truncate()),
+                translation: other.2.translation.truncate(),
+            })
+            .filter(|other| other.distance < AVOID_DISTANCE)
+            .min_by(|a, b| a.distance.total_cmp(&b.distance));
+
+        if let Some(nearest) = maybe_nearest {
+            let own_position = transform.translation.truncate();
+            let spawn_direction = match entity < nearest.entity {
+                true => Vec2::new(1., 0.),
+                false => Vec2::new(-1., 0.),
+            };
+            let away_direction = (own_position - nearest.translation).normalize_or(spawn_direction);
+            let away_target = away_direction.mul_add(Vec2::new(AVOID_DISTANCE, 0.), own_position);
+            if let UnitBehaviour::AttackTarget(_) = *behaviour {
+                println!(
+                    "own_position: {}, avoid target: {}",
+                    own_position, away_target
+                );
+                *behaviour = UnitBehaviour::MoveTarget(away_target);
+                continue;
+            }
+        }
+
         let possible_targets: Vec<TargetInfo> = others
             .iter()
             .filter(|other| other.1.eq(scene_id))

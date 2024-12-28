@@ -70,6 +70,14 @@ pub fn unit_speed(unit_type: &UnitType) -> f32 {
     }
 }
 
+pub fn unit_group_size(unit_type: &UnitType) -> i32 {
+    match unit_type {
+        UnitType::Shieldwarrior => 2,
+        UnitType::Pikeman => 3,
+        UnitType::Archer => 4,
+    }
+}
+
 pub fn projectile_damage(projectile_type: &ProjectileType) -> f32 {
     match projectile_type {
         ProjectileType::Arrow => 15.,

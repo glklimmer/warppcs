@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::{ClientId, RenetServer};
 
+use crate::server::ai::attack::unit_group_size;
 use crate::{
     map::{
         buildings::{BuildStatus, Building, RecruitmentBuilding},
@@ -89,9 +90,14 @@ pub fn recruit(
             hitpoints: unit_health(&unit_type),
         };
         let owner = Owner(event.client_id);
+        let size = unit_group_size(&unit_type);
 
-        for unit_number in 1..=4 {
-            let offset = Vec2::new(40. * (unit_number - 3) as f32 + 20., 0.);
+        for unit_number in 1..=size {
+            let unit_offset = 20.;
+            let offset = Vec2::new(
+                (unit_offset * size as f32 / 2.) * (unit_number - (size - 1)) as f32 + unit_offset,
+                0.,
+            );
             let unit_entity = commands
                 .spawn((
                     Transform::from_translation(flag_translation),
