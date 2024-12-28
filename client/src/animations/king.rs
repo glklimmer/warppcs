@@ -12,6 +12,8 @@ pub enum KingAnimation {
     Drink,
     Walk,
     Attack,
+    Hit,
+    Death,
 }
 
 #[derive(Resource)]
@@ -54,6 +56,16 @@ impl FromWorld for KingSpriteSheet {
                 last_sprite_index: 49,
                 frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
             },
+            KingAnimation::Hit => SpriteSheetAnimation {
+                first_sprite_index: 50,
+                last_sprite_index: 52,
+                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+            },
+            KingAnimation::Death => SpriteSheetAnimation {
+                first_sprite_index: 60,
+                last_sprite_index: 65,
+                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+            },
         });
 
         KingSpriteSheet {
@@ -81,6 +93,8 @@ pub fn next_king_animation(
                 },
                 Change::Attack => Some(KingAnimation::Attack),
                 Change::Rotation(_) => None,
+                Change::Hit => Some(KingAnimation::Hit),
+                Change::Death => Some(KingAnimation::Death),
             };
 
             if let Some(new_animation) = maybe_new_animation {
@@ -112,6 +126,8 @@ fn is_interupt_animation(animation: &KingAnimation) -> bool {
         KingAnimation::Drink => false,
         KingAnimation::Walk => false,
         KingAnimation::Attack => true,
+        KingAnimation::Hit => false,
+        KingAnimation::Death => true,
     }
 }
 
@@ -121,6 +137,8 @@ fn is_full_animation(animation: &KingAnimation) -> bool {
         KingAnimation::Drink => false,
         KingAnimation::Walk => false,
         KingAnimation::Attack => true,
+        KingAnimation::Hit => false,
+        KingAnimation::Death => true,
     }
 }
 

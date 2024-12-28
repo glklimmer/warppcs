@@ -76,10 +76,16 @@ pub struct AnimationTrigger<E> {
 #[derive(Component)]
 pub struct FullAnimation;
 
+#[derive(Component)]
+struct PlayOnce;
+
+#[derive(Debug)]
 pub enum Change {
     Rotation(Rotation),
     Movement(bool),
     Attack,
+    Hit,
+    Death,
 }
 
 #[derive(Event)]
@@ -103,7 +109,10 @@ impl Plugin for AnimationPlugin {
 
         app.add_event::<EntityChangeEvent>();
 
-        app.add_systems(FixedUpdate, trigger_meele_attack);
+        app.add_systems(
+            FixedUpdate,
+            (trigger_meele_attack, trigger_hit, trigger_death),
+        );
 
         app.add_systems(
             Update,
@@ -139,6 +148,47 @@ fn trigger_meele_attack(
     }
 }
 
+fn trigger_hit(
+    mut network_events: EventReader<NetworkEvent>,
+    mut change: EventWriter<EntityChangeEvent>,
+    network_mapping: Res<NetworkMapping>,
+) {
+    for event in network_events.read() {
+        if let ServerMessages::EntityHit {
+            entity: server_entity,
+        } = event.message
+        {
+            if let Some(client_entity) = network_mapping.0.get(&server_entity) {
+                change.send(EntityChangeEvent {
+                    entity: *client_entity,
+                    change: Change::Hit,
+                });
+            }
+        }
+    }
+}
+
+fn trigger_death(
+    mut network_events: EventReader<NetworkEvent>,
+    mut change: EventWriter<EntityChangeEvent>,
+    network_mapping: Res<NetworkMapping>,
+) {
+    for event in network_events.read() {
+        if let ServerMessages::EntityDeath {
+            entity: server_entity,
+        } = event.message
+        {
+            if let Some(client_entity) = network_mapping.0.get(&server_entity) {
+                change.send(EntityChangeEvent {
+                    entity: *client_entity,
+                    change: Change::Death,
+                });
+            }
+        }
+    }
+}
+
+#[allow(clippy::type_complexity)]
 fn advance_animation(
     time: Res<Time>,
     mut commands: Commands,
@@ -147,13 +197,17 @@ fn advance_animation(
         &mut SpriteSheetAnimation,
         &mut TextureAtlas,
         Option<&FullAnimation>,
+        Option<&PlayOnce>,
     )>,
 ) {
-    for (entity, mut animation, mut atlas, maybe_full) in &mut query {
+    for (entity, mut animation, mut atlas, maybe_full, maybe_play_once) in &mut query {
         animation.frame_timer.tick(time.delta());
 
         if animation.frame_timer.just_finished() {
             atlas.index = if atlas.index == animation.last_sprite_index {
+                if maybe_play_once.is_some() {
+                    return;
+                }
                 if maybe_full.is_some() {
                     commands.entity(entity).remove::<FullAnimation>();
                 }

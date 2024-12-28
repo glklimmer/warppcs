@@ -171,6 +171,10 @@ fn process_attacks(
                             }),
                             game_scene_id: *target_scene_id,
                         });
+                        sender.send(SendServerMessage {
+                            message: ServerMessages::MeleeAttack { entity },
+                            game_scene_id: *game_scene_id,
+                        });
                     }
                 }
             }
