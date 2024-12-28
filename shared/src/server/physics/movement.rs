@@ -1,3 +1,4 @@
+use crate::map::buildings::Building;
 use crate::map::GameSceneId;
 use crate::networking::{MultiplayerRoles, Owner};
 use crate::server::ai::MOVE_EPSILON;
@@ -20,16 +21,15 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (apply_velocity, determine_unit_velocity, apply_gravity).run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
-        );
-
-        app.add_systems(
-            FixedUpdate,
-            move_players_system.run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
+            (
+                apply_velocity,
+                determine_unit_velocity,
+                apply_gravity,
+                move_players_system,
+            )
+                .run_if(
+                    in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
+                ),
         );
     }
 }
@@ -53,7 +53,7 @@ fn move_players_system(
         &GameSceneId,
         &Owner,
     )>,
-    building_bounds: Query<(&Transform, &BoxCollider, &GameSceneId, &Owner), With<Health>>,
+    buildings: Query<(&Transform, &BoxCollider, &GameSceneId, &Owner, &Building), With<Health>>,
 ) {
     for (input, mut velocity, player_transform, player_collider, player_scene, client_owner) in
         query.iter_mut()
@@ -66,13 +66,18 @@ fn move_players_system(
         let future_bounds = Aabb2d::new(future_position, player_collider.half_size());
 
         let mut would_collide = false;
-        for (building_transform, building_collider, builing_scene, owner) in building_bounds.iter()
+        for (building_transform, building_collider, builing_scene, owner, building) in
+            buildings.iter()
         {
             if player_scene.ne(builing_scene) {
                 continue;
             }
 
             if owner.0.eq(&client_owner.0) {
+                continue;
+            }
+
+            if Building::Wall.ne(building) {
                 continue;
             }
 
