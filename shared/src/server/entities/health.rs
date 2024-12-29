@@ -26,7 +26,7 @@ impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<TakeDamage>();
 
-        app.add_systems(FixedUpdate, (apply_damage).run_if(on_event::<TakeDamage>()));
+        app.add_systems(FixedUpdate, (apply_damage).run_if(on_event::<TakeDamage>));
 
         app.add_systems(
             FixedUpdate,

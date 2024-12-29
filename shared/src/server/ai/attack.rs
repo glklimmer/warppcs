@@ -22,9 +22,8 @@ impl Plugin for AttackPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (process_attacks).run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
+            (process_attacks)
+                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
     }
 }

@@ -49,11 +49,10 @@ impl Plugin for BuildingsPlugins {
         app.add_systems(
             FixedUpdate,
             (
-                (check_recruit, check_building_interaction).run_if(on_event::<InteractEvent>()),
+                (check_recruit, check_building_interaction).run_if(on_event::<InteractEvent>),
                 (
-                    (construct_building, enable_goldfarm)
-                        .run_if(on_event::<BuildingConstruction>()),
-                    recruit.run_if(on_event::<RecruitEvent>()),
+                    (construct_building, enable_goldfarm).run_if(on_event::<BuildingConstruction>),
+                    recruit.run_if(on_event::<RecruitEvent>),
                 ),
             )
                 .chain(),
@@ -61,9 +60,8 @@ impl Plugin for BuildingsPlugins {
 
         app.add_systems(
             FixedUpdate,
-            gold_farm_output.run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
+            gold_farm_output
+                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
     }
 }
