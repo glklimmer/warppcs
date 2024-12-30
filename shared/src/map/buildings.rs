@@ -51,13 +51,16 @@ pub struct MainBuildingBundle {
     pub transform: Transform,
 }
 
+const BUILDUING_SCALE: Vec3 = Vec3::splat(3.0);
+
 impl MainBuildingBundle {
     pub fn new(x: f32) -> Self {
         MainBuildingBundle {
             base: Building::MainBuilding,
             collider: BoxCollider(Vec2::new(200., 100.)),
             main_building_level: MainBuildingLevel::First,
-            transform: Transform::from_xyz(x, 90., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 90., Layers::Building.as_f32())
+                .with_scale(BUILDUING_SCALE),
         }
     }
 }
@@ -78,7 +81,8 @@ impl BuildingBundle {
             building: Building::Archer,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
+                .with_scale(BUILDUING_SCALE),
             cost: Cost { gold: 200 },
             textures: BuildingTextures {
                 marker: "sprites/buildings/archer_plot.png",
@@ -92,7 +96,8 @@ impl BuildingBundle {
             building: Building::Warrior,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
+                .with_scale(BUILDUING_SCALE),
             cost: Cost { gold: 200 },
             textures: BuildingTextures {
                 marker: "sprites/buildings/warrior_plot.png",
@@ -106,7 +111,8 @@ impl BuildingBundle {
             building: Building::Pikeman,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
+                .with_scale(BUILDUING_SCALE),
             cost: Cost { gold: 200 },
             textures: BuildingTextures {
                 marker: "sprites/buildings/pike_man_plot.png",
@@ -120,7 +126,8 @@ impl BuildingBundle {
             building: Building::Wall,
             collider: BoxCollider(Vec2::new(50., 75.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
+                .with_scale(BUILDUING_SCALE),
             cost: Cost { gold: 100 },
             textures: BuildingTextures {
                 marker: "sprites/buildings/wall_basic.png",
@@ -134,7 +141,8 @@ impl BuildingBundle {
             building: Building::Tower,
             collider: BoxCollider(Vec2::new(200., 100.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(0., 50., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(0., 50., Layers::Building.as_f32())
+                .with_scale(BUILDUING_SCALE),
             cost: Cost { gold: 150 },
             textures: BuildingTextures {
                 marker: "sprites/buildings/warrior_plot.png",
@@ -148,7 +156,8 @@ impl BuildingBundle {
             building: Building::GoldFarm,
             collider: BoxCollider(Vec2::new(200., 50.)),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 25., Layers::Building.as_f32()),
+            transform: Transform::from_xyz(x, 25., Layers::Building.as_f32())
+                .with_scale(BUILDUING_SCALE),
             cost: Cost { gold: 50 },
             textures: BuildingTextures {
                 marker: "sprites/buildings/warrior_plot.png",

@@ -68,19 +68,14 @@ fn load_game_scene(
             match map_type {
                 GameSceneType::Fight => {
                     let fight = FightScene::new();
-                    commands
-                        .spawn((
-                            fight.left_main_building,
-                            SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
-                            Sprite::from_image(
-                                asset_server.load::<Image>("sprites/buildings/main_house_red.png"),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.left_main_building.transform
-                        });
+                    commands.spawn((
+                        fight.left_main_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
+                        Sprite::from_image(
+                            asset_server.load::<Image>("sprites/buildings/main_house_red.png"),
+                        ),
+                        PartOfScene,
+                    ));
 
                     spawn_building(
                         buildings,
@@ -125,19 +120,15 @@ fn load_game_scene(
                         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
                     );
 
-                    commands
-                        .spawn((
-                            fight.right_main_building,
-                            SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
-                            Sprite::from_image(
-                                asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.right_main_building.transform
-                        });
+                    commands.spawn((
+                        fight.right_main_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
+                        Sprite::from_image(
+                            asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
+                        ),
+                        PartOfScene,
+                    ));
+
                     spawn_building(
                         buildings,
                         &mut commands,
@@ -183,19 +174,15 @@ fn load_game_scene(
                 }
                 GameSceneType::Base(color) => {
                     let base = BaseScene::new();
-                    commands
-                        .spawn((
-                            base.main_building,
-                            SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
-                            Sprite::from_image(
-                                asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..base.main_building.transform
-                        });
+                    commands.spawn((
+                        base.main_building,
+                        SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
+                        Sprite::from_image(
+                            asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
+                        ),
+                        PartOfScene,
+                    ));
+
                     spawn_building(
                         buildings,
                         &mut commands,
@@ -231,32 +218,24 @@ fn load_game_scene(
                         base.right_wall,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::RightWall),
                     );
-                    commands
-                        .spawn((
-                            base.left_gold_farm,
-                            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
-                            Sprite::from_image(
-                                asset_server.load::<Image>(base.left_gold_farm.textures.marker),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..base.left_gold_farm.transform
-                        });
-                    commands
-                        .spawn((
-                            base.right_gold_farm,
-                            SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
-                            Sprite::from_image(
-                                asset_server.load::<Image>(base.right_gold_farm.textures.marker),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..base.right_gold_farm.transform
-                        });
+                    commands.spawn((
+                        base.left_gold_farm,
+                        SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
+                        Sprite::from_image(
+                            asset_server.load::<Image>(base.left_gold_farm.textures.marker),
+                        ),
+                        PartOfScene,
+                    ));
+
+                    commands.spawn((
+                        base.right_gold_farm,
+                        SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
+                        Sprite::from_image(
+                            asset_server.load::<Image>(base.right_gold_farm.textures.marker),
+                        ),
+                        PartOfScene,
+                    ));
+
                     commands.spawn((
                         base.left_spawn_point,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::LeftSpawnPoint),
@@ -307,21 +286,16 @@ fn spawn_building(
     building_bundle: BuildingBundle,
     indicator: SceneBuildingIndicator,
 ) {
-    commands
-        .spawn((
-            building_bundle,
+    commands.spawn((
+        building_bundle,
+        indicator,
+        Sprite::from_image(asset_server.load::<Image>(building_texture(
+            buildings,
             indicator,
-            Sprite::from_image(asset_server.load::<Image>(building_texture(
-                buildings,
-                indicator,
-                building_bundle,
-            ))),
-            PartOfScene,
-        ))
-        .insert(Transform {
-            scale: Vec3::splat(3.0),
-            ..building_bundle.transform
-        });
+            building_bundle,
+        ))),
+        PartOfScene,
+    ));
 }
 
 fn building_texture(
