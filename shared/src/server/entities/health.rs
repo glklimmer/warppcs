@@ -30,9 +30,8 @@ impl Plugin for HealthPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (on_unit_death, on_building_destroy, delayed_despawn).run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
+            (on_unit_death, on_building_destroy, delayed_despawn)
+                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
     }
 }

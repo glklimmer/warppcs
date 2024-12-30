@@ -27,9 +27,7 @@ impl Plugin for MovementPlugin {
                 apply_gravity,
                 move_players_system,
             )
-                .run_if(
-                    in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-                ),
+                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
     }
 }

@@ -20,11 +20,6 @@ impl Plugin for ProjectilePlugin {
             projectile_collision
                 .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
-        app.add_systems(
-            PostUpdate,
-            delayed_despawn
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
-        );
     }
 }
 

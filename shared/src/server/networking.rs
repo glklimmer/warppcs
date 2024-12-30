@@ -73,7 +73,7 @@ impl Plugin for ServerNetworkPlugin {
 
         app.add_systems(
             FixedPostUpdate,
-            (send_server_messages).run_if(on_event::<SendServerMessage>()),
+            (send_server_messages).run_if(on_event::<SendServerMessage>),
         );
 
         app.insert_resource(ServerLobby::default());
