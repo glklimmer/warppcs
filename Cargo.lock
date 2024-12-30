@@ -1991,7 +1991,7 @@ name = "enum_mappable"
 version = "0.1.0"
 dependencies = [
  "quote",
- "syn 2.0.77",
+ "syn",
 ]
 
 [[package]]
