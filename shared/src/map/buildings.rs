@@ -43,8 +43,7 @@ pub struct BuildingTextures {
     pub built: &'static str,
 }
 
-#[derive(Component, Copy, Clone)]
-#[require(Sprite, Transform, Visibility)]
+#[derive(Bundle, Copy, Clone)]
 pub struct MainBuildingBundle {
     pub base: Building,
     pub collider: BoxCollider,
@@ -63,8 +62,7 @@ impl MainBuildingBundle {
     }
 }
 
-#[derive(Component, Clone, Copy)]
-#[require(Sprite, Transform, Visibility)]
+#[derive(Bundle, Clone, Copy)]
 pub struct BuildingBundle {
     pub building: Building,
     pub collider: BoxCollider,

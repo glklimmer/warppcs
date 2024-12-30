@@ -29,8 +29,7 @@ pub struct SpriteSheetAnimation {
     pub frame_timer: Timer,
 }
 
-#[derive(Component)]
-#[require(Sprite, Transform)]
+#[derive(Bundle)]
 pub struct SpriteAnimationBundle {
     pub sprite: Sprite,
     pub transform: Transform,
@@ -47,7 +46,6 @@ impl SpriteAnimationBundle {
         let animation = sprite_sheet.animations.get(animation);
         SpriteAnimationBundle {
             sprite: Sprite {
-                custom_size: Some(Vec2::splat(scale)),
                 image: sprite_sheet.texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     layout: sprite_sheet.layout.clone(),
@@ -57,6 +55,7 @@ impl SpriteAnimationBundle {
             },
             transform: Transform {
                 translation: (*translation).into(),
+                scale: Vec3::splat(scale),
                 ..default()
             },
             initial_animation: animation.clone(),

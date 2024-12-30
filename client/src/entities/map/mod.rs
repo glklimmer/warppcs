@@ -265,8 +265,6 @@ fn load_game_scene(
                                 meshes.add(Rectangle::from_size(base.left_spawn_point.collider.0)),
                             ),
                             MeshMaterial2d(materials.add(Color::from(YELLOW))),
-                            GlobalTransform::default(),
-                            Visibility::default(),
                         ),
                         PartOfScene,
                     ));
@@ -278,8 +276,6 @@ fn load_game_scene(
                                 meshes.add(Rectangle::from_size(base.left_spawn_point.collider.0)),
                             ),
                             MeshMaterial2d(materials.add(Color::from(YELLOW))),
-                            GlobalTransform::default(),
-                            Visibility::default(),
                         ),
                         PartOfScene,
                     ));
