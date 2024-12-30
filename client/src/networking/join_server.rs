@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::{ClientId, RenetClient};
+use bevy_renet::renet::RenetClient;
 use shared::networking::connection_config;
 
 use crate::networking::CurrentClientId;
@@ -54,7 +54,7 @@ pub fn join_steam_server(
 
 #[cfg(feature = "netcode")]
 pub fn join_netcode_server(mut commands: Commands) {
-    use bevy_renet::renet::transport::{ClientAuthentication, NetcodeClientTransport};
+    use bevy_renet::netcode::{ClientAuthentication, NetcodeClientTransport};
     use shared::networking::PROTOCOL_ID;
     use std::{net::UdpSocket, time::SystemTime};
 
@@ -76,7 +76,7 @@ pub fn join_netcode_server(mut commands: Commands) {
         Ok(transport) => {
             commands.insert_resource(client);
             commands.insert_resource(transport);
-            commands.insert_resource(CurrentClientId(ClientId::from_raw(client_id)));
+            commands.insert_resource(CurrentClientId(client_id));
         }
         Err(error) => println!("join_netcode_server error {}", error),
     }

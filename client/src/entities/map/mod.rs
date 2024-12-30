@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy::{color::palettes::css::YELLOW, sprite::Mesh2dHandle};
+use bevy::color::palettes::css::YELLOW;
 use shared::map::scenes::fight::FightSceneIndicator;
 use shared::{
     map::{
@@ -29,7 +29,7 @@ impl Plugin for MapPlugin {
         app.add_systems(
             FixedUpdate,
             (load_game_scene, update_building)
-                .run_if(on_event::<NetworkEvent>())
+                .run_if(on_event::<NetworkEvent>)
                 .in_set(Connected),
         );
     }
@@ -72,13 +72,8 @@ fn load_game_scene(
                         .spawn((
                             fight.left_main_building,
                             SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
-                            (
+                            Sprite::from_image(
                                 asset_server.load::<Image>("sprites/buildings/main_house_red.png"),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
                             ),
                             PartOfScene,
                         ))
@@ -134,13 +129,8 @@ fn load_game_scene(
                         .spawn((
                             fight.right_main_building,
                             SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
-                            (
+                            Sprite::from_image(
                                 asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
                             ),
                             PartOfScene,
                         ))
@@ -197,13 +187,8 @@ fn load_game_scene(
                         .spawn((
                             base.main_building,
                             SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
-                            (
+                            Sprite::from_image(
                                 asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
                             ),
                             PartOfScene,
                         ))
@@ -250,13 +235,8 @@ fn load_game_scene(
                         .spawn((
                             base.left_gold_farm,
                             SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
-                            (
+                            Sprite::from_image(
                                 asset_server.load::<Image>(base.left_gold_farm.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
                             ),
                             PartOfScene,
                         ))
@@ -268,13 +248,8 @@ fn load_game_scene(
                         .spawn((
                             base.right_gold_farm,
                             SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
-                            (
+                            Sprite::from_image(
                                 asset_server.load::<Image>(base.right_gold_farm.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
                             ),
                             PartOfScene,
                         ))
@@ -286,14 +261,12 @@ fn load_game_scene(
                         base.left_spawn_point,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::LeftSpawnPoint),
                         (
-                            Mesh2dHandle(
+                            Mesh2d(
                                 meshes.add(Rectangle::from_size(base.left_spawn_point.collider.0)),
                             ),
-                            materials.add(Color::from(YELLOW)),
+                            MeshMaterial2d(materials.add(Color::from(YELLOW))),
                             GlobalTransform::default(),
                             Visibility::default(),
-                            InheritedVisibility::default(),
-                            ViewVisibility::default(),
                         ),
                         PartOfScene,
                     ));
@@ -301,14 +274,12 @@ fn load_game_scene(
                         base.right_spawn_point,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
                         (
-                            Mesh2dHandle(
+                            Mesh2d(
                                 meshes.add(Rectangle::from_size(base.left_spawn_point.collider.0)),
                             ),
-                            materials.add(Color::from(YELLOW)),
+                            MeshMaterial2d(materials.add(Color::from(YELLOW))),
                             GlobalTransform::default(),
                             Visibility::default(),
-                            InheritedVisibility::default(),
-                            ViewVisibility::default(),
                         ),
                         PartOfScene,
                     ));
@@ -344,14 +315,11 @@ fn spawn_building(
         .spawn((
             building_bundle,
             indicator,
-            (
-                asset_server.load::<Image>(building_texture(buildings, indicator, building_bundle)),
-                Sprite::default(),
-                GlobalTransform::default(),
-                Visibility::default(),
-                InheritedVisibility::default(),
-                ViewVisibility::default(),
-            ),
+            Sprite::from_image(asset_server.load::<Image>(building_texture(
+                buildings,
+                indicator,
+                building_bundle,
+            ))),
             PartOfScene,
         ))
         .insert(Transform {
@@ -400,7 +368,7 @@ fn update_building(
                 };
 
                 let texture = asset_server.load::<Image>(texture);
-                commands.entity(entity).insert(texture);
+                commands.entity(entity).insert(Sprite::from_image(texture));
             }
         }
     }

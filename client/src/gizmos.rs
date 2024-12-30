@@ -46,6 +46,10 @@ fn draw_collider(
         return;
     }
     for (transform, collider) in query.iter() {
-        gizmos.rect_2d(transform.translation.truncate(), 0., collider.0, BLUE);
+        gizmos.rect_2d(
+            Isometry2d::new(transform.translation.truncate(), Rot2::degrees(0.)),
+            collider.0,
+            BLUE,
+        );
     }
 }

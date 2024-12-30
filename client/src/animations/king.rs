@@ -143,18 +143,20 @@ fn is_full_animation(animation: &KingAnimation) -> bool {
 }
 
 pub fn set_king_sprite_animation(
-    mut query: Query<(&mut SpriteSheetAnimation, &mut TextureAtlas)>,
+    mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite)>,
     mut animation_changed: EventReader<AnimationTrigger<KingAnimation>>,
     king_sprite_sheet: Res<KingSpriteSheet>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((mut sprite_animation, mut atlas)) = query.get_mut(new_animation.entity) {
+        if let Ok((mut sprite_animation, mut sprite)) = query.get_mut(new_animation.entity) {
             let animation = king_sprite_sheet
                 .sprite_sheet
                 .animations
                 .get(new_animation.state);
 
-            atlas.index = animation.first_sprite_index;
+            if let Some(atlas) = &mut sprite.texture_atlas {
+                atlas.index = animation.first_sprite_index;
+            }
             *sprite_animation = animation.clone();
         }
     }

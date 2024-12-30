@@ -2,7 +2,8 @@ use bevy::prelude::*;
 
 use bevy_renet::{
     client_just_disconnected,
-    renet::{transport::NetcodeClientTransport, ClientId, RenetClient},
+    netcode::NetcodeClientTransport,
+    renet::{ClientId, RenetClient},
 };
 use shared::{
     networking::{Checkbox, ClientChannel, MultiplayerRoles, PlayerCommand, ServerMessages},
@@ -18,10 +19,9 @@ use steamworks::{LobbyId, SteamId};
 
 #[cfg(feature = "steam")]
 use crate::ui_widgets::text_input::TextInputValue;
-
 use crate::{
     networking::{CurrentClientId, NetworkEvent},
-    ui_widgets::text_input::{TextInputBundle, TextInputPlugin},
+    ui_widgets::text_input::TextInputPlugin,
 };
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
@@ -39,7 +39,7 @@ pub enum MainMenuStates {
 pub struct JoinSteamLobby(pub SteamId);
 
 #[derive(Component, PartialEq)]
-enum Button {
+enum Buttons {
     Singleplayer,
     Multiplayer,
     CreateLobby,
@@ -84,7 +84,7 @@ impl Plugin for MenuPlugin {
                 update_players_checkbox,
                 remove_player_from_lobby,
             )
-                .run_if(on_event::<NetworkEvent>()),
+                .run_if(on_event::<NetworkEvent>),
         );
 
         app.add_systems(Update, button_system);
@@ -116,8 +116,8 @@ const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 
 fn display_main_menu(mut commands: Commands) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
+        .spawn((
+            Node {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
                 width: Val::Px(350.0),
@@ -127,64 +127,60 @@ fn display_main_menu(mut commands: Commands) {
                 position_type: PositionType::Absolute,
                 ..default()
             },
-            ..default()
-        })
+            Button,
+        ))
         .with_children(|parent| {
             parent
                 .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(350.0),
-                            height: Val::Px(65.0),
-                            margin: UiRect::bottom(Val::Px(5.0)),
-                            border: UiRect::all(Val::Px(5.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: NORMAL_BUTTON.into(),
+                    Node {
+                        width: Val::Px(350.0),
+                        height: Val::Px(65.0),
+                        margin: UiRect::bottom(Val::Px(5.0)),
+                        border: UiRect::all(Val::Px(5.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..default()
                     },
-                    Button::Singleplayer,
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Buttons::Singleplayer,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Singleplayer",
-                        TextStyle {
+                    parent.spawn((
+                        Text::new("Singleplayer"),
+                        TextFont {
                             font_size: 35.0,
-                            color: Color::srgb(0.9, 0.9, 0.9),
                             ..default()
                         },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
                     ));
                 });
         })
         .with_children(|parent| {
             parent
                 .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(350.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: NORMAL_BUTTON.into(),
+                    Node {
+                        width: Val::Px(350.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..default()
                     },
-                    Button::Multiplayer,
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Buttons::Multiplayer,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Multiplayer",
-                        TextStyle {
+                    parent.spawn((
+                        Text::new("Multiplayer"),
+                        TextFont {
                             font_size: 35.0,
-                            color: Color::srgb(0.9, 0.9, 0.9),
                             ..default()
                         },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
                     ));
                 });
         });
@@ -205,7 +201,7 @@ fn button_system(
     mut commands: Commands,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, &mut BorderColor),
-        (Changed<Interaction>, With<Button>),
+        (Changed<Interaction>, With<Buttons>),
     >,
     asset_server: Res<AssetServer>,
 ) {
@@ -217,10 +213,9 @@ fn button_system(
             Interaction::Hovered => {
                 *color = HOVERED_BUTTON.into();
                 border_color.0 = Color::WHITE;
-                commands.spawn(AudioBundle {
-                    source: asset_server.load("sound/button_hover_sound.ogg"),
-                    ..Default::default()
-                });
+                commands.spawn(AudioPlayer::<AudioSource>(
+                    asset_server.load("sound/button_hover_sound.ogg"),
+                ));
             }
             Interaction::None => {
                 *color = NORMAL_BUTTON.into();
@@ -232,7 +227,7 @@ fn button_system(
 
 #[cfg(feature = "steam")]
 fn change_state_on_button_steam(
-    mut button_query: Query<(&Interaction, &Button), Changed<Interaction>>,
+    mut button_query: Query<(&Interaction, &Buttons), Changed<Interaction>>,
     mut next_state: ResMut<NextState<MainMenuStates>>,
     mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
     mut player_commands: EventWriter<PlayerCommand>,
@@ -244,19 +239,19 @@ fn change_state_on_button_steam(
         match *interaction {
             Interaction::Hovered => {}
             Interaction::Pressed => match button {
-                Button::Singleplayer => next_state.set(MainMenuStates::Singleplayer),
-                Button::Multiplayer => {
+                Buttons::Singleplayer => next_state.set(MainMenuStates::Singleplayer),
+                Buttons::Multiplayer => {
                     next_state.set(MainMenuStates::Multiplayer);
                 }
-                Button::CreateLobby => multiplayer_roles.set(MultiplayerRoles::Host),
-                Button::JoinLobby => next_state.set(MainMenuStates::JoinScreen),
-                Button::StartGame => {
+                Buttons::CreateLobby => multiplayer_roles.set(MultiplayerRoles::Host),
+                Buttons::JoinLobby => next_state.set(MainMenuStates::JoinScreen),
+                Buttons::StartGame => {
                     player_commands.send(PlayerCommand::StartGame);
                 }
-                Button::InvitePlayer => steam_client
+                Buttons::InvitePlayer => steam_client
                     .friends()
                     .activate_invite_dialog(LobbyId::from_raw(76561198079103566)),
-                Button::Join => match lobby_code.single().0.parse::<u64>() {
+                Buttons::Join => match lobby_code.single().0.parse::<u64>() {
                     Ok(value) => {
                         join_lobby_request.send(JoinSteamLobby(SteamId::from_raw(value)));
                         multiplayer_roles.set(MultiplayerRoles::Client);
@@ -265,7 +260,7 @@ fn change_state_on_button_steam(
                         println!("Invalid SteamID u64 value.")
                     }
                 },
-                Button::Back(state) => next_state.set(state.clone()),
+                Buttons::Back(state) => next_state.set(state.clone()),
             },
             Interaction::None => {}
         }
@@ -274,108 +269,99 @@ fn change_state_on_button_steam(
 
 fn display_multiplayer_buttons(mut commands: Commands) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                width: Val::Px(350.0),
-                height: Val::Px(130.0),
-                bottom: Val::Px(120.),
-                left: Val::Px(40.),
-                position_type: PositionType::Absolute,
-                ..default()
-            },
+        .spawn(Node {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            width: Val::Px(350.0),
+            height: Val::Px(130.0),
+            bottom: Val::Px(120.),
+            left: Val::Px(40.),
+            position_type: PositionType::Absolute,
             ..default()
         })
         .with_children(|parent| {
             parent
                 .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(350.0),
-                            height: Val::Px(65.0),
-                            margin: UiRect::bottom(Val::Px(5.0)),
-                            border: UiRect::all(Val::Px(5.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: NORMAL_BUTTON.into(),
+                    Node {
+                        width: Val::Px(350.0),
+                        height: Val::Px(65.0),
+                        margin: UiRect::bottom(Val::Px(5.0)),
+                        border: UiRect::all(Val::Px(5.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..default()
                     },
-                    Button::JoinLobby,
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Buttons::JoinLobby,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Join Lobby",
-                        TextStyle {
+                    parent.spawn((
+                        Text::new("Join Lobby"),
+                        TextFont {
                             font_size: 35.0,
-                            color: Color::srgb(0.9, 0.9, 0.9),
                             ..default()
                         },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
                     ));
                 });
         })
         .with_children(|parent| {
             parent
                 .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(350.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: NORMAL_BUTTON.into(),
+                    Node {
+                        width: Val::Px(350.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..default()
                     },
-                    Button::CreateLobby,
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Buttons::CreateLobby,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Create Lobby",
-                        TextStyle {
+                    parent.spawn((
+                        Text::new("Create Lobby"),
+                        TextFont {
                             font_size: 35.0,
-                            color: Color::srgb(0.9, 0.9, 0.9),
                             ..default()
                         },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
                     ));
                 });
         });
 
     commands
         .spawn((
-            ButtonBundle {
-                style: Style {
-                    width: Val::Px(150.0),
-                    height: Val::Px(50.0),
-                    border: UiRect::all(Val::Px(5.0)),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    align_self: AlignSelf::Start,
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(0.),
-                    bottom: Val::Percent(5.),
-                    ..default()
-                },
-                border_color: BorderColor(Color::BLACK),
-                background_color: NORMAL_BUTTON.into(),
+            Node {
+                width: Val::Px(150.0),
+                height: Val::Px(50.0),
+                border: UiRect::all(Val::Px(5.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                align_self: AlignSelf::Start,
+                position_type: PositionType::Absolute,
+                left: Val::Px(0.),
+                bottom: Val::Percent(5.),
                 ..default()
             },
-            Button::Back(MainMenuStates::TitleScreen),
+            Button,
+            BorderColor(Color::BLACK),
+            BackgroundColor(NORMAL_BUTTON.into()),
+            Buttons::Back(MainMenuStates::TitleScreen),
         ))
         .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                "Back",
-                TextStyle {
-                    font_size: 30.0,
-                    color: Color::srgb(0.9, 0.9, 0.9),
+            parent.spawn((
+                Text::new("Back"),
+                TextFont {
+                    font_size: 35.0,
                     ..default()
                 },
+                TextColor(Color::srgb(0.9, 0.9, 0.9)),
             ));
         });
 }
@@ -386,65 +372,53 @@ const BACKGROUND_COLOR: Color = Color::srgb(0.15, 0.15, 0.15);
 
 fn display_join_screen(mut commands: Commands) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
+        .spawn(Node {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+
             ..default()
         })
         .with_children(|parent| {
             parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: Val::Px(300.0),
-                        border: UiRect::all(Val::Px(5.0)),
-                        padding: UiRect::all(Val::Px(5.0)),
-                        margin: UiRect::bottom(Val::Px(5.0)),
-                        ..default()
-                    },
-                    border_color: BORDER_COLOR_ACTIVE.into(),
-                    background_color: BACKGROUND_COLOR.into(),
+                Node {
+                    width: Val::Px(300.0),
+                    border: UiRect::all(Val::Px(5.0)),
+                    padding: UiRect::all(Val::Px(5.0)),
+                    margin: UiRect::bottom(Val::Px(5.0)),
                     ..default()
                 },
-                TextInputBundle::default().with_text_style(TextStyle {
-                    font_size: 40.,
-                    color: TEXT_COLOR,
-                    ..default()
-                }),
+                BorderColor(BORDER_COLOR_ACTIVE.into()),
+                BackgroundColor(BACKGROUND_COLOR.into()),
             ));
         })
         .with_children(|parent| {
             parent
                 .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(200.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: NORMAL_BUTTON.into(),
+                    Node {
+                        width: Val::Px(200.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..default()
                     },
-                    Button::Join,
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                    Buttons::Join,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Join",
-                        TextStyle {
+                    parent.spawn((
+                        Text::new("Join"),
+                        TextFont {
                             font_size: 35.0,
-                            color: Color::srgb(0.9, 0.9, 0.9),
                             ..default()
                         },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
                     ));
                 });
         });
@@ -534,7 +508,7 @@ fn display_steam_lobby(
                                     background_color: NORMAL_BUTTON.into(),
                                     ..default()
                                 },
-                                Button::InvitePlayer,
+                                Buttons::InvitePlayer,
                             ))
                             .with_children(|parent| {
                                 parent.spawn((
@@ -584,7 +558,7 @@ fn display_steam_lobby(
                         background_color: BURLYWOOD.into(),
                         ..default()
                     },
-                    Button::StartGame,
+                    Buttons::StartGame,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
@@ -632,7 +606,7 @@ fn display_steam_lobby(
                 background_color: NORMAL_BUTTON.into(),
                 ..default()
             },
-            Button::Back(MainMenuStates::Multiplayer),
+            Buttons::Back(MainMenuStates::Multiplayer),
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
@@ -651,7 +625,7 @@ fn add_player_to_lobby_slot(
     mut commands: Commands,
     mut text_query: Query<(Entity, &mut Text, &LobbySlotName), Without<LobbySlotOwner>>,
     mut checkbox_query: Query<
-        (Entity, &mut Visibility, &LobbySlotName, &mut UiImage),
+        (Entity, &mut Visibility, &LobbySlotName, &mut ImageNode),
         (With<Checkbox>, Without<LobbySlotOwner>),
     >,
     mut network_events: EventReader<NetworkEvent>,
@@ -668,7 +642,7 @@ fn add_player_to_lobby_slot(
     for event in network_events.read() {
         if let ServerMessages::PlayerJoinedLobby { id, ready_state } = &event.message {
             if let Some((entity, mut text, _)) = text_query_sorted.next() {
-                text.sections[0].value = id.to_string();
+                text.0 = id.to_string();
                 commands.entity(entity).insert(LobbySlotOwner(*id));
             }
             if let Some((entity, mut checkbox, _, mut checkbox_image)) =
@@ -679,10 +653,10 @@ fn add_player_to_lobby_slot(
                 match ready_state {
                     Checkbox::Checked => {
                         *checkbox_image =
-                            UiImage::new(asset_server.load("ui/checkbox_checked.png"));
+                            ImageNode::new(asset_server.load("ui/checkbox_checked.png"));
                     }
                     Checkbox::Unchecked => {
-                        *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+                        *checkbox_image = ImageNode::new(asset_server.load("ui/checkbox.png"));
                     }
                 }
             }
@@ -701,7 +675,7 @@ fn remove_player_from_lobby(
         (
             Entity,
             &mut Visibility,
-            &mut UiImage,
+            &mut ImageNode,
             &mut Checkbox,
             &LobbySlotOwner,
         ),
@@ -715,7 +689,7 @@ fn remove_player_from_lobby(
             for (entity, mut text, lobby, slot) in &mut text_query {
                 if lobby.0.eq(id) {
                     commands.entity(entity).remove::<LobbySlotOwner>();
-                    text.sections[0].value = format!("Slot {}", slot.0);
+                    text.0 = format!("Slot {}", slot.0);
                 }
             }
             for (entity, mut visibility, mut checkbox_image, mut checkbox, lobb) in
@@ -724,7 +698,7 @@ fn remove_player_from_lobby(
                 if lobb.0.eq(id) {
                     commands.entity(entity).remove::<LobbySlotOwner>();
                     *visibility = Visibility::Hidden;
-                    *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+                    *checkbox_image = ImageNode::new(asset_server.load("ui/checkbox.png"));
                     *checkbox = Checkbox::Unchecked;
                 }
             }
@@ -734,7 +708,7 @@ fn remove_player_from_lobby(
 
 fn update_players_checkbox(
     mut network_events: EventReader<NetworkEvent>,
-    mut checkbox_query: Query<(&LobbySlotOwner, &mut UiImage), With<Checkbox>>,
+    mut checkbox_query: Query<(&LobbySlotOwner, &mut ImageNode), With<Checkbox>>,
     asset_server: Res<AssetServer>,
 ) {
     for event in network_events.read() {
@@ -744,10 +718,10 @@ fn update_players_checkbox(
                     match ready_state {
                         Checkbox::Checked => {
                             *checkbox_image =
-                                UiImage::new(asset_server.load("ui/checkbox_checked.png"));
+                                ImageNode::new(asset_server.load("ui/checkbox_checked.png"));
                         }
                         Checkbox::Unchecked => {
-                            *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+                            *checkbox_image = ImageNode::new(asset_server.load("ui/checkbox.png"));
                         }
                     }
                 }
@@ -760,7 +734,7 @@ fn update_players_checkbox(
 fn lobby_slot_checkbox(
     mut commands: Commands,
     mut checkbox_query: Query<
-        (&Interaction, &mut UiImage, &mut Checkbox, &LobbySlotOwner),
+        (&Interaction, &mut ImageNode, &mut Checkbox, &LobbySlotOwner),
         (Changed<Interaction>, With<Checkbox>),
     >,
     mut client: ResMut<RenetClient>,
@@ -774,12 +748,11 @@ fn lobby_slot_checkbox(
         match *interactions {
             Interaction::Pressed => match *checkbox {
                 Checkbox::Checked => {
-                    *checkbox_image = UiImage::new(asset_server.load("ui/checkbox.png"));
+                    *checkbox_image = ImageNode::new(asset_server.load("ui/checkbox.png"));
                     *checkbox = Checkbox::Unchecked;
-                    commands.spawn(AudioBundle {
-                        source: asset_server.load("sound/switch_002.ogg"),
-                        ..Default::default()
-                    });
+                    commands.spawn(AudioPlayer::<AudioSource>(
+                        asset_server.load("sound/switch_002.ogg"),
+                    ));
 
                     let message = PlayerCommand::LobbyReadyState(Checkbox::Unchecked);
 
@@ -789,12 +762,11 @@ fn lobby_slot_checkbox(
                 }
 
                 Checkbox::Unchecked => {
-                    *checkbox_image = UiImage::new(asset_server.load("ui/checkbox_checked.png"));
+                    *checkbox_image = ImageNode::new(asset_server.load("ui/checkbox_checked.png"));
                     *checkbox = Checkbox::Checked;
-                    commands.spawn(AudioBundle {
-                        source: asset_server.load("sound/switch_002.ogg"),
-                        ..Default::default()
-                    });
+                    commands.spawn(AudioPlayer::<AudioSource>(
+                        asset_server.load("sound/switch_002.ogg"),
+                    ));
 
                     let message = PlayerCommand::LobbyReadyState(Checkbox::Checked);
 
