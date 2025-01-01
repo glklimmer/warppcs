@@ -31,9 +31,8 @@ impl Plugin for AIPlugin {
 
         app.add_systems(
             FixedUpdate, // TODO: This should be less then update
-            determine_behaviour.run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
+            determine_behaviour
+                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
     }
 }

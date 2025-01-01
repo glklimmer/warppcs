@@ -44,7 +44,7 @@ impl Plugin for SpawnPlugin {
                 )
                     .chain(),
             )
-                .run_if(on_event::<NetworkEvent>())
+                .run_if(on_event::<NetworkEvent>)
                 .in_set(Connected),
         );
     }
@@ -180,18 +180,18 @@ fn spawn_projectile(
         let position: Vec3 = (*translation).into();
         let position = position.truncate();
 
-        let angle = (direction - position).angle_between(position);
+        let angle = (direction - position).angle_to(position);
 
         let client_entity = commands
             .spawn((
-                SpriteBundle {
-                    transform: Transform {
-                        translation: (*translation).into(),
-                        scale: Vec3::splat(2.0),
-                        rotation: Quat::from_rotation_z(angle),
-                    },
-                    texture,
+                Sprite {
+                    image: texture,
                     ..default()
+                },
+                Transform {
+                    translation: (*translation).into(),
+                    scale: Vec3::splat(2.0),
+                    rotation: Quat::from_rotation_z(angle),
                 },
                 PartOfScene,
             ))

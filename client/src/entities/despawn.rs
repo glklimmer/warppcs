@@ -10,7 +10,7 @@ impl Plugin for DespawnPlugin {
         app.add_systems(
             FixedUpdate,
             (despawn_entity)
-                .run_if(on_event::<NetworkEvent>())
+                .run_if(on_event::<NetworkEvent>)
                 .in_set(Connected),
         );
     }

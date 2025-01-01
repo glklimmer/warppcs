@@ -1,6 +1,9 @@
 use bevy::prelude::*;
+use bevy_renet::{
+    netcode::NetcodeServerTransport,
+    renet::{ClientId, RenetServer},
+};
 
-use bevy_renet::renet::{transport::NetcodeServerTransport, ClientId, RenetServer};
 use std::collections::BTreeMap;
 
 use crate::networking::{Checkbox, MultiplayerRoles, PlayerCommand, ServerChannel, ServerMessages};
@@ -34,7 +37,7 @@ impl Plugin for LobbyPlugin {
         app.add_event::<PlayerJoinedLobby>();
         app.add_event::<PlayerLeftLobby>();
 
-        app.add_systems(FixedUpdate, lobby_check.run_if(on_event::<NetworkEvent>()));
+        app.add_systems(FixedUpdate, lobby_check.run_if(on_event::<NetworkEvent>));
 
         app.add_systems(
             FixedUpdate,
@@ -43,7 +46,7 @@ impl Plugin for LobbyPlugin {
 
         app.add_systems(
             FixedUpdate,
-            remove_player.run_if(on_event::<PlayerLeftLobby>()),
+            remove_player.run_if(on_event::<PlayerLeftLobby>),
         );
     }
 }

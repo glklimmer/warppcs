@@ -12,7 +12,7 @@ impl Plugin for PlayerPlugin {
         app.add_systems(
             FixedUpdate,
             (remove_player)
-                .run_if(on_event::<NetworkEvent>())
+                .run_if(on_event::<NetworkEvent>)
                 .in_set(Connected),
         );
     }

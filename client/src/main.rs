@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 
-use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_renet::client_connected;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
@@ -88,8 +87,10 @@ fn main() {
 
     #[cfg(feature = "netcode")]
     {
-        use bevy_renet::transport::NetcodeClientPlugin;
-        use bevy_renet::{renet::transport::NetcodeTransportError, transport::NetcodeServerPlugin};
+        use bevy_renet::netcode::{
+            NetcodeClientPlugin, NetcodeServerPlugin, NetcodeTransportError,
+        };
+
         use networking::join_server::join_netcode_server;
         use shared::server::create_server::create_netcode_server;
         use std::env;
@@ -131,24 +132,22 @@ fn setup_background(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // Plain
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(meshes.add(Rectangle::new(6000.0, 2000.0))),
-        material: materials.add(Color::hsl(109., 0.97, 0.88)),
-        transform: Transform::from_xyz(0.0, -1000.0, 0.0),
-        ..default()
-    });
+    commands.spawn((
+        Mesh2d(meshes.add(Rectangle::new(6000.0, 2000.0))),
+        MeshMaterial2d(materials.add(Color::hsl(109., 0.97, 0.88))),
+        Transform::from_xyz(0.0, -1000.0, 0.0),
+    ));
 
     // light
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
+    commands.spawn((
+        DirectionalLight {
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform {
+        Transform {
             translation: Vec3::new(0.0, 2.0, 0.0),
             rotation: Quat::from_rotation_x(-PI / 4.),
             ..default()
         },
-        ..default()
-    });
+    ));
 }

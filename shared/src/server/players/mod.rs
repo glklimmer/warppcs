@@ -20,7 +20,7 @@ impl Plugin for PlayerPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (attack, interact).run_if(on_event::<NetworkEvent>()),
+            (attack, interact).run_if(on_event::<NetworkEvent>),
         );
     }
 }

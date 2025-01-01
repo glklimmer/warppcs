@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy::{color::palettes::css::YELLOW, sprite::Mesh2dHandle};
+use bevy::color::palettes::css::YELLOW;
 use shared::map::scenes::fight::FightSceneIndicator;
 use shared::{
     map::{
@@ -29,7 +29,7 @@ impl Plugin for MapPlugin {
         app.add_systems(
             FixedUpdate,
             (load_game_scene, update_building)
-                .run_if(on_event::<NetworkEvent>())
+                .run_if(on_event::<NetworkEvent>)
                 .in_set(Connected),
         );
     }
@@ -68,24 +68,14 @@ fn load_game_scene(
             match map_type {
                 GameSceneType::Fight => {
                     let fight = FightScene::new();
-                    commands
-                        .spawn((
-                            fight.left_main_building,
-                            SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
-                            (
-                                asset_server.load::<Image>("sprites/buildings/main_house_red.png"),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.left_main_building.transform
-                        });
+                    commands.spawn((
+                        fight.left_main_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
+                        Sprite::from_image(
+                            asset_server.load::<Image>("sprites/buildings/main_house_red.png"),
+                        ),
+                        PartOfScene,
+                    ));
 
                     spawn_building(
                         buildings,
@@ -130,24 +120,15 @@ fn load_game_scene(
                         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
                     );
 
-                    commands
-                        .spawn((
-                            fight.right_main_building,
-                            SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
-                            (
-                                asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..fight.right_main_building.transform
-                        });
+                    commands.spawn((
+                        fight.right_main_building,
+                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
+                        Sprite::from_image(
+                            asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
+                        ),
+                        PartOfScene,
+                    ));
+
                     spawn_building(
                         buildings,
                         &mut commands,
@@ -193,24 +174,15 @@ fn load_game_scene(
                 }
                 GameSceneType::Base(color) => {
                     let base = BaseScene::new();
-                    commands
-                        .spawn((
-                            base.main_building,
-                            SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
-                            (
-                                asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..base.main_building.transform
-                        });
+                    commands.spawn((
+                        base.main_building,
+                        SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
+                        Sprite::from_image(
+                            asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
+                        ),
+                        PartOfScene,
+                    ));
+
                     spawn_building(
                         buildings,
                         &mut commands,
@@ -246,54 +218,32 @@ fn load_game_scene(
                         base.right_wall,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::RightWall),
                     );
-                    commands
-                        .spawn((
-                            base.left_gold_farm,
-                            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
-                            (
-                                asset_server.load::<Image>(base.left_gold_farm.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..base.left_gold_farm.transform
-                        });
-                    commands
-                        .spawn((
-                            base.right_gold_farm,
-                            SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
-                            (
-                                asset_server.load::<Image>(base.right_gold_farm.textures.marker),
-                                Sprite::default(),
-                                GlobalTransform::default(),
-                                Visibility::default(),
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                            ),
-                            PartOfScene,
-                        ))
-                        .insert(Transform {
-                            scale: Vec3::splat(3.0),
-                            ..base.right_gold_farm.transform
-                        });
+                    commands.spawn((
+                        base.left_gold_farm,
+                        SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
+                        Sprite::from_image(
+                            asset_server.load::<Image>(base.left_gold_farm.textures.marker),
+                        ),
+                        PartOfScene,
+                    ));
+
+                    commands.spawn((
+                        base.right_gold_farm,
+                        SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
+                        Sprite::from_image(
+                            asset_server.load::<Image>(base.right_gold_farm.textures.marker),
+                        ),
+                        PartOfScene,
+                    ));
+
                     commands.spawn((
                         base.left_spawn_point,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::LeftSpawnPoint),
                         (
-                            Mesh2dHandle(
+                            Mesh2d(
                                 meshes.add(Rectangle::from_size(base.left_spawn_point.collider.0)),
                             ),
-                            materials.add(Color::from(YELLOW)),
-                            GlobalTransform::default(),
-                            Visibility::default(),
-                            InheritedVisibility::default(),
-                            ViewVisibility::default(),
+                            MeshMaterial2d(materials.add(Color::from(YELLOW))),
                         ),
                         PartOfScene,
                     ));
@@ -301,14 +251,10 @@ fn load_game_scene(
                         base.right_spawn_point,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
                         (
-                            Mesh2dHandle(
+                            Mesh2d(
                                 meshes.add(Rectangle::from_size(base.left_spawn_point.collider.0)),
                             ),
-                            materials.add(Color::from(YELLOW)),
-                            GlobalTransform::default(),
-                            Visibility::default(),
-                            InheritedVisibility::default(),
-                            ViewVisibility::default(),
+                            MeshMaterial2d(materials.add(Color::from(YELLOW))),
                         ),
                         PartOfScene,
                     ));
@@ -340,24 +286,16 @@ fn spawn_building(
     building_bundle: BuildingBundle,
     indicator: SceneBuildingIndicator,
 ) {
-    commands
-        .spawn((
-            building_bundle,
+    commands.spawn((
+        building_bundle,
+        indicator,
+        Sprite::from_image(asset_server.load::<Image>(building_texture(
+            buildings,
             indicator,
-            (
-                asset_server.load::<Image>(building_texture(buildings, indicator, building_bundle)),
-                Sprite::default(),
-                GlobalTransform::default(),
-                Visibility::default(),
-                InheritedVisibility::default(),
-                ViewVisibility::default(),
-            ),
-            PartOfScene,
-        ))
-        .insert(Transform {
-            scale: Vec3::splat(3.0),
-            ..building_bundle.transform
-        });
+            building_bundle,
+        ))),
+        PartOfScene,
+    ));
 }
 
 fn building_texture(
@@ -400,7 +338,7 @@ fn update_building(
                 };
 
                 let texture = asset_server.load::<Image>(texture);
-                commands.entity(entity).insert(texture);
+                commands.entity(entity).insert(Sprite::from_image(texture));
             }
         }
     }

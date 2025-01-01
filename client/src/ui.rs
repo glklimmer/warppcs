@@ -21,29 +21,24 @@ impl Plugin for UiPlugin {
 
 fn setup_ui(mut commands: Commands) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                width: Val::Px(350.0),
-                height: Val::Px(130.0),
-                top: Val::Px(30.),
-                right: Val::Px(0.),
-                position_type: PositionType::Absolute,
-                ..default()
-            },
+        .spawn(Node {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            width: Val::Px(350.0),
+            height: Val::Px(130.0),
+            top: Val::Px(30.),
+            right: Val::Px(0.),
+            position_type: PositionType::Absolute,
             ..default()
         })
         .with_children(|parent| {
             parent.spawn((
-                TextBundle::from_section(
-                    "GOLD DISPLAY".to_string(),
-                    TextStyle {
-                        font_size: 25.0,
-                        color: Color::srgb(0.9, 0.9, 0.9),
-                        ..default()
-                    },
-                ),
+                Text::new("DISPLAY"),
+                TextFont {
+                    font_size: 25.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.9, 0.9, 0.9)),
                 GoldAmountDisplay,
             ));
         });
@@ -56,7 +51,7 @@ fn update_gold_amount(
     for event in network_events.read() {
         if let ServerMessages::SyncInventory(inventory) = &event.message {
             let mut gold_display = gold_display_query.single_mut();
-            gold_display.sections[0].value = format!("Gold Amount {:?}", inventory.gold);
+            gold_display.0 = format!("Gold Amount {:?}", inventory.gold);
         }
     }
 }

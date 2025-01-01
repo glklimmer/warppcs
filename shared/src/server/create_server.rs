@@ -1,18 +1,22 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::RenetServer;
+use bevy_renet::{
+    netcode::{NetcodeServerTransport, ServerAuthentication, ServerConfig},
+    renet::RenetServer,
+};
 
 use crate::networking::{connection_config, MultiplayerRoles};
 
 pub fn create_steam_server(mut commands: Commands) {
     use crate::steamworks::SteamworksClient;
-    use renet_steam::bevy::{SteamServerConfig, SteamServerTransport};
     use renet_steam::AccessPermission;
+    use renet_steam::SteamServerConfig;
+    use renet_steam::SteamServerTransport;
 
     let server: RenetServer = RenetServer::new(connection_config());
     commands.insert_resource(server);
 
-    commands.add(|world: &mut World| {
+    commands.queue(|world: &mut World| {
         let steam_client = world.get_resource::<SteamworksClient>().unwrap();
         println!("From Server lib: {}", steam_client.friends().name());
         let steam_transport_config = SteamServerConfig {
@@ -31,9 +35,6 @@ pub fn create_netcode_server(
     mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
 ) {
     use crate::networking::PROTOCOL_ID;
-    use bevy_renet::renet::transport::{
-        NetcodeServerTransport, ServerAuthentication, ServerConfig,
-    };
     use std::{net::UdpSocket, time::SystemTime};
 
     let server = RenetServer::new(connection_config());

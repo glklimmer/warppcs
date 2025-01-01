@@ -27,9 +27,7 @@ impl Plugin for MovementPlugin {
                 apply_gravity,
                 move_players_system,
             )
-                .run_if(
-                    in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-                ),
+                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
     }
 }
@@ -37,7 +35,7 @@ impl Plugin for MovementPlugin {
 fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, time: Res<Time>) {
     for (mut velocity, transform, collider) in &mut query {
         if transform.translation.y - collider.0.y > 0. {
-            velocity.0.y -= GRAVITY_G * time.delta_seconds();
+            velocity.0.y -= GRAVITY_G * time.delta_secs();
         } else {
             velocity.0.y = 0.;
         }
@@ -102,7 +100,7 @@ fn move_players_system(
 
 fn apply_velocity(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>) {
     for (velocity, mut transform) in query.iter_mut() {
-        transform.translation += velocity.0.extend(0.) * time.delta_seconds();
+        transform.translation += velocity.0.extend(0.) * time.delta_secs();
     }
 }
 

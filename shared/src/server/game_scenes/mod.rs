@@ -44,9 +44,8 @@ impl Plugin for GameScenesPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (check_travel, travel).run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
+            (check_travel, travel)
+                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
     }
 }

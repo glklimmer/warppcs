@@ -33,7 +33,7 @@ pub struct StartGamePlugin;
 
 impl Plugin for StartGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, (start_game).run_if(on_event::<NetworkEvent>()));
+        app.add_systems(FixedUpdate, (start_game).run_if(on_event::<NetworkEvent>));
     }
 }
 

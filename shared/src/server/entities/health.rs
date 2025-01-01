@@ -26,13 +26,12 @@ impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<TakeDamage>();
 
-        app.add_systems(FixedUpdate, (apply_damage).run_if(on_event::<TakeDamage>()));
+        app.add_systems(FixedUpdate, (apply_damage).run_if(on_event::<TakeDamage>));
 
         app.add_systems(
             FixedUpdate,
-            (on_unit_death, on_building_destroy, delayed_despawn).run_if(
-                in_state(GameState::GameSession).and_then(in_state(MultiplayerRoles::Host)),
-            ),
+            (on_unit_death, on_building_destroy, delayed_despawn)
+                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
     }
 }

@@ -112,12 +112,12 @@ fn is_full_animation(animation: &UnitAnimation) -> bool {
 }
 
 pub fn set_unit_sprite_animation(
-    mut query: Query<(&UnitType, &mut SpriteSheetAnimation, &mut TextureAtlas)>,
+    mut query: Query<(&UnitType, &mut SpriteSheetAnimation, &mut Sprite)>,
     mut animation_changed: EventReader<AnimationTrigger<UnitAnimation>>,
     sprite_sheets: Res<UnitSpriteSheets>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((unit_type, mut sprite_animation, mut atlas)) =
+        if let Ok((unit_type, mut sprite_animation, mut sprite)) =
             query.get_mut(new_animation.entity)
         {
             let animation = sprite_sheets
@@ -126,7 +126,10 @@ pub fn set_unit_sprite_animation(
                 .animations
                 .get(new_animation.state);
 
-            atlas.index = animation.first_sprite_index;
+            if let Some(atlas) = &mut sprite.texture_atlas {
+                atlas.index = animation.first_sprite_index;
+            }
+
             *sprite_animation = animation.clone();
         }
     }

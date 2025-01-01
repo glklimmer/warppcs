@@ -31,8 +31,8 @@ pub struct SpriteSheetAnimation {
 
 #[derive(Bundle)]
 pub struct SpriteAnimationBundle {
-    pub sprite: SpriteBundle,
-    pub texture_atlas: TextureAtlas,
+    pub sprite: Sprite,
+    pub transform: Transform,
     pub initial_animation: SpriteSheetAnimation,
 }
 
@@ -45,18 +45,18 @@ impl SpriteAnimationBundle {
     ) -> Self {
         let animation = sprite_sheet.animations.get(animation);
         SpriteAnimationBundle {
-            sprite: SpriteBundle {
-                transform: Transform {
-                    translation: (*translation).into(),
-                    scale: Vec3::splat(scale),
-                    ..default()
-                },
-                texture: sprite_sheet.texture.clone(),
+            sprite: Sprite {
+                image: sprite_sheet.texture.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: sprite_sheet.layout.clone(),
+                    index: animation.first_sprite_index,
+                }),
                 ..default()
             },
-            texture_atlas: TextureAtlas {
-                layout: sprite_sheet.layout.clone(),
-                index: animation.first_sprite_index,
+            transform: Transform {
+                translation: (*translation).into(),
+                scale: Vec3::splat(scale),
+                ..default()
             },
             initial_animation: animation.clone(),
         }
@@ -195,13 +195,14 @@ fn advance_animation(
     mut query: Query<(
         Entity,
         &mut SpriteSheetAnimation,
-        &mut TextureAtlas,
+        &mut Sprite,
         Option<&FullAnimation>,
         Option<&PlayOnce>,
     )>,
 ) {
-    for (entity, mut animation, mut atlas, maybe_full, maybe_play_once) in &mut query {
+    for (entity, mut animation, mut sprite, maybe_full, maybe_play_once) in &mut query {
         animation.frame_timer.tick(time.delta());
+        let atlas = sprite.texture_atlas.as_mut().unwrap();
 
         if animation.frame_timer.just_finished() {
             atlas.index = if atlas.index == animation.last_sprite_index {
