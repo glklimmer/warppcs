@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy::math::bounding::{Aabb2d, IntersectsVolume};
+use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::{ClientId, RenetServer};
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
@@ -104,10 +104,7 @@ fn check_building_interaction(
         let (player_transform, player_collider, player_scene, inventory) =
             player.get(*player_entity).unwrap();
 
-        let player_bounds = Aabb2d::new(
-            player_transform.translation.truncate(),
-            player_collider.half_size(),
-        );
+        let player_bounds = player_collider.at(player_transform);
 
         for (
             entity,
@@ -124,10 +121,7 @@ fn check_building_interaction(
                 continue;
             }
 
-            let zone_bounds = Aabb2d::new(
-                building_transform.translation.truncate(),
-                building_collider.half_size(),
-            );
+            let zone_bounds = building_collider.at(building_transform);
 
             if player_bounds.intersects(&zone_bounds) {
                 if owner.0.ne(&client_id) {

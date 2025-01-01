@@ -5,8 +5,9 @@ use crate::networking::{
     ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, PlayerCommand,
     PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
 };
+use crate::server::entities::health::Health;
 use crate::server::physics::movement::Velocity;
-use crate::BoxCollider;
+use crate::PLAYER_COLLIDER;
 
 use bevy_renet::{
     renet::{ClientId, RenetServer, ServerEvent},
@@ -98,7 +99,11 @@ fn client_connections(
                 println!("Player {} connected.", client_id);
 
                 let player_entity = commands
-                    .spawn((ServerPlayer(*client_id), BoxCollider(Vec2::new(50., 90.))))
+                    .spawn((
+                        ServerPlayer(*client_id),
+                        Health { hitpoints: 200. },
+                        PLAYER_COLLIDER,
+                    ))
                     .id();
 
                 lobby.players.insert(*client_id, player_entity);

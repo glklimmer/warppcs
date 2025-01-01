@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 
-use bevy::math::bounding::{Aabb2d, IntersectsVolume};
+use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::{ClientId, RenetServer};
 
 use crate::server::physics::PushBack;
+use crate::UNIT_COLLIDER;
 use crate::{
     map::{
         buildings::{BuildStatus, Building, RecruitmentBuilding},
@@ -102,7 +103,7 @@ pub fn recruit(
                     Velocity::default(),
                     FlagAssignment(flag_entity, offset),
                     UnitBehaviour::FollowFlag(flag_entity, offset),
-                    BoxCollider(Vec2::new(50., 90.)),
+                    UNIT_COLLIDER,
                     PushBack {
                         timer: Timer::from_seconds(1., TimerMode::Once),
                     },
@@ -151,10 +152,7 @@ pub fn check_recruit(
         let (player_transform, player_collider, player_scene, inventory) =
             player.get(*player_entity).unwrap();
 
-        let player_bounds = Aabb2d::new(
-            player_transform.translation.truncate(),
-            player_collider.half_size(),
-        );
+        let player_bounds = player_collider.at(player_transform);
 
         for (
             building_transform,
@@ -191,10 +189,7 @@ pub fn check_recruit(
                 continue;
             }
 
-            let zone_bounds = Aabb2d::new(
-                building_transform.translation.truncate(),
-                building_collider.half_size(),
-            );
+            let zone_bounds = building_collider.at(building_transform);
             if player_bounds.intersects(&zone_bounds) {
                 recruit.send(RecruitEvent {
                     client_id,

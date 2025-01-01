@@ -16,7 +16,10 @@ impl SpawnPointBundle {
     pub fn new(x: f32) -> Self {
         SpawnPointBundle {
             spawn_point: SpawnPoint,
-            collider: BoxCollider(Vec2::new(100., 100.)),
+            collider: BoxCollider {
+                dimension: Vec2::new(100., 100.),
+                offset: None,
+            },
             transform: Transform::from_xyz(x, 50., 0.),
         }
     }

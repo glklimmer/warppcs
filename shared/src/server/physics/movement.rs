@@ -9,7 +9,7 @@ use crate::{
     },
     BoxCollider, GameState, GRAVITY_G,
 };
-use bevy::math::bounding::{Aabb2d, IntersectsVolume};
+use bevy::math::bounding::IntersectsVolume;
 
 use super::PushBack;
 
@@ -37,8 +37,9 @@ impl Plugin for MovementPlugin {
 
 fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, time: Res<Time>) {
     for (mut velocity, transform, collider) in &mut query {
-        let bottom = transform.translation.y - collider.half_size().y;
-        let next_bottom = bottom + velocity.0.y * time.delta_secs();
+        let bottom = transform.translation.truncate() - collider.half_size()
+            + collider.offset.unwrap_or_else(|| Vec2::ZERO);
+        let next_bottom = bottom.y + velocity.0.y * time.delta_secs();
 
         if next_bottom > 0. {
             velocity.0.y -= GRAVITY_G * time.delta_secs();
@@ -73,7 +74,7 @@ fn move_players_system(
         let desired_velocity = direction * PLAYER_MOVE_SPEED;
 
         let future_position = player_transform.translation.truncate() + direction;
-        let future_bounds = Aabb2d::new(future_position, player_collider.half_size());
+        let future_bounds = player_collider.at_pos(future_position);
 
         let mut would_collide = false;
         for (building_transform, building_collider, builing_scene, owner, building) in
@@ -91,10 +92,7 @@ fn move_players_system(
                 continue;
             }
 
-            let building_bounds = Aabb2d::new(
-                building_transform.translation.truncate(),
-                building_collider.half_size(),
-            );
+            let building_bounds = building_collider.at(building_transform);
 
             if building_bounds.intersects(&future_bounds) {
                 would_collide = true;
