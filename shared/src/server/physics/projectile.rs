@@ -4,7 +4,9 @@ use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::RenetServer;
 
 use crate::map::GameSceneId;
-use crate::networking::{MultiplayerRoles, Owner, ProjectileType, ServerChannel, ServerMessages};
+use crate::networking::{
+    Facing, MultiplayerRoles, Owner, ProjectileType, ServerChannel, ServerMessages,
+};
 use crate::server::ai::attack::projectile_damage;
 use crate::server::entities::health::TakeDamage;
 use crate::{BoxCollider, DelayedDespawn, GameState};
@@ -66,9 +68,15 @@ fn projectile_collision(
             );
 
             if projectile.intersects(&target) {
+                let delta_x = target_transform.translation.x - transform.translation.x;
+
                 attack_events.send(TakeDamage {
                     target_entity,
                     damage: projectile_damage(projectile_type),
+                    direction: match delta_x > 0. {
+                        true => Facing::Left,
+                        false => Facing::Right,
+                    },
                 });
                 commands.entity(entity).despawn();
                 let despawn = ServerMessages::DespawnEntity {
