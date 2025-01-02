@@ -99,7 +99,6 @@ fn travel(
     mut commands: Commands,
     mut traveling: EventReader<TravelEvent>,
     mut server: ResMut<RenetServer>,
-    mut sender: EventWriter<SendServerMessage>,
     lobby: Res<ServerLobby>,
     game_world: Res<GameWorld>,
     player_skins: Query<&PlayerSkin>,
@@ -149,10 +148,18 @@ fn travel(
         }
         let current_game_scene_id = scene_ids.get(player_entity).unwrap();
 
-        sender.send(SendServerMessage {
-            message: ServerMessages::DespawnEntity { entities },
-            game_scene_id: *current_game_scene_id,
-        });
+        let message = ServerMessages::DespawnEntity { entities };
+        let message = bincode::serialize(&message).unwrap();
+        for (other_client_id, other_entity) in lobby.players.iter() {
+            let other_scene_id = scene_ids.get(*other_entity).unwrap();
+            if current_game_scene_id.eq(other_scene_id) {
+                server.send_message(
+                    *other_client_id,
+                    ServerChannel::ServerMessages,
+                    message.clone(),
+                );
+            }
+        }
 
         // Travel Player, flag and units to new game scene
         let target_transform = Transform::from_translation(target_position);
@@ -203,7 +210,7 @@ fn travel(
             .map(|(_, owner, entity, unit, translation)| SpawnUnit {
                 owner: *owner,
                 entity,
-                unit_type: unit.unit_type.clone(),
+                unit_type: unit.unit_type,
                 translation: translation.translation.into(),
             })
             .collect();
@@ -213,7 +220,7 @@ fn travel(
                     owner: Owner(client_id),
                     entity: *unit,
                     translation: target_transform.translation.into(),
-                    unit_type: info.unit_type.clone(),
+                    unit_type: info.unit_type,
                 });
             }
         }
@@ -259,21 +266,30 @@ fn travel(
                     owner: Owner(client_id),
                     entity: *unit,
                     translation: target_transform.translation.into(),
-                    unit_type: info.unit_type.clone(),
+                    unit_type: info.unit_type,
                 });
             }
         }
-        sender.send(SendServerMessage {
-            message: ServerMessages::SpawnGroup {
-                player: SpawnPlayer {
-                    id: client_id,
-                    entity: player_entity,
-                    translation: target_transform.translation.into(),
-                    skin: *skin,
-                },
-                units: unit_spawns,
+
+        let message = ServerMessages::SpawnGroup {
+            player: SpawnPlayer {
+                id: client_id,
+                entity: player_entity,
+                translation: target_transform.translation.into(),
+                skin: *skin,
             },
-            game_scene_id: target_game_scene_id,
-        });
+            units: unit_spawns,
+        };
+        let message = bincode::serialize(&message).unwrap();
+        for (other_client_id, other_entity) in lobby.players.iter() {
+            let other_scene_id = scene_ids.get(*other_entity).unwrap();
+            if target_game_scene_id.eq(other_scene_id) {
+                server.send_message(
+                    *other_client_id,
+                    ServerChannel::ServerMessages,
+                    message.clone(),
+                );
+            }
+        }
     }
 }
