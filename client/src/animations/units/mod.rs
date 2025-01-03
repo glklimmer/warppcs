@@ -17,11 +17,12 @@ pub mod pikeman;
 pub mod shieldwarrior;
 
 #[derive(Component)]
-#[require(PartOfScene, BoxCollider(unit_collider))]
+#[require(PartOfScene, BoxCollider(unit_collider), UnitAnimation)]
 pub struct Unit;
 
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable)]
+#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum UnitAnimation {
+    #[default]
     Idle,
     Walk,
     Attack,
