@@ -15,7 +15,7 @@ use bevy_renet::renet::RenetServer;
 use super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
     entities::Unit,
-    networking::{GameWorld, SendServerMessage, ServerLobby, ServerPlayer},
+    networking::{GameWorld, ServerLobby, ServerPlayer},
     physics::movement::Velocity,
     players::InteractEvent,
 };
