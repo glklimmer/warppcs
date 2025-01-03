@@ -29,6 +29,13 @@ pub struct PushBack {
     pub timer: Timer,
 }
 
+impl Default for PushBack {
+    fn default() -> Self {
+        Self {
+            timer: Timer::from_seconds(1., TimerMode::Once),
+        }
+    }
+}
 fn apply_force_on_hit(
     mut hit: EventReader<TakeDamage>,
     mut query: Query<(&mut Velocity, &mut PushBack)>,
