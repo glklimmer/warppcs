@@ -1,16 +1,13 @@
 use bevy::prelude::*;
 
-use bevy::math::bounding::IntersectsVolume;
-use bevy_renet::renet::{ClientId, RenetServer};
-
-use crate::server::physics::PushBack;
-use crate::UNIT_COLLIDER;
 use crate::{
     map::{
         buildings::{BuildStatus, Building, RecruitmentBuilding},
         GameSceneId, Layers,
     },
-    networking::{Inventory, Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, UnitType},
+    networking::{
+        Faction, Inventory, Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, UnitType,
+    },
     server::{
         ai::{
             attack::{unit_health, unit_swing_timer},
@@ -18,11 +15,13 @@ use crate::{
         },
         entities::{health::Health, Unit},
         networking::ServerLobby,
-        physics::{attachment::AttachedTo, movement::Velocity},
+        physics::{attachment::AttachedTo, movement::Velocity, PushBack},
         players::InteractEvent,
     },
-    BoxCollider,
+    BoxCollider, UNIT_COLLIDER,
 };
+use bevy::math::bounding::IntersectsVolume;
+use bevy_renet::renet::{ClientId, RenetServer};
 
 #[derive(Component)]
 pub struct FlagHolder(pub Entity);
@@ -90,7 +89,11 @@ pub fn recruit(
         let health = Health {
             hitpoints: unit_health(&unit_type),
         };
-        let owner = Owner(event.client_id);
+        let owner = Owner {
+            faction: Faction::Player {
+                client_id: event.client_id,
+            },
+        };
 
         for unit_number in 1..=4 {
             let offset = Vec2::new(40. * (unit_number - 3) as f32 + 20., 0.);
@@ -163,12 +166,15 @@ pub fn check_recruit(
             building_owner,
         ) in building.iter()
         {
-            if building_owner.0.ne(&client_id) {
-                // println!(
-                //     "Building not same owner. Building: {}, player: {}",
-                //     building_owner.0, client_id
-                // );
-                // // continue;
+            match building_owner.faction {
+                Faction::Player {
+                    client_id: other_client_id,
+                } => {
+                    if other_client_id.ne(&client_id) {
+                        continue;
+                    }
+                }
+                _ => continue,
             }
             if player_scene.ne(builing_scene) {
                 continue;

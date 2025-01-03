@@ -27,6 +27,7 @@ pub enum UnitType {
     Shieldwarrior,
     Pikeman,
     Archer,
+    Bandit,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event)]
@@ -46,8 +47,16 @@ pub enum ServerChannel {
     NetworkedEntities,
 }
 
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
+pub enum Faction {
+    Player { client_id: ClientId },
+    Bandits,
+}
+
 #[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
-pub struct Owner(pub ClientId);
+pub struct Owner {
+    pub faction: Faction,
+}
 
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
 pub enum ProjectileType {

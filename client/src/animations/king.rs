@@ -24,7 +24,7 @@ pub struct KingSpriteSheet {
 impl FromWorld for KingSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture: Handle<Image> = asset_server.load("sprites/humans/Outline/MiniKingMan.png");
+        let texture: Handle<Image> = asset_server.load("sprites/humans/MiniKingMan.png");
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
@@ -39,32 +39,32 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Idle => SpriteSheetAnimation {
                 first_sprite_index: 0,
                 last_sprite_index: 3,
-                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+                ..default()
             },
             KingAnimation::Drink => SpriteSheetAnimation {
                 first_sprite_index: 10,
                 last_sprite_index: 14,
-                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+                ..default()
             },
             KingAnimation::Walk => SpriteSheetAnimation {
                 first_sprite_index: 20,
                 last_sprite_index: 25,
-                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+                ..default()
             },
             KingAnimation::Attack => SpriteSheetAnimation {
                 first_sprite_index: 40,
                 last_sprite_index: 49,
-                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+                ..default()
             },
             KingAnimation::Hit => SpriteSheetAnimation {
                 first_sprite_index: 50,
                 last_sprite_index: 52,
-                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+                ..default()
             },
             KingAnimation::Death => SpriteSheetAnimation {
                 first_sprite_index: 60,
                 last_sprite_index: 65,
-                frame_timer: Timer::from_seconds(1. / 10., TimerMode::Repeating),
+                ..default()
             },
         });
 

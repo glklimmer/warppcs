@@ -33,6 +33,7 @@ pub fn unit_range(unit_type: &UnitType) -> f32 {
         UnitType::Shieldwarrior => 50.,
         UnitType::Pikeman => 140.,
         UnitType::Archer => 600.,
+        UnitType::Bandit => 60.,
     }
 }
 
@@ -41,6 +42,7 @@ pub fn unit_damage(unit_type: &UnitType) -> f32 {
         UnitType::Shieldwarrior => 12.,
         UnitType::Pikeman => 18.,
         UnitType::Archer => 6.,
+        UnitType::Bandit => 14.,
     }
 }
 
@@ -49,6 +51,7 @@ pub fn unit_health(unit_type: &UnitType) -> f32 {
         UnitType::Shieldwarrior => 120.,
         UnitType::Pikeman => 90.,
         UnitType::Archer => 60.,
+        UnitType::Bandit => 100.,
     }
 }
 
@@ -57,6 +60,7 @@ pub fn unit_swing_timer(unit_type: &UnitType) -> Timer {
         UnitType::Shieldwarrior => 1.,
         UnitType::Pikeman => 2.,
         UnitType::Archer => 4.,
+        UnitType::Bandit => 3.,
     };
     Timer::from_seconds(time, TimerMode::Repeating)
 }
@@ -66,6 +70,7 @@ pub fn unit_speed(unit_type: &UnitType) -> f32 {
         UnitType::Shieldwarrior => 80.,
         UnitType::Pikeman => 100.,
         UnitType::Archer => 120.,
+        UnitType::Bandit => 100.,
     }
 }
 
@@ -106,7 +111,7 @@ fn process_attacks(
                 let delta_x = target_pos.x - transform.translation.x;
 
                 match unit.unit_type {
-                    UnitType::Shieldwarrior | UnitType::Pikeman => {
+                    UnitType::Shieldwarrior | UnitType::Pikeman | UnitType::Bandit => {
                         println!("Swinging at target: {}", target_entity);
 
                         attack_events.send(TakeDamage {

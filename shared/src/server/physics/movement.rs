@@ -84,7 +84,7 @@ fn move_players_system(
                 continue;
             }
 
-            if owner.0.eq(&client_owner.0) {
+            if owner.eq(client_owner) {
                 continue;
             }
 

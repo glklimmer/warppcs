@@ -5,6 +5,7 @@ use bevy_renet::renet::{ClientId, RenetServer};
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
 
+use crate::networking::Faction;
 use crate::{
     map::{
         buildings::{BuildStatus, Building, Cost},
@@ -124,8 +125,15 @@ fn check_building_interaction(
             let zone_bounds = building_collider.at(building_transform);
 
             if player_bounds.intersects(&zone_bounds) {
-                if owner.0.ne(&client_id) {
-                    continue;
+                match owner.faction {
+                    Faction::Player {
+                        client_id: other_client_id,
+                    } => {
+                        if other_client_id.ne(&client_id) {
+                            continue;
+                        }
+                    }
+                    _ => continue,
                 }
 
                 if !inventory.gold.gt(&cost.gold) {
