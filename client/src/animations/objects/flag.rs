@@ -4,8 +4,9 @@ use shared::enum_map::*;
 
 use super::super::{SpriteSheet, SpriteSheetAnimation};
 
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable)]
+#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum FlagAnimation {
+    #[default]
     Wave,
 }
 
