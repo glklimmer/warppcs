@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::{
     animations::{
-        flag::{FlagAnimation, FlagSpriteSheet},
         king::{KingAnimation, KingSpriteSheet},
+        objects::flag::{FlagAnimation, FlagSpriteSheet},
         units::{UnitAnimation, UnitSpriteSheets},
         SpriteAnimationBundle,
     },

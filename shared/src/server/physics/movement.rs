@@ -38,7 +38,7 @@ impl Plugin for MovementPlugin {
 fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, time: Res<Time>) {
     for (mut velocity, transform, collider) in &mut query {
         let bottom = transform.translation.truncate() - collider.half_size()
-            + collider.offset.unwrap_or_else(|| Vec2::ZERO);
+            + collider.offset.unwrap_or(Vec2::ZERO);
         let next_bottom = bottom.y + velocity.0.y * time.delta_secs();
 
         if next_bottom > 0. {
@@ -84,7 +84,7 @@ fn move_players_system(
                 continue;
             }
 
-            if owner.0.eq(&client_owner.0) {
+            if owner.eq(client_owner) {
                 continue;
             }
 

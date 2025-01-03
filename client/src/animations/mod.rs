@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
-use flag::{FlagAnimation, FlagSpriteSheet};
 use king::{next_king_animation, set_king_sprite_animation, KingAnimation, KingSpriteSheet};
+use objects::{
+    chest::ChestSpriteSheet,
+    flag::{FlagAnimation, FlagSpriteSheet},
+};
 
 use crate::networking::{NetworkEvent, NetworkMapping};
 
@@ -11,8 +14,8 @@ use shared::{
 };
 use units::{next_unit_animation, set_unit_sprite_animation, UnitAnimation, UnitSpriteSheets};
 
-pub mod flag;
 pub mod king;
+pub mod objects;
 pub mod units;
 
 #[derive(Clone)]
@@ -22,11 +25,29 @@ pub struct SpriteSheet<E: EnumIter> {
     pub animations: EnumMap<E, SpriteSheetAnimation>,
 }
 
+#[derive(Clone)]
+pub enum AnimationDirection {
+    Forward,
+    Backward,
+}
+
 #[derive(Component, Clone)]
 pub struct SpriteSheetAnimation {
     pub first_sprite_index: usize,
     pub last_sprite_index: usize,
     pub frame_timer: Timer,
+    pub direction: AnimationDirection,
+}
+
+impl Default for SpriteSheetAnimation {
+    fn default() -> Self {
+        SpriteSheetAnimation {
+            first_sprite_index: 0,
+            last_sprite_index: 0,
+            frame_timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+            direction: AnimationDirection::Forward,
+        }
+    }
 }
 
 #[derive(Bundle)]
@@ -106,6 +127,8 @@ impl Plugin for AnimationPlugin {
 
         app.init_resource::<FlagSpriteSheet>();
         app.add_event::<AnimationTrigger<FlagAnimation>>();
+
+        app.init_resource::<ChestSpriteSheet>();
 
         app.add_event::<EntityChangeEvent>();
 
@@ -214,7 +237,10 @@ fn advance_animation(
                 }
                 animation.first_sprite_index
             } else {
-                atlas.index + 1
+                match animation.direction {
+                    AnimationDirection::Forward => atlas.index + 1,
+                    AnimationDirection::Backward => atlas.index - 1,
+                }
             };
         }
     }

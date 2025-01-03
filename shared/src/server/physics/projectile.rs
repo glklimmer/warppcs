@@ -3,13 +3,15 @@ use bevy::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;
 
-use crate::map::GameSceneId;
-use crate::networking::{
-    Facing, MultiplayerRoles, Owner, ProjectileType, ServerChannel, ServerMessages,
+use crate::{
+    map::GameSceneId,
+    networking::{Facing, MultiplayerRoles, Owner, ProjectileType, ServerChannel, ServerMessages},
+    server::{
+        ai::attack::projectile_damage,
+        entities::health::{Health, TakeDamage},
+    },
+    BoxCollider, DelayedDespawn, GameState,
 };
-use crate::server::ai::attack::projectile_damage;
-use crate::server::entities::health::TakeDamage;
-use crate::{BoxCollider, DelayedDespawn, GameState};
 
 use super::movement::Velocity;
 
@@ -25,6 +27,14 @@ impl Plugin for ProjectilePlugin {
     }
 }
 
+type TargetComponents<'a> = (
+    Entity,
+    &'a Transform,
+    &'a BoxCollider,
+    &'a Owner,
+    &'a GameSceneId,
+);
+
 fn projectile_collision(
     mut commands: Commands,
     mut projectiles: Query<(
@@ -36,10 +46,7 @@ fn projectile_collision(
         &Owner,
         &GameSceneId,
     )>,
-    targets: Query<
-        (Entity, &Transform, &BoxCollider, &Owner, &GameSceneId),
-        Without<ProjectileType>,
-    >,
+    targets: Query<TargetComponents, (With<Health>, Without<ProjectileType>)>,
     mut server: ResMut<RenetServer>,
     mut attack_events: EventWriter<TakeDamage>,
 ) {
@@ -58,9 +65,13 @@ fn projectile_collision(
         for (target_entity, target_transform, target_collider, target_owner, target_scene_id) in
             targets.iter()
         {
-            if owner == target_owner || scene_id != target_scene_id {
+            if owner == target_owner {
                 continue;
             }
+            if scene_id != target_scene_id {
+                continue;
+            }
+
             let projectile = collider.at(transform);
             let target = target_collider.at(target_transform);
 

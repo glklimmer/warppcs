@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use bevy::color::palettes::css::YELLOW;
+use shared::map::scenes::camp::{CampScene, CampSceneIndicator};
 use shared::map::scenes::fight::FightSceneIndicator;
 use shared::{
     map::{
@@ -18,6 +19,7 @@ use shared::{
     GameState,
 };
 
+use crate::animations::objects::chest::ChestSpriteSheet;
 use crate::networking::{Connected, NetworkEvent};
 
 use super::PartOfScene;
@@ -48,6 +50,7 @@ fn load_game_scene(
     mut spawn_flag: EventWriter<SpawnFlag>,
     entities: Query<Entity, With<PartOfScene>>,
     asset_server: Res<AssetServer>,
+    chest_sprite_sheet: Res<ChestSpriteSheet>,
 ) {
     for event in network_events.read() {
         if let ServerMessages::LoadGameScene {
@@ -259,7 +262,46 @@ fn load_game_scene(
                         PartOfScene,
                     ));
                 }
-                GameSceneType::Camp => todo!(),
+                GameSceneType::Camp => {
+                    let camp = CampScene::new();
+                    let sprite_sheet = &chest_sprite_sheet.sprite_sheet;
+                    commands.spawn((
+                        camp.chest,
+                        SceneBuildingIndicator::Camp(CampSceneIndicator::Chest),
+                        Sprite {
+                            image: sprite_sheet.texture.clone(),
+                            texture_atlas: Some(TextureAtlas {
+                                layout: sprite_sheet.layout.clone(),
+                                index: 0,
+                            }),
+                            ..default()
+                        },
+                        PartOfScene,
+                    ));
+
+                    commands.spawn((
+                        camp.left_spawn_point,
+                        SceneBuildingIndicator::Camp(CampSceneIndicator::LeftSpawn),
+                        (
+                            Mesh2d(meshes.add(Rectangle::from_size(
+                                camp.left_spawn_point.collider.dimension,
+                            ))),
+                            MeshMaterial2d(materials.add(Color::from(YELLOW))),
+                        ),
+                        PartOfScene,
+                    ));
+                    commands.spawn((
+                        camp.right_spawn_point,
+                        SceneBuildingIndicator::Camp(CampSceneIndicator::RightSpawn),
+                        (
+                            Mesh2d(meshes.add(Rectangle::from_size(
+                                camp.right_spawn_point.collider.dimension,
+                            ))),
+                            MeshMaterial2d(materials.add(Color::from(YELLOW))),
+                        ),
+                        PartOfScene,
+                    ));
+                }
             };
             players.iter().for_each(|spawn| {
                 spawn_player.send(spawn.clone());
