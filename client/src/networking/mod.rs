@@ -14,7 +14,7 @@ use shared::{
 use std::collections::HashMap;
 
 use crate::{
-    animations::{king::KingAnimation, Change, EntityChangeEvent},
+    animations::{Change, EntityChangeEvent},
     entities::PartOfScene,
 };
 
