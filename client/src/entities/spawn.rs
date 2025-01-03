@@ -3,8 +3,7 @@ use bevy::prelude::*;
 use crate::{
     animations::{
         king::{KingAnimation, KingSpriteSheet},
-        objects::flag::{FlagAnimation, FlagSpriteSheet},
-        units::{UnitAnimation, UnitSpriteSheets},
+        units::{Unit, UnitAnimation, UnitSpriteSheets},
         SpriteAnimationBundle,
     },
     networking::{
@@ -17,7 +16,7 @@ use shared::{
     networking::{
         ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
-    PLAYER_COLLIDER, PROJECTILE_COLLIDER, UNIT_COLLIDER,
+    PROJECTILE_COLLIDER,
 };
 
 use super::PartOfScene;
@@ -100,17 +99,12 @@ fn spawn_player(
             skin,
         } = spawn;
 
-        let mut client_player_entity = commands.spawn((
-            SpriteAnimationBundle::new(
-                translation,
-                &king_sprite_sheet.sprite_sheet,
-                KingAnimation::Idle,
-                3.,
-            ),
+        let mut client_player_entity = commands.spawn((SpriteAnimationBundle::new(
+            translation,
+            &king_sprite_sheet.sprite_sheet,
             KingAnimation::Idle,
-            PLAYER_COLLIDER,
-            PartOfScene,
-        ));
+            3.,
+        ),));
 
         if client_id.eq(id) {
             client_player_entity.insert(ControlledPlayer);
@@ -146,12 +140,10 @@ fn spawn_unit(
 
         let client_unit_entity = commands
             .spawn((
+                Unit,
                 SpriteAnimationBundle::new(translation, sprite_sheet, UnitAnimation::Idle, 3.),
-                UnitAnimation::Idle,
                 *unit_type,
                 *owner,
-                UNIT_COLLIDER,
-                PartOfScene,
             ))
             .id();
 

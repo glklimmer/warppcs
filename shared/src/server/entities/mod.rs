@@ -2,17 +2,14 @@ use bevy::{math::bounding::IntersectsVolume, prelude::*};
 
 use health::HealthPlugin;
 
-use super::{networking::ServerLobby, players::InteractEvent};
+use crate::{networking::UnitType, unit_collider, BoxCollider};
 
-use crate::{
-    map::{Chest, GameSceneId},
-    networking::{MultiplayerRoles, UnitType},
-    BoxCollider, GameState,
-};
+use super::physics::{movement::Velocity, PushBack};
 
 pub mod health;
 
 #[derive(Component, Clone)]
+#[require(BoxCollider(unit_collider), Velocity, PushBack)]
 pub struct Unit {
     pub unit_type: UnitType,
     pub swing_timer: Timer,
