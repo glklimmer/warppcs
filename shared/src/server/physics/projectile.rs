@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy::math::bounding::{Aabb2d, IntersectsVolume};
+use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;
 
 use crate::map::GameSceneId;
@@ -46,7 +46,7 @@ fn projectile_collision(
     for (entity, transform, mut velocity, collider, projectile_type, owner, scene_id) in
         &mut projectiles
     {
-        if transform.translation.y - collider.0.y <= 0.0 {
+        if transform.translation.y - collider.dimension.y <= 0.0 {
             velocity.0 = Vec2::ZERO;
             commands.entity(entity).remove::<BoxCollider>();
             commands
@@ -61,11 +61,8 @@ fn projectile_collision(
             if owner == target_owner || scene_id != target_scene_id {
                 continue;
             }
-            let projectile = Aabb2d::new(transform.translation.truncate(), collider.half_size());
-            let target = Aabb2d::new(
-                target_transform.translation.truncate(),
-                target_collider.half_size(),
-            );
+            let projectile = collider.at(transform);
+            let target = target_collider.at(target_transform);
 
             if projectile.intersects(&target) {
                 let delta_x = target_transform.translation.x - transform.translation.x;

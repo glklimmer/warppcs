@@ -240,9 +240,9 @@ fn load_game_scene(
                         base.left_spawn_point,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::LeftSpawnPoint),
                         (
-                            Mesh2d(
-                                meshes.add(Rectangle::from_size(base.left_spawn_point.collider.0)),
-                            ),
+                            Mesh2d(meshes.add(Rectangle::from_size(
+                                base.left_spawn_point.collider.dimension,
+                            ))),
                             MeshMaterial2d(materials.add(Color::from(YELLOW))),
                         ),
                         PartOfScene,
@@ -251,9 +251,9 @@ fn load_game_scene(
                         base.right_spawn_point,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
                         (
-                            Mesh2d(
-                                meshes.add(Rectangle::from_size(base.left_spawn_point.collider.0)),
-                            ),
+                            Mesh2d(meshes.add(Rectangle::from_size(
+                                base.left_spawn_point.collider.dimension,
+                            ))),
                             MeshMaterial2d(materials.add(Color::from(YELLOW))),
                         ),
                         PartOfScene,

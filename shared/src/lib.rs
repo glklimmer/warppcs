@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use bevy::math::bounding::Aabb2d;
+
 pub mod enum_map;
 pub mod map;
 pub mod networking;
@@ -9,13 +11,45 @@ pub mod steamworks;
 pub const GRAVITY_G: f32 = 9.81 * 100.;
 
 #[derive(Component, Copy, Clone)]
-pub struct BoxCollider(pub Vec2);
+pub struct BoxCollider {
+    pub dimension: Vec2,
+    pub offset: Option<Vec2>,
+}
 
 impl BoxCollider {
     pub fn half_size(&self) -> Vec2 {
-        Vec2::new(self.0.x / 2., self.0.y / 2.)
+        Vec2::new(self.dimension.x / 2., self.dimension.y / 2.)
+    }
+
+    pub fn at(&self, transform: &Transform) -> Aabb2d {
+        Aabb2d::new(
+            transform.translation.truncate() + self.offset.unwrap_or(Vec2::ZERO),
+            self.half_size(),
+        )
+    }
+
+    pub fn at_pos(&self, position: Vec2) -> Aabb2d {
+        Aabb2d::new(
+            position + self.offset.unwrap_or(Vec2::ZERO),
+            self.half_size(),
+        )
     }
 }
+
+pub const PLAYER_COLLIDER: BoxCollider = BoxCollider {
+    dimension: Vec2::new(50., 45.),
+    offset: Some(Vec2::new(0., -23.)),
+};
+
+pub const UNIT_COLLIDER: BoxCollider = BoxCollider {
+    dimension: Vec2::new(40., 35.),
+    offset: Some(Vec2::new(0., -28.)),
+};
+
+pub const PROJECTILE_COLLIDER: BoxCollider = BoxCollider {
+    dimension: Vec2::new(20., 20.),
+    offset: None,
+};
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);

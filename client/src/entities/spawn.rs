@@ -17,7 +17,7 @@ use shared::{
     networking::{
         ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
-    BoxCollider,
+    PLAYER_COLLIDER, PROJECTILE_COLLIDER, UNIT_COLLIDER,
 };
 
 use super::PartOfScene;
@@ -108,11 +108,12 @@ fn spawn_player(
                 3.,
             ),
             KingAnimation::Idle,
+            PLAYER_COLLIDER,
             PartOfScene,
         ));
 
         if client_id.eq(id) {
-            client_player_entity.insert((ControlledPlayer, BoxCollider(Vec2::new(50., 90.))));
+            client_player_entity.insert(ControlledPlayer);
         }
 
         let player_info = PlayerEntityMapping {
@@ -149,6 +150,7 @@ fn spawn_unit(
                 UnitAnimation::Idle,
                 *unit_type,
                 *owner,
+                UNIT_COLLIDER,
                 PartOfScene,
             ))
             .id();
@@ -193,6 +195,7 @@ fn spawn_projectile(
                     scale: Vec3::splat(2.0),
                     rotation: Quat::from_rotation_z(angle),
                 },
+                PROJECTILE_COLLIDER,
                 PartOfScene,
             ))
             .id();

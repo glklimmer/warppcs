@@ -57,7 +57,10 @@ impl MainBuildingBundle {
     pub fn new(x: f32) -> Self {
         MainBuildingBundle {
             base: Building::MainBuilding,
-            collider: BoxCollider(Vec2::new(200., 100.)),
+            collider: BoxCollider {
+                dimension: Vec2::new(200., 100.),
+                offset: None,
+            },
             main_building_level: MainBuildingLevel::First,
             transform: Transform::from_xyz(x, 90., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
@@ -79,7 +82,10 @@ impl BuildingBundle {
     pub fn archer(x: f32) -> Self {
         BuildingBundle {
             building: Building::Archer,
-            collider: BoxCollider(Vec2::new(200., 100.)),
+            collider: BoxCollider {
+                dimension: Vec2::new(200., 100.),
+                offset: None,
+            },
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
@@ -94,7 +100,10 @@ impl BuildingBundle {
     pub fn warrior(x: f32) -> Self {
         BuildingBundle {
             building: Building::Warrior,
-            collider: BoxCollider(Vec2::new(200., 100.)),
+            collider: BoxCollider {
+                dimension: Vec2::new(200., 100.),
+                offset: None,
+            },
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
@@ -109,7 +118,10 @@ impl BuildingBundle {
     pub fn pikeman(x: f32) -> Self {
         BuildingBundle {
             building: Building::Pikeman,
-            collider: BoxCollider(Vec2::new(200., 100.)),
+            collider: BoxCollider {
+                dimension: Vec2::new(200., 100.),
+                offset: None,
+            },
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
@@ -124,7 +136,10 @@ impl BuildingBundle {
     pub fn wall(x: f32) -> Self {
         BuildingBundle {
             building: Building::Wall,
-            collider: BoxCollider(Vec2::new(50., 75.)),
+            collider: BoxCollider {
+                dimension: Vec2::new(50., 75.),
+                offset: None,
+            },
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
@@ -139,7 +154,10 @@ impl BuildingBundle {
     pub fn tower() -> Self {
         BuildingBundle {
             building: Building::Tower,
-            collider: BoxCollider(Vec2::new(200., 100.)),
+            collider: BoxCollider {
+                dimension: Vec2::new(200., 100.),
+                offset: None,
+            },
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(0., 50., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
@@ -154,7 +172,10 @@ impl BuildingBundle {
     pub fn gold_farm(x: f32) -> Self {
         BuildingBundle {
             building: Building::GoldFarm,
-            collider: BoxCollider(Vec2::new(200., 50.)),
+            collider: BoxCollider {
+                dimension: Vec2::new(200., 50.),
+                offset: None,
+            },
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 25., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),

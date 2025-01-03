@@ -9,7 +9,7 @@ use crate::{
     },
     BoxCollider, GameState,
 };
-use bevy::math::bounding::{Aabb2d, IntersectsVolume};
+use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;
 
 use super::{
@@ -71,14 +71,8 @@ fn check_travel(
             if player_scene.ne(zone_scene) {
                 continue;
             }
-            let player_bounds = Aabb2d::new(
-                player_transform.translation.truncate(),
-                player_collider.half_size(),
-            );
-            let zone_bounds = Aabb2d::new(
-                zone_transform.translation.truncate(),
-                zone_collider.half_size(),
-            );
+            let player_bounds = player_collider.at(player_transform);
+            let zone_bounds = zone_collider.at(zone_transform);
             if player_bounds.intersects(&zone_bounds) {
                 travel.send(TravelEvent {
                     entity: *player_entity,

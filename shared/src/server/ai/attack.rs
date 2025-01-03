@@ -13,7 +13,7 @@ use crate::{
         networking::SendServerMessage,
         physics::movement::Velocity,
     },
-    BoxCollider, GameState, GRAVITY_G,
+    GameState, GRAVITY_G, PROJECTILE_COLLIDER,
 };
 
 pub struct AttackPlugin;
@@ -161,7 +161,7 @@ fn process_attacks(
                             *owner,
                             projectile_type,
                             velocity,
-                            BoxCollider(Vec2::new(20., 20.)),
+                            PROJECTILE_COLLIDER,
                             *target_scene_id,
                         ));
                         println!("arrow spawn: {:?}", target_scene_id);
