@@ -2,8 +2,10 @@ use bevy::prelude::*;
 
 use archer::archer;
 use pikeman::pikeman;
-use shared::{enum_map::*, networking::UnitType};
+use shared::{enum_map::*, networking::UnitType, unit_collider, BoxCollider};
 use shieldwarrior::shieldwarrior;
+
+use crate::entities::PartOfScene;
 
 use super::{
     AnimationTrigger, Change, EntityChangeEvent, FullAnimation, PlayOnce, SpriteSheet,
@@ -13,6 +15,10 @@ use super::{
 pub mod archer;
 pub mod pikeman;
 pub mod shieldwarrior;
+
+#[derive(Component)]
+#[require(PartOfScene, BoxCollider(unit_collider))]
+pub struct Unit;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable)]
 pub enum UnitAnimation {
