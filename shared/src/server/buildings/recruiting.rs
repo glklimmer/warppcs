@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, IntersectsVolume};
 use bevy_renet::renet::{ClientId, RenetServer};
 
+use crate::server::physics::PushBack;
 use crate::{
     map::{
         buildings::{BuildStatus, Building, RecruitmentBuilding},
@@ -102,6 +103,9 @@ pub fn recruit(
                     FlagAssignment(flag_entity, offset),
                     UnitBehaviour::FollowFlag(flag_entity, offset),
                     BoxCollider(Vec2::new(50., 90.)),
+                    PushBack {
+                        timer: Timer::from_seconds(1., TimerMode::Once),
+                    },
                     event.scene_id,
                 ))
                 .id();

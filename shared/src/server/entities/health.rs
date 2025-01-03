@@ -2,9 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
-    networking::{BuildingUpdate, MultiplayerRoles, ServerMessages},
+    networking::{BuildingUpdate, Facing, MultiplayerRoles, ServerMessages},
     server::{networking::SendServerMessage, physics::movement::Velocity},
-    DelayedDespawn, GameState,
+    BoxCollider, DelayedDespawn, GameState,
 };
 
 use super::Unit;
@@ -18,6 +18,7 @@ pub struct Health {
 pub struct TakeDamage {
     pub target_entity: Entity,
     pub damage: f32,
+    pub direction: Facing,
 }
 
 pub struct HealthPlugin;
@@ -66,7 +67,8 @@ fn on_unit_death(
                 .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
                 .remove::<Health>()
                 .remove::<Velocity>()
-                .remove::<Unit>();
+                .remove::<Unit>()
+                .remove::<BoxCollider>();
 
             sender.send(SendServerMessage {
                 message: ServerMessages::EntityDeath { entity },

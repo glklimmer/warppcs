@@ -6,7 +6,7 @@ use super::UnitBehaviour;
 use crate::{
     map::{GameSceneId, Layers},
     networking::{
-        MultiplayerRoles, Owner, ProjectileType, ServerMessages, SpawnProjectile, UnitType,
+        Facing, MultiplayerRoles, Owner, ProjectileType, ServerMessages, SpawnProjectile, UnitType,
     },
     server::{
         entities::{health::TakeDamage, Unit},
@@ -98,12 +98,24 @@ fn process_attacks(
             if unit.swing_timer.finished() {
                 let target_scene_id = scene_ids.get(*target_entity).unwrap();
 
+                let target_pos = if let Ok(target_transform) = position.get(*target_entity) {
+                    target_transform.translation
+                } else {
+                    continue;
+                };
+                let delta_x = target_pos.x - transform.translation.x;
+
                 match unit.unit_type {
                     UnitType::Shieldwarrior | UnitType::Pikeman => {
                         println!("Swinging at target: {}", target_entity);
+
                         attack_events.send(TakeDamage {
                             target_entity: *target_entity,
                             damage: unit_damage(&unit.unit_type),
+                            direction: match delta_x > 0. {
+                                true => Facing::Left,
+                                false => Facing::Right,
+                            },
                         });
                         sender.send(SendServerMessage {
                             message: ServerMessages::MeleeAttack { entity },
@@ -119,13 +131,6 @@ fn process_attacks(
                         let arrow_transform = Transform::from_translation(arrow_position);
                         let projectile_type = ProjectileType::Arrow;
 
-                        let target_pos = if let Ok(target_transform) = position.get(*target_entity)
-                        {
-                            target_transform.translation
-                        } else {
-                            continue;
-                        };
-                        let delta_x = target_pos.x - transform.translation.x;
                         let delta_y = target_pos.y - transform.translation.y;
 
                         let theta = if delta_x > 0. { FRAC_PI_4 } else { 2.3561944 };
