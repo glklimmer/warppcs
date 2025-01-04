@@ -1,3 +1,5 @@
+use std::default;
+
 use bevy::prelude::*;
 
 use shared::enum_map::*;
