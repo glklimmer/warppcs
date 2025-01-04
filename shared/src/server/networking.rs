@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::map::{GameScene, GameSceneId};
 use crate::networking::{
-    ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, PlayerCommand,
-    PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
+    ClientChannel, Facing, Inventory, MultiplayerRoles, NetworkEntity, NetworkedEntities,
+    PlayerCommand, PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
 };
 use crate::server::entities::health::Health;
 use crate::server::physics::movement::Velocity;
@@ -34,7 +34,7 @@ pub struct GameWorld {
 }
 
 #[derive(Component)]
-#[require(Health, BoxCollider(player_collider))]
+#[require(Health, BoxCollider(player_collider), PlayerInput, Velocity, Inventory)]
 pub struct ServerPlayer(pub ClientId);
 
 #[derive(Event)]

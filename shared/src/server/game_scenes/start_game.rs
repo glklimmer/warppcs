@@ -181,8 +181,6 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     let inventory = Inventory { gold: 1000 };
     commands.entity(*left_player_entity).insert((
         left_transform,
-        PlayerInput::default(),
-        Velocity::default(),
         GameSceneId(1),
         PlayerSkin::Warrior,
         inventory.clone(),
@@ -200,8 +198,6 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     let right_transform = Transform::from_xyz(200., 50., Layers::Player.as_f32());
     commands.entity(*right_player_entity).insert((
         right_transform,
-        PlayerInput::default(),
-        Velocity::default(),
         GameSceneId(1),
         PlayerSkin::Monster,
         inventory.clone(),

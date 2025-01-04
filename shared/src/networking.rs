@@ -78,6 +78,12 @@ pub struct Inventory {
     pub gold: u16,
 }
 
+impl Default for Inventory {
+    fn default() -> Self {
+        Self { gold: 1000 }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnPlayer {
     pub id: ClientId,
