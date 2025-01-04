@@ -36,20 +36,26 @@ impl BoxCollider {
     }
 }
 
-pub const PLAYER_COLLIDER: BoxCollider = BoxCollider {
-    dimension: Vec2::new(50., 45.),
-    offset: Some(Vec2::new(0., -23.)),
-};
+pub fn player_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(50., 45.),
+        offset: Some(Vec2::new(0., -23.)),
+    }
+}
 
-pub const UNIT_COLLIDER: BoxCollider = BoxCollider {
-    dimension: Vec2::new(40., 35.),
-    offset: Some(Vec2::new(0., -28.)),
-};
+pub fn unit_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(40., 35.),
+        offset: Some(Vec2::new(0., -28.)),
+    }
+}
 
-pub const PROJECTILE_COLLIDER: BoxCollider = BoxCollider {
-    dimension: Vec2::new(20., 20.),
-    offset: None,
-};
+pub fn projectile_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(20., 20.),
+        offset: None,
+    }
+}
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);
