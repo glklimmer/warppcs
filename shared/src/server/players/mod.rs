@@ -1,10 +1,10 @@
-use bevy::{ecs::component, prelude::*};
+use bevy::prelude::*;
 
 use bevy_renet::renet::ClientId;
 
 use crate::{
     map::GameSceneId,
-    networking::{Inventory, PlayerCommand, PlayerInput, ServerMessages},
+    networking::{PlayerCommand, ServerMessages},
 };
 
 use super::networking::{NetworkEvent, SendServerMessage, ServerLobby};
