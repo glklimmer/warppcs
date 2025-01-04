@@ -2,7 +2,13 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use super::super::{SpriteSheet, SpriteSheetAnimation};
+use crate::entities::PartOfScene;
+
+use super::{SpriteSheet, SpriteSheetAnimation};
+
+#[derive(Component)]
+#[require(PartOfScene, FlagAnimation)]
+pub struct Flag;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum FlagAnimation {

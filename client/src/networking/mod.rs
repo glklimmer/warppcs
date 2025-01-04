@@ -14,7 +14,7 @@ use shared::{
 use std::collections::HashMap;
 
 use crate::{
-    animations::{Change, EntityChangeEvent},
+    animations::{king::KingAnimation, Change, EntityChangeEvent},
     entities::PartOfScene,
 };
 
@@ -29,7 +29,7 @@ pub struct ClientPlayers {
 }
 
 #[derive(Component)]
-#[require(PartOfScene, BoxCollider(player_collider))]
+#[require(PartOfScene, BoxCollider(player_collider), KingAnimation)]
 pub struct ControlledPlayer;
 
 #[derive(Debug, Resource)]

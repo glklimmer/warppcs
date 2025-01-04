@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     animations::{
+        flag::{Flag, FlagAnimation, FlagSpriteSheet},
         king::{KingAnimation, KingSpriteSheet},
         units::{Unit, UnitAnimation, UnitSpriteSheets},
         SpriteAnimationBundle,
@@ -26,10 +27,6 @@ pub struct SpawnPlugin;
 #[derive(Component)]
 #[require(PartOfScene, BoxCollider(projectile_collider))]
 pub struct Projectile;
-
-#[derive(Component)]
-#[require(PartOfScene, FlagAnimation)]
-pub struct Flag;
 
 impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
@@ -107,12 +104,12 @@ fn spawn_player(
             skin,
         } = spawn;
 
-        let mut client_player_entity = commands.spawn((SpriteAnimationBundle::new(
+        let mut client_player_entity = commands.spawn(SpriteAnimationBundle::new(
             translation,
             &king_sprite_sheet.sprite_sheet,
             KingAnimation::Idle,
             3.,
-        ),));
+        ));
 
         if client_id.eq(id) {
             client_player_entity.insert(ControlledPlayer);
