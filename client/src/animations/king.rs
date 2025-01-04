@@ -1,3 +1,5 @@
+use std::default;
+
 use bevy::prelude::*;
 
 use shared::enum_map::*;
@@ -6,8 +8,9 @@ use super::{
     AnimationTrigger, Change, EntityChangeEvent, FullAnimation, SpriteSheet, SpriteSheetAnimation,
 };
 
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable)]
+#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum KingAnimation {
+    #[default]
     Idle,
     Drink,
     Walk,
