@@ -4,27 +4,33 @@ use bevy::color::palettes::css::{BLUE, RED};
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
-use crate::map::scenes::fight::FightSceneIndicator;
+use crate::UNIT_COLLIDER;
 use crate::{
     map::{
         buildings::RecruitmentBuilding,
         scenes::{
             base::{BaseScene, BaseSceneIndicator},
-            fight::FightScene,
+            camp::{CampScene, CampSceneIndicator},
+            fight::{FightScene, FightSceneIndicator},
             SceneBuildingIndicator,
         },
         GameScene, GameSceneId, GameSceneType, Layers,
     },
     networking::{
-        Inventory, Owner, PlayerCommand, PlayerInput, PlayerSkin, ServerChannel, ServerMessages,
-        SpawnPlayer,
+        Faction, Inventory, Owner, PlayerCommand, PlayerInput, PlayerSkin, ServerChannel,
+        ServerMessages, SpawnPlayer, UnitType,
     },
     server::{
-        buildings::building_health,
+        ai::{
+            attack::{unit_health, unit_swing_timer},
+            UnitBehaviour,
+        },
+        buildings::{building_health, recruiting::FlagAssignment},
+        entities::{health::Health, Unit},
         game_scenes::GameSceneDestination,
         lobby::GameLobby,
         networking::{GameWorld, NetworkEvent, ServerLobby},
-        physics::movement::Velocity,
+        physics::{movement::Velocity, PushBack},
     },
     GameState,
 };
@@ -72,7 +78,14 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
 
     // Create Fight Scene
     let base = FightScene::new();
-    let server_components = (Owner(*left_client_id), GameSceneId(1));
+    let server_components = (
+        Owner {
+            faction: Faction::Player {
+                client_id: *left_client_id,
+            },
+        },
+        GameSceneId(1),
+    );
     commands.spawn((
         base.left_main_building,
         server_components,
@@ -114,7 +127,14 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
     ));
 
-    let server_components = (Owner(*right_client_id), GameSceneId(1));
+    let server_components = (
+        Owner {
+            faction: Faction::Player {
+                client_id: *right_client_id,
+            },
+        },
+        GameSceneId(1),
+    );
     commands.spawn((
         base.right_main_building,
         server_components,
@@ -166,7 +186,11 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
         GameSceneId(1),
         PlayerSkin::Warrior,
         inventory.clone(),
-        Owner(*left_client_id),
+        Owner {
+            faction: Faction::Player {
+                client_id: *left_client_id,
+            },
+        },
     ));
 
     let message = ServerMessages::SyncInventory(inventory.clone());
@@ -181,7 +205,11 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
         GameSceneId(1),
         PlayerSkin::Monster,
         inventory.clone(),
-        Owner(*right_client_id),
+        Owner {
+            faction: Faction::Player {
+                client_id: *right_client_id,
+            },
+        },
     ));
 
     let message = ServerMessages::SyncInventory(inventory);
@@ -229,12 +257,12 @@ fn duel_map(
                     PlayerSkin::Warrior,
                     BLUE,
                     GameSceneDestination {
-                        scene: GameSceneId(2),
-                        position: Vec3::new(-1300., 50., Layers::Player.as_f32()),
+                        scene: GameSceneId(3),
+                        position: Vec3::new(-600., 50., Layers::Player.as_f32()),
                     },
                     GameSceneDestination {
-                        scene: GameSceneId(2),
-                        position: Vec3::new(1300., 50., Layers::Player.as_f32()),
+                        scene: GameSceneId(4),
+                        position: Vec3::new(600., 50., Layers::Player.as_f32()),
                     },
                 )
             } else {
@@ -243,12 +271,12 @@ fn duel_map(
                     PlayerSkin::Monster,
                     RED,
                     GameSceneDestination {
-                        scene: GameSceneId(1),
-                        position: Vec3::new(-1300., 50., Layers::Player.as_f32()),
+                        scene: GameSceneId(4),
+                        position: Vec3::new(-600., 50., Layers::Player.as_f32()),
                     },
                     GameSceneDestination {
-                        scene: GameSceneId(1),
-                        position: Vec3::new(1300., 50., Layers::Player.as_f32()),
+                        scene: GameSceneId(3),
+                        position: Vec3::new(600., 50., Layers::Player.as_f32()),
                     },
                 )
             };
@@ -256,7 +284,14 @@ fn duel_map(
 
         // Create Game Scene
         let base = BaseScene::new();
-        let server_components = (Owner(*client_id), game_scene_id);
+        let server_components = (
+            Owner {
+                faction: Faction::Player {
+                    client_id: *client_id,
+                },
+            },
+            game_scene_id,
+        );
         commands.spawn((
             base.main_building,
             server_components,
@@ -336,7 +371,11 @@ fn duel_map(
             game_scene_id,
             skin,
             inventory.clone(),
-            Owner(*client_id),
+            Owner {
+                faction: Faction::Player {
+                    client_id: *client_id,
+                },
+            },
         ));
 
         let message = ServerMessages::LoadGameScene {
@@ -360,23 +399,100 @@ fn duel_map(
         server.send_message(*client_id, ServerChannel::ServerMessages, message);
     }
 
-    // setup duel map
-    let mut iter = game_world.game_scenes.iter_mut();
-    if let Some((first_game_scene_id, first_game_scene)) = iter.next() {
-        if let Some((second_game_scene_id, second_game_scene)) = iter.next() {
-            first_game_scene
-                .left_game_scenes
-                .push(*second_game_scene_id);
-            first_game_scene
-                .right_game_scenes
-                .push(*second_game_scene_id);
+    for i in 1..=2 {
+        let base = CampScene::new();
+        let game_scene_id = GameSceneId(i + 2);
+        let server_components = (
+            Owner {
+                faction: Faction::Bandits,
+            },
+            game_scene_id,
+        );
+        commands.spawn((
+            base.chest,
+            server_components,
+            SceneBuildingIndicator::Camp(CampSceneIndicator::Chest),
+        ));
+        commands.spawn((
+            base.left_spawn_point,
+            server_components,
+            GameSceneDestination {
+                scene: GameSceneId((i + 1) % 2 + 1),
+                position: Vec3::new(-1300., 50., Layers::Chest.as_f32()),
+            },
+            SceneBuildingIndicator::Camp(CampSceneIndicator::LeftSpawn),
+        ));
+        commands.spawn((
+            base.right_spawn_point,
+            server_components,
+            GameSceneDestination {
+                scene: GameSceneId(i % 2 + 1),
+                position: Vec3::new(1300., 50., Layers::Chest.as_f32()),
+            },
+            SceneBuildingIndicator::Camp(CampSceneIndicator::RightSpawn),
+        ));
 
-            second_game_scene
-                .left_game_scenes
-                .push(*first_game_scene_id);
-            second_game_scene
-                .right_game_scenes
-                .push(*first_game_scene_id);
+        let flag_entity = commands
+            .spawn((Transform::from_translation(Vec3::ZERO),))
+            .id();
+
+        let unit_type = UnitType::Bandit;
+        let transform = Transform::from_xyz(0., 50., Layers::Unit.as_f32());
+
+        for unit_number in 1..=4 {
+            let offset = Vec2::new(40. * (unit_number - 3) as f32 + 20., 0.);
+            commands.spawn((
+                transform,
+                Unit {
+                    unit_type,
+                    swing_timer: unit_swing_timer(&unit_type),
+                },
+                Health {
+                    hitpoints: unit_health(&unit_type),
+                },
+                Owner {
+                    faction: Faction::Bandits,
+                },
+                Velocity::default(),
+                FlagAssignment(flag_entity, offset),
+                UnitBehaviour::FollowFlag(flag_entity, offset),
+                PushBack {
+                    timer: Timer::from_seconds(1., TimerMode::Once),
+                },
+                UNIT_COLLIDER,
+                game_scene_id,
+            ));
         }
+
+        let game_scene_type = GameSceneType::Camp;
+        let game_scene = GameScene {
+            id: game_scene_id,
+            game_scene_type,
+            left_game_scenes: Vec::new(),
+            right_game_scenes: Vec::new(),
+        };
+        game_world.game_scenes.insert(game_scene_id, game_scene);
     }
+
+    // setup duel map
+    let first_base_id = GameSceneId(1);
+    let second_base_id = GameSceneId(2);
+    let first_camp_id = GameSceneId(3);
+    let second_camp_id = GameSceneId(4);
+
+    let first_base = game_world.game_scenes.get_mut(&first_base_id).unwrap();
+    first_base.left_game_scenes.push(first_camp_id);
+    first_base.right_game_scenes.push(second_camp_id);
+
+    let second_base = game_world.game_scenes.get_mut(&second_base_id).unwrap();
+    second_base.left_game_scenes.push(second_camp_id);
+    second_base.right_game_scenes.push(first_camp_id);
+
+    let first_camp = game_world.game_scenes.get_mut(&first_camp_id).unwrap();
+    first_camp.left_game_scenes.push(second_base_id);
+    first_camp.right_game_scenes.push(first_base_id);
+
+    let second_camp = game_world.game_scenes.get_mut(&second_camp_id).unwrap();
+    second_camp.left_game_scenes.push(first_base_id);
+    second_camp.right_game_scenes.push(second_base_id);
 }

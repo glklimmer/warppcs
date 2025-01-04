@@ -3,7 +3,7 @@ use bevy_renet::renet::RenetServer;
 
 use crate::{
     map::buildings::Building,
-    networking::{Inventory, Owner, ServerChannel, ServerMessages},
+    networking::{Faction, Inventory, Owner, ServerChannel, ServerMessages},
     server::networking::ServerLobby,
 };
 
@@ -50,13 +50,15 @@ pub fn gold_farm_output(
         farm_timer.timer.tick(time.delta());
 
         if farm_timer.timer.just_finished() {
-            let player_entity = lobby.players.get(&owner.0).unwrap();
-            let mut inventory = inventory.get_mut(*player_entity).unwrap();
-            inventory.gold += GOLD_PER_TICK;
+            if let Faction::Player { client_id } = owner.faction {
+                let player_entity = lobby.players.get(&client_id).unwrap();
+                let mut inventory = inventory.get_mut(*player_entity).unwrap();
+                inventory.gold += GOLD_PER_TICK;
 
-            let message = ServerMessages::SyncInventory(inventory.clone());
-            let message = bincode::serialize(&message).unwrap();
-            server.send_message(owner.0, ServerChannel::ServerMessages, message);
+                let message = ServerMessages::SyncInventory(inventory.clone());
+                let message = bincode::serialize(&message).unwrap();
+                server.send_message(client_id, ServerChannel::ServerMessages, message);
+            }
         }
     }
 }

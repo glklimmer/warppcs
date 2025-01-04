@@ -4,8 +4,8 @@ use start_game::StartGamePlugin;
 use crate::{
     map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
     networking::{
-        BuildingUpdate, MultiplayerRoles, Owner, PlayerSkin, ProjectileType, ServerChannel,
-        ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        BuildingUpdate, Faction, MultiplayerRoles, Owner, PlayerSkin, ProjectileType,
+        ServerChannel, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     BoxCollider, GameState,
 };
@@ -45,6 +45,7 @@ impl Plugin for GameScenesPlugin {
         app.add_systems(
             FixedUpdate,
             (check_travel, travel)
+                .chain()
                 .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
         );
     }
@@ -211,7 +212,9 @@ fn travel(
         if let Some(group) = &group {
             for (unit, _, info) in &group.units {
                 units.push(SpawnUnit {
-                    owner: Owner(client_id),
+                    owner: Owner {
+                        faction: Faction::Player { client_id },
+                    },
                     entity: *unit,
                     translation: target_transform.translation.into(),
                     unit_type: info.unit_type,
@@ -257,7 +260,9 @@ fn travel(
         if let Some(group) = &group {
             for (unit, _, info) in &group.units {
                 unit_spawns.push(SpawnUnit {
-                    owner: Owner(client_id),
+                    owner: Owner {
+                        faction: Faction::Player { client_id },
+                    },
                     entity: *unit,
                     translation: target_transform.translation.into(),
                     unit_type: info.unit_type,
