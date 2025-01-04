@@ -14,12 +14,6 @@ pub struct Health {
     pub hitpoints: f32,
 }
 
-impl Default for Health {
-    fn default() -> Self {
-        Self { hitpoints: 200. }
-    }
-}
-
 #[derive(Event)]
 pub struct TakeDamage {
     pub target_entity: Entity,

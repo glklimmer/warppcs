@@ -5,10 +5,7 @@ use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::{
-    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneType},
-    projectile_collider, BoxCollider,
-};
+use crate::map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneType};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -53,7 +50,6 @@ pub enum ServerChannel {
 pub struct Owner(pub ClientId);
 
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
-#[require(BoxCollider(projectile_collider))]
 pub enum ProjectileType {
     Arrow,
 }

@@ -5,18 +5,12 @@ use bevy_renet::{
     renet::{ClientId, RenetClient},
     RenetClientPlugin,
 };
-use shared::{
-    networking::{
-        ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput, ServerChannel, ServerMessages,
-    },
-    player_collider, BoxCollider,
+use shared::networking::{
+    ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput, ServerChannel, ServerMessages,
 };
 use std::collections::HashMap;
 
-use crate::{
-    animations::{Change, EntityChangeEvent},
-    entities::PartOfScene,
-};
+use crate::animations::{Change, EntityChangeEvent};
 
 pub mod join_server;
 
@@ -29,7 +23,6 @@ pub struct ClientPlayers {
 }
 
 #[derive(Component)]
-#[require(PartOfScene, BoxCollider(player_collider))]
 pub struct ControlledPlayer;
 
 #[derive(Debug, Resource)]
