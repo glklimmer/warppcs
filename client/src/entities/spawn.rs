@@ -183,6 +183,7 @@ fn spawn_projectile(
 
         let client_entity = commands
             .spawn((
+                Projectile,
                 Sprite {
                     image: texture,
                     ..default()
