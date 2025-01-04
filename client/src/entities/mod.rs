@@ -10,8 +10,8 @@ mod map;
 mod player;
 mod spawn;
 
-#[derive(Component, Default)]
-pub struct PartOfScene;
+#[derive(Component)]
+struct PartOfScene;
 
 pub struct EntitiesPlugin;
 

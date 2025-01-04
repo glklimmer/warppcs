@@ -3,6 +3,8 @@ use bevy::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::{ClientId, RenetServer};
 
+use crate::server::physics::PushBack;
+use crate::UNIT_COLLIDER;
 use crate::{
     map::{
         buildings::{BuildStatus, Building, RecruitmentBuilding},
@@ -16,7 +18,7 @@ use crate::{
         },
         entities::{health::Health, Unit},
         networking::ServerLobby,
-        physics::attachment::AttachedTo,
+        physics::{attachment::AttachedTo, movement::Velocity},
         players::InteractEvent,
     },
     BoxCollider,
@@ -98,8 +100,13 @@ pub fn recruit(
                     unit.clone(),
                     health.clone(),
                     owner,
+                    Velocity::default(),
                     FlagAssignment(flag_entity, offset),
                     UnitBehaviour::FollowFlag(flag_entity, offset),
+                    UNIT_COLLIDER,
+                    PushBack {
+                        timer: Timer::from_seconds(1., TimerMode::Once),
+                    },
                     event.scene_id,
                 ))
                 .id();
