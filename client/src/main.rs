@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
@@ -40,6 +41,7 @@ fn main() {
     app.insert_state(MultiplayerRoles::NotInGame);
     app.insert_state(MainMenuStates::TitleScreen);
 
+    app.add_plugins(ParallaxPlugin);
     app.add_plugins(CameraPlugin);
     app.add_plugins(InputPlugin);
     app.add_plugins(AnimationPlugin);
