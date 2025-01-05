@@ -35,6 +35,10 @@ fn player_input(
     if keyboard_input.just_pressed(KeyCode::KeyF) {
         player_commands.send(PlayerCommand::Interact);
     }
+
+    if keyboard_input.just_pressed(KeyCode::KeyR) {
+        player_commands.send(PlayerCommand::DropFlag);
+    }
 }
 
 fn gizmos_settings(
