@@ -58,7 +58,7 @@ fn setup_camera(mut commands: Commands, mut create_parallax: EventWriter<CreateP
 fn camera_follow_player(
     mut commands: Commands,
     camera: Query<Entity, With<Camera>>,
-    player_query: Query<Entity, (With<ControlledPlayer>, Without<Camera>)>,
+    player_query: Query<Entity, With<ControlledPlayer>>,
 ) {
     commands
         .entity(camera.single())
