@@ -5,7 +5,10 @@ use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneType};
+use crate::{
+    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneType},
+    projectile_collider, BoxCollider,
+};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -59,6 +62,7 @@ pub struct Owner {
 }
 
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
+#[require(BoxCollider(projectile_collider))]
 pub enum ProjectileType {
     Arrow,
 }
@@ -72,6 +76,12 @@ pub enum PlayerSkin {
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub struct Inventory {
     pub gold: u16,
+}
+
+impl Default for Inventory {
+    fn default() -> Self {
+        Self { gold: 1000 }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]

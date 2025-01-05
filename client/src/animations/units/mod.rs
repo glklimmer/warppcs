@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use bandits::bandit::bandit;
 use humans::{archer::archer, pikeman::pikeman, shieldwarrior::shieldwarrior};
-use shared::{enum_map::*, networking::UnitType};
+use shared::{enum_map::*, networking::UnitType, unit_collider, BoxCollider};
+
+use crate::entities::PartOfScene;
 
 use super::{
     AnimationTrigger, Change, EntityChangeEvent, FullAnimation, PlayOnce, SpriteSheet,
@@ -12,8 +14,13 @@ use super::{
 pub mod bandits;
 pub mod humans;
 
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable)]
+#[derive(Component)]
+#[require(PartOfScene, BoxCollider(unit_collider), UnitAnimation)]
+pub struct Unit;
+
+#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum UnitAnimation {
+    #[default]
     Idle,
     Walk,
     Attack,

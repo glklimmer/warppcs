@@ -4,7 +4,6 @@ use bevy::color::palettes::css::{BLUE, RED};
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
-use crate::UNIT_COLLIDER;
 use crate::{
     map::{
         buildings::RecruitmentBuilding,
@@ -181,8 +180,6 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     let inventory = Inventory { gold: 1000 };
     commands.entity(*left_player_entity).insert((
         left_transform,
-        PlayerInput::default(),
-        Velocity::default(),
         GameSceneId(1),
         PlayerSkin::Warrior,
         inventory.clone(),
@@ -200,8 +197,6 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     let right_transform = Transform::from_xyz(200., 50., Layers::Player.as_f32());
     commands.entity(*right_player_entity).insert((
         right_transform,
-        PlayerInput::default(),
-        Velocity::default(),
         GameSceneId(1),
         PlayerSkin::Monster,
         inventory.clone(),
@@ -453,13 +448,8 @@ fn duel_map(
                 Owner {
                     faction: Faction::Bandits,
                 },
-                Velocity::default(),
                 FlagAssignment(flag_entity, offset),
                 UnitBehaviour::FollowFlag(flag_entity, offset),
-                PushBack {
-                    timer: Timer::from_seconds(1., TimerMode::Once),
-                },
-                UNIT_COLLIDER,
                 game_scene_id,
             ));
         }

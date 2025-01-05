@@ -2,12 +2,12 @@ use bevy::prelude::*;
 
 use crate::map::{GameScene, GameSceneId};
 use crate::networking::{
-    ClientChannel, Facing, MultiplayerRoles, NetworkEntity, NetworkedEntities, PlayerCommand,
-    PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
+    ClientChannel, Facing, Inventory, MultiplayerRoles, NetworkEntity, NetworkedEntities,
+    PlayerCommand, PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
 };
 use crate::server::entities::health::Health;
 use crate::server::physics::movement::Velocity;
-use crate::PLAYER_COLLIDER;
+use crate::{player_collider, BoxCollider};
 
 use bevy_renet::{
     renet::{ClientId, RenetServer, ServerEvent},
@@ -34,6 +34,7 @@ pub struct GameWorld {
 }
 
 #[derive(Component)]
+#[require(Health, BoxCollider(player_collider), PlayerInput, Velocity, Inventory)]
 pub struct ServerPlayer(pub ClientId);
 
 #[derive(Event)]
@@ -98,13 +99,7 @@ fn client_connections(
             ServerEvent::ClientConnected { client_id } => {
                 println!("Player {} connected.", client_id);
 
-                let player_entity = commands
-                    .spawn((
-                        ServerPlayer(*client_id),
-                        Health { hitpoints: 200. },
-                        PLAYER_COLLIDER,
-                    ))
-                    .id();
+                let player_entity = commands.spawn(ServerPlayer(*client_id)).id();
 
                 lobby.players.insert(*client_id, player_entity);
 

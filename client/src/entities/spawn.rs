@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use crate::{
     animations::{
         king::{KingAnimation, KingSpriteSheet},
-        objects::flag::{FlagAnimation, FlagSpriteSheet},
-        units::{UnitAnimation, UnitSpriteSheets},
+        objects::flag::{Flag, FlagAnimation, FlagSpriteSheet},
+        units::{Unit, UnitAnimation, UnitSpriteSheets},
         SpriteAnimationBundle,
     },
     networking::{
@@ -17,12 +17,16 @@ use shared::{
     networking::{
         ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
-    PLAYER_COLLIDER, PROJECTILE_COLLIDER, UNIT_COLLIDER,
+    projectile_collider, BoxCollider,
 };
 
 use super::PartOfScene;
 
 pub struct SpawnPlugin;
+
+#[derive(Component)]
+#[require(PartOfScene, BoxCollider(projectile_collider))]
+pub struct Projectile;
 
 impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
@@ -100,16 +104,11 @@ fn spawn_player(
             skin,
         } = spawn;
 
-        let mut client_player_entity = commands.spawn((
-            SpriteAnimationBundle::new(
-                translation,
-                &king_sprite_sheet.sprite_sheet,
-                KingAnimation::Idle,
-                3.,
-            ),
+        let mut client_player_entity = commands.spawn(SpriteAnimationBundle::new(
+            translation,
+            &king_sprite_sheet.sprite_sheet,
             KingAnimation::Idle,
-            PLAYER_COLLIDER,
-            PartOfScene,
+            3.,
         ));
 
         if client_id.eq(id) {
@@ -146,12 +145,10 @@ fn spawn_unit(
 
         let client_unit_entity = commands
             .spawn((
+                Unit,
                 SpriteAnimationBundle::new(translation, sprite_sheet, UnitAnimation::Idle, 3.),
-                UnitAnimation::Idle,
                 *unit_type,
                 *owner,
-                UNIT_COLLIDER,
-                PartOfScene,
             ))
             .id();
 
@@ -186,6 +183,7 @@ fn spawn_projectile(
 
         let client_entity = commands
             .spawn((
+                Projectile,
                 Sprite {
                     image: texture,
                     ..default()
@@ -195,8 +193,6 @@ fn spawn_projectile(
                     scale: Vec3::splat(2.0),
                     rotation: Quat::from_rotation_z(angle),
                 },
-                PROJECTILE_COLLIDER,
-                PartOfScene,
             ))
             .id();
 
@@ -220,14 +216,13 @@ fn spawn_flag(
 
         let client_flag_entity = commands
             .spawn((
+                Flag,
                 SpriteAnimationBundle::new(
                     &[0., 0., Layers::Flag.as_f32()],
                     &flag_sprite_sheet.sprite_sheet,
                     FlagAnimation::Wave,
                     0.2,
                 ),
-                FlagAnimation::Wave,
-                PartOfScene,
             ))
             .id();
 
