@@ -2,9 +2,10 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::entities::PartOfScene;
-
-use super::{SpriteSheet, SpriteSheetAnimation};
+use crate::{
+    animations::{SpriteSheet, SpriteSheetAnimation},
+    entities::PartOfScene,
+};
 
 #[derive(Component)]
 #[require(PartOfScene, FlagAnimation)]

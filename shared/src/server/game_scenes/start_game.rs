@@ -4,7 +4,6 @@ use bevy::color::palettes::css::{BLUE, RED};
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
-use crate::UNIT_COLLIDER;
 use crate::{
     map::{
         buildings::RecruitmentBuilding,
@@ -449,13 +448,8 @@ fn duel_map(
                 Owner {
                     faction: Faction::Bandits,
                 },
-                Velocity::default(),
                 FlagAssignment(flag_entity, offset),
                 UnitBehaviour::FollowFlag(flag_entity, offset),
-                PushBack {
-                    timer: Timer::from_seconds(1., TimerMode::Once),
-                },
-                UNIT_COLLIDER,
                 game_scene_id,
             ));
         }

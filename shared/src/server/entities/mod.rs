@@ -2,9 +2,17 @@ use bevy::{math::bounding::IntersectsVolume, prelude::*};
 
 use health::HealthPlugin;
 
-use crate::{networking::UnitType, unit_collider, BoxCollider};
+use crate::{
+    map::{Chest, GameSceneId},
+    networking::{MultiplayerRoles, UnitType},
+    unit_collider, BoxCollider, GameState,
+};
 
-use super::physics::{movement::Velocity, PushBack};
+use super::{
+    networking::ServerLobby,
+    physics::{movement::Velocity, PushBack},
+    players::InteractEvent,
+};
 
 pub mod health;
 

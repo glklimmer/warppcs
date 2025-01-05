@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 
-use archer::archer;
-use pikeman::pikeman;
+use bandits::bandit::bandit;
+use humans::{archer::archer, pikeman::pikeman, shieldwarrior::shieldwarrior};
 use shared::{enum_map::*, networking::UnitType, unit_collider, BoxCollider};
-use shieldwarrior::shieldwarrior;
 
 use crate::entities::PartOfScene;
 
