@@ -7,7 +7,11 @@ use crate::{
     networking::{PlayerCommand, ServerMessages},
 };
 
-use super::networking::{NetworkEvent, SendServerMessage, ServerLobby};
+use super::{
+    buildings::recruiting::FlagHolder,
+    networking::{NetworkEvent, SendServerMessage, ServerLobby},
+    physics::attachment::AttachedTo,
+};
 
 #[derive(Event)]
 pub struct InteractEvent(pub ClientId);
@@ -20,7 +24,7 @@ impl Plugin for PlayerPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (attack, interact).run_if(on_event::<NetworkEvent>),
+            (attack, interact, drop_flag).run_if(on_event::<NetworkEvent>),
         );
     }
 }
@@ -55,6 +59,29 @@ fn interact(
         let client_id = event.client_id;
         if let PlayerCommand::Interact = &event.message {
             interact.send(InteractEvent(client_id));
+        }
+    }
+}
+
+fn drop_flag(
+    mut commands: Commands,
+    mut network_events: EventReader<NetworkEvent>,
+    mut interact: EventWriter<InteractEvent>,
+    mut flag_query: Query<(&AttachedTo, &mut Transform)>,
+    mut flagholder_query: Query<(&FlagHolder)>,
+    lobby: Res<ServerLobby>,
+) {
+    for event in network_events.read() {
+        if let PlayerCommand::DropFlag = &event.message {
+            let player_entity = lobby.players.get(&event.client_id).unwrap();
+
+            commands.entity(*player_entity).remove::<FlagHolder>();
+
+            for (attached_to, transform) in flag_query.iter() {
+                if attached_to.0.eq(player_entity) {
+                    println!("Found Player drop");
+                }
+            }
         }
     }
 }
