@@ -338,6 +338,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-parallax"
+version = "0.11.0"
+source = "git+https://github.com/Corrosive-Games/bevy-parallax#5e09918565e7055488bcf6bb94d756e0026f8539"
+dependencies = [
+ "bevy",
+ "serde",
+]
+
+[[package]]
 name = "bevy_a11y"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1544,6 +1553,7 @@ version = "0.1.0"
 dependencies = [
  "arboard",
  "bevy",
+ "bevy-parallax",
  "bevy_renet",
  "bincode",
  "fastrand",
