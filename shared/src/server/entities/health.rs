@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
-    networking::{BuildingUpdate, Facing, MultiplayerRoles, ServerMessages},
+    networking::{BuildingUpdate, Facing, MultiplayerRoles, ServerMessages, UpdateType},
     server::{networking::SendServerMessage, physics::movement::Velocity},
     BoxCollider, DelayedDespawn, GameState,
 };
@@ -96,7 +96,9 @@ fn on_building_destroy(
             sender.send(SendServerMessage {
                 message: ServerMessages::BuildingUpdate(BuildingUpdate {
                     indicator: *indicator,
-                    status: BuildStatus::Destroyed,
+                    update: UpdateType::Status {
+                        new_status: BuildStatus::Destroyed,
+                    },
                 }),
                 game_scene_id: *game_scene_id,
             });

@@ -23,16 +23,13 @@ impl BoxCollider {
 
     pub fn at(&self, transform: &Transform) -> Aabb2d {
         Aabb2d::new(
-            transform.translation.truncate() + self.offset.unwrap_or(Vec2::ZERO),
+            transform.translation.truncate() + self.offset.unwrap_or_default(),
             self.half_size(),
         )
     }
 
     pub fn at_pos(&self, position: Vec2) -> Aabb2d {
-        Aabb2d::new(
-            position + self.offset.unwrap_or(Vec2::ZERO),
-            self.half_size(),
-        )
+        Aabb2d::new(position + self.offset.unwrap_or_default(), self.half_size())
     }
 }
 

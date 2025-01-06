@@ -358,7 +358,7 @@ fn duel_map(
 
         // Create Player entity
         let transform = Transform::from_xyz(0., 50., Layers::Player.as_f32());
-        let inventory = Inventory { gold: 1000 };
+        let inventory = Inventory { gold: 10000 };
         commands.entity(*player_entity).insert((
             transform,
             PlayerInput::default(),

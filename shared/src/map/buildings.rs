@@ -2,16 +2,16 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::Layers;
-use crate::BoxCollider;
+use crate::{server::buildings::building_collider, BoxCollider};
 
 #[derive(Component, Copy, Clone)]
 pub struct RecruitmentBuilding;
 
-#[derive(Component, Copy, Clone)]
-pub enum MainBuildingLevel {
-    First,
-    Second,
-    Third,
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MainBuildingLevels {
+    Tent,
+    Hall,
+    Castle,
 }
 
 #[derive(Component, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -21,52 +21,69 @@ pub enum BuildStatus {
     Destroyed,
 }
 
-#[derive(Component, Copy, Clone)]
 pub struct Cost {
     pub gold: u16,
 }
 
-#[derive(Component, Copy, Clone, PartialEq, Eq)]
+#[derive(Component, Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Building {
-    MainBuilding,
+    MainBuilding { level: MainBuildingLevels },
     Archer,
     Warrior,
     Pikeman,
-    Wall,
+    Wall { level: WallLevels },
     Tower,
     GoldFarm,
 }
 
-#[derive(Component, Clone, Copy)]
-pub struct BuildingTextures {
-    pub marker: &'static str,
-    pub built: &'static str,
-}
-
-#[derive(Bundle, Copy, Clone)]
-pub struct MainBuildingBundle {
-    pub base: Building,
-    pub collider: BoxCollider,
-    pub main_building_level: MainBuildingLevel,
-    pub transform: Transform,
-}
-
-const BUILDUING_SCALE: Vec3 = Vec3::splat(3.0);
-
-impl MainBuildingBundle {
-    pub fn new(x: f32) -> Self {
-        MainBuildingBundle {
-            base: Building::MainBuilding,
-            collider: BoxCollider {
-                dimension: Vec2::new(200., 100.),
-                offset: None,
-            },
-            main_building_level: MainBuildingLevel::First,
-            transform: Transform::from_xyz(x, 90., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
+impl MainBuildingLevels {
+    fn next_level(&self) -> Option<MainBuildingLevels> {
+        match self {
+            MainBuildingLevels::Tent => Some(MainBuildingLevels::Hall),
+            MainBuildingLevels::Hall => Some(MainBuildingLevels::Castle),
+            MainBuildingLevels::Castle => None,
         }
     }
 }
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum WallLevels {
+    Basic,
+    Wood,
+    Tower,
+}
+
+impl WallLevels {
+    fn next_level(&self) -> Option<WallLevels> {
+        match self {
+            WallLevels::Basic => Some(WallLevels::Wood),
+            WallLevels::Wood => Some(WallLevels::Tower),
+            WallLevels::Tower => None,
+        }
+    }
+}
+
+impl Building {
+    pub fn upgrade_building(&self) -> Option<Self> {
+        match *self {
+            Building::MainBuilding { level } => level
+                .next_level()
+                .map(|level| (Building::MainBuilding { level })),
+            Building::Wall { level } => level.next_level().map(|level| (Building::Wall { level })),
+            Building::Archer => None,
+            Building::Warrior => None,
+            Building::Pikeman => None,
+            Building::Tower => None,
+            Building::GoldFarm => None,
+        }
+    }
+
+    pub fn can_upgrade(&self) -> bool {
+        self.upgrade_building().is_some()
+    }
+}
+
+const BUILDUING_SCALE: Vec3 = Vec3::new(3., 3., 1.);
 
 #[derive(Bundle, Clone, Copy)]
 pub struct BuildingBundle {
@@ -74,116 +91,85 @@ pub struct BuildingBundle {
     pub collider: BoxCollider,
     pub build_status: BuildStatus,
     pub transform: Transform,
-    pub cost: Cost,
-    pub textures: BuildingTextures,
 }
 
 impl BuildingBundle {
-    pub fn archer(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::Archer,
+    pub fn main(x: f32) -> Self {
+        Self {
+            building: Building::MainBuilding {
+                level: MainBuildingLevels::Tent,
+            },
             collider: BoxCollider {
                 dimension: Vec2::new(200., 100.),
                 offset: None,
             },
+            build_status: BuildStatus::Built,
+            transform: Transform::from_xyz(x, 90., Layers::Building.as_f32())
+                .with_scale(BUILDUING_SCALE),
+        }
+    }
+
+    pub fn archer(x: f32) -> Self {
+        BuildingBundle {
+            building: Building::Archer,
+            collider: building_collider(&Building::Archer),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
-            cost: Cost { gold: 200 },
-            textures: BuildingTextures {
-                marker: "sprites/buildings/archer_plot.png",
-                built: "sprites/buildings/archer_house.png",
-            },
         }
     }
 
     pub fn warrior(x: f32) -> Self {
         BuildingBundle {
             building: Building::Warrior,
-            collider: BoxCollider {
-                dimension: Vec2::new(200., 100.),
-                offset: None,
-            },
+            collider: building_collider(&Building::Warrior),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
-            cost: Cost { gold: 200 },
-            textures: BuildingTextures {
-                marker: "sprites/buildings/warrior_plot.png",
-                built: "sprites/buildings/warrior_house.png",
-            },
         }
     }
 
     pub fn pikeman(x: f32) -> Self {
         BuildingBundle {
             building: Building::Pikeman,
-            collider: BoxCollider {
-                dimension: Vec2::new(200., 100.),
-                offset: None,
-            },
+            collider: building_collider(&Building::Pikeman),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
-            cost: Cost { gold: 200 },
-            textures: BuildingTextures {
-                marker: "sprites/buildings/pike_man_plot.png",
-                built: "sprites/buildings/pike_man_house.png",
-            },
         }
     }
 
     pub fn wall(x: f32) -> Self {
         BuildingBundle {
-            building: Building::Wall,
-            collider: BoxCollider {
-                dimension: Vec2::new(50., 75.),
-                offset: None,
+            building: Building::Wall {
+                level: WallLevels::Basic,
             },
+            collider: building_collider(&Building::Wall {
+                level: WallLevels::Basic,
+            }),
             build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
+            transform: Transform::from_xyz(x, 145., Layers::Wall.as_f32())
                 .with_scale(BUILDUING_SCALE),
-            cost: Cost { gold: 100 },
-            textures: BuildingTextures {
-                marker: "sprites/buildings/wall_basic.png",
-                built: "sprites/buildings/wall_first_upgrade.png",
-            },
         }
     }
 
     pub fn tower() -> Self {
         BuildingBundle {
             building: Building::Tower,
-            collider: BoxCollider {
-                dimension: Vec2::new(200., 100.),
-                offset: None,
-            },
+            collider: building_collider(&Building::Tower),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(0., 50., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
-            cost: Cost { gold: 150 },
-            textures: BuildingTextures {
-                marker: "sprites/buildings/warrior_plot.png",
-                built: "sprites/buildings/warrior_house.png",
-            },
         }
     }
 
     pub fn gold_farm(x: f32) -> Self {
         BuildingBundle {
             building: Building::GoldFarm,
-            collider: BoxCollider {
-                dimension: Vec2::new(200., 50.),
-                offset: None,
-            },
+            collider: building_collider(&Building::GoldFarm),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 25., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
-            cost: Cost { gold: 50 },
-            textures: BuildingTextures {
-                marker: "sprites/buildings/warrior_plot.png",
-                built: "sprites/buildings/warrior_house.png",
-            },
         }
     }
 }
