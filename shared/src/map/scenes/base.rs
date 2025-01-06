@@ -1,14 +1,11 @@
 use bevy::prelude::*;
 
-use crate::map::{
-    buildings::{BuildingBundle, MainBuildingBundle},
-    spawn_point::SpawnPointBundle,
-};
+use crate::map::{buildings::BuildingBundle, spawn_point::SpawnPointBundle};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
 pub struct BaseScene {
-    pub main_building: MainBuildingBundle,
+    pub main_building: BuildingBundle,
     pub archer_building: BuildingBundle,
     pub warrior_building: BuildingBundle,
     pub pikeman_building: BuildingBundle,
@@ -37,7 +34,7 @@ pub enum BaseSceneIndicator {
 impl BaseScene {
     pub fn new() -> Self {
         BaseScene {
-            main_building: MainBuildingBundle::new(0.),
+            main_building: BuildingBundle::main(0.),
             archer_building: BuildingBundle::archer(400.),
             warrior_building: BuildingBundle::warrior(-400.),
             pikeman_building: BuildingBundle::pikeman(650.),
