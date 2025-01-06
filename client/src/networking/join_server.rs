@@ -43,9 +43,7 @@ pub fn join_steam_server(
         Ok(transport) => {
             commands.insert_resource(transport);
             commands.insert_resource(client);
-            commands.insert_resource(CurrentClientId(ClientId::from_raw(
-                steam_client.user().steam_id().raw(),
-            )));
+            commands.insert_resource(CurrentClientId(steam_client.user().steam_id().raw()));
             ui.set(MainMenuStates::Lobby);
         }
         Err(error) => println!("join_netcode_server error {}", error),
