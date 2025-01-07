@@ -379,7 +379,6 @@ fn display_join_screen(mut commands: Commands) {
             height: Val::Percent(100.0),
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
-
             ..default()
         })
         .with_children(|parent| {
@@ -531,6 +530,7 @@ fn display_steam_lobby(
                             Button,
                             Visibility::Hidden,
                             ImageNode::new(asset_server.load("ui/checkbox.png")),
+                            LobbySlotName(i),
                             Checkbox::Unchecked,
                         ));
                     });
