@@ -10,11 +10,11 @@ netcode = []
 
 [dependencies]
 bevy = { version = "0.15.0" }
-bevy_renet = { version = "1.0.0" }
+bevy_renet = { version = "1.0.0", features = ["steam"] }
+renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }
 bincode = "1.3.3"
 fastrand = "2.3.0"
 serde = { version = "1.0.217", features = ["derive"] }
-renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }
 steamworks = { version = "0.11", optional = true }
 shared = { path = "../shared", features = ["client"] }
 arboard = "3.4.1"

@@ -56,8 +56,8 @@ fn main() {
 
     #[cfg(feature = "steam")]
     {
+        use bevy_renet::steam::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
         use networking::join_server::{join_own_steam_server, join_steam_server};
-        use renet_steam::bevy::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
         use shared::server::create_server::create_steam_server;
 
         app.add_plugins(SteamServerPlugin);
@@ -79,10 +79,7 @@ fn main() {
             (create_steam_server, join_own_steam_server).chain(),
         );
 
-        app.add_systems(
-            Update,
-            join_steam_server.run_if(on_event::<JoinSteamLobby>()),
-        );
+        app.add_systems(Update, join_steam_server.run_if(on_event::<JoinSteamLobby>));
     }
 
     #[cfg(feature = "netcode")]
