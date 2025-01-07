@@ -1016,6 +1016,7 @@ dependencies = [
  "bevy_time",
  "renet",
  "renet_netcode",
+ "renet_steam",
 ]
 
 [[package]]

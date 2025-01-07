@@ -29,7 +29,7 @@ use crate::{
         game_scenes::GameSceneDestination,
         lobby::GameLobby,
         networking::{GameWorld, NetworkEvent, ServerLobby},
-        physics::{movement::Velocity, PushBack},
+        physics::movement::Velocity,
     },
     GameState,
 };

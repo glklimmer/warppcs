@@ -21,6 +21,7 @@
 //!     commands.spawn((NodeBundle::default(), TextInput));
 //! }
 //! ```
+use arboard::Clipboard;
 
 use bevy::{
     asset::load_internal_binary_asset,
@@ -53,6 +54,7 @@ impl Plugin for TextInputPlugin {
         app.init_resource::<TextInputNavigationBindings>()
             .add_event::<TextInputSubmitEvent>()
             .add_observer(create)
+            .add_systems(Startup, setup_clipboard)
             .add_systems(
                 Update,
                 (
@@ -79,6 +81,14 @@ impl Plugin for TextInputPlugin {
     }
 }
 
+#[derive(Resource)]
+struct ClipBoard(Clipboard);
+
+fn setup_clipboard(mut commands: Commands) {
+    let clipboard = Clipboard::new().unwrap();
+    commands.insert_resource(ClipBoard(clipboard));
+}
+
 const CURSOR_HANDLE: Handle<Font> = Handle::weak_from_u128(10482756907980398621);
 
 /// Marker component for a Text Input entity.
@@ -95,7 +105,7 @@ const CURSOR_HANDLE: Handle<Font> = Handle::weak_from_u128(10482756907980398621)
 ///     commands.spawn((NodeBundle::default(), TextInput));
 /// }
 /// ```
-#[derive(Component)]
+#[derive(Component, Default)]
 #[require(
     TextInputSettings,
     TextInputTextFont,
@@ -167,6 +177,8 @@ pub enum TextInputAction {
     /// Removes the char right of the cursor.
     DeleteNext,
     /// Triggers a `TextInputSubmitEvent`, optionally clearing the text input.
+    ///
+    PasteClipBoard,
     Submit,
 }
 /// A resource in which key bindings can be specified. Bindings are given as a tuple of (`TextInputAction`, `TextInputBinding`).
@@ -212,6 +224,7 @@ impl Default for TextInputNavigationBindings {
             (DeletePrev, TextInputBinding::new(Backspace, [])),
             (DeletePrev, TextInputBinding::new(NumpadBackspace, [])),
             (DeleteNext, TextInputBinding::new(Delete, [])),
+            (PasteClipBoard, TextInputBinding::new(KeyV, [ControlLeft])),
             (Submit, TextInputBinding::new(Enter, [])),
             (Submit, TextInputBinding::new(NumpadEnter, [])),
         ])
@@ -237,6 +250,7 @@ impl Default for TextInputNavigationBindings {
             (DeletePrev, TextInputBinding::new(Backspace, [])),
             (DeletePrev, TextInputBinding::new(NumpadBackspace, [])),
             (DeleteNext, TextInputBinding::new(Delete, [])),
+            (PasteClipBoard, TextInputBinding::new(KeyV, [SuperLeft])),
             (Submit, TextInputBinding::new(Enter, [])),
             (Submit, TextInputBinding::new(NumpadEnter, [])),
         ])
@@ -307,6 +321,7 @@ fn keyboard(
         &mut TextInputCursorPos,
         &mut TextInputCursorTimer,
     )>,
+    mut clip_board: ResMut<ClipBoard>,
     mut submit_writer: EventWriter<TextInputSubmitEvent>,
     navigation: Res<TextInputNavigationBindings>,
 ) {
@@ -384,6 +399,10 @@ fn keyboard(
                             // Ensure that the cursor isn't reset
                             cursor_pos.set_changed();
                         }
+                    }
+                    PasteClipBoard => {
+                        let pasted_text = clip_board.0.get_text().unwrap();
+                        text_input.0 = pasted_text;
                     }
                     Submit => {
                         if settings.retain_on_submit {
@@ -858,4 +877,8 @@ fn masked_value(value: &str, mask: Option<char>) -> String {
 
 fn placeholder_color(color: &TextColor) -> TextColor {
     TextColor(color.with_alpha(color.alpha() * 0.25))
+}
+
+fn copy_paste() {
+    let mut clipboard = Clipboard::new().unwrap();
 }

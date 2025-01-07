@@ -21,7 +21,7 @@ use steamworks::{LobbyId, SteamId};
 use crate::ui_widgets::text_input::TextInputValue;
 use crate::{
     networking::{CurrentClientId, NetworkEvent},
-    ui_widgets::text_input::TextInputPlugin,
+    ui_widgets::text_input::{TextInput, TextInputPlugin, TextInputTextColor, TextInputTextFont},
 };
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
@@ -379,7 +379,6 @@ fn display_join_screen(mut commands: Commands) {
             height: Val::Percent(100.0),
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
-
             ..default()
         })
         .with_children(|parent| {
@@ -391,6 +390,12 @@ fn display_join_screen(mut commands: Commands) {
                     margin: UiRect::bottom(Val::Px(5.0)),
                     ..default()
                 },
+                TextInput,
+                TextInputTextFont(TextFont {
+                    font_size: 34.,
+                    ..default()
+                }),
+                TextInputTextColor(TextColor(TEXT_COLOR)),
                 BorderColor(BORDER_COLOR_ACTIVE.into()),
                 BackgroundColor(BACKGROUND_COLOR.into()),
             ));
@@ -431,24 +436,21 @@ fn display_steam_lobby(
     asset_server: Res<AssetServer>,
 ) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                width: Val::Percent(50.0),
-                height: Val::Percent(80.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                position_type: PositionType::Absolute,
-                top: Val::Percent(5.),
-                ..Default::default()
-            },
+        .spawn(Node {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            width: Val::Percent(50.0),
+            height: Val::Percent(80.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            position_type: PositionType::Absolute,
+            top: Val::Percent(5.),
             ..default()
         })
         .with_children(|parent| {
             parent
-                .spawn((ButtonBundle {
-                    style: Style {
+                .spawn((
+                    Node {
                         width: Val::Px(400.0),
                         height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
@@ -458,27 +460,27 @@ fn display_steam_lobby(
                         right: Val::Px(0.),
                         ..default()
                     },
-                    border_color: BorderColor(Color::BLACK),
-                    background_color: NORMAL_BUTTON.into(),
-                    ..default()
-                },))
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(NORMAL_BUTTON.into()),
+                ))
                 .with_children(|parent| {
                     let client_id = steam_client.user().steam_id().raw();
-                    parent.spawn(TextBundle::from_section(
-                        format!("Code: {client_id}"),
-                        TextStyle {
+                    parent.spawn((
+                        Text::new(format!("Code: {client_id}")),
+                        TextFont {
                             font_size: 35.0,
-                            color: Color::srgb(0.9, 0.9, 0.9),
                             ..default()
                         },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
                     ));
                 });
         })
         .with_children(|parent| {
             for i in 1..5 {
                 parent
-                    .spawn(NodeBundle {
-                        style: Style {
+                    .spawn((
+                        Node {
                             display: Display::Flex,
                             flex_direction: FlexDirection::Row,
                             width: Val::Percent(80.0),
@@ -489,53 +491,46 @@ fn display_steam_lobby(
                             padding: UiRect::all(Val::Px(10.0)),
                             ..default()
                         },
-                        border_color: BorderColor(Color::BLACK),
-                        ..Default::default()
-                    })
+                        BorderColor(Color::BLACK),
+                    ))
                     .with_children(|parent| {
                         parent
                             .spawn((
-                                ButtonBundle {
-                                    style: Style {
-                                        width: Val::Px(350.0),
-                                        height: Val::Px(65.0),
-                                        border: UiRect::all(Val::Px(5.0)),
-                                        justify_content: JustifyContent::Center,
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    border_color: BorderColor(Color::BLACK),
-                                    background_color: NORMAL_BUTTON.into(),
+                                Node {
+                                    width: Val::Px(350.0),
+                                    height: Val::Px(65.0),
+                                    border: UiRect::all(Val::Px(5.0)),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
                                     ..default()
                                 },
+                                BorderColor(Color::BLACK),
+                                BackgroundColor(NORMAL_BUTTON.into()),
                                 Buttons::InvitePlayer,
                             ))
                             .with_children(|parent| {
                                 parent.spawn((
-                                    TextBundle::from_section(
-                                        format!("Slot {i}"),
-                                        TextStyle {
-                                            font_size: 35.0,
-                                            color: Color::srgb(0.9, 0.9, 0.9),
-                                            ..default()
-                                        },
-                                    ),
+                                    Text::new(format!("Slot {i}")),
+                                    TextFont {
+                                        font_size: 35.0,
+                                        ..default()
+                                    },
+                                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
                                     LobbySlotName(i),
                                 ));
                             });
                     })
                     .with_children(|parent| {
                         parent.spawn((
-                            ButtonBundle {
-                                style: Style {
-                                    width: Val::Px(50.),
-                                    height: Val::Px(50.),
-                                    ..Default::default()
-                                },
-                                visibility: Visibility::Hidden,
-                                image: UiImage::new(asset_server.load("ui/checkbox.png")),
-                                ..Default::default()
+                            Node {
+                                width: Val::Px(50.),
+                                height: Val::Px(50.),
+                                ..default()
                             },
+                            Button,
+                            Visibility::Hidden,
+                            ImageNode::new(asset_server.load("ui/checkbox.png")),
+                            LobbySlotName(i),
                             Checkbox::Unchecked,
                         ));
                     });
@@ -544,78 +539,71 @@ fn display_steam_lobby(
         .with_children(|parent| {
             parent
                 .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Percent(40.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            align_items: AlignItems::Center,
-                            justify_content: JustifyContent::Center,
-                            margin: UiRect::top(Val::Px(5.0)),
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: BURLYWOOD.into(),
+                    Node {
+                        width: Val::Percent(40.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(5.0)),
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
+                        margin: UiRect::top(Val::Px(5.0)),
                         ..default()
                     },
+                    Button,
+                    BorderColor(Color::BLACK),
+                    BackgroundColor(BURLYWOOD.into()),
                     Buttons::StartGame,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Start Game",
-                        TextStyle {
+                    parent.spawn((
+                        Text::new("Start Game"),
+                        TextFont {
                             font_size: 35.0,
-                            color: Color::srgb(0.9, 0.9, 0.9),
                             ..default()
                         },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
                     ));
                 });
         });
 
-    commands.spawn(NodeBundle {
-        style: Style {
-            display: Display::Flex,
-            flex_direction: FlexDirection::Row,
-            width: Val::Percent(50.0),
-            height: Val::Percent(80.0),
-            align_items: AlignItems::Center,
-            position_type: PositionType::Absolute,
-            border: UiRect::all(Val::Px(2.)),
-            right: Val::Px(0.),
-            ..Default::default()
-        },
-        ..default()
+    commands.spawn(Node {
+        display: Display::Flex,
+        flex_direction: FlexDirection::Row,
+        width: Val::Percent(50.0),
+        height: Val::Percent(80.0),
+        align_items: AlignItems::Center,
+        position_type: PositionType::Absolute,
+        border: UiRect::all(Val::Px(2.)),
+        right: Val::Px(0.),
+        ..Default::default()
     });
 
     commands
         .spawn((
-            ButtonBundle {
-                style: Style {
-                    width: Val::Px(150.0),
-                    height: Val::Px(50.0),
-                    border: UiRect::all(Val::Px(5.0)),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    align_self: AlignSelf::Start,
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(0.),
-                    bottom: Val::Percent(5.),
-                    ..default()
-                },
-                border_color: BorderColor(Color::BLACK),
-                background_color: NORMAL_BUTTON.into(),
+            Node {
+                width: Val::Px(150.0),
+                height: Val::Px(50.0),
+                border: UiRect::all(Val::Px(5.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                align_self: AlignSelf::Start,
+                position_type: PositionType::Absolute,
+                left: Val::Px(0.),
+                bottom: Val::Percent(5.),
                 ..default()
             },
+            Button,
+            BorderColor(Color::BLACK),
+            BackgroundColor(NORMAL_BUTTON.into()),
             Buttons::Back(MainMenuStates::Multiplayer),
         ))
         .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                "Back",
-                TextStyle {
-                    font_size: 30.0,
-                    color: Color::srgb(0.9, 0.9, 0.9),
+            parent.spawn((
+                Text::new("Back"),
+                TextFont {
+                    font_size: 35.0,
                     ..default()
                 },
+                TextColor(Color::srgb(0.9, 0.9, 0.9)),
             ));
         });
 }
