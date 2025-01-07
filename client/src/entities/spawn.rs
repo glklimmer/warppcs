@@ -15,7 +15,8 @@ use crate::{
 use shared::{
     map::Layers,
     networking::{
-        ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        DropFlag, ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile,
+        SpawnUnit,
     },
     projectile_collider, BoxCollider,
 };
@@ -36,6 +37,7 @@ impl Plugin for SpawnPlugin {
         app.add_event::<SpawnUnit>();
         app.add_event::<SpawnProjectile>();
         app.add_event::<SpawnFlag>();
+        app.add_event::<DropFlag>();
 
         app.add_systems(
             FixedUpdate,
@@ -45,8 +47,8 @@ impl Plugin for SpawnPlugin {
                     (spawn_player, spawn_flag).chain(),
                     spawn_unit,
                     spawn_projectile,
-                )
-                    .chain(),
+                ),
+                drop_flag.chain(),
             )
                 .run_if(on_event::<NetworkEvent>)
                 .in_set(Connected),
@@ -60,6 +62,7 @@ fn spawn(
     mut spawn_unit: EventWriter<SpawnUnit>,
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut spawn_flag: EventWriter<SpawnFlag>,
+    mut drop_flag: EventWriter<DropFlag>,
 ) {
     for event in network_events.read() {
         match &event.message {
@@ -74,6 +77,9 @@ fn spawn(
             }
             ServerMessages::SpawnFlag(spawn) => {
                 spawn_flag.send(spawn.clone());
+            }
+            ServerMessages::DropFlag(drop) => {
+                drop_flag.send(drop.clone());
             }
             ServerMessages::SpawnGroup { player, units } => {
                 spawn_player.send(player.clone());
@@ -231,5 +237,29 @@ fn spawn_flag(
         network_mapping
             .0
             .insert(*server_flag_entity, client_flag_entity);
+    }
+}
+
+fn drop_flag(
+    mut commands: Commands,
+    mut network_mapping: ResMut<NetworkMapping>,
+    mut drop_flag: EventReader<DropFlag>,
+    client_id: Res<CurrentClientId>,
+    lobby: Res<ClientPlayers>,
+) {
+    let client_id = client_id.0;
+    for drop in drop_flag.read() {
+        let DropFlag {
+            entity: server_flag_entity,
+        } = drop;
+
+        println!("Client: Droped");
+
+        let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
+        let flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
+
+        commands
+            .entity(player_entity)
+            .remove_children(&[*flag_entity]);
     }
 }

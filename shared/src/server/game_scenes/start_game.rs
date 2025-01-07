@@ -466,15 +466,15 @@ fn duel_map(
     first_base.left_game_scenes.push(first_camp_id);
     first_base.right_game_scenes.push(second_camp_id);
 
-    let second_base = game_world.game_scenes.get_mut(&second_base_id).unwrap();
-    second_base.left_game_scenes.push(second_camp_id);
-    second_base.right_game_scenes.push(first_camp_id);
+    // let second_base = game_world.game_scenes.get_mut(&second_base_id).unwrap();
+    // second_base.left_game_scenes.push(second_camp_id);
+    // second_base.right_game_scenes.push(first_camp_id);
 
-    let first_camp = game_world.game_scenes.get_mut(&first_camp_id).unwrap();
-    first_camp.left_game_scenes.push(second_base_id);
-    first_camp.right_game_scenes.push(first_base_id);
+    // let first_camp = game_world.game_scenes.get_mut(&first_camp_id).unwrap();
+    // first_camp.left_game_scenes.push(second_base_id);
+    // first_camp.right_game_scenes.push(first_base_id);
 
-    let second_camp = game_world.game_scenes.get_mut(&second_camp_id).unwrap();
-    second_camp.left_game_scenes.push(first_base_id);
-    second_camp.right_game_scenes.push(second_base_id);
+    // let second_camp = game_world.game_scenes.get_mut(&second_camp_id).unwrap();
+    // second_camp.left_game_scenes.push(first_base_id);
+    // second_camp.right_game_scenes.push(second_base_id);
 }
