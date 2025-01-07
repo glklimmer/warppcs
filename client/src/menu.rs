@@ -548,6 +548,7 @@ fn display_steam_lobby(
                         margin: UiRect::top(Val::Px(5.0)),
                         ..default()
                     },
+                    Button,
                     BorderColor(Color::BLACK),
                     BackgroundColor(BURLYWOOD.into()),
                     Buttons::StartGame,
