@@ -21,7 +21,7 @@ use steamworks::{LobbyId, SteamId};
 use crate::ui_widgets::text_input::TextInputValue;
 use crate::{
     networking::{CurrentClientId, NetworkEvent},
-    ui_widgets::text_input::TextInputPlugin,
+    ui_widgets::text_input::{TextInput, TextInputPlugin, TextInputTextColor, TextInputTextFont},
 };
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
@@ -391,6 +391,12 @@ fn display_join_screen(mut commands: Commands) {
                     margin: UiRect::bottom(Val::Px(5.0)),
                     ..default()
                 },
+                TextInput,
+                TextInputTextFont(TextFont {
+                    font_size: 34.,
+                    ..default()
+                }),
+                TextInputTextColor(TextColor(TEXT_COLOR)),
                 BorderColor(BORDER_COLOR_ACTIVE.into()),
                 BackgroundColor(BACKGROUND_COLOR.into()),
             ));
