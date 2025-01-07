@@ -23,10 +23,11 @@ use crate::{
     },
     BoxCollider,
 };
-
+/// PlayerEntity is FlagHolder
 #[derive(Component)]
 pub struct FlagHolder(pub Entity);
 
+/// Flag N to 1 Entity
 #[derive(Component)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
 
