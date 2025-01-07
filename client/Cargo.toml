@@ -8,9 +8,8 @@ default = ["netcode"]
 steam = ["dep:renet_steam", "steamworks"]
 netcode = []
 
-
 [dependencies]
-bevy = { version = "0.15.0", features = ["dynamic_linking"] }
+bevy = { version = "0.15.0" }
 bevy_renet = { version = "1.0.0" }
 bincode = "1.3.3"
 fastrand = "2.3.0"
