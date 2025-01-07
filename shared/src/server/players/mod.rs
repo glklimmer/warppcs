@@ -4,7 +4,7 @@ use bevy_renet::renet::ClientId;
 
 use crate::{
     map::GameSceneId,
-    networking::{PlayerCommand, ServerMessages},
+    networking::{DropFlag, PlayerCommand, ServerMessages},
 };
 
 use super::{
@@ -66,20 +66,32 @@ fn interact(
 fn drop_flag(
     mut commands: Commands,
     mut network_events: EventReader<NetworkEvent>,
-    mut interact: EventWriter<InteractEvent>,
-    mut flag_query: Query<(&AttachedTo, &mut Transform)>,
+    mut flag_query: Query<(Entity, &AttachedTo, &mut Transform)>,
     mut flagholder_query: Query<(&FlagHolder)>,
     lobby: Res<ServerLobby>,
+    mut sender: EventWriter<SendServerMessage>,
+    scene_ids: Query<&GameSceneId>,
 ) {
     for event in network_events.read() {
         if let PlayerCommand::DropFlag = &event.message {
             let player_entity = lobby.players.get(&event.client_id).unwrap();
+            let game_scene_id = scene_ids.get(*player_entity).unwrap();
 
             commands.entity(*player_entity).remove::<FlagHolder>();
 
-            for (attached_to, transform) in flag_query.iter() {
+            for (flag, attached_to, mut transform) in flag_query.iter_mut() {
                 if attached_to.0.eq(player_entity) {
+                    commands.entity(flag).remove::<AttachedTo>();
+
+                    transform.translation.y = 0.;
+                    transform.translation.x = 100.;
+
                     println!("Found Player drop");
+
+                    sender.send(SendServerMessage {
+                        message: ServerMessages::DropFlag(DropFlag { entity: flag }),
+                        game_scene_id: *game_scene_id,
+                    });
                 }
             }
         }
