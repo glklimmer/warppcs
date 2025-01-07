@@ -3,15 +3,9 @@ name: Release
 on:
   push:
     tags:
-      - '*'
-
-env:
-  binary: warppcs
-
+      - "*"
 
 jobs:
-
-  # Build for Windows
   release-windows:
     runs-on: windows-latest
 
@@ -27,29 +21,56 @@ jobs:
         run: |
           cargo build --release --target x86_64-pc-windows-msvc
 
-      - name: Prepare package
+      - name: Prepare client package
         run: |
-          mkdir windows
-          cp target/x86_64-pc-windows-msvc/release/${{ env.binary }}.exe windows/
-          mkdir assets -ea 0 # create the assets directory if it does not exist, it will get ignored in the zip if empty
-          cp -r assets windows/
+          mkdir windows-client
+          cp target/x86_64-pc-windows-msvc/release/client.exe windows-client/
+          mkdir assets -ea 0
+          cp -r assets windows-client/
 
-      - name: Package as a zip
+      - name: Package client
         run: |
-          Compress-Archive -Path windows/* -DestinationPath ${{ env.binary }}.zip
+          Compress-Archive -Path windows-client/* -DestinationPath client.zip
 
-      - name: Upload binaries to artifacts
+      - name: Upload client to artifacts
         uses: actions/upload-artifact@v3
         with:
-          path: ${{ env.binary }}.zip
-          name: windows
+          path: client.zip
+          name: windows-client
           retention-days: 1
-          
-      - name: Upload binaries to release
+
+      - name: Upload client to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.binary }}.zip
-          asset_name: ${{ env.binary }}-windows-${{ steps.get_version.outputs.tag }}.zip
+          file: client.zip
+          asset_name: client-windows-${{ steps.get_version.outputs.tag }}.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+
+      - name: Prepare server package
+        run: |
+          mkdir windows-server
+          cp target/x86_64-pc-windows-msvc/release/server.exe windows-server/
+          mkdir assets -ea 0
+          cp -r assets windows-server/
+
+      - name: Package server
+        run: |
+          Compress-Archive -Path windows-server/* -DestinationPath server.zip
+
+      - name: Upload server to artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          path: server.zip
+          name: windows-server
+          retention-days: 1
+
+      - name: Upload server to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: server.zip
+          asset_name: server-windows-${{ steps.get_version.outputs.tag }}.zip
           tag: ${{ github.ref }}
           overwrite: true
