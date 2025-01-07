@@ -4,11 +4,7 @@ use bevy_renet::client_connected;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
-use shared::{
-    networking::MultiplayerRoles,
-    server::{ai, networking::ServerNetworkPlugin},
-    GameState,
-};
+use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
 use std::f32::consts::PI;
 use ui::UiPlugin;
 
