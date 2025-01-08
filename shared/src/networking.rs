@@ -101,6 +101,7 @@ pub struct SpawnFlag {
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct DropFlag {
     pub entity: Entity,
+    pub translation: Vec3,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
