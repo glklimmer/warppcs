@@ -6,7 +6,11 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::{
-    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneType},
+    map::{
+        buildings::{BuildStatus, Building},
+        scenes::SceneBuildingIndicator,
+        GameSceneType,
+    },
     projectile_collider, BoxCollider,
 };
 
@@ -116,7 +120,20 @@ pub struct SpawnProjectile {
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct BuildingUpdate {
     pub indicator: SceneBuildingIndicator,
+    pub update: UpdateType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct LoadBuilding {
+    pub indicator: SceneBuildingIndicator,
     pub status: BuildStatus,
+    pub upgrade: Building,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub enum UpdateType {
+    Status { new_status: BuildStatus },
+    Upgrade { upgraded_building: Building },
 }
 
 #[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq, Copy)]
@@ -154,7 +171,7 @@ pub enum ServerMessages {
         flag: Option<SpawnFlag>,
         units: Vec<SpawnUnit>,
         projectiles: Vec<SpawnProjectile>,
-        buildings: Vec<BuildingUpdate>,
+        buildings: Vec<LoadBuilding>,
     },
     SpawnGroup {
         player: SpawnPlayer,

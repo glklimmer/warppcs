@@ -48,7 +48,7 @@ fn draw_collider(
     for (transform, collider) in query.iter() {
         gizmos.rect_2d(
             Isometry2d::new(
-                transform.translation.truncate() + collider.offset.unwrap_or(Vec2::ZERO),
+                transform.translation.truncate() + collider.offset.unwrap_or_default(),
                 Rot2::degrees(0.),
             ),
             collider.dimension,

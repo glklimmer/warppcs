@@ -78,9 +78,10 @@ pub fn recruit(
             Building::Archer => UnitType::Archer,
             Building::Warrior => UnitType::Shieldwarrior,
             Building::Pikeman => UnitType::Pikeman,
-            Building::Wall | Building::Tower | Building::GoldFarm | Building::MainBuilding => {
-                continue
-            }
+            Building::Wall { level: _ }
+            | Building::Tower
+            | Building::GoldFarm
+            | Building::MainBuilding { level: _ } => continue,
         };
 
         let unit = Unit {
@@ -180,9 +181,10 @@ pub fn check_recruit(
             }
 
             let gold_cost: u16 = match building {
-                Building::MainBuilding | Building::Wall | Building::Tower | Building::GoldFarm => {
-                    continue
-                }
+                Building::MainBuilding { level: _ }
+                | Building::Wall { level: _ }
+                | Building::Tower
+                | Building::GoldFarm => continue,
                 Building::Archer => 10,
                 Building::Warrior => 10,
                 Building::Pikeman => 10,
