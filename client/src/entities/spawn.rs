@@ -242,18 +242,17 @@ fn spawn_flag(
 
 fn drop_flag(
     mut commands: Commands,
-    mut network_mapping: ResMut<NetworkMapping>,
+    network_mapping: Res<NetworkMapping>,
     mut drop_flag: EventReader<DropFlag>,
     client_id: Res<CurrentClientId>,
     lobby: Res<ClientPlayers>,
 ) {
-    let client_id = client_id.0;
     for drop in drop_flag.read() {
         let DropFlag {
             entity: server_flag_entity,
+            translation,
         } = drop;
-
-        println!("Client: Droped");
+        let client_id = client_id.0;
 
         let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
         let flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
@@ -261,5 +260,9 @@ fn drop_flag(
         commands
             .entity(player_entity)
             .remove_children(&[*flag_entity]);
+
+        commands
+            .entity(*flag_entity)
+            .insert(Transform::from_translation(*translation));
     }
 }
