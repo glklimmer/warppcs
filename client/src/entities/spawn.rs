@@ -15,8 +15,8 @@ use crate::{
 use shared::{
     map::Layers,
     networking::{
-        DropFlag, ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile,
-        SpawnUnit,
+        DropFlag, PickFlag, ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer,
+        SpawnProjectile, SpawnUnit,
     },
     projectile_collider, BoxCollider,
 };
@@ -38,6 +38,7 @@ impl Plugin for SpawnPlugin {
         app.add_event::<SpawnProjectile>();
         app.add_event::<SpawnFlag>();
         app.add_event::<DropFlag>();
+        app.add_event::<PickFlag>();
 
         app.add_systems(
             FixedUpdate,
@@ -48,11 +49,13 @@ impl Plugin for SpawnPlugin {
                     spawn_unit,
                     spawn_projectile,
                 ),
-                drop_flag.chain(),
             )
                 .run_if(on_event::<NetworkEvent>)
                 .in_set(Connected),
         );
+
+        app.add_systems(FixedUpdate, drop_flag.run_if(on_event::<DropFlag>));
+        app.add_systems(FixedUpdate, pick_flag.run_if(on_event::<PickFlag>));
     }
 }
 
@@ -62,6 +65,7 @@ fn spawn(
     mut spawn_unit: EventWriter<SpawnUnit>,
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut spawn_flag: EventWriter<SpawnFlag>,
+    mut pick_flag: EventWriter<PickFlag>,
     mut drop_flag: EventWriter<DropFlag>,
 ) {
     for event in network_events.read() {
@@ -77,6 +81,9 @@ fn spawn(
             }
             ServerMessages::SpawnFlag(spawn) => {
                 spawn_flag.send(spawn.clone());
+            }
+            ServerMessages::PickFlag(pick) => {
+                pick_flag.send(pick.clone());
             }
             ServerMessages::DropFlag(drop) => {
                 drop_flag.send(drop.clone());
@@ -240,29 +247,53 @@ fn spawn_flag(
     }
 }
 
+fn pick_flag(
+    mut commands: Commands,
+    network_mapping: ResMut<NetworkMapping>,
+    mut pick_flag: EventReader<PickFlag>,
+    client_id: Res<CurrentClientId>,
+    lobby: Res<ClientPlayers>,
+    flag_sprite_sheet: Res<FlagSpriteSheet>,
+) {
+    for flag in pick_flag.read() {
+        let PickFlag {
+            entity: server_flag_entity,
+        } = flag;
+        let client_id = client_id.0;
+
+        let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
+        let client_flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
+
+        commands
+            .entity(*client_flag_entity)
+            .insert((
+                Flag,
+                SpriteAnimationBundle::new(
+                    &[0., 0., Layers::Flag.as_f32()],
+                    &flag_sprite_sheet.sprite_sheet,
+                    FlagAnimation::Wave,
+                    0.2,
+                ),
+            ))
+            .set_parent(player_entity);
+    }
+}
+
 fn drop_flag(
     mut commands: Commands,
     network_mapping: Res<NetworkMapping>,
     mut drop_flag: EventReader<DropFlag>,
-    client_id: Res<CurrentClientId>,
-    lobby: Res<ClientPlayers>,
 ) {
     for drop in drop_flag.read() {
         let DropFlag {
             entity: server_flag_entity,
             translation,
         } = drop;
-        let client_id = client_id.0;
-
-        let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
-        let flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
+        let client_flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
 
         commands
-            .entity(player_entity)
-            .remove_children(&[*flag_entity]);
-
-        commands
-            .entity(*flag_entity)
+            .entity(*client_flag_entity)
+            .remove_parent()
             .insert(Transform::from_translation(*translation));
     }
 }
