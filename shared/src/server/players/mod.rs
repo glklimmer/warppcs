@@ -1,14 +1,17 @@
-use bevy::prelude::*;
+use bevy::{math::bounding::IntersectsVolume, pbr::WithLight, prelude::*};
 
 use bevy_renet::renet::{ClientId, RenetServer};
 
 use crate::{
     map::GameSceneId,
-    networking::{DropFlag, PlayerCommand, ServerChannel, ServerMessages},
+    networking::{
+        DropFlag, Faction, Owner, PickFlag, PlayerCommand, ServerChannel, ServerMessages,
+    },
+    BoxCollider,
 };
 
 use super::{
-    buildings::recruiting::FlagHolder,
+    buildings::recruiting::{Flag, FlagHolder},
     networking::{NetworkEvent, SendServerMessage, ServerLobby},
     physics::attachment::AttachedTo,
 };
@@ -16,16 +19,29 @@ use super::{
 #[derive(Event)]
 pub struct InteractEvent(pub ClientId);
 
+#[derive(Event)]
+pub struct DropFlagEvent(pub ClientId);
+
+#[derive(Event)]
+pub struct PickFlagEvent {
+    client: ClientId,
+    flag: Entity,
+}
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<InteractEvent>();
+        app.add_event::<DropFlagEvent>();
+        app.add_event::<PickFlagEvent>();
 
         app.add_systems(
             FixedUpdate,
-            (attack, interact, drop_flag).run_if(on_event::<NetworkEvent>),
+            (attack, interact, flag_interact).run_if(on_event::<NetworkEvent>),
         );
+        app.add_systems(FixedUpdate, drop_flag.run_if(on_event::<DropFlagEvent>));
+        app.add_systems(FixedUpdate, pick_flag.run_if(on_event::<PickFlagEvent>));
     }
 }
 
@@ -63,31 +79,105 @@ fn interact(
     }
 }
 
-fn drop_flag(
-    mut commands: Commands,
+fn flag_interact(
     mut network_events: EventReader<NetworkEvent>,
-    mut flag_query: Query<(Entity, &AttachedTo, &Transform)>,
+    has_flag: Query<&FlagHolder>,
+    player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
+    flag: Query<(Entity, &BoxCollider, &Transform, &GameSceneId, &Owner), With<Flag>>,
     lobby: Res<ServerLobby>,
-    mut server: ResMut<RenetServer>,
+    mut drop_flag: EventWriter<DropFlagEvent>,
+    mut pick_flag: EventWriter<PickFlagEvent>,
 ) {
     for event in network_events.read() {
-        if let PlayerCommand::DropFlag = &event.message {
+        if let PlayerCommand::ToggleFlag = &event.message {
             let player_entity = lobby.players.get(&event.client_id).unwrap();
 
-            commands.entity(*player_entity).remove::<FlagHolder>();
+            match has_flag.get(*player_entity).is_err() {
+                true => {
+                    let (player_transform, player_collider, player_scene) =
+                        player.get(*player_entity).unwrap();
+                    let player_bounds = player_collider.at(player_transform);
 
-            for (flag, attached_to, transform) in flag_query.iter_mut() {
-                if attached_to.0.eq(player_entity) {
-                    commands.entity(flag).remove::<AttachedTo>();
+                    for (flag_entity, flag_collider, flag_transform, flag_scene, owner) in
+                        flag.iter()
+                    {
+                        if player_scene.ne(flag_scene) {
+                            continue;
+                        }
 
-                    let message = ServerMessages::DropFlag(DropFlag {
-                        entity: flag,
-                        translation: transform.translation,
-                    });
-                    let message = bincode::serialize(&message).unwrap();
-                    server.send_message(event.client_id, ServerChannel::ServerMessages, message);
+                        match owner.faction {
+                            Faction::Player { client_id: owner } => {
+                                if owner.ne(&event.client_id) {
+                                    continue;
+                                }
+                            }
+                            Faction::Bandits => (),
+                        }
+
+                        let flag_bounds = flag_collider.at(flag_transform);
+
+                        if player_bounds.intersects(&flag_bounds) {
+                            pick_flag.send(PickFlagEvent {
+                                client: event.client_id,
+                                flag: flag_entity,
+                            });
+                            break;
+                        }
+                    }
+                }
+                false => {
+                    drop_flag.send(DropFlagEvent(event.client_id));
                 }
             }
         }
+    }
+}
+
+fn drop_flag(
+    mut drop_flag: EventReader<DropFlagEvent>,
+    mut commands: Commands,
+    mut flag_query: Query<(Entity, &mut Transform), With<AttachedTo>>,
+    mut server: ResMut<RenetServer>,
+    lobby: Res<ServerLobby>,
+) {
+    for event in drop_flag.read() {
+        let client_id = event.0;
+        let player_entity = lobby.players.get(&client_id).unwrap();
+
+        commands.entity(*player_entity).remove::<FlagHolder>();
+
+        for (flag_entity, mut transform) in flag_query.iter_mut() {
+            commands.entity(flag_entity).remove::<AttachedTo>();
+            transform.translation.y = 0.;
+
+            let message = ServerMessages::DropFlag(DropFlag {
+                entity: flag_entity,
+                translation: transform.translation,
+            });
+            let message = bincode::serialize(&message).unwrap();
+            server.send_message(client_id, ServerChannel::ServerMessages, message);
+        }
+    }
+}
+
+fn pick_flag(
+    mut commands: Commands,
+    mut pick_flag: EventReader<PickFlagEvent>,
+    lobby: Res<ServerLobby>,
+    mut server: ResMut<RenetServer>,
+) {
+    for event in pick_flag.read() {
+        let player_entity = lobby.players.get(&event.client).unwrap();
+        commands
+            .entity(event.flag)
+            .insert(AttachedTo(*player_entity));
+
+        commands
+            .entity(*player_entity)
+            .insert(FlagHolder(event.flag));
+
+        let message = ServerMessages::PickFlag(PickFlag { entity: event.flag });
+        let message = bincode::serialize(&message).unwrap();
+        server.send_message(event.client, ServerChannel::ServerMessages, message);
     }
 }
