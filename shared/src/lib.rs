@@ -54,6 +54,13 @@ pub fn projectile_collider() -> BoxCollider {
     }
 }
 
+pub fn flag_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(45., 75.),
+        offset: None,
+    }
+}
+
 #[derive(Component)]
 struct DelayedDespawn(Timer);
 
