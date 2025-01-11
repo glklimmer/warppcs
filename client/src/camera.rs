@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_parallax::{
-    CameraFollow, CreateParallaxEvent, LayerData, LayerSpeed, ParallaxCameraComponent,
+    CameraFollow, CreateParallaxEvent, LayerData, LayerRepeat, LayerSpeed, ParallaxCameraComponent,
+    RepeatStrategy,
 };
 use shared::networking::SpawnPlayer;
 
@@ -24,28 +25,31 @@ fn setup_camera(mut commands: Commands, mut create_parallax: EventWriter<CreateP
         layers_data: vec![
             LayerData {
                 speed: LayerSpeed::Horizontal(0.9),
+                repeat: LayerRepeat::horizontally(RepeatStrategy::MirrorBoth),
                 path: "background/sky.png".to_string(),
-                tile_size: UVec2::new(384, 216),
-                scale: Vec2::splat(4.5),
-                position: Vec2::new(0., 1000.),
+                tile_size: UVec2::new(385, 216),
+                scale: Vec2::splat(2.5),
+                position: Vec2::new(0., 200.),
                 z: -3.0,
                 ..default()
             },
             LayerData {
                 speed: LayerSpeed::Horizontal(0.6),
+                repeat: LayerRepeat::horizontally(RepeatStrategy::MirrorBoth),
                 path: "background/far_mountains.png".to_string(),
-                tile_size: UVec2::new(384, 216),
-                scale: Vec2::splat(4.5),
-                position: Vec2::new(0., 1000.),
+                tile_size: UVec2::new(385, 216),
+                scale: Vec2::splat(2.5),
+                position: Vec2::new(0., 100.),
                 z: -2.0,
                 ..default()
             },
             LayerData {
-                speed: LayerSpeed::Horizontal(0.2),
+                speed: LayerSpeed::Horizontal(0.3),
+                repeat: LayerRepeat::horizontally(RepeatStrategy::MirrorBoth),
                 path: "background/grassy_mountains.png".to_string(),
-                tile_size: UVec2::new(384, 216),
-                scale: Vec2::splat(4.5),
-                position: Vec2::new(0., 1000.),
+                tile_size: UVec2::new(386, 216),
+                scale: Vec2::splat(2.5),
+                position: Vec2::new(0., 100.),
                 z: -1.0,
                 ..default()
             },
