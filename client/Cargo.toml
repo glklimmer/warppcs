@@ -18,3 +18,4 @@ serde = { version = "1.0.217", features = ["derive"] }
 steamworks = { version = "0.11", optional = true }
 shared = { path = "../shared", features = ["client"] }
 arboard = "3.4.1"
+bevy-parallax = { git = "https://github.com/Corrosive-Games/bevy-parallax" }

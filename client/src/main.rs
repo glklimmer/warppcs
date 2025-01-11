@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
@@ -27,6 +28,12 @@ pub mod ui;
 pub mod ui_widgets;
 
 fn main() {
+    let primary_window = Window {
+        title: "WARPPCS".to_string(),
+        resolution: (1280.0, 720.0).into(),
+        resizable: false,
+        ..default()
+    };
     let mut app = App::new();
     #[cfg(feature = "steam")]
     {
@@ -34,12 +41,20 @@ fn main() {
         app.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
     }
 
-    app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()));
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(primary_window),
+                ..default()
+            })
+            .set(ImagePlugin::default_nearest()),
+    );
 
     app.insert_state(GameState::MainMenu);
     app.insert_state(MultiplayerRoles::NotInGame);
     app.insert_state(MainMenuStates::TitleScreen);
 
+    app.add_plugins(ParallaxPlugin);
     app.add_plugins(CameraPlugin);
     app.add_plugins(InputPlugin);
     app.add_plugins(AnimationPlugin);
