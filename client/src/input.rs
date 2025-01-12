@@ -37,7 +37,7 @@ fn player_input(
     }
 
     if keyboard_input.just_pressed(KeyCode::KeyE) {
-        player_commands.send(PlayerCommand::ToggleFlag);
+        player_commands.send(PlayerCommand::FlagInteract);
     }
 }
 
