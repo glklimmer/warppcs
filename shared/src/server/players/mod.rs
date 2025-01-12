@@ -1,4 +1,4 @@
-use bevy::{math::bounding::IntersectsVolume, pbr::WithLight, prelude::*};
+use bevy::{math::bounding::IntersectsVolume, prelude::*};
 
 use bevy_renet::renet::{ClientId, RenetServer};
 
@@ -89,7 +89,7 @@ fn flag_interact(
     mut pick_flag: EventWriter<PickFlagEvent>,
 ) {
     for event in network_events.read() {
-        if let PlayerCommand::ToggleFlag = &event.message {
+        if let PlayerCommand::FlagInteract = &event.message {
             let player_entity = lobby.players.get(&event.client_id).unwrap();
 
             match has_flag.get(*player_entity).is_err() {
@@ -136,7 +136,7 @@ fn flag_interact(
 fn drop_flag(
     mut drop_flag: EventReader<DropFlagEvent>,
     mut commands: Commands,
-    mut flag_query: Query<(Entity, &mut Transform), With<AttachedTo>>,
+    mut flag_query: Query<(Entity, &mut Transform, &AttachedTo)>,
     mut server: ResMut<RenetServer>,
     lobby: Res<ServerLobby>,
 ) {
@@ -146,7 +146,10 @@ fn drop_flag(
 
         commands.entity(*player_entity).remove::<FlagHolder>();
 
-        for (flag_entity, mut transform) in flag_query.iter_mut() {
+        for (flag_entity, mut transform, attachted_to) in flag_query.iter_mut() {
+            if attachted_to.0.ne(player_entity) {
+                continue;
+            }
             commands.entity(flag_entity).remove::<AttachedTo>();
             transform.translation.y = 0.;
 
