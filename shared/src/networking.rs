@@ -38,7 +38,7 @@ pub enum PlayerCommand {
     StartGame,
     Interact,
     MeleeAttack,
-    ToggleFlag,
+    FlagInteract,
     LobbyReadyState(Checkbox),
 }
 
