@@ -38,6 +38,7 @@ pub enum PlayerCommand {
     StartGame,
     Interact,
     MeleeAttack,
+    FlagInteract,
     LobbyReadyState(Checkbox),
 }
 
@@ -98,6 +99,17 @@ pub struct SpawnFlag {
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct DropFlag {
+    pub entity: Entity,
+    pub translation: Vec3,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct PickFlag {
+    pub entity: Entity,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnUnit {
     pub owner: Owner,
     pub entity: Entity,
@@ -140,6 +152,8 @@ pub enum ServerMessages {
     },
     SpawnPlayer(SpawnPlayer),
     SpawnFlag(SpawnFlag),
+    DropFlag(DropFlag),
+    PickFlag(PickFlag),
     SpawnUnit(SpawnUnit),
     SpawnProjectile(SpawnProjectile),
     PlayerDisconnected {
