@@ -1,7 +1,12 @@
-use bevy::prelude::*;
+use bevy::{
+    asset::RenderAssetUsages,
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::*,
+};
 
 use bevy_renet::client_connected;
 use gizmos::GizmosPlugin;
+use image::{GenericImage, GenericImageView, Rgba};
 use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
 use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
@@ -11,7 +16,7 @@ use ui::UiPlugin;
 #[cfg(feature = "steam")]
 use menu::JoinSteamLobby;
 
-use animations::AnimationPlugin;
+use animations::{objects::flag::GenerateOutline, AnimationPlugin};
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
@@ -36,10 +41,13 @@ fn main() {
 
     app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()));
 
+    app.add_plugins(FrameTimeDiagnosticsPlugin);
+    // Adds a system that prints diagnostics to the console
+    app.add_plugins(LogDiagnosticsPlugin::default());
+
     app.insert_state(GameState::MainMenu);
     app.insert_state(MultiplayerRoles::NotInGame);
     app.insert_state(MainMenuStates::TitleScreen);
-
     app.add_plugins(CameraPlugin);
     app.add_plugins(InputPlugin);
     app.add_plugins(AnimationPlugin);
@@ -54,6 +62,10 @@ fn main() {
     app.add_plugins(ServerNetworkPlugin);
     app.add_plugins(ClientNetworkPlugin);
 
+    app.add_systems(
+        PostUpdate,
+        generate_and_save_outline.run_if(in_state(GameState::GameSession)),
+    );
     #[cfg(feature = "steam")]
     {
         use bevy_renet::steam::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
@@ -147,4 +159,37 @@ fn setup_background(
             ..default()
         },
     ));
+}
+
+fn generate_and_save_outline(
+    mut sprites: Query<(&mut Sprite, &GenerateOutline)>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    for (mut texture_handle, _outline_info) in sprites.iter_mut() {
+        if let Some(texture) = images.get_mut(texture_handle.image.id()) {
+            let width = texture.width() as u32;
+            let height = texture.height() as u32;
+
+            let image = texture.clone().try_into_dynamic().unwrap();
+            let mut new = image.clone();
+            for (x, y, _) in image.pixels() {
+                if x == 0 || y == 0 || x == width - 1 || y == height - 1 {
+                    continue;
+                }
+                let current = image.get_pixel(x, y)[3];
+                let left = image.get_pixel(x - 1, y)[3];
+                let right = image.get_pixel(x + 1, y)[3];
+                let up = image.get_pixel(x, y - 1)[3];
+                let down = image.get_pixel(x, y + 1)[3];
+                if current != left || current != right || current != up || current != down {
+                    new.put_pixel(x, y, Rgba([255, 255, 255, 255]));
+                }
+            }
+
+            let image = Image::from_dynamic(new, true, RenderAssetUsages::RENDER_WORLD);
+
+            let handle = images.add(image);
+            texture_handle.image = handle.clone();
+        }
+    }
 }

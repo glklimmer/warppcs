@@ -8,7 +8,19 @@ use crate::{
 };
 
 #[derive(Component)]
-#[require(PartOfScene, FlagAnimation)]
+pub struct GenerateOutline {
+    pub outline_color: Color,
+}
+
+impl Default for GenerateOutline {
+    fn default() -> Self {
+        Self {
+            outline_color: Color::WHITE,
+        }
+    }
+}
+#[derive(Component)]
+#[require(PartOfScene, FlagAnimation, GenerateOutline)]
 pub struct Flag;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
@@ -27,7 +39,6 @@ impl FromWorld for FlagSpriteSheet {
         let asset_server = world.resource::<AssetServer>();
         let texture: Handle<Image> = asset_server.load("sprites/objects/flag.png");
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
-
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::new(48, 64),
             8,
