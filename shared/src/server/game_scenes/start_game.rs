@@ -31,7 +31,6 @@ use crate::{
         networking::{GameWorld, NetworkEvent, ServerLobby},
         physics::movement::Velocity,
     },
-    GameState,
 };
 
 pub struct StartGamePlugin;
@@ -48,7 +47,6 @@ fn start_game(
     mut network_events: EventReader<NetworkEvent>,
     mut game_world: ResMut<GameWorld>,
     mut server: ResMut<RenetServer>,
-    mut next_state: ResMut<NextState<GameState>>,
     lobby: Res<ServerLobby>,
     game_lobby: Res<GameLobby>,
 ) {
@@ -64,8 +62,6 @@ fn start_game(
             } else {
                 duel_map(&lobby, &mut game_world, &mut commands, &mut server);
             }
-
-            next_state.set(GameState::GameSession);
         }
     }
 }

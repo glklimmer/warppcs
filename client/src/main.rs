@@ -1,12 +1,15 @@
 use bevy::prelude::*;
 
+use bevy::app::ScheduleRunnerPlugin;
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
+use core::time::Duration;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
-use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
+use shared::{server::networking::ServerNetworkPlugin, GameState};
 use std::f32::consts::PI;
+use std::thread;
 use ui::UiPlugin;
 
 #[cfg(feature = "steam")]
@@ -16,6 +19,22 @@ use animations::AnimationPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
+
+#[cfg(feature = "steam")]
+use bevy_renet::steam::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
+#[cfg(feature = "steam")]
+use networking::join_server::{join_own_steam_server, join_steam_server};
+#[cfg(feature = "steam")]
+use shared::server::create_server::create_steam_server;
+
+#[cfg(feature = "netcode")]
+use bevy_renet::netcode::{NetcodeClientPlugin, NetcodeServerPlugin, NetcodeTransportError};
+#[cfg(feature = "netcode")]
+use networking::join_server::join_netcode_server;
+#[cfg(feature = "netcode")]
+use shared::server::create_server::create_netcode_server;
+#[cfg(feature = "netcode")]
+use std::env;
 
 pub mod animations;
 pub mod camera;
@@ -28,20 +47,53 @@ pub mod ui;
 pub mod ui_widgets;
 
 fn main() {
+    thread::Builder::new()
+        .name("server".into())
+        .spawn(|| {
+            let mut server = App::new();
+
+            #[cfg(feature = "steam")]
+            {
+                use shared::steamworks::SteamworksPlugin;
+                server.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
+            }
+
+            server.add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
+                Duration::from_secs_f64(1.0 / 60.0),
+            )));
+
+            server.add_plugins(ServerNetworkPlugin);
+
+            #[cfg(feature = "steam")]
+            {
+                server.add_plugins(SteamServerPlugin);
+            }
+            #[cfg(feature = "netcode")]
+            {
+                server.add_plugins(NetcodeServerPlugin);
+                server.add_systems(Startup, create_netcode_server);
+            }
+
+            server.run();
+        })
+        .unwrap();
+
+    let mut client = App::new();
+
     let primary_window = Window {
         title: "WARPPCS".to_string(),
         resolution: (1280.0, 720.0).into(),
         resizable: false,
         ..default()
     };
-    let mut app = App::new();
+
     #[cfg(feature = "steam")]
     {
         use shared::steamworks::SteamworksPlugin;
-        app.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
+        client.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
     }
 
-    app.add_plugins(
+    client.add_plugins(
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(primary_window),
@@ -50,92 +102,63 @@ fn main() {
             .set(ImagePlugin::default_nearest()),
     );
 
-    app.insert_state(GameState::MainMenu);
-    app.insert_state(MultiplayerRoles::NotInGame);
-    app.insert_state(MainMenuStates::TitleScreen);
+    client.insert_state(MainMenuStates::TitleScreen);
+    client.insert_state(GameState::MainMenu);
 
-    app.add_plugins(ParallaxPlugin);
-    app.add_plugins(CameraPlugin);
-    app.add_plugins(InputPlugin);
-    app.add_plugins(AnimationPlugin);
-    app.add_plugins(MenuPlugin);
-    app.add_plugins(EntitiesPlugin);
-    app.add_plugins(UiPlugin);
-
-    app.add_plugins(GizmosPlugin);
-
-    app.add_systems(Startup, setup_background);
-
-    app.add_plugins(ServerNetworkPlugin);
-    app.add_plugins(ClientNetworkPlugin);
+    client.add_plugins(ParallaxPlugin);
+    client.add_plugins(CameraPlugin);
+    client.add_plugins(InputPlugin);
+    client.add_plugins(AnimationPlugin);
+    client.add_plugins(MenuPlugin);
+    client.add_plugins(EntitiesPlugin);
+    client.add_plugins(UiPlugin);
+    client.add_plugins(GizmosPlugin);
+    client.add_systems(Startup, setup_background);
+    client.add_plugins(ClientNetworkPlugin);
 
     #[cfg(feature = "steam")]
     {
-        use bevy_renet::steam::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
-        use networking::join_server::{join_own_steam_server, join_steam_server};
-        use shared::server::create_server::create_steam_server;
+        client.add_plugins(SteamClientPlugin);
 
-        app.add_plugins(SteamServerPlugin);
-        app.add_plugins(SteamClientPlugin);
+        client.configure_sets(Update, Connected.run_if(client_connected));
 
-        app.configure_sets(Update, Connected.run_if(client_connected));
-
-        #[allow(clippy::never_loop)]
         fn panic_on_error_system(mut renet_error: EventReader<SteamTransportError>) {
             for e in renet_error.read() {
                 panic!("{}", e);
             }
         }
 
-        app.add_systems(Update, panic_on_error_system.run_if(client_connected));
-
-        app.add_systems(
-            OnEnter(MultiplayerRoles::Host),
+        client.add_systems(Update, panic_on_error_system.run_if(client_connected));
+        client.add_systems(
+            OnEnter(menu::MultiplayerRoles::Host),
             (create_steam_server, join_own_steam_server).chain(),
         );
-
-        app.add_systems(Update, join_steam_server.run_if(on_event::<JoinSteamLobby>));
+        client.add_systems(Update, join_steam_server.run_if(on_event::<JoinSteamLobby>));
     }
 
     #[cfg(feature = "netcode")]
     {
-        use bevy_renet::netcode::{
-            NetcodeClientPlugin, NetcodeServerPlugin, NetcodeTransportError,
-        };
+        client.add_plugins(NetcodeClientPlugin);
 
-        use networking::join_server::join_netcode_server;
-        use shared::server::create_server::create_netcode_server;
-        use std::env;
+        client.configure_sets(Update, Connected.run_if(client_connected));
 
-        app.add_plugins(NetcodeServerPlugin);
-        app.add_plugins(NetcodeClientPlugin);
-
-        app.configure_sets(Update, Connected.run_if(client_connected));
-
-        #[allow(clippy::never_loop)]
         fn panic_on_error_system(mut renet_error: EventReader<NetcodeTransportError>) {
             for e in renet_error.read() {
                 panic!("{}", e);
             }
         }
 
-        app.add_systems(Update, panic_on_error_system.run_if(client_connected));
+        client.add_systems(Update, panic_on_error_system.run_if(client_connected));
 
         let args: Vec<String> = env::args().collect();
-
         if args.contains(&String::from("server")) {
-            println!("Starting server");
-            app.add_systems(
-                Startup,
-                (create_netcode_server, join_netcode_server).chain(),
-            );
+            client.add_systems(Startup, join_netcode_server);
         } else {
-            println!("Joining server");
-            app.add_systems(Startup, join_netcode_server);
+            client.add_systems(Startup, join_netcode_server);
         }
     }
 
-    app.run();
+    client.run();
 }
 
 fn setup_background(

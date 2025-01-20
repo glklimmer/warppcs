@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::map::{GameScene, GameSceneId};
 use crate::networking::{
-    ClientChannel, Facing, Inventory, MultiplayerRoles, NetworkEntity, NetworkedEntities,
-    PlayerCommand, PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
+    ClientChannel, Facing, Inventory, NetworkEntity, NetworkedEntities, PlayerCommand, PlayerInput,
+    ProjectileType, Rotation, ServerChannel, ServerMessages,
 };
 use crate::server::entities::health::Health;
 use crate::server::physics::movement::Velocity;
@@ -63,15 +63,9 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(PlayerPlugin);
         app.add_plugins(EntityPlugin);
 
-        app.add_systems(
-            FixedPreUpdate,
-            (receive_client_messages).run_if(in_state(MultiplayerRoles::Host)),
-        );
+        app.add_systems(FixedPreUpdate, receive_client_messages);
 
-        app.add_systems(
-            FixedUpdate,
-            (sync_networked_entities, client_connections).run_if(in_state(MultiplayerRoles::Host)),
-        );
+        app.add_systems(FixedUpdate, (sync_networked_entities, client_connections));
 
         app.add_systems(
             FixedPostUpdate,

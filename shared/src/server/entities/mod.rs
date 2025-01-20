@@ -4,8 +4,8 @@ use health::HealthPlugin;
 
 use crate::{
     map::{Chest, GameSceneId},
-    networking::{MultiplayerRoles, UnitType},
-    unit_collider, BoxCollider, GameState,
+    networking::UnitType,
+    unit_collider, BoxCollider,
 };
 
 use super::{
@@ -31,11 +31,7 @@ impl Plugin for EntityPlugin {
 
         app.add_event::<ChestOpenEvent>();
 
-        app.add_systems(
-            FixedUpdate,
-            (check_open_chest)
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
-        );
+        app.add_systems(FixedUpdate, check_open_chest);
     }
 }
 

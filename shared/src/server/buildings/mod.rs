@@ -11,10 +11,8 @@ use crate::{
         scenes::SceneBuildingIndicator,
         GameSceneId,
     },
-    networking::{
-        BuildingUpdate, Faction, Inventory, MultiplayerRoles, Owner, ServerMessages, UpdateType,
-    },
-    BoxCollider, GameState,
+    networking::{BuildingUpdate, Faction, Inventory, Owner, ServerMessages, UpdateType},
+    BoxCollider,
 };
 
 use super::{
@@ -62,11 +60,7 @@ impl Plugin for BuildingsPlugins {
                 .chain(),
         );
 
-        app.add_systems(
-            FixedUpdate,
-            gold_farm_output
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
-        );
+        app.add_systems(FixedUpdate, gold_farm_output);
     }
 }
 

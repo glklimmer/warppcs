@@ -2,11 +2,7 @@ use bevy::prelude::*;
 
 use attack::{unit_range, AttackPlugin};
 
-use crate::{
-    map::GameSceneId,
-    networking::{MultiplayerRoles, Owner},
-    GameState,
-};
+use crate::{map::GameSceneId, networking::Owner};
 
 use super::{
     buildings::recruiting::FlagAssignment,
@@ -30,8 +26,7 @@ impl Plugin for AIPlugin {
 
         app.add_systems(
             FixedUpdate, // TODO: This should be less then update
-            determine_behaviour
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
+            determine_behaviour,
         );
     }
 }

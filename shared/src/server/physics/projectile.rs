@@ -5,12 +5,12 @@ use bevy_renet::renet::RenetServer;
 
 use crate::{
     map::GameSceneId,
-    networking::{Facing, MultiplayerRoles, Owner, ProjectileType, ServerChannel, ServerMessages},
+    networking::{Facing, Owner, ProjectileType, ServerChannel, ServerMessages},
     server::{
         ai::attack::projectile_damage,
         entities::health::{Health, TakeDamage},
     },
-    BoxCollider, DelayedDespawn, GameState,
+    BoxCollider, DelayedDespawn,
 };
 
 use super::movement::Velocity;
@@ -19,11 +19,7 @@ pub struct ProjectilePlugin;
 
 impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            projectile_collision
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
-        );
+        app.add_systems(FixedUpdate, projectile_collision);
     }
 }
 

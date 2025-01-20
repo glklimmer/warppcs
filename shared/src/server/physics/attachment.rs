@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-use crate::{networking::MultiplayerRoles, GameState};
-
 #[derive(Component)]
 pub struct AttachedTo(pub Entity);
 
@@ -9,11 +7,7 @@ pub struct AttachmentPlugin;
 
 impl Plugin for AttachmentPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            (attachment_follow)
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
-        );
+        app.add_systems(FixedUpdate, attachment_follow);
     }
 }
 
