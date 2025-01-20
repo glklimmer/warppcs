@@ -38,7 +38,7 @@ impl Plugin for MovementPlugin {
 fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, time: Res<Time>) {
     for (mut velocity, transform, collider) in &mut query {
         let bottom = transform.translation.truncate() - collider.half_size()
-            + collider.offset.unwrap_or(Vec2::ZERO);
+            + collider.offset.unwrap_or_default();
         let next_bottom = bottom.y + velocity.0.y * time.delta_secs();
 
         if next_bottom > 0. {
@@ -88,15 +88,13 @@ fn move_players_system(
                 continue;
             }
 
-            if Building::Wall.ne(building) {
-                continue;
-            }
+            if let Building::Wall { level: _ } = building {
+                let building_bounds = building_collider.at(building_transform);
 
-            let building_bounds = building_collider.at(building_transform);
-
-            if building_bounds.intersects(&future_bounds) {
-                would_collide = true;
-                break;
+                if building_bounds.intersects(&future_bounds) {
+                    would_collide = true;
+                    break;
+                }
             }
         }
 

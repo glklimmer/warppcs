@@ -36,6 +36,7 @@ pub enum Layers {
     Projectile,
     Flag,
     Player,
+    Wall,
 }
 
 #[derive(Component, Clone, Copy)]

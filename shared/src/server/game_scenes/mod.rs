@@ -2,9 +2,13 @@ use bevy::prelude::*;
 use start_game::StartGamePlugin;
 
 use crate::{
-    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
+    map::{
+        buildings::{BuildStatus, Building},
+        scenes::SceneBuildingIndicator,
+        GameSceneId,
+    },
     networking::{
-        BuildingUpdate, Faction, MultiplayerRoles, Owner, PlayerSkin, ProjectileType,
+        BuildingUpdate, Faction, LoadBuilding, MultiplayerRoles, Owner, PlayerSkin, ProjectileType,
         ServerChannel, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     BoxCollider, GameState,
@@ -100,7 +104,12 @@ fn travel(
     scene_ids: Query<&GameSceneId>,
     units: Query<(&GameSceneId, &Owner, Entity, &Unit, &Transform)>,
     projectiles: Query<(&GameSceneId, Entity, &ProjectileType, &Transform, &Velocity)>,
-    buildings: Query<(&GameSceneId, &SceneBuildingIndicator, &BuildStatus)>,
+    buildings: Query<(
+        &GameSceneId,
+        &SceneBuildingIndicator,
+        &BuildStatus,
+        &Building,
+    )>,
     transforms: Query<&Transform>,
     server_players: Query<&ServerPlayer>,
     flag_holders: Query<&FlagHolder>,
@@ -237,9 +246,10 @@ fn travel(
         let buildings = buildings
             .iter()
             .filter(|(scene, ..)| target_game_scene_id.eq(*scene))
-            .map(|(_, indicator, status)| BuildingUpdate {
+            .map(|(_, indicator, status, building)| LoadBuilding {
                 indicator: *indicator,
                 status: *status,
+                upgrade: *building,
             })
             .collect();
 

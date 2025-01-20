@@ -1,26 +1,29 @@
 use bevy::prelude::*;
 
 use bevy::color::palettes::css::YELLOW;
-use shared::map::scenes::camp::{CampScene, CampSceneIndicator};
-use shared::map::scenes::fight::FightSceneIndicator;
 use shared::{
     map::{
-        buildings::{BuildStatus, BuildingBundle, BuildingTextures},
+        buildings::{BuildStatus, Building, BuildingBundle, MainBuildingLevels, WallLevels},
         scenes::{
             base::{BaseScene, BaseSceneIndicator},
-            fight::FightScene,
+            camp::{CampScene, CampSceneIndicator},
+            fight::{FightScene, FightSceneIndicator},
             SceneBuildingIndicator,
         },
         GameSceneType,
     },
     networking::{
-        BuildingUpdate, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        BuildingUpdate, LoadBuilding, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile,
+        SpawnUnit, UpdateType,
     },
+    server::buildings::building_collider,
     GameState,
 };
 
-use crate::animations::objects::chest::ChestSpriteSheet;
-use crate::networking::{Connected, NetworkEvent};
+use crate::{
+    animations::objects::chest::ChestSpriteSheet,
+    networking::{Connected, NetworkEvent},
+};
 
 use super::PartOfScene;
 
@@ -71,15 +74,13 @@ fn load_game_scene(
             match map_type {
                 GameSceneType::Fight => {
                     let fight = FightScene::new();
-                    commands.spawn((
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
                         fight.left_main_building,
                         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
-                        Sprite::from_image(
-                            asset_server.load::<Image>("sprites/buildings/main_house_red.png"),
-                        ),
-                        PartOfScene,
-                    ));
-
+                    );
                     spawn_building(
                         buildings,
                         &mut commands,
@@ -123,15 +124,13 @@ fn load_game_scene(
                         SceneBuildingIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
                     );
 
-                    commands.spawn((
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
                         fight.right_main_building,
                         SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
-                        Sprite::from_image(
-                            asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
-                        ),
-                        PartOfScene,
-                    ));
-
+                    );
                     spawn_building(
                         buildings,
                         &mut commands,
@@ -177,15 +176,14 @@ fn load_game_scene(
                 }
                 GameSceneType::Base(color) => {
                     let base = BaseScene::new();
-                    commands.spawn((
+
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
                         base.main_building,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
-                        Sprite::from_image(
-                            asset_server.load::<Image>("sprites/buildings/main_house_blue.png"),
-                        ),
-                        PartOfScene,
-                    ));
-
+                    );
                     spawn_building(
                         buildings,
                         &mut commands,
@@ -221,23 +219,20 @@ fn load_game_scene(
                         base.right_wall,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::RightWall),
                     );
-                    commands.spawn((
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
                         base.left_gold_farm,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
-                        Sprite::from_image(
-                            asset_server.load::<Image>(base.left_gold_farm.textures.marker),
-                        ),
-                        PartOfScene,
-                    ));
-
-                    commands.spawn((
+                    );
+                    spawn_building(
+                        buildings,
+                        &mut commands,
+                        &asset_server,
                         base.right_gold_farm,
                         SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
-                        Sprite::from_image(
-                            asset_server.load::<Image>(base.right_gold_farm.textures.marker),
-                        ),
-                        PartOfScene,
-                    ));
+                    );
 
                     commands.spawn((
                         base.left_spawn_point,
@@ -322,66 +317,112 @@ fn load_game_scene(
 }
 
 fn spawn_building(
-    buildings: &[BuildingUpdate],
+    buildings: &[LoadBuilding],
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
     building_bundle: BuildingBundle,
     indicator: SceneBuildingIndicator,
 ) {
+    let load = buildings
+        .iter()
+        .find(|update| update.indicator.eq(&indicator));
+    let load = match load {
+        Some(load) => load,
+        None => &LoadBuilding {
+            indicator,
+            status: building_bundle.build_status,
+            upgrade: building_bundle.building,
+        },
+    };
     commands.spawn((
         building_bundle,
         indicator,
-        Sprite::from_image(asset_server.load::<Image>(building_texture(
-            buildings,
-            indicator,
-            building_bundle,
-        ))),
+        Sprite {
+            image: asset_server.load::<Image>(building_texture(&load.upgrade, load.status)),
+            flip_x: building_flipped(&indicator),
+            ..default()
+        },
         PartOfScene,
     ));
-}
-
-fn building_texture(
-    buildings: &[BuildingUpdate],
-    indicator: SceneBuildingIndicator,
-    building_bundle: BuildingBundle,
-) -> String {
-    let update = buildings
-        .iter()
-        .find(|update| update.indicator.eq(&indicator));
-    let texture = match update {
-        Some(update) => match update.status {
-            BuildStatus::Marker => building_bundle.textures.marker,
-            BuildStatus::Built => building_bundle.textures.built,
-            BuildStatus::Destroyed => building_bundle.textures.marker,
-        },
-        None => building_bundle.textures.marker,
-    };
-    texture.to_string()
 }
 
 fn update_building(
     mut network_events: EventReader<NetworkEvent>,
     mut commands: Commands,
-    buildings: Query<(Entity, &SceneBuildingIndicator, &BuildingTextures)>,
+    buildings: Query<(Entity, &SceneBuildingIndicator, &Building)>,
     asset_server: Res<AssetServer>,
 ) {
     for event in network_events.read() {
-        if let ServerMessages::BuildingUpdate(BuildingUpdate { indicator, status }) = &event.message
+        if let ServerMessages::BuildingUpdate(BuildingUpdate { indicator, update }) = &event.message
         {
-            for (entity, other_indicator, textures) in buildings.iter() {
-                if !indicator.eq(other_indicator) {
+            for (entity, other_indicator, building) in buildings.iter() {
+                if indicator.ne(other_indicator) {
                     continue;
                 }
 
-                let texture = match status {
-                    BuildStatus::Marker => textures.marker,
-                    BuildStatus::Built => textures.built,
-                    BuildStatus::Destroyed => textures.marker,
+                let texture = match update {
+                    UpdateType::Status { new_status } => building_texture(&building, *new_status),
+                    UpdateType::Upgrade { upgraded_building } => {
+                        println!("Updating upgraded building: {:?}", upgraded_building);
+                        commands
+                            .entity(entity)
+                            .insert(building_collider(upgraded_building));
+                        building_texture(&upgraded_building, BuildStatus::Built)
+                    }
                 };
-
-                let texture = asset_server.load::<Image>(texture);
-                commands.entity(entity).insert(Sprite::from_image(texture));
+                let image = asset_server.load::<Image>(texture);
+                commands.entity(entity).insert(Sprite {
+                    image,
+                    flip_x: building_flipped(indicator),
+                    ..default()
+                });
             }
         }
+    }
+}
+
+fn building_flipped(indicator: &SceneBuildingIndicator) -> bool {
+    match indicator {
+        SceneBuildingIndicator::Base(base_scene_indicator) => match base_scene_indicator {
+            BaseSceneIndicator::RightWall => true,
+            _ => false,
+        },
+        SceneBuildingIndicator::Fight(fight_scene_indicator) => match fight_scene_indicator {
+            FightSceneIndicator::LeftRightWall | FightSceneIndicator::RightRightWall => true,
+            _ => false,
+        },
+        SceneBuildingIndicator::Camp(_camp_scene_indicator) => false,
+    }
+}
+
+fn building_texture(building_type: &Building, status: BuildStatus) -> &str {
+    match status {
+        BuildStatus::Marker => match building_type {
+            Building::MainBuilding { level: _ } => "sprites/buildings/main_house_blue.png",
+            Building::Archer => "sprites/buildings/archer_plot.png",
+            Building::Warrior => "sprites/buildings/warrior_plot.png",
+            Building::Pikeman => "sprites/buildings/pike_man_plot.png",
+            Building::Wall { level: _ } => "sprites/buildings/wall_plot.png",
+            Building::Tower => "",
+            Building::GoldFarm => "sprites/buildings/warrior_plot.png",
+        },
+        BuildStatus::Built => match building_type {
+            Building::MainBuilding { level } => match level {
+                MainBuildingLevels::Tent => "sprites/buildings/main_house_blue.png",
+                MainBuildingLevels::Hall => "sprites/buildings/main_hall.png",
+                MainBuildingLevels::Castle => "sprites/buildings/main_castle.png",
+            },
+            Building::Archer => "sprites/buildings/archer_house.png",
+            Building::Warrior => "sprites/buildings/warrior_house.png",
+            Building::Pikeman => "sprites/buildings/pike_man_house.png",
+            Building::Wall { level } => match level {
+                WallLevels::Basic => "sprites/buildings/wall_1.png",
+                WallLevels::Wood => "sprites/buildings/wall_2.png",
+                WallLevels::Tower => "sprites/buildings/wall_3.png",
+            },
+            Building::Tower => "sprites/buildings/archer_house.png",
+            Building::GoldFarm => "sprites/buildings/warrior_house.png",
+        },
+        BuildStatus::Destroyed => todo!(),
     }
 }
