@@ -244,7 +244,9 @@ fn change_state_on_button_steam(
                 Buttons::Multiplayer => {
                     next_state.set(MainMenuStates::Multiplayer);
                 }
-                Buttons::CreateLobby => multiplayer_roles.set(MultiplayerRoles::Host),
+                Buttons::CreateLobby => {
+                    join_lobby_request.send(JoinSteamLobby(steam_client.user().steam_id()));
+                }
                 Buttons::JoinLobby => next_state.set(MainMenuStates::JoinScreen),
                 Buttons::StartGame => {
                     player_commands.send(PlayerCommand::StartGame);
