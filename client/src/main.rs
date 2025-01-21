@@ -19,13 +19,11 @@ use entities::EntitiesPlugin;
 use input::InputPlugin;
 
 #[cfg(feature = "steam")]
-use bevy_renet::steam::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
+use bevy_renet::steam::{SteamClientPlugin, SteamTransportError};
 #[cfg(feature = "steam")]
 use menu::JoinSteamLobby;
 #[cfg(feature = "steam")]
 use networking::join_server::join_steam_server;
-#[cfg(feature = "steam")]
-use shared::server::create_server::create_steam_server;
 
 #[cfg(feature = "netcode")]
 use bevy_renet::netcode::{NetcodeClientPlugin, NetcodeServerPlugin, NetcodeTransportError};
@@ -52,27 +50,16 @@ fn main() {
             .spawn(|| {
                 let mut server = App::new();
 
-                #[cfg(feature = "steam")]
-                {
-                    use shared::steamworks::SteamworksPlugin;
-                    server.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
-                }
-
                 server.add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
                     Duration::from_secs_f64(1.0 / 60.0),
                 )));
 
                 server.add_plugins(ServerNetworkPlugin);
 
-                #[cfg(feature = "steam")]
-                {
-                    println!("Starting steam server...");
-                    server.add_plugins(SteamServerPlugin);
-                    server.add_systems(Startup, create_steam_server);
-                }
+                println!("Starting netcode server...");
+
                 #[cfg(feature = "netcode")]
                 {
-                    println!("Starting netcode server...");
                     server.add_plugins(NetcodeServerPlugin);
                     server.add_systems(Startup, create_netcode_server);
                 }
