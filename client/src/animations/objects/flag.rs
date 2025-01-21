@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use shared::enum_map::*;
+use shared::{enum_map::*, flag_collider, BoxCollider};
 
 use crate::{
     animations::{SpriteSheet, SpriteSheetAnimation},
@@ -20,7 +20,12 @@ impl Default for GenerateOutline {
     }
 }
 #[derive(Component)]
-#[require(PartOfScene, FlagAnimation, GenerateOutline)]
+#[require(
+    PartOfScene,
+    FlagAnimation,
+    GenerateOutline,
+    BoxCollider(flag_collider)
+)]
 pub struct Flag;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]

@@ -40,8 +40,6 @@ impl Plugin for SpawnPlugin {
         app.add_event::<DropFlag>();
         app.add_event::<PickFlag>();
 
-        app.add_systems(Update, test_spawn_flag.run_if(on_event::<NetworkEvent>));
-
         app.add_systems(
             FixedUpdate,
             (
@@ -298,15 +296,4 @@ fn drop_flag(
             .remove_parent()
             .insert(Transform::from_translation(*translation));
     }
-fn test_spawn_flag(mut commands: Commands, flag_sprite_sheet: Res<FlagSpriteSheet>) {
-    println!("asdf");
-    commands.spawn((
-        Flag,
-        SpriteAnimationBundle::new(
-            &[10., 10., Layers::Flag.as_f32()],
-            &flag_sprite_sheet.sprite_sheet,
-            FlagAnimation::Wave,
-            1.2,
-        ),
-    ));
 }

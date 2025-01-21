@@ -1,16 +1,14 @@
-use bevy::{
-    asset::RenderAssetUsages,
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    prelude::*,
-};
+use bevy::{asset::RenderAssetUsages, math::bounding::IntersectsVolume, prelude::*};
 
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
 use gizmos::GizmosPlugin;
 use image::{GenericImage, GenericImageView, Rgba};
 use menu::{MainMenuStates, MenuPlugin};
-use networking::{ClientNetworkPlugin, Connected};
-use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
+use networking::{ClientNetworkPlugin, Connected, ControlledPlayer};
+use shared::{
+    networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, BoxCollider, GameState,
+};
 use std::f32::consts::PI;
 use ui::UiPlugin;
 
@@ -55,10 +53,6 @@ fn main() {
             .set(ImagePlugin::default_nearest()),
     );
 
-    app.add_plugins(FrameTimeDiagnosticsPlugin);
-    // Adds a system that prints diagnostics to the console
-    app.add_plugins(LogDiagnosticsPlugin::default());
-
     app.insert_state(GameState::MainMenu);
     app.insert_state(MultiplayerRoles::NotInGame);
     app.insert_state(MainMenuStates::TitleScreen);
@@ -78,10 +72,6 @@ fn main() {
     app.add_plugins(ServerNetworkPlugin);
     app.add_plugins(ClientNetworkPlugin);
 
-    app.add_systems(
-        PostUpdate,
-        generate_and_save_outline.run_if(in_state(GameState::GameSession)),
-    );
     #[cfg(feature = "steam")]
     {
         use bevy_renet::steam::{SteamClientPlugin, SteamServerPlugin, SteamTransportError};
@@ -147,7 +137,10 @@ fn main() {
             app.add_systems(Startup, join_netcode_server);
         }
     }
-
+    app.add_systems(
+        PostUpdate,
+        (generate_and_save_outline, check_highlight).run_if(in_state(GameState::GameSession)),
+    );
     app.run();
 }
 
@@ -176,20 +169,23 @@ fn setup_background(
         },
     ));
 }
+#[derive(Component)]
+struct ToBe {
+    original_handle: Handle<Image>,
+}
 
 fn generate_and_save_outline(
-    mut sprites: Query<(&mut Sprite, &GenerateOutline)>,
+    mut sprites: Query<(&mut Sprite), With<ToBe>>,
     mut images: ResMut<Assets<Image>>,
 ) {
-    for (mut texture_handle, _outline_info) in sprites.iter_mut() {
+    for (mut texture_handle) in sprites.iter_mut() {
         if let Some(texture) = images.get_mut(texture_handle.image.id()) {
             let width = texture.width() as u32;
             let height = texture.height() as u32;
-
             let image = texture.clone().try_into_dynamic().unwrap();
             let mut new = image.clone();
-            for (x, y, _) in image.pixels() {
-                if x == 0 || y == 0 || x == width - 1 || y == height - 1 {
+            for (x, y, p) in image.pixels() {
+                if x == 0 || y == 0 || x == width - 1 || y == height - 1 || p.0[3] != 0 {
                     continue;
                 }
                 let current = image.get_pixel(x, y)[3];
@@ -203,9 +199,46 @@ fn generate_and_save_outline(
             }
 
             let image = Image::from_dynamic(new, true, RenderAssetUsages::RENDER_WORLD);
+            texture_handle.image = images.add(image);
+        }
+    }
+}
 
-            let handle = images.add(image);
-            texture_handle.image = handle.clone();
+fn check_highlight(
+    mut commands: Commands,
+    mut outline: Query<
+        (
+            Entity,
+            &Transform,
+            &BoxCollider,
+            &mut Sprite,
+            Option<&mut ToBe>,
+        ),
+        (With<GenerateOutline>),
+    >,
+    player: Query<(&Transform, &BoxCollider), With<ControlledPlayer>>,
+) {
+    let (player_transform, player_collider) = player.get_single().unwrap();
+    let player_bounds = player_collider.at(player_transform);
+
+    for (entity, transform, box_coll, mut sprite, to_be) in outline.iter_mut() {
+        let colll = box_coll.at(transform);
+        let xx = colll.intersects(&player_bounds);
+        match to_be {
+            Some(to_be) => {
+                if !xx {
+                    let original_handle = to_be.original_handle.clone();
+                    commands.entity(entity).remove::<ToBe>();
+                    sprite.image = original_handle;
+                }
+            }
+            None => {
+                if xx {
+                    commands.entity(entity).try_insert_if_new(ToBe {
+                        original_handle: sprite.image.clone(),
+                    });
+                }
+            }
         }
     }
 }
