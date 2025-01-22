@@ -8,11 +8,11 @@ use crate::{
 };
 
 #[derive(Component)]
-pub struct GenerateOutline {
+pub struct Highlightable {
     pub outline_color: Color,
 }
 
-impl Default for GenerateOutline {
+impl Default for Highlightable {
     fn default() -> Self {
         Self {
             outline_color: Color::WHITE,
@@ -20,12 +20,7 @@ impl Default for GenerateOutline {
     }
 }
 #[derive(Component)]
-#[require(
-    PartOfScene,
-    FlagAnimation,
-    GenerateOutline,
-    BoxCollider(flag_collider)
-)]
+#[require(PartOfScene, FlagAnimation, Highlightable, BoxCollider(flag_collider))]
 pub struct Flag;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
