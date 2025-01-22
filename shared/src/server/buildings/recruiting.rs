@@ -26,7 +26,7 @@ use crate::{
 };
 
 #[derive(Component)]
-#[require(BoxCollider(flag_collider))]
+#[require(BoxCollider(flag_collider), Transform)]
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder
@@ -67,13 +67,7 @@ pub fn recruit(
         };
 
         let flag_entity = commands
-            .spawn((
-                Flag,
-                Transform::from_translation(Vec3::ZERO),
-                AttachedTo(*player_entity),
-                owner,
-                event.scene_id,
-            ))
+            .spawn((Flag, AttachedTo(*player_entity), owner, event.scene_id))
             .id();
         commands
             .entity(*player_entity)
