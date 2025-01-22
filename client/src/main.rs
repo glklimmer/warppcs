@@ -7,7 +7,9 @@ use image::{GenericImage, GenericImageView, Rgba};
 use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected, ControlledPlayer};
 use shared::{
-    networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, BoxCollider, GameState,
+    networking::MultiplayerRoles,
+    server::{networking::ServerNetworkPlugin, physics::attachment::AttachedTo},
+    BoxCollider, GameState,
 };
 use std::f32::consts::PI;
 use ui::UiPlugin;
@@ -15,7 +17,7 @@ use ui::UiPlugin;
 #[cfg(feature = "steam")]
 use menu::JoinSteamLobby;
 
-use animations::{objects::flag::GenerateOutline, AnimationPlugin};
+use animations::{objects::flag::Highlightable, AnimationPlugin};
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
@@ -170,36 +172,37 @@ fn setup_background(
     ));
 }
 #[derive(Component)]
-struct ToBe {
+struct Highlighted {
     original_handle: Handle<Image>,
 }
 
 fn generate_and_save_outline(
-    mut sprites: Query<(&mut Sprite), With<ToBe>>,
+    mut sprites: Query<&mut Sprite, Changed<Highlighted>>,
     mut images: ResMut<Assets<Image>>,
 ) {
-    for (mut texture_handle) in sprites.iter_mut() {
+    for mut texture_handle in sprites.iter_mut() {
         if let Some(texture) = images.get_mut(texture_handle.image.id()) {
             let width = texture.width() as u32;
             let height = texture.height() as u32;
-            let image = texture.clone().try_into_dynamic().unwrap();
-            let mut new = image.clone();
-            for (x, y, p) in image.pixels() {
+            let dynamic_image = texture.clone().try_into_dynamic().unwrap();
+            let mut outlined_image = dynamic_image.clone();
+            for (x, y, p) in dynamic_image.pixels() {
                 if x == 0 || y == 0 || x == width - 1 || y == height - 1 || p.0[3] != 0 {
                     continue;
                 }
-                let current = image.get_pixel(x, y)[3];
-                let left = image.get_pixel(x - 1, y)[3];
-                let right = image.get_pixel(x + 1, y)[3];
-                let up = image.get_pixel(x, y - 1)[3];
-                let down = image.get_pixel(x, y + 1)[3];
+                let current = dynamic_image.get_pixel(x, y)[3];
+                let left = dynamic_image.get_pixel(x - 1, y)[3];
+                let right = dynamic_image.get_pixel(x + 1, y)[3];
+                let up = dynamic_image.get_pixel(x, y - 1)[3];
+                let down = dynamic_image.get_pixel(x, y + 1)[3];
                 if current != left || current != right || current != up || current != down {
-                    new.put_pixel(x, y, Rgba([255, 255, 255, 255]));
+                    outlined_image.put_pixel(x, y, Rgba([255, 255, 255, 255]));
                 }
             }
 
-            let image = Image::from_dynamic(new, true, RenderAssetUsages::RENDER_WORLD);
-            texture_handle.image = images.add(image);
+            let outline_image =
+                Image::from_dynamic(outlined_image, true, RenderAssetUsages::RENDER_WORLD);
+            texture_handle.image = images.add(outline_image);
         }
     }
 }
@@ -212,29 +215,29 @@ fn check_highlight(
             &Transform,
             &BoxCollider,
             &mut Sprite,
-            Option<&mut ToBe>,
+            Option<&mut Highlighted>,
         ),
-        (With<GenerateOutline>),
+        With<Highlightable>,
     >,
     player: Query<(&Transform, &BoxCollider), With<ControlledPlayer>>,
 ) {
     let (player_transform, player_collider) = player.get_single().unwrap();
     let player_bounds = player_collider.at(player_transform);
 
-    for (entity, transform, box_coll, mut sprite, to_be) in outline.iter_mut() {
-        let colll = box_coll.at(transform);
-        let xx = colll.intersects(&player_bounds);
-        match to_be {
-            Some(to_be) => {
-                if !xx {
-                    let original_handle = to_be.original_handle.clone();
-                    commands.entity(entity).remove::<ToBe>();
+    for (entity, transform, box_collider, mut sprite, highlighted) in outline.iter_mut() {
+        let bounds = box_collider.at(transform);
+        let intersected = bounds.intersects(&player_bounds);
+        match highlighted {
+            Some(highlighted) => {
+                if !intersected {
+                    let original_handle = highlighted.original_handle.clone();
+                    commands.entity(entity).remove::<Highlighted>();
                     sprite.image = original_handle;
                 }
             }
             None => {
-                if xx {
-                    commands.entity(entity).try_insert_if_new(ToBe {
+                if intersected {
+                    commands.entity(entity).insert(Highlighted {
                         original_handle: sprite.image.clone(),
                     });
                 }
