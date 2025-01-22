@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     animations::{
         king::{KingAnimation, KingSpriteSheet},
-        objects::flag::{Flag, FlagAnimation, FlagSpriteSheet},
+        objects::flag::{Flag, FlagAnimation, FlagSpriteSheet, Highlightable},
         units::{Unit, UnitAnimation, UnitSpriteSheets},
         SpriteAnimationBundle,
     },
@@ -275,6 +275,7 @@ fn pick_flag(
                     0.2,
                 ),
             ))
+            .remove::<Highlightable>()
             .set_parent(player_entity);
     }
 }
@@ -294,6 +295,9 @@ fn drop_flag(
         commands
             .entity(*client_flag_entity)
             .remove_parent()
-            .insert(Transform::from_translation(*translation));
+            .insert((
+                Transform::from_translation(*translation),
+                Highlightable::default(),
+            ));
     }
 }
