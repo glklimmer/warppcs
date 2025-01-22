@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     animations::{
         king::{KingAnimation, KingSpriteSheet},
-        objects::flag::{Flag, FlagAnimation, FlagSpriteSheet, Highlightable},
+        objects::flag::{Flag, FlagAnimation, FlagSpriteSheet},
         units::{Unit, UnitAnimation, UnitSpriteSheets},
         SpriteAnimationBundle,
     },
@@ -21,7 +21,7 @@ use shared::{
     projectile_collider, BoxCollider,
 };
 
-use super::PartOfScene;
+use super::{highlight::Highlightable, PartOfScene};
 
 pub struct SpawnPlugin;
 

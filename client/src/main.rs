@@ -1,23 +1,18 @@
-use bevy::{asset::RenderAssetUsages, math::bounding::IntersectsVolume, prelude::*};
+use bevy::prelude::*;
 
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
 use gizmos::GizmosPlugin;
-use image::{GenericImage, GenericImageView, Rgba};
 use menu::{MainMenuStates, MenuPlugin};
-use networking::{ClientNetworkPlugin, Connected, ControlledPlayer};
-use shared::{
-    networking::MultiplayerRoles,
-    server::{networking::ServerNetworkPlugin, physics::attachment::AttachedTo},
-    BoxCollider, GameState,
-};
+use networking::{ClientNetworkPlugin, Connected};
+use shared::{networking::MultiplayerRoles, server::networking::ServerNetworkPlugin, GameState};
 use std::f32::consts::PI;
 use ui::UiPlugin;
 
 #[cfg(feature = "steam")]
 use menu::JoinSteamLobby;
 
-use animations::{objects::flag::Highlightable, AnimationPlugin};
+use animations::AnimationPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
@@ -139,10 +134,7 @@ fn main() {
             app.add_systems(Startup, join_netcode_server);
         }
     }
-    app.add_systems(
-        PostUpdate,
-        (generate_and_save_outline, check_highlight).run_if(in_state(GameState::GameSession)),
-    );
+
     app.run();
 }
 
@@ -170,78 +162,4 @@ fn setup_background(
             ..default()
         },
     ));
-}
-#[derive(Component)]
-struct Highlighted {
-    original_handle: Handle<Image>,
-}
-
-fn generate_and_save_outline(
-    mut sprites: Query<&mut Sprite, Changed<Highlighted>>,
-    mut images: ResMut<Assets<Image>>,
-) {
-    for mut texture_handle in sprites.iter_mut() {
-        if let Some(texture) = images.get_mut(texture_handle.image.id()) {
-            let width = texture.width() as u32;
-            let height = texture.height() as u32;
-            let dynamic_image = texture.clone().try_into_dynamic().unwrap();
-            let mut outlined_image = dynamic_image.clone();
-            for (x, y, p) in dynamic_image.pixels() {
-                if x == 0 || y == 0 || x == width - 1 || y == height - 1 || p.0[3] != 0 {
-                    continue;
-                }
-                let current = dynamic_image.get_pixel(x, y)[3];
-                let left = dynamic_image.get_pixel(x - 1, y)[3];
-                let right = dynamic_image.get_pixel(x + 1, y)[3];
-                let up = dynamic_image.get_pixel(x, y - 1)[3];
-                let down = dynamic_image.get_pixel(x, y + 1)[3];
-                if current != left || current != right || current != up || current != down {
-                    outlined_image.put_pixel(x, y, Rgba([255, 255, 255, 255]));
-                }
-            }
-
-            let outline_image =
-                Image::from_dynamic(outlined_image, true, RenderAssetUsages::RENDER_WORLD);
-            texture_handle.image = images.add(outline_image);
-        }
-    }
-}
-
-fn check_highlight(
-    mut commands: Commands,
-    mut outline: Query<
-        (
-            Entity,
-            &Transform,
-            &BoxCollider,
-            &mut Sprite,
-            Option<&mut Highlighted>,
-        ),
-        With<Highlightable>,
-    >,
-    player: Query<(&Transform, &BoxCollider), With<ControlledPlayer>>,
-) {
-    let (player_transform, player_collider) = player.get_single().unwrap();
-    let player_bounds = player_collider.at(player_transform);
-
-    for (entity, transform, box_collider, mut sprite, highlighted) in outline.iter_mut() {
-        let bounds = box_collider.at(transform);
-        let intersected = bounds.intersects(&player_bounds);
-        match highlighted {
-            Some(highlighted) => {
-                if !intersected {
-                    let original_handle = highlighted.original_handle.clone();
-                    commands.entity(entity).remove::<Highlighted>();
-                    sprite.image = original_handle;
-                }
-            }
-            None => {
-                if intersected {
-                    commands.entity(entity).insert(Highlighted {
-                        original_handle: sprite.image.clone(),
-                    });
-                }
-            }
-        }
-    }
 }

@@ -4,23 +4,11 @@ use shared::{enum_map::*, flag_collider, BoxCollider};
 
 use crate::{
     animations::{SpriteSheet, SpriteSheetAnimation},
-    entities::PartOfScene,
+    entities::{highlight::Highlightable, PartOfScene},
 };
 
 #[derive(Component)]
-pub struct Highlightable {
-    pub outline_color: Color,
-}
-
-impl Default for Highlightable {
-    fn default() -> Self {
-        Self {
-            outline_color: Color::WHITE,
-        }
-    }
-}
-#[derive(Component)]
-#[require(PartOfScene, FlagAnimation, Highlightable, BoxCollider(flag_collider))]
+#[require(PartOfScene, FlagAnimation, BoxCollider(flag_collider), Highlightable)]
 pub struct Flag;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
