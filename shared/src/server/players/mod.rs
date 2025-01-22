@@ -81,8 +81,7 @@ fn interact(
 
 fn flag_interact(
     mut network_events: EventReader<NetworkEvent>,
-    has_flag: Query<&FlagHolder>,
-    player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
+    player: Query<(&Transform, &BoxCollider, &GameSceneId, Option<&FlagHolder>)>,
     flag: Query<(Entity, &BoxCollider, &Transform, &GameSceneId, &Owner), With<Flag>>,
     lobby: Res<ServerLobby>,
     mut drop_flag: EventWriter<DropFlagEvent>,
@@ -92,41 +91,40 @@ fn flag_interact(
         if let PlayerCommand::FlagInteract = &event.message {
             let player_entity = lobby.players.get(&event.client_id).unwrap();
 
-            match has_flag.get(*player_entity).is_err() {
-                true => {
-                    let (player_transform, player_collider, player_scene) =
-                        player.get(*player_entity).unwrap();
-                    let player_bounds = player_collider.at(player_transform);
+            let (player_transform, player_collider, player_scene, has_flag) =
+                player.get(*player_entity).unwrap();
+            let player_bounds = player_collider.at(player_transform);
 
-                    for (flag_entity, flag_collider, flag_transform, flag_scene, owner) in
-                        flag.iter()
-                    {
-                        if player_scene.ne(flag_scene) {
+            for (flag_entity, flag_collider, flag_transform, flag_scene, flag_owner) in flag.iter()
+            {
+                if player_scene.ne(flag_scene) {
+                    continue;
+                }
+
+                match flag_owner.faction {
+                    Faction::Player { client_id: owner } => {
+                        if owner.ne(&event.client_id) {
                             continue;
                         }
+                    }
+                    Faction::Bandits => (),
+                }
 
-                        match owner.faction {
-                            Faction::Player { client_id: owner } => {
-                                if owner.ne(&event.client_id) {
-                                    continue;
-                                }
-                            }
-                            Faction::Bandits => (),
+                let flag_bounds = flag_collider.at(flag_transform);
+
+                if player_bounds.intersects(&flag_bounds) {
+                    match has_flag {
+                        Some(_) => {
+                            drop_flag.send(DropFlagEvent(event.client_id));
                         }
-
-                        let flag_bounds = flag_collider.at(flag_transform);
-
-                        if player_bounds.intersects(&flag_bounds) {
+                        None => {
                             pick_flag.send(PickFlagEvent {
                                 client: event.client_id,
                                 flag: flag_entity,
                             });
-                            break;
                         }
                     }
-                }
-                false => {
-                    drop_flag.send(DropFlagEvent(event.client_id));
+                    break;
                 }
             }
         }
