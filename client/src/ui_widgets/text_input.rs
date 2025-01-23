@@ -878,7 +878,3 @@ fn masked_value(value: &str, mask: Option<char>) -> String {
 fn placeholder_color(color: &TextColor) -> TextColor {
     TextColor(color.with_alpha(color.alpha() * 0.25))
 }
-
-fn copy_paste() {
-    let mut clipboard = Clipboard::new().unwrap();
-}

@@ -71,12 +71,6 @@ pub enum ProjectileType {
     Arrow,
 }
 
-#[derive(Debug, Component, Serialize, Deserialize, Copy, Clone)]
-pub enum PlayerSkin {
-    Warrior,
-    Monster,
-}
-
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub struct Inventory {
     pub gold: u16,
@@ -93,7 +87,6 @@ pub struct SpawnPlayer {
     pub id: ClientId,
     pub entity: Entity,
     pub translation: [f32; 3],
-    pub skin: PlayerSkin,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]

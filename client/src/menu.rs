@@ -45,7 +45,9 @@ enum Buttons {
     CreateLobby,
     JoinLobby,
     Join,
+    #[allow(dead_code)]
     StartGame,
+    #[allow(dead_code)]
     InvitePlayer,
     Back(MainMenuStates),
 }
@@ -143,7 +145,7 @@ fn display_main_menu(mut commands: Commands) {
                     },
                     Button,
                     BorderColor(Color::BLACK),
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Buttons::Singleplayer,
                 ))
                 .with_children(|parent| {
@@ -170,7 +172,7 @@ fn display_main_menu(mut commands: Commands) {
                     },
                     Button,
                     BorderColor(Color::BLACK),
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Buttons::Multiplayer,
                 ))
                 .with_children(|parent| {
@@ -293,7 +295,7 @@ fn display_multiplayer_buttons(mut commands: Commands) {
                     },
                     Button,
                     BorderColor(Color::BLACK),
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Buttons::JoinLobby,
                 ))
                 .with_children(|parent| {
@@ -320,7 +322,7 @@ fn display_multiplayer_buttons(mut commands: Commands) {
                     },
                     Button,
                     BorderColor(Color::BLACK),
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Buttons::CreateLobby,
                 ))
                 .with_children(|parent| {
@@ -351,7 +353,7 @@ fn display_multiplayer_buttons(mut commands: Commands) {
             },
             Button,
             BorderColor(Color::BLACK),
-            BackgroundColor(NORMAL_BUTTON.into()),
+            BackgroundColor(NORMAL_BUTTON),
             Buttons::Back(MainMenuStates::TitleScreen),
         ))
         .with_children(|parent| {
@@ -396,8 +398,8 @@ fn display_join_screen(mut commands: Commands) {
                     ..default()
                 }),
                 TextInputTextColor(TextColor(TEXT_COLOR)),
-                BorderColor(BORDER_COLOR_ACTIVE.into()),
-                BackgroundColor(BACKGROUND_COLOR.into()),
+                BorderColor(BORDER_COLOR_ACTIVE),
+                BackgroundColor(BACKGROUND_COLOR),
             ));
         })
         .with_children(|parent| {
@@ -413,7 +415,7 @@ fn display_join_screen(mut commands: Commands) {
                     },
                     Button,
                     BorderColor(Color::BLACK),
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                     Buttons::Join,
                 ))
                 .with_children(|parent| {
@@ -462,7 +464,7 @@ fn display_steam_lobby(
                     },
                     Button,
                     BorderColor(Color::BLACK),
-                    BackgroundColor(NORMAL_BUTTON.into()),
+                    BackgroundColor(NORMAL_BUTTON),
                 ))
                 .with_children(|parent| {
                     let client_id = steam_client.user().steam_id().raw();
@@ -505,7 +507,7 @@ fn display_steam_lobby(
                                     ..default()
                                 },
                                 BorderColor(Color::BLACK),
-                                BackgroundColor(NORMAL_BUTTON.into()),
+                                BackgroundColor(NORMAL_BUTTON),
                                 Buttons::InvitePlayer,
                             ))
                             .with_children(|parent| {
@@ -593,7 +595,7 @@ fn display_steam_lobby(
             },
             Button,
             BorderColor(Color::BLACK),
-            BackgroundColor(NORMAL_BUTTON.into()),
+            BackgroundColor(NORMAL_BUTTON),
             Buttons::Back(MainMenuStates::Multiplayer),
         ))
         .with_children(|parent| {
