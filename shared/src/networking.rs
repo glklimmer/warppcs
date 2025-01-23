@@ -181,6 +181,7 @@ pub enum ServerMessages {
     EntityDeath {
         entity: Entity,
     },
+    PlayerDefeat(Owner),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
