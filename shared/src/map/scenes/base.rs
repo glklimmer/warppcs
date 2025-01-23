@@ -38,10 +38,10 @@ impl BaseScene {
             archer_building: BuildingBundle::archer(400.),
             warrior_building: BuildingBundle::warrior(-400.),
             pikeman_building: BuildingBundle::pikeman(650.),
-            left_wall: BuildingBundle::wall(-800.),
+            left_wall: BuildingBundle::wall(-1050.),
             right_wall: BuildingBundle::wall(1050.),
-            left_gold_farm: BuildingBundle::gold_farm(-1450.),
-            right_gold_farm: BuildingBundle::gold_farm(1450.),
+            left_gold_farm: BuildingBundle::gold_farm(-800.),
+            right_gold_farm: BuildingBundle::gold_farm(875.),
             left_spawn_point: SpawnPointBundle::new(-1200.),
             right_spawn_point: SpawnPointBundle::new(1200.),
         }
