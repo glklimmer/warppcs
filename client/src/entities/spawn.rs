@@ -15,7 +15,8 @@ use crate::{
 use shared::{
     map::Layers,
     networking::{
-        ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        DropFlag, PickFlag, ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer,
+        SpawnProjectile, SpawnUnit,
     },
     projectile_collider, BoxCollider,
 };
@@ -36,6 +37,8 @@ impl Plugin for SpawnPlugin {
         app.add_event::<SpawnUnit>();
         app.add_event::<SpawnProjectile>();
         app.add_event::<SpawnFlag>();
+        app.add_event::<DropFlag>();
+        app.add_event::<PickFlag>();
 
         app.add_systems(
             FixedUpdate,
@@ -45,12 +48,14 @@ impl Plugin for SpawnPlugin {
                     (spawn_player, spawn_flag).chain(),
                     spawn_unit,
                     spawn_projectile,
-                )
-                    .chain(),
+                ),
             )
                 .run_if(on_event::<NetworkEvent>)
                 .in_set(Connected),
         );
+
+        app.add_systems(FixedUpdate, drop_flag.run_if(on_event::<DropFlag>));
+        app.add_systems(FixedUpdate, pick_flag.run_if(on_event::<PickFlag>));
     }
 }
 
@@ -60,6 +65,8 @@ fn spawn(
     mut spawn_unit: EventWriter<SpawnUnit>,
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut spawn_flag: EventWriter<SpawnFlag>,
+    mut pick_flag: EventWriter<PickFlag>,
+    mut drop_flag: EventWriter<DropFlag>,
 ) {
     for event in network_events.read() {
         match &event.message {
@@ -74,6 +81,12 @@ fn spawn(
             }
             ServerMessages::SpawnFlag(spawn) => {
                 spawn_flag.send(spawn.clone());
+            }
+            ServerMessages::PickFlag(pick) => {
+                pick_flag.send(pick.clone());
+            }
+            ServerMessages::DropFlag(drop) => {
+                drop_flag.send(drop.clone());
             }
             ServerMessages::SpawnGroup { player, units } => {
                 spawn_player.send(player.clone());
@@ -231,5 +244,51 @@ fn spawn_flag(
         network_mapping
             .0
             .insert(*server_flag_entity, client_flag_entity);
+    }
+}
+
+fn pick_flag(
+    mut commands: Commands,
+    network_mapping: ResMut<NetworkMapping>,
+    mut pick_flag: EventReader<PickFlag>,
+    client_id: Res<CurrentClientId>,
+    lobby: Res<ClientPlayers>,
+) {
+    for flag in pick_flag.read() {
+        let PickFlag {
+            flag: server_flag_entity,
+        } = flag;
+        let client_id = client_id.0;
+
+        let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
+        let client_flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
+
+        commands
+            .entity(*client_flag_entity)
+            .insert(Transform {
+                translation: Vec3::new(0., 0., Layers::Flag.as_f32()),
+                scale: Vec3::splat(0.2),
+                ..default()
+            })
+            .set_parent(player_entity);
+    }
+}
+
+fn drop_flag(
+    mut commands: Commands,
+    network_mapping: Res<NetworkMapping>,
+    mut drop_flag: EventReader<DropFlag>,
+) {
+    for drop in drop_flag.read() {
+        let DropFlag {
+            entity: server_flag_entity,
+            translation,
+        } = drop;
+        let client_flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
+
+        commands
+            .entity(*client_flag_entity)
+            .remove_parent()
+            .insert(Transform::from_translation(*translation));
     }
 }

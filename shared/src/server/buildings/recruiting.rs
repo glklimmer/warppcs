@@ -4,6 +4,7 @@ use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::{ClientId, RenetServer};
 
 use crate::{
+    flag_collider,
     map::{
         buildings::{BuildStatus, Building, RecruitmentBuilding},
         GameSceneId, Layers,
@@ -24,6 +25,11 @@ use crate::{
     BoxCollider,
 };
 
+#[derive(Component)]
+#[require(BoxCollider(flag_collider), Transform)]
+pub struct Flag;
+
+/// PlayerEntity is FlagHolder
 #[derive(Component)]
 pub struct FlagHolder(pub Entity);
 
@@ -54,11 +60,14 @@ pub fn recruit(
             player_translation.y,
             Layers::Flag.as_f32(),
         );
+        let owner = Owner {
+            faction: Faction::Player {
+                client_id: event.client_id,
+            },
+        };
+
         let flag_entity = commands
-            .spawn((
-                Transform::from_translation(Vec3::ZERO),
-                AttachedTo(*player_entity),
-            ))
+            .spawn((Flag, AttachedTo(*player_entity), owner, event.scene_id))
             .id();
         commands
             .entity(*player_entity)
@@ -90,11 +99,6 @@ pub fn recruit(
         };
         let health = Health {
             hitpoints: unit_health(&unit_type),
-        };
-        let owner = Owner {
-            faction: Faction::Player {
-                client_id: event.client_id,
-            },
         };
 
         for unit_number in 1..=4 {
