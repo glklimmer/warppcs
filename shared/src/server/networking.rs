@@ -75,7 +75,10 @@ impl Plugin for ServerNetworkPlugin {
 
         app.add_systems(
             FixedPostUpdate,
-            (send_server_messages).run_if(on_event::<SendServerMessage>),
+            (
+                send_server_messages.run_if(on_event::<SendServerMessage>),
+                sync_player_inventory,
+            ),
         );
 
         app.insert_resource(ServerLobby::default());
@@ -215,5 +218,16 @@ fn send_server_messages(
                 );
             }
         }
+    }
+}
+
+fn sync_player_inventory(
+    mut server: ResMut<RenetServer>,
+    query: Query<(&ServerPlayer, &Inventory), Changed<Inventory>>,
+) {
+    for (server_player, inventory) in query.iter() {
+        let message = ServerMessages::SyncInventory(inventory.clone());
+        let message = bincode::serialize(&message).unwrap();
+        server.send_message(server_player.0, ServerChannel::ServerMessages, message);
     }
 }

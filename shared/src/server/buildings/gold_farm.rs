@@ -1,9 +1,8 @@
 use bevy::prelude::*;
-use bevy_renet::renet::RenetServer;
 
 use crate::{
     map::buildings::Building,
-    networking::{Faction, Inventory, Owner, ServerChannel, ServerMessages},
+    networking::{Faction, Inventory, Owner},
     server::networking::ServerLobby,
 };
 
@@ -42,7 +41,6 @@ pub fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingC
 pub fn gold_farm_output(
     mut gold_farms_query: Query<(&mut GoldFarmTimer, &Owner)>,
     mut inventory: Query<&mut Inventory>,
-    mut server: ResMut<RenetServer>,
     time: Res<Time>,
     lobby: Res<ServerLobby>,
 ) {
@@ -54,10 +52,6 @@ pub fn gold_farm_output(
                 let player_entity = lobby.players.get(&client_id).unwrap();
                 let mut inventory = inventory.get_mut(*player_entity).unwrap();
                 inventory.gold += GOLD_PER_TICK;
-
-                let message = ServerMessages::SyncInventory(inventory.clone());
-                let message = bincode::serialize(&message).unwrap();
-                server.send_message(client_id, ServerChannel::ServerMessages, message);
             }
         }
     }

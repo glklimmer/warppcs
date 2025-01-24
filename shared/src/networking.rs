@@ -79,7 +79,7 @@ pub struct Inventory {
 
 impl Default for Inventory {
     fn default() -> Self {
-        Self { gold: 1000 }
+        Self { gold: 600 }
     }
 }
 

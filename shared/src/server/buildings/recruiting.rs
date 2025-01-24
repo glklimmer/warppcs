@@ -6,7 +6,7 @@ use bevy_renet::renet::{ClientId, RenetServer};
 use crate::{
     flag_collider,
     map::{
-        buildings::{BuildStatus, Building, RecruitmentBuilding},
+        buildings::{BuildStatus, Building, Cost, RecruitmentBuilding},
         GameSceneId, Layers,
     },
     networking::{
@@ -47,19 +47,26 @@ pub fn recruit(
     mut commands: Commands,
     mut recruit: EventReader<RecruitEvent>,
     mut server: ResMut<RenetServer>,
+    mut player_query: Query<(&Transform, &mut Inventory)>,
     lobby: Res<ServerLobby>,
-    transforms: Query<&Transform>,
     scene_ids: Query<&GameSceneId>,
 ) {
     for event in recruit.read() {
         let player_entity = lobby.players.get(&event.client_id).unwrap();
-        let player_transform = transforms.get(*player_entity).unwrap();
+        let (player_transform, mut inventory) = player_query.get_mut(*player_entity).unwrap();
         let player_translation = player_transform.translation;
         let flag_translation = Vec3::new(
             player_translation.x,
             player_translation.y,
             Layers::Flag.as_f32(),
         );
+
+        if let Some(cost) = recruitment_cost(&event.building_type) {
+            inventory.gold -= cost.gold;
+        } else {
+            continue;
+        }
+
         let owner = Owner {
             faction: Faction::Player {
                 client_id: event.client_id,
@@ -184,16 +191,11 @@ pub fn check_recruit(
                 continue;
             }
 
-            let gold_cost: u16 = match building {
-                Building::MainBuilding { level: _ }
-                | Building::Wall { level: _ }
-                | Building::Tower
-                | Building::GoldFarm => continue,
-                Building::Archer => 10,
-                Building::Warrior => 10,
-                Building::Pikeman => 10,
-            };
-            if !inventory.gold.gt(&gold_cost) {
+            if let Some(cost) = recruitment_cost(building) {
+                if !inventory.gold.ge(&cost.gold) {
+                    continue;
+                }
+            } else {
                 continue;
             }
 
@@ -207,4 +209,17 @@ pub fn check_recruit(
             }
         }
     }
+}
+
+pub fn recruitment_cost(building_type: &Building) -> Option<Cost> {
+    let gold = match building_type {
+        Building::MainBuilding { level: _ }
+        | Building::Wall { level: _ }
+        | Building::Tower
+        | Building::GoldFarm => return None,
+        Building::Archer => 50,
+        Building::Warrior => 50,
+        Building::Pikeman => 50,
+    };
+    Some(Cost { gold })
 }
