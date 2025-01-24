@@ -44,14 +44,18 @@ impl Plugin for SpawnPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                spawn,
+                spawn.run_if(on_event::<NetworkEvent>),
                 (
-                    (spawn_player, spawn_flag).chain(),
-                    spawn_unit,
-                    spawn_projectile,
+                    (
+                        spawn_player.run_if(on_event::<SpawnPlayer>),
+                        spawn_flag.run_if(on_event::<SpawnFlag>),
+                    )
+                        .chain(),
+                    spawn_unit.run_if(on_event::<SpawnUnit>),
+                    spawn_projectile.run_if(on_event::<SpawnProjectile>),
                 ),
             )
-                .run_if(on_event::<NetworkEvent>)
+                .chain()
                 .in_set(Connected),
         );
 
