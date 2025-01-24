@@ -16,7 +16,8 @@ fn attachment_follow(
     target: Query<&Transform, Without<AttachedTo>>,
 ) {
     for (item, mut item_transform) in query.iter_mut() {
-        let target = target.get(item.0).unwrap();
-        item_transform.translation = target.translation;
+        if let Ok(target) = target.get(item.0) {
+            item_transform.translation = target.translation;
+        }
     }
 }
