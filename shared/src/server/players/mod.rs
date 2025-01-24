@@ -152,7 +152,7 @@ fn drop_flag(
             transform.translation.y = 0.;
 
             let message = ServerMessages::DropFlag(DropFlag {
-                entity: flag_entity,
+                flag: flag_entity,
                 translation: transform.translation,
             });
             let message = bincode::serialize(&message).unwrap();
@@ -177,7 +177,7 @@ fn pick_flag(
             .entity(*player_entity)
             .insert(FlagHolder(event.flag));
 
-        let message = ServerMessages::PickFlag(PickFlag { entity: event.flag });
+        let message = ServerMessages::PickFlag(PickFlag { flag: event.flag });
         let message = bincode::serialize(&message).unwrap();
         server.send_message(event.client, ServerChannel::ServerMessages, message);
     }

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
-use bevy_renet::renet::{ClientId, RenetServer};
+use bevy_renet::renet::ClientId;
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
 
@@ -12,8 +12,7 @@ use crate::{
         GameSceneId,
     },
     networking::{
-        BuildingUpdate, Faction, Inventory, MultiplayerRoles, Owner, ServerChannel, ServerMessages,
-        UpdateType,
+        BuildingUpdate, Faction, Inventory, MultiplayerRoles, Owner, ServerMessages, UpdateType,
     },
     BoxCollider, GameState,
 };
@@ -230,7 +229,7 @@ fn check_building_interaction(
 
                 match status {
                     BuildStatus::Marker => {
-                        if !inventory.gold.gt(&construction_cost(building).gold) {
+                        if !inventory.gold.ge(&construction_cost(building).gold) {
                             continue;
                         }
                         build.send(BuildingConstruction(info));
@@ -239,7 +238,7 @@ fn check_building_interaction(
                         if building.can_upgrade() {
                             if !inventory
                                 .gold
-                                .gt(&construction_cost(&building.upgrade_building().unwrap()).gold)
+                                .ge(&construction_cost(&building.upgrade_building().unwrap()).gold)
                             {
                                 continue;
                             }
@@ -265,7 +264,6 @@ fn construct_building(
         &SceneBuildingIndicator,
     )>,
     mut inventory: Query<&mut Inventory>,
-    mut server: ResMut<RenetServer>,
     mut sender: EventWriter<SendServerMessage>,
 ) {
     for build in builds.read() {
@@ -291,10 +289,6 @@ fn construct_building(
 
         let mut inventory = inventory.get_mut(build.0.player_entity).unwrap();
         inventory.gold -= construction_cost(building).gold;
-
-        let message = ServerMessages::SyncInventory(inventory.clone());
-        let message = bincode::serialize(&message).unwrap();
-        server.send_message(build.0.client_id, ServerChannel::ServerMessages, message);
     }
 }
 
@@ -303,7 +297,6 @@ fn upgrade_building(
     mut upgrade: EventReader<BuildingUpgrade>,
     mut building: Query<(&mut Building, &GameSceneId, &SceneBuildingIndicator)>,
     mut inventory: Query<&mut Inventory>,
-    mut server: ResMut<RenetServer>,
     mut sender: EventWriter<SendServerMessage>,
 ) {
     for upgrade in upgrade.read() {
@@ -339,9 +332,5 @@ fn upgrade_building(
 
         let mut inventory = inventory.get_mut(upgrade.0.player_entity).unwrap();
         inventory.gold -= construction_cost(upgraded_building).gold;
-
-        let message = ServerMessages::SyncInventory(inventory.clone());
-        let message = bincode::serialize(&message).unwrap();
-        server.send_message(upgrade.0.client_id, ServerChannel::ServerMessages, message);
     }
 }

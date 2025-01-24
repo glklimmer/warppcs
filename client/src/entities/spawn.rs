@@ -253,11 +253,10 @@ fn pick_flag(
     mut pick_flag: EventReader<PickFlag>,
     client_id: Res<CurrentClientId>,
     lobby: Res<ClientPlayers>,
-    flag_sprite_sheet: Res<FlagSpriteSheet>,
 ) {
     for flag in pick_flag.read() {
         let PickFlag {
-            entity: server_flag_entity,
+            flag: server_flag_entity,
         } = flag;
         let client_id = client_id.0;
 
@@ -266,15 +265,11 @@ fn pick_flag(
 
         commands
             .entity(*client_flag_entity)
-            .insert((
-                Flag,
-                SpriteAnimationBundle::new(
-                    &[0., 0., Layers::Flag.as_f32()],
-                    &flag_sprite_sheet.sprite_sheet,
-                    FlagAnimation::Wave,
-                    0.2,
-                ),
-            ))
+            .insert(Transform {
+                translation: Vec3::new(0., 0., Layers::Flag.as_f32()),
+                scale: Vec3::splat(0.2),
+                ..default()
+            })
             .remove::<Highlightable>()
             .set_parent(player_entity);
     }
@@ -287,7 +282,7 @@ fn drop_flag(
 ) {
     for drop in drop_flag.read() {
         let DropFlag {
-            entity: server_flag_entity,
+            flag: server_flag_entity,
             translation,
         } = drop;
         let client_flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();

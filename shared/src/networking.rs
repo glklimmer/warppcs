@@ -79,7 +79,7 @@ pub struct Inventory {
 
 impl Default for Inventory {
     fn default() -> Self {
-        Self { gold: 1000 }
+        Self { gold: 600 }
     }
 }
 
@@ -103,7 +103,7 @@ pub struct DropFlag {
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct PickFlag {
-    pub entity: Entity,
+    pub flag: Entity,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
@@ -195,6 +195,7 @@ pub enum ServerMessages {
     EntityDeath {
         entity: Entity,
     },
+    PlayerDefeat(Owner),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

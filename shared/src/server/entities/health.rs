@@ -1,8 +1,15 @@
 use bevy::prelude::*;
+use bevy_renet::renet::RenetServer;
 
 use crate::{
-    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
-    networking::{BuildingUpdate, Facing, MultiplayerRoles, ServerMessages, UpdateType},
+    map::{
+        buildings::{BuildStatus, Building},
+        scenes::SceneBuildingIndicator,
+        GameSceneId,
+    },
+    networking::{
+        BuildingUpdate, Facing, MultiplayerRoles, Owner, ServerChannel, ServerMessages, UpdateType,
+    },
     server::{networking::SendServerMessage, physics::movement::Velocity},
     BoxCollider, DelayedDespawn, GameState,
 };
@@ -87,9 +94,17 @@ fn on_unit_death(
 fn on_building_destroy(
     mut commands: Commands,
     mut sender: EventWriter<SendServerMessage>,
-    query: Query<(Entity, &Health, &GameSceneId, &SceneBuildingIndicator)>,
+    mut server: ResMut<RenetServer>,
+    query: Query<(
+        Entity,
+        &Health,
+        &GameSceneId,
+        &SceneBuildingIndicator,
+        &Building,
+        &Owner,
+    )>,
 ) {
-    for (entity, health, game_scene_id, indicator) in query.iter() {
+    for (entity, health, game_scene_id, indicator, building, owner) in query.iter() {
         if health.hitpoints <= 0. {
             commands.entity(entity).despawn_recursive();
 
@@ -102,6 +117,12 @@ fn on_building_destroy(
                 }),
                 game_scene_id: *game_scene_id,
             });
+
+            if let Building::MainBuilding { level: _ } = building {
+                let message = ServerMessages::PlayerDefeat(*owner);
+                let message = bincode::serialize(&message).unwrap();
+                server.broadcast_message(ServerChannel::ServerMessages, message);
+            }
         }
     }
 }
