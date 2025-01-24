@@ -8,8 +8,8 @@ use crate::{
         GameSceneId,
     },
     networking::{
-        BuildingUpdate, Faction, LoadBuilding, MultiplayerRoles, Owner, PlayerSkin, ProjectileType,
-        ServerChannel, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        Faction, LoadBuilding, MultiplayerRoles, Owner, ProjectileType, ServerChannel,
+        ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     BoxCollider, GameState,
 };
@@ -100,7 +100,6 @@ fn travel(
     mut server: ResMut<RenetServer>,
     lobby: Res<ServerLobby>,
     game_world: Res<GameWorld>,
-    player_skins: Query<&PlayerSkin>,
     scene_ids: Query<&GameSceneId>,
     units: Query<(&GameSceneId, &Owner, Entity, &Unit, &Transform)>,
     projectiles: Query<(&GameSceneId, Entity, &ProjectileType, &Transform, &Velocity)>,
@@ -192,12 +191,10 @@ fn travel(
             })
             .map(|(other_client_id, other_entity)| {
                 let transform = transforms.get(*other_entity).unwrap();
-                let skin = player_skins.get(*other_entity).unwrap();
                 SpawnPlayer {
                     id: *other_client_id,
                     entity: *other_entity,
                     translation: transform.translation.into(),
-                    skin: *skin,
                 }
             })
             .collect();
@@ -205,7 +202,6 @@ fn travel(
             id: client_id,
             entity: player_entity,
             translation: target_transform.translation.into(),
-            skin: *player_skins.get(player_entity).unwrap(),
         });
         let flag = group.as_ref().map(|g| SpawnFlag { entity: g.flag });
         let mut units: Vec<SpawnUnit> = units
@@ -265,7 +261,6 @@ fn travel(
         server.send_message(client_id, ServerChannel::ServerMessages, message);
 
         // Tell other players in new scene that new player and units arrived
-        let skin = player_skins.get(player_entity).unwrap();
         let mut unit_spawns = Vec::new();
         if let Some(group) = &group {
             for (unit, _, info) in &group.units {
@@ -285,7 +280,6 @@ fn travel(
                 id: client_id,
                 entity: player_entity,
                 translation: target_transform.translation.into(),
-                skin: *skin,
             },
             units: unit_spawns,
         };

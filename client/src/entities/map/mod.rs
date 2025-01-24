@@ -174,7 +174,7 @@ fn load_game_scene(
                         SceneBuildingIndicator::Fight(FightSceneIndicator::RightGoldFarm),
                     );
                 }
-                GameSceneType::Base(color) => {
+                GameSceneType::Base => {
                     let base = BaseScene::new();
 
                     spawn_building(
@@ -361,13 +361,13 @@ fn update_building(
                 }
 
                 let texture = match update {
-                    UpdateType::Status { new_status } => building_texture(&building, *new_status),
+                    UpdateType::Status { new_status } => building_texture(building, *new_status),
                     UpdateType::Upgrade { upgraded_building } => {
                         println!("Updating upgraded building: {:?}", upgraded_building);
                         commands
                             .entity(entity)
                             .insert(building_collider(upgraded_building));
-                        building_texture(&upgraded_building, BuildStatus::Built)
+                        building_texture(upgraded_building, BuildStatus::Built)
                     }
                 };
                 let image = asset_server.load::<Image>(texture);
@@ -383,14 +383,13 @@ fn update_building(
 
 fn building_flipped(indicator: &SceneBuildingIndicator) -> bool {
     match indicator {
-        SceneBuildingIndicator::Base(base_scene_indicator) => match base_scene_indicator {
-            BaseSceneIndicator::RightWall => true,
-            _ => false,
-        },
-        SceneBuildingIndicator::Fight(fight_scene_indicator) => match fight_scene_indicator {
-            FightSceneIndicator::LeftRightWall | FightSceneIndicator::RightRightWall => true,
-            _ => false,
-        },
+        SceneBuildingIndicator::Base(base_scene_indicator) => {
+            matches!(base_scene_indicator, BaseSceneIndicator::RightWall)
+        }
+        SceneBuildingIndicator::Fight(fight_scene_indicator) => matches!(
+            fight_scene_indicator,
+            FightSceneIndicator::LeftRightWall | FightSceneIndicator::RightRightWall
+        ),
         SceneBuildingIndicator::Camp(_camp_scene_indicator) => false,
     }
 }
@@ -423,6 +422,6 @@ fn building_texture(building_type: &Building, status: BuildStatus) -> &str {
             Building::Tower => "sprites/buildings/archer_house.png",
             Building::GoldFarm => "sprites/buildings/warrior_house.png",
         },
-        BuildStatus::Destroyed => todo!(),
+        BuildStatus::Destroyed => "",
     }
 }

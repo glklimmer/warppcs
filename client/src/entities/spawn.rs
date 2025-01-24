@@ -101,7 +101,6 @@ fn spawn_player(
             id,
             translation,
             entity: server_player_entity,
-            skin,
         } = spawn;
 
         let mut client_player_entity = commands.spawn(SpriteAnimationBundle::new(

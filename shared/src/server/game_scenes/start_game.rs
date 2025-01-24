@@ -16,8 +16,8 @@ use crate::{
         GameScene, GameSceneId, GameSceneType, Layers,
     },
     networking::{
-        Faction, Inventory, Owner, PlayerCommand, PlayerInput, PlayerSkin, ServerChannel,
-        ServerMessages, SpawnPlayer, UnitType,
+        Faction, Inventory, Owner, PlayerCommand, PlayerInput, ServerChannel, ServerMessages,
+        SpawnPlayer, UnitType,
     },
     server::{
         ai::{
@@ -181,7 +181,6 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     commands.entity(*left_player_entity).insert((
         left_transform,
         GameSceneId(1),
-        PlayerSkin::Warrior,
         inventory.clone(),
         Owner {
             faction: Faction::Player {
@@ -198,7 +197,6 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     commands.entity(*right_player_entity).insert((
         right_transform,
         GameSceneId(1),
-        PlayerSkin::Monster,
         inventory.clone(),
         Owner {
             faction: Faction::Player {
@@ -216,13 +214,11 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
             id: *left_client_id,
             entity: *left_player_entity,
             translation: left_transform.translation.into(),
-            skin: PlayerSkin::Warrior,
         },
         SpawnPlayer {
             id: *right_client_id,
             entity: *right_player_entity,
             translation: right_transform.translation.into(),
-            skin: PlayerSkin::Monster,
         },
     ];
 
@@ -245,11 +241,10 @@ fn duel_map(
     server: &mut ResMut<RenetServer>,
 ) {
     for (client_id, player_entity) in lobby.players.iter() {
-        let (game_scene_id, skin, color, left_destination, right_destination) =
+        let (game_scene_id, skin, left_destination, right_destination) =
             if game_world.game_scenes.is_empty() {
                 (
                     GameSceneId(1),
-                    PlayerSkin::Warrior,
                     BLUE,
                     GameSceneDestination {
                         scene: GameSceneId(3),
@@ -263,7 +258,6 @@ fn duel_map(
             } else {
                 (
                     GameSceneId(2),
-                    PlayerSkin::Monster,
                     RED,
                     GameSceneDestination {
                         scene: GameSceneId(4),
@@ -347,7 +341,7 @@ fn duel_map(
             SceneBuildingIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
         ));
 
-        let game_scene_type = GameSceneType::Base(Color::from(color));
+        let game_scene_type = GameSceneType::Base;
         let game_scene = GameScene {
             id: game_scene_id,
             game_scene_type,
@@ -364,7 +358,6 @@ fn duel_map(
             PlayerInput::default(),
             Velocity::default(),
             game_scene_id,
-            skin,
             inventory.clone(),
             Owner {
                 faction: Faction::Player {
@@ -379,7 +372,6 @@ fn duel_map(
                 id: *client_id,
                 entity: *player_entity,
                 translation: transform.translation.into(),
-                skin,
             }],
             units: Vec::new(),
             projectiles: Vec::new(),
