@@ -103,7 +103,7 @@ pub struct DropFlag {
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct PickFlag {
-    pub entity: Entity,
+    pub flag: Entity,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]

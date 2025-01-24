@@ -177,7 +177,7 @@ fn pick_flag(
             .entity(*player_entity)
             .insert(FlagHolder(event.flag));
 
-        let message = ServerMessages::PickFlag(PickFlag { entity: event.flag });
+        let message = ServerMessages::PickFlag(PickFlag { flag: event.flag });
         let message = bincode::serialize(&message).unwrap();
         server.send_message(event.client, ServerChannel::ServerMessages, message);
     }
