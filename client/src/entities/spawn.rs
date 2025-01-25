@@ -223,7 +223,7 @@ fn spawn_flag(
     let client_id = client_id.0;
     for spawn in spawn_flag.read() {
         let SpawnFlag {
-            entity: server_flag_entity,
+            flag: server_flag_entity,
         } = spawn;
 
         let client_flag_entity = commands
