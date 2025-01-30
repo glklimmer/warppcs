@@ -2,12 +2,12 @@ use bevy::prelude::*;
 
 use crate::{
     map::{buildings::Building, GameSceneId},
-    networking::{MultiplayerRoles, Owner, PlayerInput},
+    networking::{Owner, PlayerInput},
     server::{
         ai::{attack::unit_speed, UnitBehaviour},
         entities::{health::Health, Unit},
     },
-    BoxCollider, GameState, GRAVITY_G,
+    BoxCollider, GRAVITY_G,
 };
 use bevy::math::bounding::IntersectsVolume;
 
@@ -29,8 +29,7 @@ impl Plugin for MovementPlugin {
                 determine_unit_velocity,
                 apply_gravity,
                 move_players_system,
-            )
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
+            ),
         );
     }
 }

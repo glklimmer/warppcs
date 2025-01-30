@@ -6,7 +6,7 @@ use bevy_renet::{
     renet::{ClientId, RenetClient},
 };
 use shared::{
-    networking::{Checkbox, ClientChannel, MultiplayerRoles, PlayerCommand, ServerMessages},
+    networking::{Checkbox, ClientChannel, PlayerCommand, ServerMessages},
     GameState,
 };
 
@@ -231,7 +231,6 @@ fn button_system(
 fn change_state_on_button_steam(
     mut button_query: Query<(&Interaction, &Buttons), Changed<Interaction>>,
     mut next_state: ResMut<NextState<MainMenuStates>>,
-    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
     mut player_commands: EventWriter<PlayerCommand>,
     mut join_lobby_request: EventWriter<JoinSteamLobby>,
     lobby_code: Query<&TextInputValue>,
@@ -245,7 +244,9 @@ fn change_state_on_button_steam(
                 Buttons::Multiplayer => {
                     next_state.set(MainMenuStates::Multiplayer);
                 }
-                Buttons::CreateLobby => multiplayer_roles.set(MultiplayerRoles::Host),
+                Buttons::CreateLobby => {
+                    join_lobby_request.send(JoinSteamLobby(steam_client.user().steam_id()));
+                }
                 Buttons::JoinLobby => next_state.set(MainMenuStates::JoinScreen),
                 Buttons::StartGame => {
                     player_commands.send(PlayerCommand::StartGame);
@@ -256,7 +257,6 @@ fn change_state_on_button_steam(
                 Buttons::Join => match lobby_code.single().0.parse::<u64>() {
                     Ok(value) => {
                         join_lobby_request.send(JoinSteamLobby(SteamId::from_raw(value)));
-                        multiplayer_roles.set(MultiplayerRoles::Client);
                     }
                     Err(_) => {
                         println!("Invalid SteamID u64 value.")
@@ -771,11 +771,7 @@ fn lobby_slot_checkbox(
     }
 }
 
-fn disconnect_client(
-    mut menu_state: ResMut<NextState<MainMenuStates>>,
-    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
-) {
+fn disconnect_client(mut menu_state: ResMut<NextState<MainMenuStates>>) {
     println!("Disconnecting");
     menu_state.set(MainMenuStates::Multiplayer);
-    multiplayer_roles.set(MultiplayerRoles::NotInGame);
 }

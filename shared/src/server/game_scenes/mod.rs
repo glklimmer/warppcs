@@ -8,10 +8,10 @@ use crate::{
         GameSceneId,
     },
     networking::{
-        Faction, LoadBuilding, MultiplayerRoles, Owner, ProjectileType, ServerChannel,
-        ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        Faction, LoadBuilding, Owner, ProjectileType, ServerChannel, ServerMessages, SpawnFlag,
+        SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
-    BoxCollider, GameState,
+    BoxCollider,
 };
 use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;
@@ -46,12 +46,7 @@ impl Plugin for GameScenesPlugin {
 
         app.add_event::<TravelEvent>();
 
-        app.add_systems(
-            FixedUpdate,
-            (check_travel, travel)
-                .chain()
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
-        );
+        app.add_systems(FixedUpdate, (check_travel, travel).chain());
     }
 }
 

@@ -12,14 +12,6 @@ use crate::menu::{JoinSteamLobby, MainMenuStates};
 use shared::steamworks::SteamworksClient;
 
 #[cfg(feature = "steam")]
-pub fn join_own_steam_server(
-    mut join_lobby: EventWriter<JoinSteamLobby>,
-    steam_client: Res<SteamworksClient>,
-) {
-    join_lobby.send(JoinSteamLobby(steam_client.user().steam_id()));
-}
-
-#[cfg(feature = "steam")]
 pub fn join_steam_server(
     mut commands: Commands,
     steam_client: Res<SteamworksClient>,

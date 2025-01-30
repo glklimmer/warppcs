@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_parallax::CameraFollow;
 
 use crate::{
     animations::{
@@ -43,14 +44,18 @@ impl Plugin for SpawnPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                spawn,
+                spawn.run_if(on_event::<NetworkEvent>),
                 (
-                    (spawn_player, spawn_flag).chain(),
-                    spawn_unit,
-                    spawn_projectile,
+                    (
+                        spawn_player.run_if(on_event::<SpawnPlayer>),
+                        spawn_flag.run_if(on_event::<SpawnFlag>),
+                    )
+                        .chain(),
+                    spawn_unit.run_if(on_event::<SpawnUnit>),
+                    spawn_projectile.run_if(on_event::<SpawnProjectile>),
                 ),
             )
-                .run_if(on_event::<NetworkEvent>)
+                .chain()
                 .in_set(Connected),
         );
 
@@ -107,6 +112,7 @@ fn spawn_player(
     mut network_mapping: ResMut<NetworkMapping>,
     client_id: Res<CurrentClientId>,
     king_sprite_sheet: Res<KingSpriteSheet>,
+    camera: Query<Entity, With<Camera>>,
 ) {
     let client_id = client_id.0;
     for spawn in spawn_player.read() {
@@ -116,26 +122,33 @@ fn spawn_player(
             entity: server_player_entity,
         } = spawn;
 
-        let mut client_player_entity = commands.spawn(SpriteAnimationBundle::new(
-            translation,
-            &king_sprite_sheet.sprite_sheet,
-            KingAnimation::Idle,
-            3.,
+        let mut client_player_entity = commands.spawn((
+            SpriteAnimationBundle::new(
+                translation,
+                &king_sprite_sheet.sprite_sheet,
+                KingAnimation::Idle,
+                3.,
+            ),
+            PartOfScene,
         ));
+        let player_entity = client_player_entity.id();
 
         if client_id.eq(id) {
             client_player_entity.insert(ControlledPlayer);
+            commands
+                .entity(camera.single())
+                .insert(CameraFollow::fixed(player_entity));
         }
 
         let player_info = PlayerEntityMapping {
             server_entity: *server_player_entity,
-            client_entity: client_player_entity.id(),
+            client_entity: player_entity,
         };
 
         lobby.players.insert(*id, player_info);
         network_mapping
             .0
-            .insert(*server_player_entity, client_player_entity.id());
+            .insert(*server_player_entity, player_entity);
     }
 }
 
@@ -261,7 +274,7 @@ fn pick_flag(
         let client_id = client_id.0;
 
         let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
-        let client_flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
+        let client_flag_entity = network_mapping.0.get(server_flag_entity).unwrap();
 
         commands
             .entity(*client_flag_entity)
@@ -285,7 +298,7 @@ fn drop_flag(
             flag: server_flag_entity,
             translation,
         } = drop;
-        let client_flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
+        let client_flag_entity = network_mapping.0.get(server_flag_entity).unwrap();
 
         commands
             .entity(*client_flag_entity)
