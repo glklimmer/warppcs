@@ -122,11 +122,14 @@ fn spawn_player(
             entity: server_player_entity,
         } = spawn;
 
-        let mut client_player_entity = commands.spawn(SpriteAnimationBundle::new(
-            translation,
-            &king_sprite_sheet.sprite_sheet,
-            KingAnimation::Idle,
-            3.,
+        let mut client_player_entity = commands.spawn((
+            SpriteAnimationBundle::new(
+                translation,
+                &king_sprite_sheet.sprite_sheet,
+                KingAnimation::Idle,
+                3.,
+            ),
+            PartOfScene,
         ));
         let player_entity = client_player_entity.id();
 
@@ -271,7 +274,7 @@ fn pick_flag(
         let client_id = client_id.0;
 
         let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
-        let client_flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
+        let client_flag_entity = network_mapping.0.get(server_flag_entity).unwrap();
 
         commands
             .entity(*client_flag_entity)
@@ -294,7 +297,7 @@ fn drop_flag(
             entity: server_flag_entity,
             translation,
         } = drop;
-        let client_flag_entity = network_mapping.0.get(&server_flag_entity).unwrap();
+        let client_flag_entity = network_mapping.0.get(server_flag_entity).unwrap();
 
         commands
             .entity(*client_flag_entity)
