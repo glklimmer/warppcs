@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 
-use bevy::color::palettes::css::{BLUE, RED};
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
@@ -237,11 +236,10 @@ fn duel_map(
     server: &mut ResMut<RenetServer>,
 ) {
     for (client_id, player_entity) in lobby.players.iter() {
-        let (game_scene_id, skin, left_destination, right_destination) =
+        let (game_scene_id, left_destination, right_destination) =
             if game_world.game_scenes.is_empty() {
                 (
                     GameSceneId(1),
-                    BLUE,
                     GameSceneDestination {
                         scene: GameSceneId(3),
                         position: Vec3::new(-600., 50., Layers::Player.as_f32()),
@@ -254,7 +252,6 @@ fn duel_map(
             } else {
                 (
                     GameSceneId(2),
-                    RED,
                     GameSceneDestination {
                         scene: GameSceneId(4),
                         position: Vec3::new(-600., 50., Layers::Player.as_f32()),
@@ -265,7 +262,7 @@ fn duel_map(
                     },
                 )
             };
-        println!("world: {:?}, skin: {:?}", game_scene_id, skin);
+        println!("world: {:?} ", game_scene_id);
 
         // Create Game Scene
         let base = BaseScene::new();
