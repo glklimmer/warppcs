@@ -6,7 +6,7 @@ use bevy_renet::{
 
 use std::collections::BTreeMap;
 
-use crate::networking::{Checkbox, MultiplayerRoles, PlayerCommand, ServerChannel, ServerMessages};
+use crate::networking::{Checkbox, PlayerCommand, ServerChannel, ServerMessages};
 
 use super::networking::NetworkEvent;
 
@@ -109,7 +109,6 @@ fn remove_player(
     mut ready_players: ResMut<GameLobby>,
     mut player_left: EventReader<PlayerLeftLobby>,
     mut server: ResMut<RenetServer>,
-    mut multiplayer_roles: ResMut<NextState<MultiplayerRoles>>,
 ) {
     for client_id in player_left.read() {
         let host_player = ready_players.players.keys().next().copied().unwrap();
@@ -119,7 +118,6 @@ fn remove_player(
                     server.disconnect_all();
                     commands.remove_resource::<RenetServer>();
                     commands.remove_resource::<NetcodeServerTransport>();
-                    multiplayer_roles.set(MultiplayerRoles::NotInGame);
                 } else {
                     let message = ServerMessages::PlayerLeftLobby { id: client_id.0 };
 

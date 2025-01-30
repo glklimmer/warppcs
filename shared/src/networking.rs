@@ -16,13 +16,6 @@ use crate::{
 
 pub const PROTOCOL_ID: u64 = 7;
 
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MultiplayerRoles {
-    Host,
-    Client,
-    NotInGame,
-}
-
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
 pub struct PlayerInput {
     pub left: bool,

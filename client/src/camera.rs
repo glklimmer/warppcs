@@ -1,24 +1,20 @@
 use bevy::prelude::*;
 use bevy_parallax::{
-    CameraFollow, CreateParallaxEvent, LayerData, LayerRepeat, LayerSpeed, ParallaxCameraComponent,
+    CreateParallaxEvent, LayerData, LayerRepeat, LayerSpeed, ParallaxCameraComponent,
     RepeatStrategy,
 };
-use shared::networking::SpawnPlayer;
-
-use super::networking::ControlledPlayer;
 
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_camera);
-        app.add_systems(Update, camera_follow_player.run_if(on_event::<SpawnPlayer>));
     }
 }
 
 fn setup_camera(mut commands: Commands, mut create_parallax: EventWriter<CreateParallaxEvent>) {
     let camera = commands
-        .spawn(Camera2d::default())
+        .spawn(Camera2d)
         .insert(ParallaxCameraComponent::default())
         .id();
     let event = CreateParallaxEvent {
@@ -57,14 +53,4 @@ fn setup_camera(mut commands: Commands, mut create_parallax: EventWriter<CreateP
         camera,
     };
     create_parallax.send(event);
-}
-
-fn camera_follow_player(
-    mut commands: Commands,
-    camera: Query<Entity, With<Camera>>,
-    player_query: Query<Entity, With<ControlledPlayer>>,
-) {
-    commands
-        .entity(camera.single())
-        .insert(CameraFollow::fixed(player_query.single()));
 }

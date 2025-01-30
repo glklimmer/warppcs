@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_parallax::CameraFollow;
 
 use crate::{
     animations::{
@@ -43,14 +44,18 @@ impl Plugin for SpawnPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                spawn,
+                spawn.run_if(on_event::<NetworkEvent>),
                 (
-                    (spawn_player, spawn_flag).chain(),
-                    spawn_unit,
-                    spawn_projectile,
+                    (
+                        spawn_player.run_if(on_event::<SpawnPlayer>),
+                        spawn_flag.run_if(on_event::<SpawnFlag>),
+                    )
+                        .chain(),
+                    spawn_unit.run_if(on_event::<SpawnUnit>),
+                    spawn_projectile.run_if(on_event::<SpawnProjectile>),
                 ),
             )
-                .run_if(on_event::<NetworkEvent>)
+                .chain()
                 .in_set(Connected),
         );
 
@@ -107,6 +112,7 @@ fn spawn_player(
     mut network_mapping: ResMut<NetworkMapping>,
     client_id: Res<CurrentClientId>,
     king_sprite_sheet: Res<KingSpriteSheet>,
+    camera: Query<Entity, With<Camera>>,
 ) {
     let client_id = client_id.0;
     for spawn in spawn_player.read() {
@@ -122,20 +128,24 @@ fn spawn_player(
             KingAnimation::Idle,
             3.,
         ));
+        let player_entity = client_player_entity.id();
 
         if client_id.eq(id) {
             client_player_entity.insert(ControlledPlayer);
+            commands
+                .entity(camera.single())
+                .insert(CameraFollow::fixed(player_entity));
         }
 
         let player_info = PlayerEntityMapping {
             server_entity: *server_player_entity,
-            client_entity: client_player_entity.id(),
+            client_entity: player_entity,
         };
 
         lobby.players.insert(*id, player_info);
         network_mapping
             .0
-            .insert(*server_player_entity, client_player_entity.id());
+            .insert(*server_player_entity, player_entity);
     }
 }
 

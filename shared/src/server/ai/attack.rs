@@ -5,26 +5,20 @@ use bevy::prelude::*;
 use super::UnitBehaviour;
 use crate::{
     map::{GameSceneId, Layers},
-    networking::{
-        Facing, MultiplayerRoles, Owner, ProjectileType, ServerMessages, SpawnProjectile, UnitType,
-    },
+    networking::{Facing, Owner, ProjectileType, ServerMessages, SpawnProjectile, UnitType},
     server::{
         entities::{health::TakeDamage, Unit},
         networking::SendServerMessage,
         physics::movement::Velocity,
     },
-    GameState, GRAVITY_G,
+    GRAVITY_G,
 };
 
 pub struct AttackPlugin;
 
 impl Plugin for AttackPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            (process_attacks)
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
-        );
+        app.add_systems(FixedUpdate, process_attacks);
     }
 }
 
