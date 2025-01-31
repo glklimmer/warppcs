@@ -42,8 +42,8 @@ impl BaseScene {
             right_wall: BuildingBundle::wall(1050.),
             left_gold_farm: BuildingBundle::gold_farm(-800.),
             right_gold_farm: BuildingBundle::gold_farm(875.),
-            left_spawn_point: SpawnPointBundle::new(-1200.),
-            right_spawn_point: SpawnPointBundle::new(1200.),
+            left_spawn_point: SpawnPointBundle::new(-1800.),
+            right_spawn_point: SpawnPointBundle::new(1800.),
         }
     }
 }
