@@ -100,11 +100,11 @@ impl BuildingBundle {
                 level: MainBuildingLevels::Tent,
             },
             collider: BoxCollider {
-                dimension: Vec2::new(200., 100.),
-                offset: None,
+                dimension: Vec2::new(150., 110.),
+                offset: Some(Vec2::new(0., -20.)),
             },
             build_status: BuildStatus::Built,
-            transform: Transform::from_xyz(x, 90., Layers::Building.as_f32())
+            transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
                 .with_scale(BUILDUING_SCALE),
         }
     }
