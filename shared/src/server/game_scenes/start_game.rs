@@ -244,11 +244,11 @@ fn duel_map(
                     BLUE,
                     GameSceneDestination {
                         scene: GameSceneId(3),
-                        position: Vec3::new(-600., 50., Layers::Player.as_f32()),
+                        position: Vec3::new(-800., 50., Layers::Player.as_f32()),
                     },
                     GameSceneDestination {
                         scene: GameSceneId(4),
-                        position: Vec3::new(600., 50., Layers::Player.as_f32()),
+                        position: Vec3::new(800., 50., Layers::Player.as_f32()),
                     },
                 )
             } else {
@@ -257,11 +257,11 @@ fn duel_map(
                     RED,
                     GameSceneDestination {
                         scene: GameSceneId(4),
-                        position: Vec3::new(-600., 50., Layers::Player.as_f32()),
+                        position: Vec3::new(-800., 50., Layers::Player.as_f32()),
                     },
                     GameSceneDestination {
                         scene: GameSceneId(3),
-                        position: Vec3::new(600., 50., Layers::Player.as_f32()),
+                        position: Vec3::new(800., 50., Layers::Player.as_f32()),
                     },
                 )
             };
@@ -401,7 +401,7 @@ fn duel_map(
             server_components,
             GameSceneDestination {
                 scene: GameSceneId((i + 1) % 2 + 1),
-                position: Vec3::new(-1300., 50., Layers::Chest.as_f32()),
+                position: Vec3::new(-1800., 50., Layers::Chest.as_f32()),
             },
             SceneBuildingIndicator::Camp(CampSceneIndicator::LeftSpawn),
         ));
@@ -410,7 +410,7 @@ fn duel_map(
             server_components,
             GameSceneDestination {
                 scene: GameSceneId(i % 2 + 1),
-                position: Vec3::new(1300., 50., Layers::Chest.as_f32()),
+                position: Vec3::new(1800., 50., Layers::Chest.as_f32()),
             },
             SceneBuildingIndicator::Camp(CampSceneIndicator::RightSpawn),
         ));

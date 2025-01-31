@@ -21,8 +21,8 @@ impl CampScene {
     pub fn new() -> Self {
         Self {
             chest: ChestBundle::new(0.),
-            left_spawn_point: SpawnPointBundle::new(-600.),
-            right_spawn_point: SpawnPointBundle::new(600.),
+            left_spawn_point: SpawnPointBundle::new(-800.),
+            right_spawn_point: SpawnPointBundle::new(800.),
         }
     }
 }
