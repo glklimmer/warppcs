@@ -16,7 +16,7 @@ use shared::{
         BuildingUpdate, LoadBuilding, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile,
         SpawnUnit, UpdateType,
     },
-    server::buildings::building_collider,
+    server::buildings::{building_collider, construction_cost},
     GameState,
 };
 
@@ -334,16 +334,32 @@ fn spawn_building(
             upgrade: building_bundle.building,
         },
     };
-    commands.spawn((
-        building_bundle,
-        indicator,
-        Sprite {
-            image: asset_server.load::<Image>(building_texture(&load.upgrade, load.status)),
-            flip_x: building_flipped(&indicator),
-            ..default()
-        },
-        PartOfScene,
-    ));
+    commands
+        .spawn((
+            building_bundle,
+            indicator,
+            Sprite {
+                image: asset_server.load::<Image>(building_texture(&load.upgrade, load.status)),
+                flip_x: building_flipped(&indicator),
+                ..default()
+            },
+            PartOfScene,
+        ))
+        .with_children(|parent| {
+            if let BuildStatus::Marker = load.status {
+                let font_handle = asset_server.load("fonts/yoster.ttf");
+                parent.spawn((
+                    Text::new(construction_cost(&load.upgrade).gold.to_string()),
+                    TextFont {
+                        font: font_handle.clone(),
+                        font_size: 16.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                    Transform::from_xyz(0.0, 20.0, 1.0),
+                ));
+            }
+        });
 }
 
 fn update_building(
@@ -401,7 +417,7 @@ fn building_texture(building_type: &Building, status: BuildStatus) -> &str {
             Building::Archer => "sprites/buildings/archer_plot.png",
             Building::Warrior => "sprites/buildings/warrior_plot.png",
             Building::Pikeman => "sprites/buildings/pike_man_plot.png",
-            Building::Wall { level: _ } => "sprites/buildings/wall_plot.png",
+            Building::Wall { level: _ } => "sprites/buildings/sign.png",
             Building::Tower => "",
             Building::GoldFarm => "sprites/buildings/warrior_plot.png",
         },
