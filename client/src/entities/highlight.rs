@@ -1,10 +1,28 @@
-use bevy::{asset::RenderAssetUsages, math::bounding::IntersectsVolume, prelude::*};
+use bevy::{
+    asset::RenderAssetUsages,
+    ecs::{component::ComponentId, world::DeferredWorld},
+    math::bounding::IntersectsVolume,
+    prelude::*,
+};
 use image::{GenericImage, GenericImageView, Rgba};
 use shared::{BoxCollider, GameState};
 
 use crate::networking::ControlledPlayer;
 
+fn on_remove_highlighted(mut world: DeferredWorld, entity: Entity, id: ComponentId) {
+    let mut entity_mut = world.entity_mut(entity);
+    let value = entity_mut
+        .get::<Highlighted>()
+        .unwrap()
+        .original_handle
+        .clone();
+
+    let mut sprite = entity_mut.get_mut::<Sprite>().unwrap();
+    sprite.image = value
+}
+
 #[derive(Component)]
+#[component(on_remove = on_remove_highlighted)]
 pub struct Highlighted {
     original_handle: Handle<Image>,
 }
@@ -71,7 +89,7 @@ fn check_highlight(
             Entity,
             &Transform,
             &BoxCollider,
-            &mut Sprite,
+            &Sprite,
             Option<&mut Highlighted>,
         ),
         With<Highlightable>,
@@ -81,15 +99,13 @@ fn check_highlight(
     let (player_transform, player_collider) = player.get_single().unwrap();
     let player_bounds = player_collider.at(player_transform);
 
-    for (entity, transform, box_collider, mut sprite, highlighted) in outline.iter_mut() {
+    for (entity, transform, box_collider, sprite, highlighted) in outline.iter_mut() {
         let bounds = box_collider.at(transform);
         let intersected = bounds.intersects(&player_bounds);
         match highlighted {
-            Some(highlighted) => {
+            Some(_) => {
                 if !intersected {
-                    let original_handle = highlighted.original_handle.clone();
                     commands.entity(entity).remove::<Highlighted>();
-                    sprite.image = original_handle;
                 }
             }
             None => {

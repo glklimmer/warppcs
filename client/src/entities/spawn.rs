@@ -22,7 +22,10 @@ use shared::{
     projectile_collider, BoxCollider,
 };
 
-use super::{highlight::Highlightable, PartOfScene};
+use super::{
+    highlight::{Highlightable, Highlighted},
+    PartOfScene,
+};
 
 pub struct SpawnPlugin;
 
@@ -283,7 +286,7 @@ fn pick_flag(
                 scale: Vec3::splat(0.2),
                 ..default()
             })
-            .remove::<Highlightable>()
+            .remove::<Highlighted>()
             .set_parent(player_entity);
     }
 }
@@ -303,9 +306,6 @@ fn drop_flag(
         commands
             .entity(*client_flag_entity)
             .remove_parent()
-            .insert((
-                Transform::from_translation(*translation),
-                Highlightable::default(),
-            ));
+            .insert((Transform::from_translation(*translation),));
     }
 }
