@@ -1,3 +1,4 @@
+use animals::horse::{HorseAnimation, HorseSpriteSheet};
 use bevy::prelude::*;
 
 use king::{next_king_animation, set_king_sprite_animation, KingAnimation, KingSpriteSheet};
@@ -14,6 +15,7 @@ use shared::{
 };
 use units::{next_unit_animation, set_unit_sprite_animation, UnitAnimation, UnitSpriteSheets};
 
+pub mod animals;
 pub mod king;
 pub mod objects;
 pub mod units;
@@ -129,6 +131,9 @@ impl Plugin for AnimationPlugin {
         app.add_event::<AnimationTrigger<FlagAnimation>>();
 
         app.init_resource::<ChestSpriteSheet>();
+
+        app.init_resource::<HorseSpriteSheet>();
+        app.add_event::<AnimationTrigger<HorseAnimation>>();
 
         app.add_event::<EntityChangeEvent>();
 

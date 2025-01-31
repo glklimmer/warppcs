@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
+use crate::server::entities::Mount;
 use crate::{
     map::{
         buildings::RecruitmentBuilding,
@@ -15,8 +16,8 @@ use crate::{
         GameScene, GameSceneId, GameSceneType, Layers,
     },
     networking::{
-        Faction, Inventory, Owner, PlayerCommand, PlayerInput, ServerChannel, ServerMessages,
-        SpawnPlayer, UnitType,
+        Faction, Inventory, MountType, Owner, PlayerCommand, PlayerInput, ServerChannel,
+        ServerMessages, SpawnPlayer, UnitType,
     },
     server::{
         ai::{
@@ -221,6 +222,7 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
         game_scene_type: GameSceneType::Fight,
         players,
         units: Vec::new(),
+        mounts: Vec::new(),
         projectiles: Vec::new(),
         buildings: Vec::new(),
         flag: None,
@@ -368,6 +370,7 @@ fn duel_map(
             }],
             units: Vec::new(),
             projectiles: Vec::new(),
+            mounts: Vec::new(),
             buildings: Vec::new(),
             flag: None,
         };
@@ -410,6 +413,13 @@ fn duel_map(
                 position: Vec3::new(1800., 50., Layers::Chest.as_f32()),
             },
             SceneBuildingIndicator::Camp(CampSceneIndicator::RightSpawn),
+        ));
+        commands.spawn((
+            Transform::from_xyz(1400., 45., Layers::Unit.as_f32()),
+            Mount {
+                mount_type: MountType::Horse,
+            },
+            game_scene_id,
         ));
 
         let flag_entity = commands

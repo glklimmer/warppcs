@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::{
+    horse_collider,
     map::{
         buildings::{BuildStatus, Building},
         scenes::SceneBuildingIndicator,
@@ -28,6 +29,12 @@ pub enum UnitType {
     Pikeman,
     Archer,
     Bandit,
+}
+
+#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
+#[require(BoxCollider(horse_collider))]
+pub enum MountType {
+    Horse,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event)]
@@ -108,6 +115,13 @@ pub struct SpawnUnit {
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct SpawnMount {
+    pub entity: Entity,
+    pub mount_type: MountType,
+    pub translation: [f32; 3],
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnProjectile {
     pub entity: Entity,
     pub projectile_type: ProjectileType,
@@ -158,6 +172,7 @@ pub enum ServerMessages {
     DropFlag(DropFlag),
     PickFlag(PickFlag),
     SpawnUnit(SpawnUnit),
+    SpawnMount(SpawnMount),
     SpawnProjectile(SpawnProjectile),
     PlayerDisconnected {
         id: ClientId,
@@ -170,6 +185,7 @@ pub enum ServerMessages {
         players: Vec<SpawnPlayer>,
         flag: Option<SpawnFlag>,
         units: Vec<SpawnUnit>,
+        mounts: Vec<SpawnMount>,
         projectiles: Vec<SpawnProjectile>,
         buildings: Vec<LoadBuilding>,
     },

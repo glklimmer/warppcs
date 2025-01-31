@@ -9,7 +9,7 @@ use crate::{
     },
     networking::{
         Faction, LoadBuilding, Owner, ProjectileType, ServerChannel, ServerMessages, SpawnFlag,
-        SpawnPlayer, SpawnProjectile, SpawnUnit,
+        SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     BoxCollider,
 };
@@ -18,7 +18,7 @@ use bevy_renet::renet::RenetServer;
 
 use super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
-    entities::Unit,
+    entities::{Mount, Unit},
     networking::{GameWorld, ServerLobby, ServerPlayer},
     physics::movement::Velocity,
     players::InteractEvent,
@@ -97,6 +97,7 @@ fn travel(
     game_world: Res<GameWorld>,
     scene_ids: Query<&GameSceneId>,
     units: Query<(&GameSceneId, &Owner, Entity, &Unit, &Transform)>,
+    mounts: Query<(&GameSceneId, Entity, &Mount, &Transform)>,
     projectiles: Query<(&GameSceneId, Entity, &ProjectileType, &Transform, &Velocity)>,
     buildings: Query<(
         &GameSceneId,
@@ -221,6 +222,16 @@ fn travel(
                 });
             }
         }
+        let mounts: Vec<SpawnMount> = mounts
+            .iter()
+            .filter(|(scene, ..)| target_game_scene_id.eq(*scene))
+            .map(|(_, entity, mount, translation)| SpawnMount {
+                entity,
+                mount_type: mount.mount_type,
+                translation: translation.translation.into(),
+            })
+            .collect();
+
         let projectiles = projectiles
             .iter()
             .filter(|(scene, ..)| target_game_scene_id.eq(*scene))
@@ -249,6 +260,7 @@ fn travel(
             players,
             flag,
             units,
+            mounts,
             projectiles,
             buildings,
         };

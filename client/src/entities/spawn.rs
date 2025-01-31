@@ -3,6 +3,7 @@ use bevy_parallax::CameraFollow;
 
 use crate::{
     animations::{
+        animals::horse::{HorseAnimation, HorseSpriteSheet},
         king::{KingAnimation, KingSpriteSheet},
         objects::flag::{Flag, FlagAnimation, FlagSpriteSheet},
         units::{Unit, UnitAnimation, UnitSpriteSheets},
@@ -16,7 +17,7 @@ use crate::{
 use shared::{
     map::Layers,
     networking::{
-        DropFlag, PickFlag, ProjectileType, ServerMessages, SpawnFlag, SpawnPlayer,
+        DropFlag, PickFlag, ProjectileType, ServerMessages, SpawnFlag, SpawnMount, SpawnPlayer,
         SpawnProjectile, SpawnUnit,
     },
     projectile_collider, BoxCollider,
@@ -36,6 +37,7 @@ impl Plugin for SpawnPlugin {
 
         app.add_event::<SpawnPlayer>();
         app.add_event::<SpawnUnit>();
+        app.add_event::<SpawnMount>();
         app.add_event::<SpawnProjectile>();
         app.add_event::<SpawnFlag>();
         app.add_event::<DropFlag>();
@@ -52,6 +54,7 @@ impl Plugin for SpawnPlugin {
                     )
                         .chain(),
                     spawn_unit.run_if(on_event::<SpawnUnit>),
+                    spawn_mount.run_if(on_event::<SpawnMount>),
                     spawn_projectile.run_if(on_event::<SpawnProjectile>),
                 ),
             )
@@ -64,10 +67,12 @@ impl Plugin for SpawnPlugin {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn spawn(
     mut network_events: EventReader<NetworkEvent>,
     mut spawn_player: EventWriter<SpawnPlayer>,
     mut spawn_unit: EventWriter<SpawnUnit>,
+    mut spawn_mount: EventWriter<SpawnMount>,
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut spawn_flag: EventWriter<SpawnFlag>,
     mut pick_flag: EventWriter<PickFlag>,
@@ -80,6 +85,9 @@ fn spawn(
             }
             ServerMessages::SpawnUnit(spawn) => {
                 spawn_unit.send(spawn.clone());
+            }
+            ServerMessages::SpawnMount(spawn) => {
+                spawn_mount.send(spawn.clone());
             }
             ServerMessages::SpawnProjectile(spawn) => {
                 spawn_projectile.send(spawn.clone());
@@ -174,6 +182,38 @@ fn spawn_unit(
                 SpriteAnimationBundle::new(translation, sprite_sheet, UnitAnimation::Idle, 3.),
                 *unit_type,
                 *owner,
+            ))
+            .id();
+
+        network_mapping
+            .0
+            .insert(*server_unit_entity, client_unit_entity);
+    }
+}
+
+fn spawn_mount(
+    mut commands: Commands,
+    mut spawn_unit: EventReader<SpawnMount>,
+    mut network_mapping: ResMut<NetworkMapping>,
+    sprite_sheet: Res<HorseSpriteSheet>,
+) {
+    for spawn in spawn_unit.read() {
+        let SpawnMount {
+            entity: server_unit_entity,
+            mount_type,
+            translation,
+        } = spawn;
+
+        let client_unit_entity = commands
+            .spawn((
+                Unit,
+                SpriteAnimationBundle::new(
+                    translation,
+                    &sprite_sheet.sprite_sheet,
+                    HorseAnimation::Idle,
+                    3.,
+                ),
+                *mount_type,
             ))
             .id();
 

@@ -15,6 +15,9 @@ pub enum KingAnimation {
     Attack,
     Hit,
     Death,
+    Mount,
+    HorseIdle,
+    HorseWalk,
 }
 
 #[derive(Resource)]
@@ -31,7 +34,7 @@ impl FromWorld for KingSpriteSheet {
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::splat(32),
             10,
-            7,
+            10,
             None,
             None,
         ));
@@ -65,6 +68,21 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Death => SpriteSheetAnimation {
                 first_sprite_index: 60,
                 last_sprite_index: 65,
+                ..default()
+            },
+            KingAnimation::Mount => SpriteSheetAnimation {
+                first_sprite_index: 70,
+                last_sprite_index: 76,
+                ..default()
+            },
+            KingAnimation::HorseIdle => SpriteSheetAnimation {
+                first_sprite_index: 80,
+                last_sprite_index: 88,
+                ..default()
+            },
+            KingAnimation::HorseWalk => SpriteSheetAnimation {
+                first_sprite_index: 90,
+                last_sprite_index: 95,
                 ..default()
             },
         });
@@ -129,6 +147,9 @@ fn is_interupt_animation(animation: &KingAnimation) -> bool {
         KingAnimation::Attack => true,
         KingAnimation::Hit => false,
         KingAnimation::Death => true,
+        KingAnimation::Mount => true,
+        KingAnimation::HorseIdle => false,
+        KingAnimation::HorseWalk => false,
     }
 }
 
@@ -140,6 +161,9 @@ fn is_full_animation(animation: &KingAnimation) -> bool {
         KingAnimation::Attack => true,
         KingAnimation::Hit => false,
         KingAnimation::Death => true,
+        KingAnimation::Mount => true,
+        KingAnimation::HorseIdle => false,
+        KingAnimation::HorseWalk => false,
     }
 }
 

@@ -148,11 +148,11 @@ fn receive_client_messages(
 
 fn sync_networked_entities(
     mut server: ResMut<RenetServer>,
-    unit_query: Query<(Entity, &Transform, &Velocity), Without<ProjectileType>>,
+    entity_query: Query<(Entity, &Transform, &Velocity), Without<ProjectileType>>,
     projectile_query: Query<(Entity, &Transform, &Velocity), With<ProjectileType>>,
 ) {
     let mut networked_entities = NetworkedEntities::default();
-    for (entity, transform, velocity) in unit_query.iter() {
+    for (entity, transform, velocity) in entity_query.iter() {
         let movement = Rotation::LeftRight {
             facing: match velocity.0.x.total_cmp(&0.) {
                 std::cmp::Ordering::Less => Some(Facing::Left),
