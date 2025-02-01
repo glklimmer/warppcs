@@ -27,6 +27,7 @@ impl FromWorld for FlagSpriteSheet {
         let asset_server = world.resource::<AssetServer>();
         let texture: Handle<Image> = asset_server.load("sprites/objects/flag.png");
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
+
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::new(48, 64),
             8,

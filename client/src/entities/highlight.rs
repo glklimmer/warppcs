@@ -9,7 +9,7 @@ use shared::{BoxCollider, GameState};
 
 use crate::networking::ControlledPlayer;
 
-fn on_remove_highlighted(mut world: DeferredWorld, entity: Entity, id: ComponentId) {
+fn on_remove_highlighted(mut world: DeferredWorld, entity: Entity, _id: ComponentId) {
     let mut entity_mut = world.entity_mut(entity);
     let value = entity_mut
         .get::<Highlighted>()
@@ -57,8 +57,8 @@ fn highlight_entity(
 ) {
     for mut texture_handle in sprites.iter_mut() {
         if let Some(texture) = images.get_mut(texture_handle.image.id()) {
-            let width = texture.width() as u32;
-            let height = texture.height() as u32;
+            let width = texture.width();
+            let height = texture.height();
             let dynamic_image = texture.clone().try_into_dynamic().unwrap();
             let mut outlined_image = dynamic_image.clone();
             for (x, y, p) in dynamic_image.pixels() {
@@ -82,6 +82,7 @@ fn highlight_entity(
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn check_highlight(
     mut commands: Commands,
     mut outline: Query<

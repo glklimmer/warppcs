@@ -22,10 +22,7 @@ use shared::{
     projectile_collider, BoxCollider,
 };
 
-use super::{
-    highlight::{Highlightable, Highlighted},
-    PartOfScene,
-};
+use super::{highlight::Highlighted, PartOfScene};
 
 pub struct SpawnPlugin;
 
