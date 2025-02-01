@@ -85,12 +85,12 @@ pub struct SpawnPlayer {
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnFlag {
-    pub entity: Entity,
+    pub flag: Entity,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct DropFlag {
-    pub entity: Entity,
+    pub flag: Entity,
     pub translation: Vec3,
 }
 

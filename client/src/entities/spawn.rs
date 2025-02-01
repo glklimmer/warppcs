@@ -22,7 +22,7 @@ use shared::{
     projectile_collider, BoxCollider,
 };
 
-use super::PartOfScene;
+use super::{highlight::Highlighted, PartOfScene};
 
 pub struct SpawnPlugin;
 
@@ -236,7 +236,7 @@ fn spawn_flag(
     let client_id = client_id.0;
     for spawn in spawn_flag.read() {
         let SpawnFlag {
-            entity: server_flag_entity,
+            flag: server_flag_entity,
         } = spawn;
 
         let client_flag_entity = commands
@@ -283,6 +283,7 @@ fn pick_flag(
                 scale: Vec3::splat(0.2),
                 ..default()
             })
+            .remove::<Highlighted>()
             .set_parent(player_entity);
     }
 }
@@ -294,7 +295,7 @@ fn drop_flag(
 ) {
     for drop in drop_flag.read() {
         let DropFlag {
-            entity: server_flag_entity,
+            flag: server_flag_entity,
             translation,
         } = drop;
         let client_flag_entity = network_mapping.0.get(server_flag_entity).unwrap();
@@ -302,6 +303,6 @@ fn drop_flag(
         commands
             .entity(*client_flag_entity)
             .remove_parent()
-            .insert(Transform::from_translation(*translation));
+            .insert((Transform::from_translation(*translation),));
     }
 }

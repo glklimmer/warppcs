@@ -198,7 +198,7 @@ fn travel(
             entity: player_entity,
             translation: target_transform.translation.into(),
         });
-        let flag = group.as_ref().map(|g| SpawnFlag { entity: g.flag });
+        let flag = group.as_ref().map(|g| SpawnFlag { flag: g.flag });
         let mut units: Vec<SpawnUnit> = units
             .iter()
             .filter(|(scene, ..)| target_game_scene_id.eq(*scene))

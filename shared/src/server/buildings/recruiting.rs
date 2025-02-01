@@ -81,7 +81,7 @@ pub fn recruit(
             .insert(FlagHolder(flag_entity));
 
         let message = ServerMessages::SpawnFlag(SpawnFlag {
-            entity: flag_entity,
+            flag: flag_entity,
         });
         let message = bincode::serialize(&message).unwrap();
         server.send_message(

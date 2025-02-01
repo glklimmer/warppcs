@@ -152,7 +152,7 @@ fn drop_flag(
             transform.translation.y = 0.;
 
             let message = ServerMessages::DropFlag(DropFlag {
-                entity: flag_entity,
+                flag: flag_entity,
                 translation: transform.translation,
             });
             let message = bincode::serialize(&message).unwrap();
