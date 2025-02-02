@@ -97,7 +97,9 @@ fn check_highlight(
     >,
     player: Query<(&Transform, &BoxCollider), With<ControlledPlayer>>,
 ) {
-    let (player_transform, player_collider) = player.get_single().unwrap();
+    let Ok((player_transform, player_collider)) = player.get_single() else {
+        return;
+    };
     let player_bounds = player_collider.at(player_transform);
 
     for (entity, transform, box_collider, sprite, highlighted) in outline.iter_mut() {
