@@ -252,7 +252,9 @@ fn spawn_flag(
             .id();
 
         let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
-        commands.entity(player_entity).add_child(client_flag_entity);
+        if let Some(mut player) = commands.get_entity(player_entity) {
+            player.add_child(client_flag_entity);
+        }
 
         network_mapping
             .0
