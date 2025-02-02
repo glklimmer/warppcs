@@ -108,10 +108,22 @@ fn move_players_system(
 const MOVE_EPSILON: f32 = 1.;
 
 fn determine_unit_velocity(
-    mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit, &PushBack)>,
+    mut query: Query<(
+        &mut Velocity,
+        &Transform,
+        &BoxCollider,
+        &UnitBehaviour,
+        &Unit,
+        &PushBack,
+        &Owner,
+        &GameSceneId,
+    )>,
     transform_query: Query<&Transform>,
+    buildings: Query<(&Transform, &BoxCollider, &GameSceneId, &Owner, &Building), With<Health>>,
 ) {
-    for (mut velocity, transform, behaviour, unit, push_back) in &mut query {
+    for (mut velocity, transform, collider, behaviour, unit, push_back, client_owner, unit_scene) in
+        &mut query
+    {
         match behaviour {
             UnitBehaviour::Idle => {}
             UnitBehaviour::AttackTarget(_) => {
@@ -123,13 +135,43 @@ fn determine_unit_velocity(
             UnitBehaviour::FollowFlag(flag, offset) => {
                 let target = transform_query.get(*flag).unwrap().translation.truncate();
                 let target = target + *offset;
+                let target_right = target.x > transform.translation.x;
 
-                if (transform.translation.x - target.x).abs() <= MOVE_EPSILON {
+                let future_position =
+                    transform.translation.truncate() * (if target_right { 1. } else { -1. });
+                let future_bounds = collider.at_pos(future_position);
+
+                let mut would_collide = false;
+                for (
+                    building_transform,
+                    building_collider,
+                    builing_scene,
+                    building_owner,
+                    building,
+                ) in buildings.iter()
+                {
+                    if unit_scene.ne(builing_scene) {
+                        continue;
+                    }
+
+                    if client_owner.eq(building_owner) {
+                        continue;
+                    }
+
+                    if let Building::Wall { level: _ } = building {
+                        let building_bounds = building_collider.at(building_transform);
+
+                        if building_bounds.intersects(&future_bounds) {
+                            would_collide = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (transform.translation.x - target.x).abs() <= MOVE_EPSILON || would_collide {
                     velocity.0.x = 0.;
                     continue;
                 }
-
-                let target_right = target.x > transform.translation.x;
 
                 match target_right {
                     true => velocity.0.x = unit_speed(&unit.unit_type),
