@@ -4,9 +4,6 @@ use serde::{Deserialize, Serialize};
 use super::Layers;
 use crate::{server::buildings::building_collider, BoxCollider};
 
-#[derive(Component, Copy, Clone)]
-pub struct RecruitmentBuilding;
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MainBuildingLevels {
     Tent,

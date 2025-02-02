@@ -17,8 +17,8 @@ use crate::{
 
 use super::{
     entities::health::Health,
-    networking::{SendServerMessage, ServerLobby},
-    players::InteractEvent,
+    networking::SendServerMessage,
+    players::interaction::{InteractionTriggeredEvent, InteractionType},
 };
 
 mod gold_farm;
@@ -50,7 +50,8 @@ impl Plugin for BuildingsPlugins {
         app.add_systems(
             FixedUpdate,
             (
-                (check_recruit, check_building_interaction).run_if(on_event::<InteractEvent>),
+                (check_recruit, check_building_interaction)
+                    .run_if(on_event::<InteractionTriggeredEvent>),
                 (
                     (construct_building, enable_goldfarm).run_if(on_event::<BuildingConstruction>),
                     (upgrade_building,).run_if(on_event::<BuildingUpgrade>),
@@ -161,7 +162,6 @@ pub fn construction_cost(building_type: &Building) -> Cost {
 
 #[allow(clippy::type_complexity)]
 fn check_building_interaction(
-    lobby: Res<ServerLobby>,
     player: Query<(&Transform, &BoxCollider, &GameSceneId, &Inventory)>,
     building: Query<(
         Entity,
@@ -174,14 +174,15 @@ fn check_building_interaction(
     )>,
     mut build: EventWriter<BuildingConstruction>,
     mut upgrade: EventWriter<BuildingUpgrade>,
-    mut interactions: EventReader<InteractEvent>,
+    mut interactions: EventReader<InteractionTriggeredEvent>,
 ) {
     for event in interactions.read() {
-        let client_id = event.0;
-        let player_entity = lobby.players.get(&client_id).unwrap();
+        let InteractionType::Building = &event.interaction else {
+            continue;
+        };
 
         let (player_transform, player_collider, player_scene, inventory) =
-            player.get(*player_entity).unwrap();
+            player.get(event.player).unwrap();
 
         let player_bounds = player_collider.at(player_transform);
 
@@ -206,7 +207,7 @@ fn check_building_interaction(
                     Faction::Player {
                         client_id: other_client_id,
                     } => {
-                        if other_client_id.ne(&client_id) {
+                        if other_client_id.ne(&event.client_id) {
                             continue;
                         }
                     }
@@ -214,8 +215,8 @@ fn check_building_interaction(
                 }
 
                 let info = CommonBuildingInfo {
-                    client_id,
-                    player_entity: *player_entity,
+                    client_id: event.client_id,
+                    player_entity: event.player,
                     scene_id: *player_scene,
                     entity,
                     building_type: *building,

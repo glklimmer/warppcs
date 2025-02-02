@@ -205,6 +205,9 @@ pub enum ServerMessages {
         entity: Entity,
     },
     PlayerDefeat(Owner),
+    Mount {
+        entity: Entity,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

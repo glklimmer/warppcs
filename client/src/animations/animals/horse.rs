@@ -55,7 +55,7 @@ impl FromWorld for HorseSpriteSheet {
     }
 }
 
-pub fn next_king_animation(
+pub fn next_horse_animation(
     mut query: Query<&mut HorseAnimation>,
     mut network_events: EventReader<EntityChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<HorseAnimation>>,

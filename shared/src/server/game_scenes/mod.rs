@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+
+use bevy_renet::renet::RenetServer;
 use start_game::StartGamePlugin;
 
 use crate::{
@@ -11,17 +13,15 @@ use crate::{
         Faction, LoadBuilding, Owner, ProjectileType, ServerChannel, ServerMessages, SpawnFlag,
         SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
-    BoxCollider,
+    server::players::interaction::InteractionType,
 };
-use bevy::math::bounding::IntersectsVolume;
-use bevy_renet::renet::RenetServer;
 
 use super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
     entities::{Mount, Unit},
-    networking::{GameWorld, ServerLobby, ServerPlayer},
+    networking::{GameWorld, ServerLobby},
     physics::movement::Velocity,
-    players::InteractEvent,
+    players::interaction::InteractionTriggeredEvent,
 };
 
 pub mod start_game;
@@ -32,54 +32,13 @@ pub struct GameSceneDestination {
     pub position: Vec3,
 }
 
-#[derive(Event)]
-pub struct TravelEvent {
-    pub entity: Entity,
-    pub target: GameSceneDestination,
-}
-
 pub struct GameScenesPlugin;
 
 impl Plugin for GameScenesPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(StartGamePlugin);
 
-        app.add_event::<TravelEvent>();
-
-        app.add_systems(FixedUpdate, (check_travel, travel).chain());
-    }
-}
-
-fn check_travel(
-    lobby: Res<ServerLobby>,
-    player: Query<(&Transform, &BoxCollider, &GameSceneId)>,
-    zones: Query<(
-        &Transform,
-        &BoxCollider,
-        &GameSceneDestination,
-        &GameSceneId,
-    )>,
-    mut travel: EventWriter<TravelEvent>,
-    mut interactions: EventReader<InteractEvent>,
-) {
-    for event in interactions.read() {
-        let client_id = event.0;
-        let player_entity = lobby.players.get(&client_id).unwrap();
-
-        let (player_transform, player_collider, player_scene) = player.get(*player_entity).unwrap();
-        for (zone_transform, zone_collider, destination, zone_scene) in zones.iter() {
-            if player_scene.ne(zone_scene) {
-                continue;
-            }
-            let player_bounds = player_collider.at(player_transform);
-            let zone_bounds = zone_collider.at(zone_transform);
-            if player_bounds.intersects(&zone_bounds) {
-                travel.send(TravelEvent {
-                    entity: *player_entity,
-                    target: destination.clone(),
-                });
-            }
-        }
+        app.add_systems(FixedUpdate, travel);
     }
 }
 
@@ -91,7 +50,7 @@ struct FlagGroup<'a> {
 #[allow(clippy::too_many_arguments)]
 fn travel(
     mut commands: Commands,
-    mut traveling: EventReader<TravelEvent>,
+    mut traveling: EventReader<InteractionTriggeredEvent>,
     mut server: ResMut<RenetServer>,
     lobby: Res<ServerLobby>,
     game_world: Res<GameWorld>,
@@ -106,15 +65,24 @@ fn travel(
         &Building,
     )>,
     transforms: Query<&Transform>,
-    server_players: Query<&ServerPlayer>,
     flag_holders: Query<&FlagHolder>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
+    destination: Query<&GameSceneDestination>,
 ) {
     for event in traveling.read() {
-        let player_entity = event.entity;
-        let target_game_scene_id = event.target.scene;
-        let target_position = event.target.position;
-        let client_id = server_players.get(player_entity).unwrap().0;
+        let InteractionType::Travel = &event.interaction else {
+            continue;
+        };
+
+        let player_entity = event.player;
+        let GameSceneDestination {
+            scene: target_game_scene_id,
+            position: target_position,
+        } = destination.get(event.interactable).unwrap();
+        println!(
+            "travel happening... destination: {:?}",
+            target_game_scene_id
+        );
         let group = match flag_holders.get(player_entity) {
             Ok(flag_holder) => Some(FlagGroup {
                 flag: flag_holder.0,
@@ -161,23 +129,23 @@ fn travel(
         }
 
         // Travel Player, flag and units to new game scene
-        let target_transform = Transform::from_translation(target_position);
+        let target_transform = Transform::from_translation(*target_position);
         commands
             .entity(player_entity)
-            .insert((target_game_scene_id, target_transform));
+            .insert((*target_game_scene_id, target_transform));
         if let Some(group) = &group {
             commands
                 .entity(group.flag)
-                .insert((target_game_scene_id, target_transform));
+                .insert((*target_game_scene_id, target_transform));
             for (unit, _, _) in &group.units {
                 commands
                     .entity(*unit)
-                    .insert((target_game_scene_id, target_transform));
+                    .insert((*target_game_scene_id, target_transform));
             }
         }
 
         // Tell client to load game scene
-        let game_scene = game_world.game_scenes.get(&target_game_scene_id).unwrap();
+        let game_scene = game_world.game_scenes.get(target_game_scene_id).unwrap();
         let mut players: Vec<SpawnPlayer> = lobby
             .players
             .iter()
@@ -195,7 +163,7 @@ fn travel(
             })
             .collect();
         players.push(SpawnPlayer {
-            id: client_id,
+            id: event.client_id,
             entity: player_entity,
             translation: target_transform.translation.into(),
         });
@@ -214,7 +182,9 @@ fn travel(
             for (unit, _, info) in &group.units {
                 units.push(SpawnUnit {
                     owner: Owner {
-                        faction: Faction::Player { client_id },
+                        faction: Faction::Player {
+                            client_id: event.client_id,
+                        },
                     },
                     entity: *unit,
                     translation: target_transform.translation.into(),
@@ -265,7 +235,7 @@ fn travel(
             buildings,
         };
         let message = bincode::serialize(&message).unwrap();
-        server.send_message(client_id, ServerChannel::ServerMessages, message);
+        server.send_message(event.client_id, ServerChannel::ServerMessages, message);
 
         // Tell other players in new scene that new player and units arrived
         let mut unit_spawns = Vec::new();
@@ -273,7 +243,9 @@ fn travel(
             for (unit, _, info) in &group.units {
                 unit_spawns.push(SpawnUnit {
                     owner: Owner {
-                        faction: Faction::Player { client_id },
+                        faction: Faction::Player {
+                            client_id: event.client_id,
+                        },
                     },
                     entity: *unit,
                     translation: target_transform.translation.into(),
@@ -284,7 +256,7 @@ fn travel(
 
         let message = ServerMessages::SpawnGroup {
             player: SpawnPlayer {
-                id: client_id,
+                id: event.client_id,
                 entity: player_entity,
                 translation: target_transform.translation.into(),
             },
