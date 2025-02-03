@@ -83,11 +83,17 @@ impl Default for Inventory {
     }
 }
 
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
+pub struct Mounted {
+    pub mount_type: MountType,
+}
+
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnPlayer {
     pub id: ClientId,
     pub entity: Entity,
     pub translation: [f32; 3],
+    pub mounted: Option<Mounted>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
@@ -207,6 +213,7 @@ pub enum ServerMessages {
     PlayerDefeat(Owner),
     Mount {
         entity: Entity,
+        mount_type: MountType,
     },
 }
 

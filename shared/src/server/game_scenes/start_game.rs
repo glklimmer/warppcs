@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
+use crate::map::buildings::RecruitBuilding;
 use crate::server::entities::Mount;
 use crate::server::physics::movement::Speed;
 use crate::server::players::interaction::{Interactable, InteractionType};
@@ -205,11 +206,13 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
             id: *left_client_id,
             entity: *left_player_entity,
             translation: left_transform.translation.into(),
+            mounted: None,
         },
         SpawnPlayer {
             id: *right_client_id,
             entity: *right_player_entity,
             translation: right_transform.translation.into(),
+            mounted: None,
         },
     ];
 
@@ -263,14 +266,12 @@ fn duel_map(
 
         // Create Game Scene
         let base = BaseScene::new();
-        let server_components = (
-            Owner {
-                faction: Faction::Player {
-                    client_id: *client_id,
-                },
+        let owner = Owner {
+            faction: Faction::Player {
+                client_id: *client_id,
             },
-            game_scene_id,
-        );
+        };
+        let server_components = (owner, game_scene_id);
         commands.spawn((
             base.main_building,
             server_components,
@@ -279,27 +280,50 @@ fn duel_map(
         commands.spawn((
             base.archer_building,
             server_components,
+            RecruitBuilding,
+            Interactable {
+                kind: InteractionType::Building,
+                restricted_to: Some(owner),
+            },
             SceneBuildingIndicator::Base(BaseSceneIndicator::ArcherBuilding),
         ));
         commands.spawn((
             base.warrior_building,
             server_components,
+            RecruitBuilding,
+            Interactable {
+                kind: InteractionType::Building,
+                restricted_to: Some(owner),
+            },
             SceneBuildingIndicator::Base(BaseSceneIndicator::WarriorBuilding),
         ));
         commands.spawn((
             base.pikeman_building,
             server_components,
+            RecruitBuilding,
+            Interactable {
+                kind: InteractionType::Building,
+                restricted_to: Some(owner),
+            },
             SceneBuildingIndicator::Base(BaseSceneIndicator::PikemanBuilding),
         ));
         commands.spawn((
             base.left_wall,
             server_components,
+            Interactable {
+                kind: InteractionType::Building,
+                restricted_to: Some(owner),
+            },
             SceneBuildingIndicator::Base(BaseSceneIndicator::LeftWall),
             building_health(&base.left_wall.building),
         ));
         commands.spawn((
             base.right_wall,
             server_components,
+            Interactable {
+                kind: InteractionType::Building,
+                restricted_to: Some(owner),
+            },
             SceneBuildingIndicator::Base(BaseSceneIndicator::RightWall),
             building_health(&base.right_wall.building),
         ));
@@ -307,11 +331,19 @@ fn duel_map(
         commands.spawn((
             base.left_gold_farm,
             server_components,
+            Interactable {
+                kind: InteractionType::Building,
+                restricted_to: Some(owner),
+            },
             SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
         ));
         commands.spawn((
             base.right_gold_farm,
             server_components,
+            Interactable {
+                kind: InteractionType::Building,
+                restricted_to: Some(owner),
+            },
             SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
         ));
 
@@ -368,6 +400,7 @@ fn duel_map(
                 id: *client_id,
                 entity: *player_entity,
                 translation: transform.translation.into(),
+                mounted: None,
             }],
             units: Vec::new(),
             projectiles: Vec::new(),
@@ -386,15 +419,17 @@ fn duel_map(
     for i in 3..=4 {
         let base = CampScene::new();
         let game_scene_id = GameSceneId(i);
-        let server_components = (
-            Owner {
-                faction: Faction::Bandits,
-            },
-            game_scene_id,
-        );
+        let owner = Owner {
+            faction: Faction::Bandits,
+        };
+        let server_components = (owner, game_scene_id);
         commands.spawn((
             base.chest,
             server_components,
+            Interactable {
+                kind: InteractionType::Chest,
+                restricted_to: Some(owner),
+            },
             SceneBuildingIndicator::Camp(CampSceneIndicator::Chest),
         ));
         commands.spawn((

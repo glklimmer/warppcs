@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use shared::enum_map::*;
+use shared::{
+    enum_map::*,
+    networking::{MountType, Mounted},
+};
 
 use super::{
     AnimationTrigger, Change, EntityChangeEvent, FullAnimation, SpriteSheet, SpriteSheetAnimation,
@@ -77,7 +80,7 @@ impl FromWorld for KingSpriteSheet {
             },
             KingAnimation::HorseIdle => SpriteSheetAnimation {
                 first_sprite_index: 80,
-                last_sprite_index: 88,
+                last_sprite_index: 87,
                 ..default()
             },
             KingAnimation::HorseWalk => SpriteSheetAnimation {
@@ -99,16 +102,27 @@ impl FromWorld for KingSpriteSheet {
 
 pub fn next_king_animation(
     mut commands: Commands,
-    mut query: Query<(&mut KingAnimation, Option<&FullAnimation>)>,
+    mut query: Query<(&mut KingAnimation, Option<&FullAnimation>, Option<&Mounted>)>,
     mut network_events: EventReader<EntityChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
 ) {
     for event in network_events.read() {
-        if let Ok((mut current_animation, maybe_full)) = query.get_mut(event.entity) {
+        if let Ok((mut current_animation, maybe_full, maybe_mounted)) = query.get_mut(event.entity)
+        {
             let maybe_new_animation = match &event.change {
                 Change::Movement(moving) => match moving {
-                    true => Some(KingAnimation::Walk),
-                    false => Some(KingAnimation::Idle),
+                    true => match maybe_mounted {
+                        Some(mounted) => match mounted.mount_type {
+                            MountType::Horse => Some(KingAnimation::HorseWalk),
+                        },
+                        None => Some(KingAnimation::Walk),
+                    },
+                    false => match maybe_mounted {
+                        Some(mounted) => match mounted.mount_type {
+                            MountType::Horse => Some(KingAnimation::HorseIdle),
+                        },
+                        None => Some(KingAnimation::Idle),
+                    },
                 },
                 Change::Attack => Some(KingAnimation::Attack),
                 Change::Rotation(_) => None,

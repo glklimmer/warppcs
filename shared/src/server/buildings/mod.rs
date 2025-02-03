@@ -1,17 +1,17 @@
 use bevy::prelude::*;
 
-use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::ClientId;
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
 
 use crate::{
     map::{
-        buildings::{BuildStatus, Building, Cost, MainBuildingLevels, WallLevels},
+        buildings::{BuildStatus, Building, Cost, MainBuildingLevels, RecruitBuilding, WallLevels},
         scenes::SceneBuildingIndicator,
         GameSceneId,
     },
-    networking::{BuildingUpdate, Faction, Inventory, Owner, ServerMessages, UpdateType},
+    networking::{BuildingUpdate, Inventory, Owner, ServerMessages, UpdateType},
+    server::players::interaction::Interactable,
     BoxCollider,
 };
 
@@ -160,95 +160,56 @@ pub fn construction_cost(building_type: &Building) -> Cost {
     Cost { gold }
 }
 
-#[allow(clippy::type_complexity)]
 fn check_building_interaction(
-    player: Query<(&Transform, &BoxCollider, &GameSceneId, &Inventory)>,
-    building: Query<(
-        Entity,
-        &Transform,
-        &BoxCollider,
-        &GameSceneId,
-        &Building,
-        &BuildStatus,
-        &Owner,
-    )>,
+    mut interactions: EventReader<InteractionTriggeredEvent>,
     mut build: EventWriter<BuildingConstruction>,
     mut upgrade: EventWriter<BuildingUpgrade>,
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    player: Query<(&GameSceneId, &Inventory)>,
+    building: Query<(Entity, &Building, &BuildStatus)>,
 ) {
     for event in interactions.read() {
         let InteractionType::Building = &event.interaction else {
             continue;
         };
 
-        let (player_transform, player_collider, player_scene, inventory) =
-            player.get(event.player).unwrap();
+        let (player_scene, inventory) = player.get(event.player).unwrap();
 
-        let player_bounds = player_collider.at(player_transform);
+        let (entity, building, status) = building.get(event.interactable).unwrap();
 
-        for (
+        let info = CommonBuildingInfo {
+            client_id: event.client_id,
+            player_entity: event.player,
+            scene_id: *player_scene,
             entity,
-            building_transform,
-            building_collider,
-            builing_scene,
-            building,
-            status,
-            owner,
-        ) in building.iter()
-        {
-            if player_scene.ne(builing_scene) {
-                continue;
+            building_type: *building,
+        };
+
+        match status {
+            BuildStatus::Marker => {
+                if !inventory.gold.ge(&construction_cost(building).gold) {
+                    continue;
+                }
+                build.send(BuildingConstruction(info));
             }
-
-            let zone_bounds = building_collider.at(building_transform);
-
-            if player_bounds.intersects(&zone_bounds) {
-                match owner.faction {
-                    Faction::Player {
-                        client_id: other_client_id,
-                    } => {
-                        if other_client_id.ne(&event.client_id) {
-                            continue;
-                        }
+            BuildStatus::Built => {
+                if building.can_upgrade() {
+                    if !inventory
+                        .gold
+                        .ge(&construction_cost(&building.upgrade_building().unwrap()).gold)
+                    {
+                        continue;
                     }
-                    _ => continue,
+                    upgrade.send(BuildingUpgrade(info));
                 }
-
-                let info = CommonBuildingInfo {
-                    client_id: event.client_id,
-                    player_entity: event.player,
-                    scene_id: *player_scene,
-                    entity,
-                    building_type: *building,
-                };
-
-                match status {
-                    BuildStatus::Marker => {
-                        if !inventory.gold.ge(&construction_cost(building).gold) {
-                            continue;
-                        }
-                        build.send(BuildingConstruction(info));
-                    }
-                    BuildStatus::Built => {
-                        if building.can_upgrade() {
-                            if !inventory
-                                .gold
-                                .ge(&construction_cost(&building.upgrade_building().unwrap()).gold)
-                            {
-                                continue;
-                            }
-                            upgrade.send(BuildingUpgrade(info));
-                        }
-                    }
-                    BuildStatus::Destroyed => {
-                        build.send(BuildingConstruction(info));
-                    }
-                }
+            }
+            BuildStatus::Destroyed => {
+                build.send(BuildingConstruction(info));
             }
         }
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn construct_building(
     mut commands: Commands,
     mut builds: EventReader<BuildingConstruction>,
@@ -257,18 +218,30 @@ fn construct_building(
         &Building,
         &GameSceneId,
         &SceneBuildingIndicator,
+        &Owner,
+        Option<&RecruitBuilding>,
     )>,
     mut inventory: Query<&mut Inventory>,
     mut sender: EventWriter<SendServerMessage>,
 ) {
     for build in builds.read() {
-        let (mut status, building, game_scene_id, building_indicator) =
+        let (mut status, building, game_scene_id, building_indicator, owner, maybe_recruit) =
             building.get_mut(build.0.entity).unwrap();
         *status = BuildStatus::Built;
 
-        commands
-            .entity(build.0.entity)
-            .insert(building_health(&build.0.building_type));
+        let mut building_entity = commands.entity(build.0.entity);
+        building_entity.insert(building_health(&build.0.building_type));
+
+        if !building.can_upgrade() {
+            building_entity.remove::<Interactable>();
+        }
+
+        if maybe_recruit.is_some() {
+            building_entity.insert(Interactable {
+                kind: InteractionType::Recruit,
+                restricted_to: Some(*owner),
+            });
+        }
 
         println!("Building constructed: {:?}", building_indicator);
 

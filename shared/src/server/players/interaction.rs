@@ -2,7 +2,12 @@ use bevy::{math::bounding::IntersectsVolume, prelude::*};
 
 use bevy_renet::renet::ClientId;
 
-use crate::{map::GameSceneId, networking::Faction, server::networking::ServerLobby, BoxCollider};
+use crate::{
+    map::GameSceneId,
+    networking::{Faction, Owner},
+    server::networking::ServerLobby,
+    BoxCollider,
+};
 
 use super::super::networking::NetworkEvent;
 
@@ -18,7 +23,7 @@ pub enum InteractionType {
 #[derive(Component, Clone, Copy, Debug)]
 pub struct Interactable {
     pub kind: InteractionType,
-    pub restricted_to: Option<Faction>,
+    pub restricted_to: Option<Owner>,
 }
 
 #[derive(Event)]
@@ -78,15 +83,20 @@ fn interact(
             .iter()
             .filter(|(_, _, _, scene, _)| player_scene.eq(*scene))
             .filter(|(_, transform, collider, _, _)| {
-                !player_bounds.intersects(&collider.at(transform))
+                player_bounds.intersects(&collider.at(transform))
             })
             .filter(
                 |(_, _, _, _, interactable)| match interactable.restricted_to {
-                    Some(faction) => match faction {
-                        Faction::Player {
-                            client_id: item_client_id,
+                    Some(owner) => match owner {
+                        Owner {
+                            faction:
+                                Faction::Player {
+                                    client_id: item_client_id,
+                                },
                         } => item_client_id.eq(&client_id),
-                        Faction::Bandits => false,
+                        Owner {
+                            faction: Faction::Bandits,
+                        } => false,
                     },
                     None => true,
                 },

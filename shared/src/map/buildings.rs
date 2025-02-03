@@ -18,6 +18,9 @@ pub enum BuildStatus {
     Destroyed,
 }
 
+#[derive(Component, Debug, Copy, Clone)]
+pub struct RecruitBuilding;
+
 pub struct Cost {
     pub gold: u16,
 }

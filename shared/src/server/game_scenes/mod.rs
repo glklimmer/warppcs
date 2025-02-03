@@ -10,8 +10,8 @@ use crate::{
         GameSceneId,
     },
     networking::{
-        Faction, LoadBuilding, Owner, ProjectileType, ServerChannel, ServerMessages, SpawnFlag,
-        SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        Faction, LoadBuilding, Mounted, Owner, ProjectileType, ServerChannel, ServerMessages,
+        SpawnFlag, SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     server::players::interaction::InteractionType,
 };
@@ -64,7 +64,7 @@ fn travel(
         &BuildStatus,
         &Building,
     )>,
-    transforms: Query<&Transform>,
+    player_query: Query<(&Transform, Option<&Mounted>)>,
     flag_holders: Query<&FlagHolder>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
     destination: Query<&GameSceneDestination>,
@@ -80,8 +80,8 @@ fn travel(
             position: target_position,
         } = destination.get(event.interactable).unwrap();
         println!(
-            "travel happening... destination: {:?}",
-            target_game_scene_id
+            "travel happening... destination: {:?}, position: {:?}",
+            target_game_scene_id, target_position
         );
         let group = match flag_holders.get(player_entity) {
             Ok(flag_holder) => Some(FlagGroup {
@@ -154,18 +154,21 @@ fn travel(
                 target_game_scene_id.eq(scene)
             })
             .map(|(other_client_id, other_entity)| {
-                let transform = transforms.get(*other_entity).unwrap();
+                let (transform, mounted) = player_query.get(*other_entity).unwrap();
                 SpawnPlayer {
                     id: *other_client_id,
                     entity: *other_entity,
                     translation: transform.translation.into(),
+                    mounted: mounted.cloned(),
                 }
             })
             .collect();
+        let (_, mounted) = player_query.get(player_entity).unwrap();
         players.push(SpawnPlayer {
             id: event.client_id,
             entity: player_entity,
             translation: target_transform.translation.into(),
+            mounted: mounted.cloned(),
         });
         let flag = group.as_ref().map(|g| SpawnFlag { flag: g.flag });
         let mut units: Vec<SpawnUnit> = units
@@ -259,6 +262,7 @@ fn travel(
                 id: event.client_id,
                 entity: player_entity,
                 translation: target_transform.translation.into(),
+                mounted: mounted.cloned(),
             },
             units: unit_spawns,
         };

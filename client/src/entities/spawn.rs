@@ -17,8 +17,8 @@ use crate::{
 use shared::{
     map::Layers,
     networking::{
-        DropFlag, PickFlag, ProjectileType, ServerMessages, SpawnFlag, SpawnMount, SpawnPlayer,
-        SpawnProjectile, SpawnUnit,
+        DropFlag, MountType, Mounted, PickFlag, ProjectileType, ServerMessages, SpawnFlag,
+        SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     projectile_collider, BoxCollider,
 };
@@ -128,17 +128,30 @@ fn spawn_player(
             id,
             translation,
             entity: server_player_entity,
+            mounted,
         } = spawn;
 
         let mut client_player_entity = commands.spawn((
             SpriteAnimationBundle::new(
                 translation,
                 &king_sprite_sheet.sprite_sheet,
-                KingAnimation::Idle,
+                match mounted {
+                    Some(mounted) => match mounted.mount_type {
+                        MountType::Horse => KingAnimation::HorseIdle,
+                    },
+                    None => KingAnimation::Idle,
+                },
                 3.,
             ),
             PartOfScene,
         ));
+
+        if let Some(mounted) = mounted {
+            client_player_entity.insert(Mounted {
+                mount_type: mounted.mount_type,
+            });
+        }
+
         let player_entity = client_player_entity.id();
 
         if client_id.eq(id) {

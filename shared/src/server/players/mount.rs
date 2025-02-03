@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::{
     map::GameSceneId,
-    networking::{MountType, ServerMessages},
-    server::{networking::SendServerMessage, physics::movement::Speed},
+    networking::{MountType, Mounted, ServerMessages},
+    server::{entities::Mount, networking::SendServerMessage, physics::movement::Speed},
 };
 
 use super::interaction::{InteractionTriggeredEvent, InteractionType};
@@ -13,7 +13,7 @@ pub fn mount(
     mut player_query: Query<(&mut Speed, &GameSceneId)>,
     mut commands: Commands,
     mut sender: EventWriter<SendServerMessage>,
-    mount_query: Query<&MountType>,
+    mount_query: Query<&Mount>,
 ) {
     for event in interactions.read() {
         let InteractionType::Mount = &event.interaction else {
@@ -21,16 +21,27 @@ pub fn mount(
         };
 
         let (mut speed, scene_id) = player_query.get_mut(event.player).unwrap();
-        let mount_type = mount_query.get(event.interactable).unwrap();
+        let mount = mount_query.get(event.interactable).unwrap();
 
-        let new_speed = mount_speed(mount_type);
+        let new_speed = mount_speed(&mount.mount_type);
         speed.0 = new_speed;
 
         commands.entity(event.interactable).despawn();
+        commands.entity(event.player).insert(Mounted {
+            mount_type: mount.mount_type,
+        });
+
+        sender.send(SendServerMessage {
+            message: ServerMessages::DespawnEntity {
+                entities: vec![event.interactable],
+            },
+            game_scene_id: *scene_id,
+        });
 
         sender.send(SendServerMessage {
             message: ServerMessages::Mount {
                 entity: event.player,
+                mount_type: mount.mount_type,
             },
             game_scene_id: *scene_id,
         });

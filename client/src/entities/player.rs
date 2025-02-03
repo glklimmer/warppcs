@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
-    animations::{king::KingAnimation, FullAnimation},
+    animations::{king::KingAnimation, AnimationTrigger, FullAnimation},
     networking::{ClientPlayers, Connected, NetworkEvent, NetworkMapping, PlayerEntityMapping},
 };
-use shared::networking::ServerMessages;
+use shared::networking::{Mounted, ServerMessages};
 
 pub struct PlayerPlugin;
 
@@ -43,19 +43,31 @@ fn remove_player(
 fn mount_player(
     mut commands: Commands,
     mut network_events: EventReader<NetworkEvent>,
+    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     network_mapping: ResMut<NetworkMapping>,
 ) {
     for event in network_events.read() {
         let ServerMessages::Mount {
             entity: server_entity,
+            mount_type,
         } = &event.message
         else {
             continue;
         };
 
+        println!("starting mount animation");
+
         let player = network_mapping.0.get(server_entity).unwrap();
-        commands
-            .entity(*player)
-            .insert((KingAnimation::Mount, FullAnimation));
+        commands.entity(*player).insert((
+            Mounted {
+                mount_type: *mount_type,
+            },
+            FullAnimation,
+        ));
+
+        animation_trigger.send(AnimationTrigger {
+            entity: *player,
+            state: KingAnimation::Mount,
+        });
     }
 }
