@@ -1,4 +1,6 @@
-use animals::horse::{HorseAnimation, HorseSpriteSheet};
+use animals::horse::{
+    next_horse_animation, set_horse_sprite_animation, HorseAnimation, HorseSpriteSheet,
+};
 use bevy::prelude::*;
 
 use king::{next_king_animation, set_king_sprite_animation, KingAnimation, KingSpriteSheet};
@@ -147,6 +149,7 @@ impl Plugin for AnimationPlugin {
             (
                 (set_unit_sprite_animation, next_unit_animation),
                 (set_king_sprite_animation, next_king_animation),
+                (set_horse_sprite_animation, next_horse_animation),
                 advance_animation,
                 set_unit_facing,
                 set_free_orientation,

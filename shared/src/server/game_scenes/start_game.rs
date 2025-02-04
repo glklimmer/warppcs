@@ -4,9 +4,9 @@ use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
 use crate::map::buildings::RecruitBuilding;
-use crate::server::entities::Mount;
 use crate::server::physics::movement::Speed;
 use crate::server::players::interaction::{Interactable, InteractionType};
+use crate::server::players::mount::Mount;
 use crate::{
     map::{
         scenes::{

@@ -2,10 +2,7 @@ use bevy::prelude::*;
 
 use health::HealthPlugin;
 
-use crate::{
-    networking::{MountType, UnitType},
-    unit_collider, BoxCollider,
-};
+use crate::{networking::UnitType, unit_collider, BoxCollider};
 
 use super::physics::{movement::Velocity, PushBack};
 
@@ -16,12 +13,6 @@ pub mod health;
 pub struct Unit {
     pub unit_type: UnitType,
     pub swing_timer: Timer,
-}
-
-#[derive(Component, Clone)]
-#[require(BoxCollider(unit_collider), Velocity)]
-pub struct Mount {
-    pub mount_type: MountType,
 }
 
 pub struct EntityPlugin;

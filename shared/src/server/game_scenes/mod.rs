@@ -18,10 +18,10 @@ use crate::{
 
 use super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
-    entities::{Mount, Unit},
+    entities::Unit,
     networking::{GameWorld, ServerLobby},
     physics::movement::Velocity,
-    players::interaction::InteractionTriggeredEvent,
+    players::{interaction::InteractionTriggeredEvent, mount::Mount},
 };
 
 pub mod start_game;

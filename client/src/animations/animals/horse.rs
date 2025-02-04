@@ -84,7 +84,7 @@ pub fn next_horse_animation(
     }
 }
 
-pub fn set_king_sprite_animation(
+pub fn set_horse_sprite_animation(
     mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite)>,
     mut animation_changed: EventReader<AnimationTrigger<HorseAnimation>>,
     king_sprite_sheet: Res<HorseSpriteSheet>,

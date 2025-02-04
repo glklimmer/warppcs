@@ -3,10 +3,20 @@ use bevy::prelude::*;
 use crate::{
     map::GameSceneId,
     networking::{MountType, Mounted, ServerMessages},
-    server::{entities::Mount, networking::SendServerMessage, physics::movement::Speed},
+    server::{
+        networking::SendServerMessage,
+        physics::movement::{Speed, Velocity},
+    },
+    unit_collider, BoxCollider,
 };
 
 use super::interaction::{InteractionTriggeredEvent, InteractionType};
+
+#[derive(Component, Clone)]
+#[require(BoxCollider(unit_collider), Velocity)]
+pub struct Mount {
+    pub mount_type: MountType,
+}
 
 pub fn mount(
     mut interactions: EventReader<InteractionTriggeredEvent>,

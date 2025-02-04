@@ -19,8 +19,7 @@ use super::{
 };
 
 pub mod interaction;
-
-mod mount;
+pub mod mount;
 
 #[derive(Event)]
 pub struct DropFlagEvent(pub ClientId);
