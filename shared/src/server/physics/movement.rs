@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
-    map::{buildings::Building, GameSceneId},
+    map::{
+        buildings::{BuildStatus, Building},
+        GameSceneId,
+    },
     networking::{Owner, PlayerInput},
     server::{
         ai::{attack::unit_speed, UnitBehaviour},
@@ -64,7 +67,17 @@ fn move_players_system(
         &GameSceneId,
         &Owner,
     )>,
-    buildings: Query<(&Transform, &BoxCollider, &GameSceneId, &Owner, &Building), With<Health>>,
+    buildings: Query<
+        (
+            &Transform,
+            &BoxCollider,
+            &GameSceneId,
+            &Owner,
+            &Building,
+            &BuildStatus,
+        ),
+        With<Health>,
+    >,
 ) {
     for (input, mut velocity, player_transform, player_collider, player_scene, client_owner) in
         query.iter_mut()
@@ -78,14 +91,24 @@ fn move_players_system(
         let future_bounds = player_collider.at_pos(future_position);
 
         let mut would_collide = false;
-        for (building_transform, building_collider, builing_scene, owner, building) in
-            buildings.iter()
+        for (
+            building_transform,
+            building_collider,
+            builing_scene,
+            owner,
+            building,
+            building_status,
+        ) in buildings.iter()
         {
             if player_scene.ne(builing_scene) {
                 continue;
             }
 
             if owner.eq(client_owner) {
+                continue;
+            }
+
+            if building_status.ne(&BuildStatus::Built) {
                 continue;
             }
 
@@ -122,7 +145,17 @@ fn determine_unit_velocity(
         &GameSceneId,
     )>,
     transform_query: Query<&Transform>,
-    buildings: Query<(&Transform, &BoxCollider, &GameSceneId, &Owner, &Building), With<Health>>,
+    buildings: Query<
+        (
+            &Transform,
+            &BoxCollider,
+            &GameSceneId,
+            &Owner,
+            &Building,
+            &BuildStatus,
+        ),
+        With<Health>,
+    >,
 ) {
     for (mut velocity, transform, collider, behaviour, unit, push_back, client_owner, unit_scene) in
         &mut query
@@ -152,6 +185,7 @@ fn determine_unit_velocity(
                     builing_scene,
                     building_owner,
                     building,
+                    building_status,
                 ) in buildings.iter()
                 {
                     if unit_scene.ne(builing_scene) {
@@ -159,6 +193,10 @@ fn determine_unit_velocity(
                     }
 
                     if client_owner.eq(building_owner) {
+                        continue;
+                    }
+
+                    if building_status.ne(&BuildStatus::Built) {
                         continue;
                     }
 
