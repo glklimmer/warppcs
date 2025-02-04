@@ -18,6 +18,7 @@ pub enum InteractionType {
     Travel,
     Building,
     Recruit,
+    Flag,
 }
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -47,11 +48,12 @@ impl Plugin for InteractPlugin {
 impl InteractionType {
     pub fn priority(&self) -> i32 {
         match self {
-            Self::Chest => 100,
-            Self::Mount => 99,
-            Self::Travel => 98,
-            Self::Building => 97,
-            Self::Recruit => 1,
+            Self::Chest => 140,
+            Self::Travel => 130,
+            Self::Mount => 125,
+            Self::Building => 122,
+            Self::Flag => 120,
+            Self::Recruit => 96,
         }
     }
 }
@@ -101,13 +103,25 @@ fn interact(
                     None => true,
                 },
             )
-            .max_by_key(|(_, _, _, _, interactable)| interactable.kind.priority());
-
-        if let Some((entity, _, _, portal_scene, interactable)) = priority_interaction {
-            println!(
-                "Sending interact for {:?}, from scene: {:?}",
-                interactable.kind, portal_scene
+            .max_by(
+                |(_, transform_a, _, _, interactable_a), (_, transform_b, _, _, interactable_b)| {
+                    let priority_a = interactable_a.kind.priority();
+                    let priority_b = interactable_b.kind.priority();
+                    if priority_a == priority_b {
+                        let distance_a = player_transform
+                            .translation
+                            .distance(transform_a.translation);
+                        let distance_b = player_transform
+                            .translation
+                            .distance(transform_b.translation);
+                        distance_b.total_cmp(&distance_a)
+                    } else {
+                        priority_a.cmp(&priority_b)
+                    }
+                },
             );
+
+        if let Some((entity, _, _, _, interactable)) = priority_interaction {
             triggered_events.send(InteractionTriggeredEvent {
                 player: player_entity,
                 client_id,
