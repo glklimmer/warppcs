@@ -13,10 +13,10 @@ use shared::{
         GameSceneType,
     },
     networking::{
-        BuildingUpdate, LoadBuilding, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile,
-        SpawnUnit, UpdateType,
+        BuildingUpdate, LoadBuilding, ServerMessages, SpawnFlag, SpawnMount, SpawnPlayer,
+        SpawnProjectile, SpawnUnit, UpdateType,
     },
-    server::buildings::building_collider,
+    server::buildings::{building_collider, construction_cost},
     GameState,
 };
 
@@ -51,6 +51,7 @@ fn load_game_scene(
     mut spawn_unit: EventWriter<SpawnUnit>,
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut spawn_flag: EventWriter<SpawnFlag>,
+    mut spawn_mount: EventWriter<SpawnMount>,
     entities: Query<Entity, With<PartOfScene>>,
     asset_server: Res<AssetServer>,
     chest_sprite_sheet: Res<ChestSpriteSheet>,
@@ -61,6 +62,7 @@ fn load_game_scene(
             players,
             flag,
             units,
+            mounts,
             projectiles,
             buildings,
         } = &event.message
@@ -68,7 +70,7 @@ fn load_game_scene(
             println!("Loading map {:?}...", map_type);
 
             for entity in entities.iter() {
-                commands.entity(entity).despawn();
+                commands.entity(entity).despawn_recursive();
             }
 
             match map_type {
@@ -307,6 +309,9 @@ fn load_game_scene(
             units.iter().for_each(|spawn| {
                 spawn_unit.send(spawn.clone());
             });
+            mounts.iter().for_each(|spawn| {
+                spawn_mount.send(spawn.clone());
+            });
             projectiles.iter().for_each(|spawn| {
                 spawn_projectile.send(spawn.clone());
             });
@@ -334,16 +339,44 @@ fn spawn_building(
             upgrade: building_bundle.building,
         },
     };
-    commands.spawn((
-        building_bundle,
-        indicator,
-        Sprite {
-            image: asset_server.load::<Image>(building_texture(&load.upgrade, load.status)),
-            flip_x: building_flipped(&indicator),
-            ..default()
-        },
-        PartOfScene,
-    ));
+    commands
+        .spawn((
+            building_bundle,
+            indicator,
+            Sprite {
+                image: asset_server.load::<Image>(building_texture(&load.upgrade, load.status)),
+                flip_x: building_flipped(&indicator),
+                ..default()
+            },
+            PartOfScene,
+        ))
+        .with_children(|parent| {
+            if let BuildStatus::Marker = load.status {
+                let font_handle = asset_server.load("fonts/yoster.ttf");
+                parent.spawn((
+                    Text2d::new(construction_cost(&load.upgrade).gold.to_string()),
+                    TextFont {
+                        font: font_handle.clone(),
+                        font_size: 124.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgba_u8(143, 86, 59, 255)),
+                    Transform {
+                        translation: Vec3 {
+                            x: 0.0,
+                            y: -33.0,
+                            z: 1.0,
+                        },
+                        scale: Vec3 {
+                            x: 0.05,
+                            y: 0.05,
+                            z: 1.0,
+                        },
+                        ..default()
+                    },
+                ));
+            }
+        });
 }
 
 fn update_building(
@@ -398,12 +431,12 @@ fn building_texture(building_type: &Building, status: BuildStatus) -> &str {
     match status {
         BuildStatus::Marker => match building_type {
             Building::MainBuilding { level: _ } => "sprites/buildings/main_house_blue.png",
-            Building::Archer => "sprites/buildings/archer_plot.png",
-            Building::Warrior => "sprites/buildings/warrior_plot.png",
-            Building::Pikeman => "sprites/buildings/pike_man_plot.png",
-            Building::Wall { level: _ } => "sprites/buildings/wall_plot.png",
+            Building::Archer => "sprites/buildings/sign.png",
+            Building::Warrior => "sprites/buildings/sign.png",
+            Building::Pikeman => "sprites/buildings/sign.png",
+            Building::Wall { level: _ } => "sprites/buildings/sign.png",
             Building::Tower => "",
-            Building::GoldFarm => "sprites/buildings/warrior_plot.png",
+            Building::GoldFarm => "sprites/buildings/sign.png",
         },
         BuildStatus::Built => match building_type {
             Building::MainBuilding { level } => match level {

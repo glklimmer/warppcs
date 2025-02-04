@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::{
+    horse_collider,
     map::{
         buildings::{BuildStatus, Building},
         scenes::SceneBuildingIndicator,
@@ -30,12 +31,17 @@ pub enum UnitType {
     Bandit,
 }
 
+#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
+#[require(BoxCollider(horse_collider))]
+pub enum MountType {
+    Horse,
+}
+
 #[derive(Debug, Serialize, Deserialize, Event)]
 pub enum PlayerCommand {
     StartGame,
     Interact,
     MeleeAttack,
-    FlagInteract,
     LobbyReadyState(Checkbox),
 }
 
@@ -76,11 +82,17 @@ impl Default for Inventory {
     }
 }
 
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
+pub struct Mounted {
+    pub mount_type: MountType,
+}
+
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnPlayer {
     pub id: ClientId,
     pub entity: Entity,
     pub translation: [f32; 3],
+    pub mounted: Option<Mounted>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
@@ -104,6 +116,13 @@ pub struct SpawnUnit {
     pub owner: Owner,
     pub entity: Entity,
     pub unit_type: UnitType,
+    pub translation: [f32; 3],
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct SpawnMount {
+    pub entity: Entity,
+    pub mount_type: MountType,
     pub translation: [f32; 3],
 }
 
@@ -158,6 +177,7 @@ pub enum ServerMessages {
     DropFlag(DropFlag),
     PickFlag(PickFlag),
     SpawnUnit(SpawnUnit),
+    SpawnMount(SpawnMount),
     SpawnProjectile(SpawnProjectile),
     PlayerDisconnected {
         id: ClientId,
@@ -170,6 +190,7 @@ pub enum ServerMessages {
         players: Vec<SpawnPlayer>,
         flag: Option<SpawnFlag>,
         units: Vec<SpawnUnit>,
+        mounts: Vec<SpawnMount>,
         projectiles: Vec<SpawnProjectile>,
         buildings: Vec<LoadBuilding>,
     },
@@ -189,6 +210,10 @@ pub enum ServerMessages {
         entity: Entity,
     },
     PlayerDefeat(Owner),
+    Mount {
+        entity: Entity,
+        mount_type: MountType,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use shared::enum_map::*;
+use shared::{
+    enum_map::*,
+    networking::{MountType, Mounted},
+};
 
 use super::{
     AnimationTrigger, Change, EntityChangeEvent, FullAnimation, SpriteSheet, SpriteSheetAnimation,
@@ -15,6 +18,9 @@ pub enum KingAnimation {
     Attack,
     Hit,
     Death,
+    Mount,
+    HorseIdle,
+    HorseWalk,
 }
 
 #[derive(Resource)]
@@ -31,7 +37,7 @@ impl FromWorld for KingSpriteSheet {
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::splat(32),
             10,
-            7,
+            10,
             None,
             None,
         ));
@@ -67,6 +73,21 @@ impl FromWorld for KingSpriteSheet {
                 last_sprite_index: 65,
                 ..default()
             },
+            KingAnimation::Mount => SpriteSheetAnimation {
+                first_sprite_index: 70,
+                last_sprite_index: 76,
+                ..default()
+            },
+            KingAnimation::HorseIdle => SpriteSheetAnimation {
+                first_sprite_index: 80,
+                last_sprite_index: 87,
+                ..default()
+            },
+            KingAnimation::HorseWalk => SpriteSheetAnimation {
+                first_sprite_index: 90,
+                last_sprite_index: 95,
+                ..default()
+            },
         });
 
         KingSpriteSheet {
@@ -81,16 +102,27 @@ impl FromWorld for KingSpriteSheet {
 
 pub fn next_king_animation(
     mut commands: Commands,
-    mut query: Query<(&mut KingAnimation, Option<&FullAnimation>)>,
+    mut query: Query<(&mut KingAnimation, Option<&FullAnimation>, Option<&Mounted>)>,
     mut network_events: EventReader<EntityChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
 ) {
     for event in network_events.read() {
-        if let Ok((mut current_animation, maybe_full)) = query.get_mut(event.entity) {
+        if let Ok((mut current_animation, maybe_full, maybe_mounted)) = query.get_mut(event.entity)
+        {
             let maybe_new_animation = match &event.change {
                 Change::Movement(moving) => match moving {
-                    true => Some(KingAnimation::Walk),
-                    false => Some(KingAnimation::Idle),
+                    true => match maybe_mounted {
+                        Some(mounted) => match mounted.mount_type {
+                            MountType::Horse => Some(KingAnimation::HorseWalk),
+                        },
+                        None => Some(KingAnimation::Walk),
+                    },
+                    false => match maybe_mounted {
+                        Some(mounted) => match mounted.mount_type {
+                            MountType::Horse => Some(KingAnimation::HorseIdle),
+                        },
+                        None => Some(KingAnimation::Idle),
+                    },
                 },
                 Change::Attack => Some(KingAnimation::Attack),
                 Change::Rotation(_) => None,
@@ -129,6 +161,9 @@ fn is_interupt_animation(animation: &KingAnimation) -> bool {
         KingAnimation::Attack => true,
         KingAnimation::Hit => false,
         KingAnimation::Death => true,
+        KingAnimation::Mount => true,
+        KingAnimation::HorseIdle => false,
+        KingAnimation::HorseWalk => false,
     }
 }
 
@@ -140,6 +175,9 @@ fn is_full_animation(animation: &KingAnimation) -> bool {
         KingAnimation::Attack => true,
         KingAnimation::Hit => false,
         KingAnimation::Death => true,
+        KingAnimation::Mount => true,
+        KingAnimation::HorseIdle => false,
+        KingAnimation::HorseWalk => false,
     }
 }
 
