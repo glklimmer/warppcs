@@ -53,6 +53,7 @@ fn apply_velocity(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>
         transform.translation += velocity.0.extend(0.) * time.delta_secs();
     }
 }
+const COLLISION_EPSILON: f32 = 5.;
 
 fn move_players_system(
     mut query: Query<(
@@ -72,7 +73,8 @@ fn move_players_system(
         let direction = Vec2::new(x, 0.).normalize_or_zero();
         let desired_velocity = direction * PLAYER_MOVE_SPEED;
 
-        let future_position = player_transform.translation.truncate() + direction;
+        let future_position =
+            player_transform.translation.truncate() + direction + COLLISION_EPSILON;
         let future_bounds = player_collider.at_pos(future_position);
 
         let mut would_collide = false;
@@ -91,6 +93,7 @@ fn move_players_system(
                 let building_bounds = building_collider.at(building_transform);
 
                 if building_bounds.intersects(&future_bounds) {
+                    println!("collisoin");
                     would_collide = true;
                     break;
                 }
@@ -137,8 +140,9 @@ fn determine_unit_velocity(
                 let target = target + *offset;
                 let target_right = target.x > transform.translation.x;
 
-                let future_position =
-                    transform.translation.truncate() * (if target_right { 1. } else { -1. });
+                let future_position = transform.translation.truncate()
+                    * (if target_right { 1. } else { -1. })
+                    + COLLISION_EPSILON;
                 let future_bounds = collider.at_pos(future_position);
 
                 let mut would_collide = false;
