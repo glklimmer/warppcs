@@ -1,12 +1,11 @@
 use bevy::prelude::*;
 
-use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::{ClientId, RenetServer};
 
 use crate::{
     flag_collider,
     map::{
-        buildings::{BuildStatus, Building, Cost, RecruitmentBuilding},
+        buildings::{Building, Cost},
         GameSceneId, Layers,
     },
     networking::{
@@ -20,7 +19,7 @@ use crate::{
         entities::{health::Health, Unit},
         networking::ServerLobby,
         physics::attachment::AttachedTo,
-        players::InteractEvent,
+        players::interaction::{InteractionTriggeredEvent, InteractionType},
     },
     BoxCollider,
 };
@@ -38,8 +37,8 @@ pub struct FlagAssignment(pub Entity, pub Vec2);
 
 #[derive(Event)]
 pub struct RecruitEvent {
+    player: Entity,
     client_id: ClientId,
-    scene_id: GameSceneId,
     building_type: Building,
 }
 
@@ -47,13 +46,13 @@ pub fn recruit(
     mut commands: Commands,
     mut recruit: EventReader<RecruitEvent>,
     mut server: ResMut<RenetServer>,
-    mut player_query: Query<(&Transform, &mut Inventory)>,
+    mut player_query: Query<(&Transform, &mut Inventory, &GameSceneId)>,
     lobby: Res<ServerLobby>,
     scene_ids: Query<&GameSceneId>,
 ) {
     for event in recruit.read() {
-        let player_entity = lobby.players.get(&event.client_id).unwrap();
-        let (player_transform, mut inventory) = player_query.get_mut(*player_entity).unwrap();
+        let (player_transform, mut inventory, scene_id) =
+            player_query.get_mut(event.player).unwrap();
         let player_translation = player_transform.translation;
         let flag_translation = Vec3::new(
             player_translation.x,
@@ -74,15 +73,13 @@ pub fn recruit(
         };
 
         let flag_entity = commands
-            .spawn((Flag, AttachedTo(*player_entity), owner, event.scene_id))
+            .spawn((Flag, AttachedTo(event.player), owner, *scene_id))
             .id();
         commands
-            .entity(*player_entity)
+            .entity(event.player)
             .insert(FlagHolder(flag_entity));
 
-        let message = ServerMessages::SpawnFlag(SpawnFlag {
-            flag: flag_entity,
-        });
+        let message = ServerMessages::SpawnFlag(SpawnFlag { flag: flag_entity });
         let message = bincode::serialize(&message).unwrap();
         server.send_message(
             event.client_id,
@@ -118,7 +115,7 @@ pub fn recruit(
                     owner,
                     FlagAssignment(flag_entity, offset),
                     UnitBehaviour::FollowFlag(flag_entity, offset),
-                    event.scene_id,
+                    *scene_id,
                 ))
                 .id();
             let message = ServerMessages::SpawnUnit(SpawnUnit {
@@ -130,7 +127,7 @@ pub fn recruit(
             let message = bincode::serialize(&message).unwrap();
             for (client_id, entity) in lobby.players.iter() {
                 let player_scene_id = scene_ids.get(*entity).unwrap();
-                if event.scene_id.eq(player_scene_id) {
+                if scene_id.eq(player_scene_id) {
                     server.send_message(*client_id, ServerChannel::ServerMessages, message.clone());
                 }
             }
@@ -138,76 +135,34 @@ pub fn recruit(
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn check_recruit(
-    lobby: Res<ServerLobby>,
-    player: Query<(&Transform, &BoxCollider, &GameSceneId, &Inventory)>,
-    building: Query<
-        (
-            &Transform,
-            &BoxCollider,
-            &GameSceneId,
-            &Building,
-            &BuildStatus,
-            &Owner,
-        ),
-        With<RecruitmentBuilding>,
-    >,
+    mut interactions: EventReader<InteractionTriggeredEvent>,
     mut recruit: EventWriter<RecruitEvent>,
-    mut interactions: EventReader<InteractEvent>,
+    player: Query<&Inventory>,
+    building: Query<&Building>,
 ) {
     for event in interactions.read() {
-        let client_id = event.0;
-        let player_entity = lobby.players.get(&client_id).unwrap();
+        let InteractionType::Recruit = &event.interaction else {
+            continue;
+        };
 
-        let (player_transform, player_collider, player_scene, inventory) =
-            player.get(*player_entity).unwrap();
+        let inventory = player.get(event.player).unwrap();
+        let building = building.get(event.interactable).unwrap();
 
-        let player_bounds = player_collider.at(player_transform);
-
-        for (
-            building_transform,
-            building_collider,
-            builing_scene,
-            building,
-            building_status,
-            building_owner,
-        ) in building.iter()
-        {
-            match building_owner.faction {
-                Faction::Player {
-                    client_id: other_client_id,
-                } => {
-                    if other_client_id.ne(&client_id) {
-                        continue;
-                    }
-                }
-                _ => continue,
-            }
-            if player_scene.ne(builing_scene) {
+        if let Some(cost) = recruitment_cost(building) {
+            if !inventory.gold.ge(&cost.gold) {
+                println!("Not enough gold for recruitment");
                 continue;
             }
-            if BuildStatus::Built.ne(building_status) {
-                continue;
-            }
-
-            if let Some(cost) = recruitment_cost(building) {
-                if !inventory.gold.ge(&cost.gold) {
-                    continue;
-                }
-            } else {
-                continue;
-            }
-
-            let zone_bounds = building_collider.at(building_transform);
-            if player_bounds.intersects(&zone_bounds) {
-                recruit.send(RecruitEvent {
-                    client_id,
-                    scene_id: *player_scene,
-                    building_type: *building,
-                });
-            }
+        } else {
+            continue;
         }
+
+        recruit.send(RecruitEvent {
+            player: event.player,
+            client_id: event.client_id,
+            building_type: *building,
+        });
     }
 }
 

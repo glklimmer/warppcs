@@ -1,6 +1,8 @@
 use bevy::{math::bounding::IntersectsVolume, prelude::*};
 
 use bevy_renet::renet::{ClientId, RenetServer};
+use interaction::InteractPlugin;
+use mount::mount;
 
 use crate::{
     map::GameSceneId,
@@ -16,8 +18,8 @@ use super::{
     physics::attachment::AttachedTo,
 };
 
-#[derive(Event)]
-pub struct InteractEvent(pub ClientId);
+pub mod interaction;
+pub mod mount;
 
 #[derive(Event)]
 pub struct DropFlagEvent(pub ClientId);
@@ -32,16 +34,19 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<InteractEvent>();
+        app.add_plugins(InteractPlugin);
+
         app.add_event::<DropFlagEvent>();
         app.add_event::<PickFlagEvent>();
 
         app.add_systems(
             FixedUpdate,
-            (attack, interact, flag_interact).run_if(on_event::<NetworkEvent>),
+            (attack, flag_interact).run_if(on_event::<NetworkEvent>),
         );
         app.add_systems(FixedUpdate, drop_flag.run_if(on_event::<DropFlagEvent>));
         app.add_systems(FixedUpdate, pick_flag.run_if(on_event::<PickFlagEvent>));
+
+        app.add_systems(FixedUpdate, mount);
     }
 }
 
@@ -63,18 +68,6 @@ fn attack(
                     game_scene_id: *game_scene_id,
                 });
             }
-        }
-    }
-}
-
-fn interact(
-    mut network_events: EventReader<NetworkEvent>,
-    mut interact: EventWriter<InteractEvent>,
-) {
-    for event in network_events.read() {
-        let client_id = event.client_id;
-        if let PlayerCommand::Interact = &event.message {
-            interact.send(InteractEvent(client_id));
         }
     }
 }

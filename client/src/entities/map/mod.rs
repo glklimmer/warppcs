@@ -13,8 +13,8 @@ use shared::{
         GameSceneType,
     },
     networking::{
-        BuildingUpdate, LoadBuilding, ServerMessages, SpawnFlag, SpawnPlayer, SpawnProjectile,
-        SpawnUnit, UpdateType,
+        BuildingUpdate, LoadBuilding, ServerMessages, SpawnFlag, SpawnMount, SpawnPlayer,
+        SpawnProjectile, SpawnUnit, UpdateType,
     },
     server::buildings::building_collider,
     GameState,
@@ -51,6 +51,7 @@ fn load_game_scene(
     mut spawn_unit: EventWriter<SpawnUnit>,
     mut spawn_projectile: EventWriter<SpawnProjectile>,
     mut spawn_flag: EventWriter<SpawnFlag>,
+    mut spawn_mount: EventWriter<SpawnMount>,
     entities: Query<Entity, With<PartOfScene>>,
     asset_server: Res<AssetServer>,
     chest_sprite_sheet: Res<ChestSpriteSheet>,
@@ -61,6 +62,7 @@ fn load_game_scene(
             players,
             flag,
             units,
+            mounts,
             projectiles,
             buildings,
         } = &event.message
@@ -306,6 +308,9 @@ fn load_game_scene(
             }
             units.iter().for_each(|spawn| {
                 spawn_unit.send(spawn.clone());
+            });
+            mounts.iter().for_each(|spawn| {
+                spawn_mount.send(spawn.clone());
             });
             projectiles.iter().for_each(|spawn| {
                 spawn_projectile.send(spawn.clone());

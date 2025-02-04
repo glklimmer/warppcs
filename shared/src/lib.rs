@@ -47,6 +47,13 @@ pub fn unit_collider() -> BoxCollider {
     }
 }
 
+pub fn horse_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(40., 35.),
+        offset: Some(Vec2::new(0., -28.)),
+    }
+}
+
 pub fn projectile_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(20., 20.),
