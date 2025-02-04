@@ -70,7 +70,7 @@ fn load_game_scene(
             println!("Loading map {:?}...", map_type);
 
             for entity in entities.iter() {
-                commands.entity(entity).despawn();
+                commands.entity(entity).despawn_recursive();
             }
 
             match map_type {
