@@ -19,7 +19,7 @@ use crate::{
         entities::{health::Health, Unit},
         networking::ServerLobby,
         physics::attachment::AttachedTo,
-        players::interaction::{InteractionTriggeredEvent, InteractionType},
+        players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
     BoxCollider,
 };
@@ -73,7 +73,16 @@ pub fn recruit(
         };
 
         let flag_entity = commands
-            .spawn((Flag, AttachedTo(event.player), owner, *scene_id))
+            .spawn((
+                Flag,
+                AttachedTo(event.player),
+                Interactable {
+                    kind: InteractionType::Flag,
+                    restricted_to: Some(owner),
+                },
+                owner,
+                *scene_id,
+            ))
             .id();
         commands
             .entity(event.player)
