@@ -44,7 +44,7 @@ impl Plugin for SpawnPlugin {
         app.add_event::<PickFlag>();
 
         app.add_systems(
-            FixedUpdate,
+            FixedPostUpdate,
             (
                 spawn.run_if(on_event::<NetworkEvent>),
                 (
