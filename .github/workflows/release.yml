@@ -74,3 +74,18 @@ jobs:
           asset_name: server-windows-${{ steps.get_version.outputs.tag }}.zip
           tag: ${{ github.ref }}
           overwrite: true
+
+  deployToSteam:
+    needs: release-windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: game-ci/steam-deploy@v3.0.4
+        with:
+          username: ${{ secrets.STEAM_USERNAME }}
+          configVdf: ${{ secrets.STEAM_CONFIG_VDF }}
+          appId: 1513980
+          buildDescription: ${{ steps.get_version.outputs.tag }}
+          rootPath: build
+          depot1Path: StandaloneWindows64
+          depot2Path: StandaloneLinux64
+          releaseBranch: prerelease
