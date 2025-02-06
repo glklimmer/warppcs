@@ -24,7 +24,7 @@ pub struct Speed(pub f32);
 
 impl Default for Speed {
     fn default() -> Self {
-        Self(200.0)
+        Self(800.0)
     }
 }
 
@@ -35,10 +35,9 @@ impl Plugin for MovementPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                apply_velocity,
+                (move_players_system, apply_velocity).chain(),
                 determine_unit_velocity,
                 apply_gravity,
-                move_players_system,
             ),
         );
     }
@@ -63,7 +62,6 @@ fn apply_velocity(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>
         transform.translation += velocity.0.extend(0.) * time.delta_secs();
     }
 }
-const COLLISION_EPSILON: f32 = 5.;
 
 fn move_players_system(
     mut query: Query<(
@@ -98,16 +96,22 @@ fn move_players_system(
     ) in query.iter_mut()
     {
         let x = (input.right as i8 - input.left as i8) as f32;
+
         let direction = Vec2::new(x, 0.).normalize_or_zero();
         let desired_velocity = direction * speed.0;
 
-        let future_position =
-            player_transform.translation.truncate() + direction + COLLISION_EPSILON;
+        let future_position = player_transform.translation.truncate() + direction;
         let future_bounds = player_collider.at_pos(future_position);
 
         let mut would_collide = false;
-        for (building_transform, building_collider, building_scene, owner, building) in
-            buildings.iter()
+        for (
+            building_transform,
+            building_collider,
+            building_scene,
+            owner,
+            building,
+            building_status,
+        ) in buildings.iter()
         {
             if player_scene.ne(building_scene) {
                 continue;
@@ -124,8 +128,14 @@ fn move_players_system(
             if let Building::Wall { level: _ } = building {
                 let building_bounds = building_collider.at(building_transform);
 
-                if building_bounds.intersects(&future_bounds) {
-                    println!("collisoin");
+                let to_building =
+                    (player_transform.translation - building_transform.translation).normalize();
+                let fortward_dot_building = building_transform.translation.dot(to_building);
+
+                if building_bounds.intersects(&future_bounds)
+                    && fortward_dot_building
+                        != player_transform.translation.x * building_transform.translation.x
+                {
                     would_collide = true;
                     break;
                 }
@@ -182,9 +192,8 @@ fn determine_unit_velocity(
                 let target = target + *offset;
                 let target_right = target.x > transform.translation.x;
 
-                let future_position = transform.translation.truncate()
-                    * (if target_right { 1. } else { -1. })
-                    + COLLISION_EPSILON;
+                let future_position =
+                    transform.translation.truncate() * (if target_right { 1. } else { -1. });
                 let future_bounds = collider.at_pos(future_position);
 
                 let mut would_collide = false;
@@ -212,7 +221,9 @@ fn determine_unit_velocity(
                     if let Building::Wall { level: _ } = building {
                         let building_bounds = building_collider.at(building_transform);
 
-                        if building_bounds.intersects(&future_bounds) {
+                        if building_bounds.intersects(&future_bounds)
+                            && building_transform.translation.x.signum() == target.x.signum()
+                        {
                             would_collide = true;
                             break;
                         }
