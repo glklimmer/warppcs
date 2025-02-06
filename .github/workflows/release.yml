@@ -33,7 +33,7 @@ jobs:
           Compress-Archive -Path windows-client/* -DestinationPath client.zip
 
       - name: Upload client to artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: client.zip
           name: windows-client
@@ -60,7 +60,7 @@ jobs:
           Compress-Archive -Path windows-server/* -DestinationPath server.zip
 
       - name: Upload server to artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: server.zip
           name: windows-server
