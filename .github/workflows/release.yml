@@ -87,5 +87,4 @@ jobs:
           buildDescription: ${{ steps.get_version.outputs.tag }}
           rootPath: build
           depot1Path: StandaloneWindows64
-          depot2Path: StandaloneLinux64
           releaseBranch: prerelease
