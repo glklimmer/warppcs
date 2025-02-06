@@ -9,7 +9,7 @@ steam = ["dep:renet_steam", "steamworks"]
 
 [dependencies]
 bevy = { version = "0.15.0" }
-bevy_renet = { version = "1.0.0" }
+bevy_renet = { version = "1.0.0", features = ["steam"] }
 bincode = "1.3.3"
 fastrand = "2.3.0"
 serde = { version = "1.0.217", features = ["derive"] }

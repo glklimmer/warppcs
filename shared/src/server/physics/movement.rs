@@ -2,21 +2,28 @@ use bevy::prelude::*;
 
 use crate::{
     map::{buildings::Building, GameSceneId},
-    networking::{MultiplayerRoles, Owner, PlayerInput},
+    networking::{Owner, PlayerInput},
     server::{
         ai::{attack::unit_speed, UnitBehaviour},
         entities::{health::Health, Unit},
     },
-    BoxCollider, GameState, GRAVITY_G,
+    BoxCollider, GRAVITY_G,
 };
 use bevy::math::bounding::IntersectsVolume;
 
 use super::PushBack;
 
-#[derive(Debug, Default, Component, Copy, Clone)]
+#[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);
 
-const PLAYER_MOVE_SPEED: f32 = 200.0;
+#[derive(Component, Debug, Copy, Clone)]
+pub struct Speed(pub f32);
+
+impl Default for Speed {
+    fn default() -> Self {
+        Self(200.0)
+    }
+}
 
 pub struct MovementPlugin;
 
@@ -29,8 +36,7 @@ impl Plugin for MovementPlugin {
                 determine_unit_velocity,
                 apply_gravity,
                 move_players_system,
-            )
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
+            ),
         );
     }
 }
@@ -38,7 +44,7 @@ impl Plugin for MovementPlugin {
 fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, time: Res<Time>) {
     for (mut velocity, transform, collider) in &mut query {
         let bottom = transform.translation.truncate() - collider.half_size()
-            + collider.offset.unwrap_or(Vec2::ZERO);
+            + collider.offset.unwrap_or_default();
         let next_bottom = bottom.y + velocity.0.y * time.delta_secs();
 
         if next_bottom > 0. {
@@ -57,8 +63,9 @@ fn apply_velocity(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>
 
 fn move_players_system(
     mut query: Query<(
-        &PlayerInput,
         &mut Velocity,
+        &PlayerInput,
+        &Speed,
         &Transform,
         &BoxCollider,
         &GameSceneId,
@@ -66,21 +73,28 @@ fn move_players_system(
     )>,
     buildings: Query<(&Transform, &BoxCollider, &GameSceneId, &Owner, &Building), With<Health>>,
 ) {
-    for (input, mut velocity, player_transform, player_collider, player_scene, client_owner) in
-        query.iter_mut()
+    for (
+        mut velocity,
+        input,
+        speed,
+        player_transform,
+        player_collider,
+        player_scene,
+        client_owner,
+    ) in query.iter_mut()
     {
         let x = (input.right as i8 - input.left as i8) as f32;
         let direction = Vec2::new(x, 0.).normalize_or_zero();
-        let desired_velocity = direction * PLAYER_MOVE_SPEED;
+        let desired_velocity = direction * speed.0;
 
         let future_position = player_transform.translation.truncate() + direction;
         let future_bounds = player_collider.at_pos(future_position);
 
         let mut would_collide = false;
-        for (building_transform, building_collider, builing_scene, owner, building) in
+        for (building_transform, building_collider, building_scene, owner, building) in
             buildings.iter()
         {
-            if player_scene.ne(builing_scene) {
+            if player_scene.ne(building_scene) {
                 continue;
             }
 
@@ -88,15 +102,13 @@ fn move_players_system(
                 continue;
             }
 
-            if Building::Wall.ne(building) {
-                continue;
-            }
+            if let Building::Wall { level: _ } = building {
+                let building_bounds = building_collider.at(building_transform);
 
-            let building_bounds = building_collider.at(building_transform);
-
-            if building_bounds.intersects(&future_bounds) {
-                would_collide = true;
-                break;
+                if building_bounds.intersects(&future_bounds) {
+                    would_collide = true;
+                    break;
+                }
             }
         }
 

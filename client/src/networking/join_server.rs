@@ -12,14 +12,6 @@ use crate::menu::{JoinSteamLobby, MainMenuStates};
 use shared::steamworks::SteamworksClient;
 
 #[cfg(feature = "steam")]
-pub fn join_own_steam_server(
-    mut join_lobby: EventWriter<JoinSteamLobby>,
-    steam_client: Res<SteamworksClient>,
-) {
-    join_lobby.send(JoinSteamLobby(steam_client.user().steam_id()));
-}
-
-#[cfg(feature = "steam")]
 pub fn join_steam_server(
     mut commands: Commands,
     steam_client: Res<SteamworksClient>,
@@ -43,9 +35,7 @@ pub fn join_steam_server(
         Ok(transport) => {
             commands.insert_resource(transport);
             commands.insert_resource(client);
-            commands.insert_resource(CurrentClientId(ClientId::from_raw(
-                steam_client.user().steam_id().raw(),
-            )));
+            commands.insert_resource(CurrentClientId(steam_client.user().steam_id().raw()));
             ui.set(MainMenuStates::Lobby);
         }
         Err(error) => println!("join_netcode_server error {}", error),

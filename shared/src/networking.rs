@@ -6,18 +6,16 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::{
-    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneType},
+    horse_collider,
+    map::{
+        buildings::{BuildStatus, Building},
+        scenes::SceneBuildingIndicator,
+        GameSceneType,
+    },
     projectile_collider, BoxCollider,
 };
 
 pub const PROTOCOL_ID: u64 = 7;
-
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MultiplayerRoles {
-    Host,
-    Client,
-    NotInGame,
-}
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
 pub struct PlayerInput {
@@ -31,6 +29,12 @@ pub enum UnitType {
     Pikeman,
     Archer,
     Bandit,
+}
+
+#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
+#[require(BoxCollider(horse_collider))]
+pub enum MountType {
+    Horse,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event)]
@@ -67,12 +71,6 @@ pub enum ProjectileType {
     Arrow,
 }
 
-#[derive(Debug, Component, Serialize, Deserialize, Copy, Clone)]
-pub enum PlayerSkin {
-    Warrior,
-    Monster,
-}
-
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub struct Inventory {
     pub gold: u16,
@@ -80,8 +78,13 @@ pub struct Inventory {
 
 impl Default for Inventory {
     fn default() -> Self {
-        Self { gold: 1000 }
+        Self { gold: 600 }
     }
+}
+
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
+pub struct Mounted {
+    pub mount_type: MountType,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
@@ -89,12 +92,23 @@ pub struct SpawnPlayer {
     pub id: ClientId,
     pub entity: Entity,
     pub translation: [f32; 3],
-    pub skin: PlayerSkin,
+    pub mounted: Option<Mounted>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct SpawnFlag {
-    pub entity: Entity,
+    pub flag: Entity,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct DropFlag {
+    pub flag: Entity,
+    pub translation: Vec3,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct PickFlag {
+    pub flag: Entity,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
@@ -102,6 +116,13 @@ pub struct SpawnUnit {
     pub owner: Owner,
     pub entity: Entity,
     pub unit_type: UnitType,
+    pub translation: [f32; 3],
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct SpawnMount {
+    pub entity: Entity,
+    pub mount_type: MountType,
     pub translation: [f32; 3],
 }
 
@@ -116,7 +137,20 @@ pub struct SpawnProjectile {
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct BuildingUpdate {
     pub indicator: SceneBuildingIndicator,
+    pub update: UpdateType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub struct LoadBuilding {
+    pub indicator: SceneBuildingIndicator,
     pub status: BuildStatus,
+    pub upgrade: Building,
+}
+
+#[derive(Debug, Serialize, Deserialize, Event, Clone)]
+pub enum UpdateType {
+    Status { new_status: BuildStatus },
+    Upgrade { upgraded_building: Building },
 }
 
 #[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq, Copy)]
@@ -140,7 +174,10 @@ pub enum ServerMessages {
     },
     SpawnPlayer(SpawnPlayer),
     SpawnFlag(SpawnFlag),
+    DropFlag(DropFlag),
+    PickFlag(PickFlag),
     SpawnUnit(SpawnUnit),
+    SpawnMount(SpawnMount),
     SpawnProjectile(SpawnProjectile),
     PlayerDisconnected {
         id: ClientId,
@@ -153,8 +190,9 @@ pub enum ServerMessages {
         players: Vec<SpawnPlayer>,
         flag: Option<SpawnFlag>,
         units: Vec<SpawnUnit>,
+        mounts: Vec<SpawnMount>,
         projectiles: Vec<SpawnProjectile>,
-        buildings: Vec<BuildingUpdate>,
+        buildings: Vec<LoadBuilding>,
     },
     SpawnGroup {
         player: SpawnPlayer,
@@ -170,6 +208,11 @@ pub enum ServerMessages {
     },
     EntityDeath {
         entity: Entity,
+    },
+    PlayerDefeat(Owner),
+    Mount {
+        entity: Entity,
+        mount_type: MountType,
     },
 }
 

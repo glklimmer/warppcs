@@ -14,7 +14,7 @@ pub struct GameSceneId(pub u64);
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub enum GameSceneType {
-    Base(Color),
+    Base,
     Fight,
     Camp,
 }
@@ -36,6 +36,7 @@ pub enum Layers {
     Projectile,
     Flag,
     Player,
+    Wall,
 }
 
 #[derive(Component, Clone, Copy)]

@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use shared::{networking::ServerMessages, GameState};
+use shared::{
+    networking::{Faction, ServerMessages},
+    GameState,
+};
 
 use crate::networking::NetworkEvent;
 
@@ -14,7 +17,7 @@ impl Plugin for UiPlugin {
 
         app.add_systems(
             FixedUpdate,
-            update_gold_amount.run_if(in_state(GameState::GameSession)),
+            (update_gold_amount, display_player_defeat).run_if(in_state(GameState::GameSession)),
         );
     }
 }
@@ -52,6 +55,17 @@ fn update_gold_amount(
         if let ServerMessages::SyncInventory(inventory) = &event.message {
             let mut gold_display = gold_display_query.single_mut();
             gold_display.0 = format!("Gold Amount {:?}", inventory.gold);
+        }
+    }
+}
+
+fn display_player_defeat(mut network_events: EventReader<NetworkEvent>) {
+    for event in network_events.read() {
+        if let ServerMessages::PlayerDefeat(player) = &event.message {
+            match player.faction {
+                Faction::Player { client_id } => println!("Player {} lost.", client_id),
+                Faction::Bandits => todo!(),
+            }
         }
     }
 }

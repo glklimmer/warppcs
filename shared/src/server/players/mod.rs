@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::ClientId;
+use flag::{drop_flag, flag_interact, pick_flag, DropFlagEvent, PickFlagEvent};
+use interaction::{InteractPlugin, InteractionTriggeredEvent};
+use mount::mount;
 
 use crate::{
     map::GameSceneId,
@@ -9,18 +11,27 @@ use crate::{
 
 use super::networking::{NetworkEvent, SendServerMessage, ServerLobby};
 
-#[derive(Event)]
-pub struct InteractEvent(pub ClientId);
+pub mod flag;
+pub mod interaction;
+pub mod mount;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<InteractEvent>();
+        app.add_plugins(InteractPlugin);
+
+        app.add_event::<DropFlagEvent>();
+        app.add_event::<PickFlagEvent>();
 
         app.add_systems(
             FixedUpdate,
-            (attack, interact).run_if(on_event::<NetworkEvent>),
+            (
+                attack.run_if(on_event::<NetworkEvent>),
+                (mount, flag_interact).run_if(on_event::<InteractionTriggeredEvent>),
+                drop_flag.run_if(on_event::<DropFlagEvent>),
+                pick_flag.run_if(on_event::<PickFlagEvent>),
+            ),
         );
     }
 }
@@ -43,18 +54,6 @@ fn attack(
                     game_scene_id: *game_scene_id,
                 });
             }
-        }
-    }
-}
-
-fn interact(
-    mut network_events: EventReader<NetworkEvent>,
-    mut interact: EventWriter<InteractEvent>,
-) {
-    for event in network_events.read() {
-        let client_id = event.client_id;
-        if let PlayerCommand::Interact = &event.message {
-            interact.send(InteractEvent(client_id));
         }
     }
 }

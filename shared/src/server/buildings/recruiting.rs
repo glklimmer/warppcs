@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
-use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::{ClientId, RenetServer};
 
 use crate::{
+    flag_collider,
     map::{
-        buildings::{BuildStatus, Building, RecruitmentBuilding},
+        buildings::{Building, Cost},
         GameSceneId, Layers,
     },
     networking::{
@@ -19,11 +19,16 @@ use crate::{
         entities::{health::Health, Unit},
         networking::ServerLobby,
         physics::attachment::AttachedTo,
-        players::InteractEvent,
+        players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
     BoxCollider,
 };
 
+#[derive(Component)]
+#[require(BoxCollider(flag_collider), Transform)]
+pub struct Flag;
+
+/// PlayerEntity is FlagHolder
 #[derive(Component)]
 pub struct FlagHolder(pub Entity);
 
@@ -32,8 +37,8 @@ pub struct FlagAssignment(pub Entity, pub Vec2);
 
 #[derive(Event)]
 pub struct RecruitEvent {
+    player: Entity,
     client_id: ClientId,
-    scene_id: GameSceneId,
     building_type: Building,
 }
 
@@ -41,32 +46,49 @@ pub fn recruit(
     mut commands: Commands,
     mut recruit: EventReader<RecruitEvent>,
     mut server: ResMut<RenetServer>,
+    mut player_query: Query<(&Transform, &mut Inventory, &GameSceneId)>,
     lobby: Res<ServerLobby>,
-    transforms: Query<&Transform>,
     scene_ids: Query<&GameSceneId>,
 ) {
     for event in recruit.read() {
-        let player_entity = lobby.players.get(&event.client_id).unwrap();
-        let player_transform = transforms.get(*player_entity).unwrap();
+        let (player_transform, mut inventory, scene_id) =
+            player_query.get_mut(event.player).unwrap();
         let player_translation = player_transform.translation;
         let flag_translation = Vec3::new(
             player_translation.x,
             player_translation.y,
             Layers::Flag.as_f32(),
         );
+
+        if let Some(cost) = recruitment_cost(&event.building_type) {
+            inventory.gold -= cost.gold;
+        } else {
+            continue;
+        }
+
+        let owner = Owner {
+            faction: Faction::Player {
+                client_id: event.client_id,
+            },
+        };
+
         let flag_entity = commands
             .spawn((
-                Transform::from_translation(Vec3::ZERO),
-                AttachedTo(*player_entity),
+                Flag,
+                AttachedTo(event.player),
+                Interactable {
+                    kind: InteractionType::Flag,
+                    restricted_to: Some(owner),
+                },
+                owner,
+                *scene_id,
             ))
             .id();
         commands
-            .entity(*player_entity)
+            .entity(event.player)
             .insert(FlagHolder(flag_entity));
 
-        let message = ServerMessages::SpawnFlag(SpawnFlag {
-            entity: flag_entity,
-        });
+        let message = ServerMessages::SpawnFlag(SpawnFlag { flag: flag_entity });
         let message = bincode::serialize(&message).unwrap();
         server.send_message(
             event.client_id,
@@ -78,9 +100,10 @@ pub fn recruit(
             Building::Archer => UnitType::Archer,
             Building::Warrior => UnitType::Shieldwarrior,
             Building::Pikeman => UnitType::Pikeman,
-            Building::Wall | Building::Tower | Building::GoldFarm | Building::MainBuilding => {
-                continue
-            }
+            Building::Wall { level: _ }
+            | Building::Tower
+            | Building::GoldFarm
+            | Building::MainBuilding { level: _ } => continue,
         };
 
         let unit = Unit {
@@ -89,11 +112,6 @@ pub fn recruit(
         };
         let health = Health {
             hitpoints: unit_health(&unit_type),
-        };
-        let owner = Owner {
-            faction: Faction::Player {
-                client_id: event.client_id,
-            },
         };
 
         for unit_number in 1..=4 {
@@ -106,7 +124,7 @@ pub fn recruit(
                     owner,
                     FlagAssignment(flag_entity, offset),
                     UnitBehaviour::FollowFlag(flag_entity, offset),
-                    event.scene_id,
+                    *scene_id,
                 ))
                 .id();
             let message = ServerMessages::SpawnUnit(SpawnUnit {
@@ -118,7 +136,7 @@ pub fn recruit(
             let message = bincode::serialize(&message).unwrap();
             for (client_id, entity) in lobby.players.iter() {
                 let player_scene_id = scene_ids.get(*entity).unwrap();
-                if event.scene_id.eq(player_scene_id) {
+                if scene_id.eq(player_scene_id) {
                     server.send_message(*client_id, ServerChannel::ServerMessages, message.clone());
                 }
             }
@@ -126,79 +144,46 @@ pub fn recruit(
     }
 }
 
-#[allow(clippy::type_complexity)]
 pub fn check_recruit(
-    lobby: Res<ServerLobby>,
-    player: Query<(&Transform, &BoxCollider, &GameSceneId, &Inventory)>,
-    building: Query<
-        (
-            &Transform,
-            &BoxCollider,
-            &GameSceneId,
-            &Building,
-            &BuildStatus,
-            &Owner,
-        ),
-        With<RecruitmentBuilding>,
-    >,
+    mut interactions: EventReader<InteractionTriggeredEvent>,
     mut recruit: EventWriter<RecruitEvent>,
-    mut interactions: EventReader<InteractEvent>,
+    player: Query<&Inventory>,
+    building: Query<&Building>,
 ) {
     for event in interactions.read() {
-        let client_id = event.0;
-        let player_entity = lobby.players.get(&client_id).unwrap();
+        let InteractionType::Recruit = &event.interaction else {
+            continue;
+        };
 
-        let (player_transform, player_collider, player_scene, inventory) =
-            player.get(*player_entity).unwrap();
+        let inventory = player.get(event.player).unwrap();
+        let building = building.get(event.interactable).unwrap();
 
-        let player_bounds = player_collider.at(player_transform);
-
-        for (
-            building_transform,
-            building_collider,
-            builing_scene,
-            building,
-            building_status,
-            building_owner,
-        ) in building.iter()
-        {
-            match building_owner.faction {
-                Faction::Player {
-                    client_id: other_client_id,
-                } => {
-                    if other_client_id.ne(&client_id) {
-                        continue;
-                    }
-                }
-                _ => continue,
-            }
-            if player_scene.ne(builing_scene) {
+        if let Some(cost) = recruitment_cost(building) {
+            if !inventory.gold.ge(&cost.gold) {
+                println!("Not enough gold for recruitment");
                 continue;
             }
-            if BuildStatus::Built.ne(building_status) {
-                continue;
-            }
-
-            let gold_cost: u16 = match building {
-                Building::MainBuilding | Building::Wall | Building::Tower | Building::GoldFarm => {
-                    continue
-                }
-                Building::Archer => 10,
-                Building::Warrior => 10,
-                Building::Pikeman => 10,
-            };
-            if !inventory.gold.gt(&gold_cost) {
-                continue;
-            }
-
-            let zone_bounds = building_collider.at(building_transform);
-            if player_bounds.intersects(&zone_bounds) {
-                recruit.send(RecruitEvent {
-                    client_id,
-                    scene_id: *player_scene,
-                    building_type: *building,
-                });
-            }
+        } else {
+            continue;
         }
+
+        recruit.send(RecruitEvent {
+            player: event.player,
+            client_id: event.client_id,
+            building_type: *building,
+        });
     }
+}
+
+pub fn recruitment_cost(building_type: &Building) -> Option<Cost> {
+    let gold = match building_type {
+        Building::MainBuilding { level: _ }
+        | Building::Wall { level: _ }
+        | Building::Tower
+        | Building::GoldFarm => return None,
+        Building::Archer => 50,
+        Building::Warrior => 50,
+        Building::Pikeman => 50,
+    };
+    Some(Cost { gold })
 }

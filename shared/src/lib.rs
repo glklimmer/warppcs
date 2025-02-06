@@ -23,16 +23,13 @@ impl BoxCollider {
 
     pub fn at(&self, transform: &Transform) -> Aabb2d {
         Aabb2d::new(
-            transform.translation.truncate() + self.offset.unwrap_or(Vec2::ZERO),
+            transform.translation.truncate() + self.offset.unwrap_or_default(),
             self.half_size(),
         )
     }
 
     pub fn at_pos(&self, position: Vec2) -> Aabb2d {
-        Aabb2d::new(
-            position + self.offset.unwrap_or(Vec2::ZERO),
-            self.half_size(),
-        )
+        Aabb2d::new(position + self.offset.unwrap_or_default(), self.half_size())
     }
 }
 
@@ -50,9 +47,23 @@ pub fn unit_collider() -> BoxCollider {
     }
 }
 
+pub fn horse_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(40., 35.),
+        offset: Some(Vec2::new(0., -28.)),
+    }
+}
+
 pub fn projectile_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(20., 20.),
+        offset: None,
+    }
+}
+
+pub fn flag_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(45., 75.),
         offset: None,
     }
 }

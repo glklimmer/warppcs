@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 
-use shared::enum_map::*;
+use shared::{enum_map::*, flag_collider, BoxCollider};
 
 use crate::{
     animations::{SpriteSheet, SpriteSheetAnimation},
-    entities::PartOfScene,
+    entities::{highlight::Highlightable, PartOfScene},
 };
 
 #[derive(Component)]
-#[require(PartOfScene, FlagAnimation)]
+#[require(PartOfScene, FlagAnimation, BoxCollider(flag_collider), Highlightable)]
 pub struct Flag;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]

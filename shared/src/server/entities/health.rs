@@ -1,10 +1,15 @@
 use bevy::prelude::*;
+use bevy_renet::renet::RenetServer;
 
 use crate::{
-    map::{buildings::BuildStatus, scenes::SceneBuildingIndicator, GameSceneId},
-    networking::{BuildingUpdate, Facing, MultiplayerRoles, ServerMessages},
+    map::{
+        buildings::{BuildStatus, Building},
+        scenes::SceneBuildingIndicator,
+        GameSceneId,
+    },
+    networking::{BuildingUpdate, Facing, Owner, ServerChannel, ServerMessages, UpdateType},
     server::{networking::SendServerMessage, physics::movement::Velocity},
-    BoxCollider, DelayedDespawn, GameState,
+    BoxCollider, DelayedDespawn,
 };
 
 use super::Unit;
@@ -37,8 +42,7 @@ impl Plugin for HealthPlugin {
 
         app.add_systems(
             FixedUpdate,
-            (on_unit_death, on_building_destroy, delayed_despawn)
-                .run_if(in_state(GameState::GameSession).and(in_state(MultiplayerRoles::Host))),
+            (on_unit_death, on_building_destroy, delayed_despawn),
         );
     }
 }
@@ -87,19 +91,35 @@ fn on_unit_death(
 fn on_building_destroy(
     mut commands: Commands,
     mut sender: EventWriter<SendServerMessage>,
-    query: Query<(Entity, &Health, &GameSceneId, &SceneBuildingIndicator)>,
+    mut server: ResMut<RenetServer>,
+    query: Query<(
+        Entity,
+        &Health,
+        &GameSceneId,
+        &SceneBuildingIndicator,
+        &Building,
+        &Owner,
+    )>,
 ) {
-    for (entity, health, game_scene_id, indicator) in query.iter() {
+    for (entity, health, game_scene_id, indicator, building, owner) in query.iter() {
         if health.hitpoints <= 0. {
             commands.entity(entity).despawn_recursive();
 
             sender.send(SendServerMessage {
                 message: ServerMessages::BuildingUpdate(BuildingUpdate {
                     indicator: *indicator,
-                    status: BuildStatus::Destroyed,
+                    update: UpdateType::Status {
+                        new_status: BuildStatus::Destroyed,
+                    },
                 }),
                 game_scene_id: *game_scene_id,
             });
+
+            if let Building::MainBuilding { level: _ } = building {
+                let message = ServerMessages::PlayerDefeat(*owner);
+                let message = bincode::serialize(&message).unwrap();
+                server.broadcast_message(ServerChannel::ServerMessages, message);
+            }
         }
     }
 }

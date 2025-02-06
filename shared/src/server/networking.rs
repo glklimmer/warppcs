@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::map::{GameScene, GameSceneId};
 use crate::networking::{
-    ClientChannel, Facing, Inventory, MultiplayerRoles, NetworkEntity, NetworkedEntities,
-    PlayerCommand, PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
+    ClientChannel, Facing, Inventory, NetworkEntity, NetworkedEntities, PlayerCommand, PlayerInput,
+    ProjectileType, Rotation, ServerChannel, ServerMessages,
 };
 use crate::server::entities::health::Health;
 use crate::server::physics::movement::Velocity;
@@ -63,19 +63,16 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(PlayerPlugin);
         app.add_plugins(EntityPlugin);
 
-        app.add_systems(
-            FixedPreUpdate,
-            (receive_client_messages).run_if(in_state(MultiplayerRoles::Host)),
-        );
+        app.add_systems(FixedPreUpdate, receive_client_messages);
 
-        app.add_systems(
-            FixedUpdate,
-            (sync_networked_entities, client_connections).run_if(in_state(MultiplayerRoles::Host)),
-        );
+        app.add_systems(FixedUpdate, (sync_networked_entities, client_connections));
 
         app.add_systems(
             FixedPostUpdate,
-            (send_server_messages).run_if(on_event::<SendServerMessage>),
+            (
+                send_server_messages.run_if(on_event::<SendServerMessage>),
+                sync_player_inventory,
+            ),
         );
 
         app.insert_resource(ServerLobby::default());
@@ -151,11 +148,11 @@ fn receive_client_messages(
 
 fn sync_networked_entities(
     mut server: ResMut<RenetServer>,
-    unit_query: Query<(Entity, &Transform, &Velocity), Without<ProjectileType>>,
+    entity_query: Query<(Entity, &Transform, &Velocity), Without<ProjectileType>>,
     projectile_query: Query<(Entity, &Transform, &Velocity), With<ProjectileType>>,
 ) {
     let mut networked_entities = NetworkedEntities::default();
-    for (entity, transform, velocity) in unit_query.iter() {
+    for (entity, transform, velocity) in entity_query.iter() {
         let movement = Rotation::LeftRight {
             facing: match velocity.0.x.total_cmp(&0.) {
                 std::cmp::Ordering::Less => Some(Facing::Left),
@@ -215,5 +212,16 @@ fn send_server_messages(
                 );
             }
         }
+    }
+}
+
+fn sync_player_inventory(
+    mut server: ResMut<RenetServer>,
+    query: Query<(&ServerPlayer, &Inventory), Changed<Inventory>>,
+) {
+    for (server_player, inventory) in query.iter() {
+        let message = ServerMessages::SyncInventory(inventory.clone());
+        let message = bincode::serialize(&message).unwrap();
+        server.send_message(server_player.0, ServerChannel::ServerMessages, message);
     }
 }
