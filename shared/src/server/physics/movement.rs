@@ -16,6 +16,9 @@ use bevy::math::bounding::IntersectsVolume;
 
 use super::PushBack;
 
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PhysicsSystems;
+
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);
 
@@ -38,7 +41,8 @@ impl Plugin for MovementPlugin {
                 (move_players_system, apply_velocity).chain(),
                 determine_unit_velocity,
                 apply_gravity,
-            ),
+            )
+                .in_set(PhysicsSystems),
         );
     }
 }
@@ -57,7 +61,10 @@ fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, ti
     }
 }
 
-fn apply_velocity(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>) {
+fn apply_velocity(
+    mut query: Query<(&Velocity, &mut Transform), Changed<Velocity>>,
+    time: Res<Time>,
+) {
     for (velocity, mut transform) in query.iter_mut() {
         transform.translation += velocity.0.extend(0.) * time.delta_secs();
     }
@@ -133,8 +140,8 @@ fn move_players_system(
                 let fortward_dot_building = building_transform.translation.dot(to_building);
 
                 if building_bounds.intersects(&future_bounds)
-                    && fortward_dot_building
-                        != player_transform.translation.x * building_transform.translation.x
+                    && (fortward_dot_building
+                        != -(player_transform.translation.x * building_transform.translation.x))
                 {
                     would_collide = true;
                     break;

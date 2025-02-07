@@ -10,7 +10,13 @@ impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerInput::default());
         app.add_event::<PlayerCommand>();
-        app.add_systems(Update, (player_input, gizmos_settings));
+        app.add_systems(
+            Update,
+            (
+                player_input.run_if(resource_changed::<ButtonInput<KeyCode>>),
+                gizmos_settings,
+            ),
+        );
     }
 }
 

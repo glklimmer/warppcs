@@ -20,6 +20,7 @@ use super::buildings::BuildingsPlugins;
 use super::entities::EntityPlugin;
 use super::game_scenes::GameScenesPlugin;
 use super::lobby::{LobbyPlugin, PlayerJoinedLobby, PlayerLeftLobby};
+use super::physics::movement::PhysicsSystems;
 use super::physics::PhysicsPlugin;
 use super::players::PlayerPlugin;
 
@@ -65,7 +66,13 @@ impl Plugin for ServerNetworkPlugin {
 
         app.add_systems(FixedPreUpdate, receive_client_messages);
 
-        app.add_systems(FixedUpdate, (sync_networked_entities, client_connections));
+        app.add_systems(
+            FixedUpdate,
+            (
+                sync_networked_entities.after(PhysicsSystems),
+                client_connections,
+            ),
+        );
 
         app.add_systems(
             FixedPostUpdate,

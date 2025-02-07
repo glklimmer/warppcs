@@ -67,7 +67,14 @@ impl Plugin for ClientNetworkPlugin {
                 .in_set(Connected),
         );
 
-        app.add_systems(Update, (send_input, send_player_commands).in_set(Connected));
+        app.add_systems(
+            Update,
+            (
+                send_input.run_if(resource_changed::<PlayerInput>),
+                send_player_commands.run_if(on_event::<PlayerCommand>),
+            )
+                .in_set(Connected),
+        );
     }
 }
 
