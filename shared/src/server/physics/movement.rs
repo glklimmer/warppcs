@@ -38,10 +38,12 @@ impl Plugin for MovementPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                (move_players_system, apply_velocity).chain(),
+                move_players_system,
                 determine_unit_velocity,
                 apply_gravity,
+                apply_velocity,
             )
+                .chain()
                 .in_set(PhysicsSystems),
         );
     }
@@ -136,13 +138,9 @@ fn move_players_system(
                 let building_bounds = building_collider.at(building_transform);
 
                 let to_building =
-                    (player_transform.translation - building_transform.translation).normalize();
-                let fortward_dot_building = building_transform.translation.dot(to_building);
+                    (future_position - building_transform.translation.xy()).normalize();
 
-                if building_bounds.intersects(&future_bounds)
-                    && (fortward_dot_building
-                        != -(player_transform.translation.x * building_transform.translation.x))
-                {
+                if building_bounds.intersects(&future_bounds) && to_building.x.signum() != x {
                     would_collide = true;
                     break;
                 }
@@ -228,8 +226,10 @@ fn determine_unit_velocity(
                     if let Building::Wall { level: _ } = building {
                         let building_bounds = building_collider.at(building_transform);
 
+                        let to_building =
+                            (future_position - building_transform.translation.xy()).normalize();
                         if building_bounds.intersects(&future_bounds)
-                            && building_transform.translation.x.signum() == target.x.signum()
+                            && to_building.x.signum() != target.x.signum()
                         {
                             would_collide = true;
                             break;
