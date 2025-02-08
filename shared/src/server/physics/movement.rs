@@ -16,9 +16,6 @@ use bevy::math::bounding::IntersectsVolume;
 
 use super::PushBack;
 
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PhysicsSystems;
-
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);
 
@@ -43,8 +40,7 @@ impl Plugin for MovementPlugin {
                 apply_gravity,
                 apply_velocity,
             )
-                .chain()
-                .in_set(PhysicsSystems),
+                .chain(),
         );
     }
 }
