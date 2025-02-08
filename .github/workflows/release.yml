@@ -19,12 +19,12 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
 
+      - uses: Leafwing-Studios/cargo-cache@v2
+    
       - name: Build
         run: |
           cargo build --release --target x86_64-pc-windows-msvc
-
-      - uses: Leafwing-Studios/cargo-cache@v2
-
+          
       - name: Prepare client package
         run: |
           mkdir windows-client
