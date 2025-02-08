@@ -24,7 +24,7 @@ pub struct Speed(pub f32);
 
 impl Default for Speed {
     fn default() -> Self {
-        Self(800.0)
+        Self(200.0)
     }
 }
 
@@ -34,14 +34,9 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (
-                move_players_system,
-                determine_unit_velocity,
-                apply_gravity,
-                apply_velocity,
-            )
-                .chain(),
+            ((set_player_velocity, set_unit_velocity), wall_collision).chain(),
         );
+        app.add_systems(FixedPostUpdate, (apply_gravity, apply_velocity).chain());
     }
 }
 
@@ -68,11 +63,9 @@ fn apply_velocity(
     }
 }
 
-fn move_players_system(
+fn wall_collision(
     mut query: Query<(
         &mut Velocity,
-        &PlayerInput,
-        &Speed,
         &Transform,
         &BoxCollider,
         &GameSceneId,
@@ -89,26 +82,15 @@ fn move_players_system(
         ),
         With<Health>,
     >,
+    time: Res<Time>,
 ) {
-    for (
-        mut velocity,
-        input,
-        speed,
-        player_transform,
-        player_collider,
-        player_scene,
-        client_owner,
-    ) in query.iter_mut()
+    for (mut velocity, player_transform, player_collider, player_scene, client_owner) in
+        query.iter_mut()
     {
-        let x = (input.right as i8 - input.left as i8) as f32;
-
-        let direction = Vec2::new(x, 0.).normalize_or_zero();
-        let desired_velocity = direction * speed.0;
-
-        let future_position = player_transform.translation.truncate() + direction;
+        let future_position =
+            player_transform.translation.truncate() + velocity.0 * time.delta_secs();
         let future_bounds = player_collider.at_pos(future_position);
 
-        let mut would_collide = false;
         for (
             building_transform,
             building_collider,
@@ -129,57 +111,36 @@ fn move_players_system(
             if building_status.ne(&BuildStatus::Built) {
                 continue;
             }
-
             if let Building::Wall { level: _ } = building {
                 let building_bounds = building_collider.at(building_transform);
 
-                let to_building =
-                    (future_position - building_transform.translation.xy()).normalize();
-
-                if building_bounds.intersects(&future_bounds) && to_building.x.signum() != x {
-                    would_collide = true;
+                if building_bounds.intersects(&future_bounds) {
+                    velocity.0 = Vec2::ZERO;
                     break;
                 }
             }
         }
+    }
+}
 
-        velocity.0 = if would_collide {
-            Vec2::ZERO
-        } else {
-            desired_velocity
-        };
+fn set_player_velocity(mut query: Query<(&mut Velocity, &PlayerInput, &Speed)>) {
+    for (mut velocity, input, speed) in query.iter_mut() {
+        let x = (input.right as i8 - input.left as i8) as f32;
+
+        let direction = Vec2::new(x, 0.).normalize_or_zero();
+        let desired_velocity = direction * speed.0;
+
+        velocity.0 = desired_velocity
     }
 }
 
 const MOVE_EPSILON: f32 = 1.;
 
-fn determine_unit_velocity(
-    mut query: Query<(
-        &mut Velocity,
-        &Transform,
-        &BoxCollider,
-        &UnitBehaviour,
-        &Unit,
-        &PushBack,
-        &Owner,
-        &GameSceneId,
-    )>,
+fn set_unit_velocity(
+    mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit, &PushBack)>,
     transform_query: Query<&Transform>,
-    buildings: Query<
-        (
-            &Transform,
-            &BoxCollider,
-            &GameSceneId,
-            &Owner,
-            &Building,
-            &BuildStatus,
-        ),
-        With<Health>,
-    >,
 ) {
-    for (mut velocity, transform, collider, behaviour, unit, push_back, client_owner, unit_scene) in
-        &mut query
-    {
+    for (mut velocity, transform, behaviour, unit, push_back) in &mut query {
         match behaviour {
             UnitBehaviour::Idle => {}
             UnitBehaviour::AttackTarget(_) => {
@@ -193,47 +154,7 @@ fn determine_unit_velocity(
                 let target = target + *offset;
                 let target_right = target.x > transform.translation.x;
 
-                let future_position =
-                    transform.translation.truncate() * (if target_right { 1. } else { -1. });
-                let future_bounds = collider.at_pos(future_position);
-
-                let mut would_collide = false;
-                for (
-                    building_transform,
-                    building_collider,
-                    builing_scene,
-                    building_owner,
-                    building,
-                    building_status,
-                ) in buildings.iter()
-                {
-                    if unit_scene.ne(builing_scene) {
-                        continue;
-                    }
-
-                    if client_owner.eq(building_owner) {
-                        continue;
-                    }
-
-                    if building_status.ne(&BuildStatus::Built) {
-                        continue;
-                    }
-
-                    if let Building::Wall { level: _ } = building {
-                        let building_bounds = building_collider.at(building_transform);
-
-                        let to_building =
-                            (future_position - building_transform.translation.xy()).normalize();
-                        if building_bounds.intersects(&future_bounds)
-                            && to_building.x.signum() != target.x.signum()
-                        {
-                            would_collide = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (transform.translation.x - target.x).abs() <= MOVE_EPSILON || would_collide {
+                if (transform.translation.x - target.x).abs() <= MOVE_EPSILON {
                     velocity.0.x = 0.;
                     continue;
                 }

@@ -12,10 +12,7 @@ impl Plugin for InputPlugin {
         app.add_event::<PlayerCommand>();
         app.add_systems(
             Update,
-            (
-                player_input.run_if(resource_changed::<ButtonInput<KeyCode>>),
-                gizmos_settings,
-            ),
+            (player_input, gizmos_settings).run_if(resource_changed::<ButtonInput<KeyCode>>),
         );
     }
 }
