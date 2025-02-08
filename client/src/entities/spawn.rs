@@ -23,7 +23,7 @@ use shared::{
     projectile_collider, BoxCollider,
 };
 
-use super::{highlight::Highlighted, PartOfScene};
+use super::{highlight::Highlighted, player::ClientPlayer, PartOfScene};
 
 pub struct SpawnPlugin;
 
@@ -132,6 +132,7 @@ fn spawn_player(
         } = spawn;
 
         let mut client_player_entity = commands.spawn((
+            ClientPlayer,
             SpriteAnimationBundle::new(
                 translation,
                 &king_sprite_sheet.sprite_sheet,

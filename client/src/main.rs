@@ -8,6 +8,7 @@ use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
 use shared::{server::networking::ServerNetworkPlugin, GameState};
+use sound::SoundPlugin;
 use std::env;
 use std::f32::consts::PI;
 use std::thread;
@@ -15,7 +16,7 @@ use ui::UiPlugin;
 
 use animations::AnimationPlugin;
 use camera::CameraPlugin;
-use entities::EntitiesPlugin;
+use entities::{player::ClientPlayer, EntitiesPlugin};
 use input::InputPlugin;
 
 #[cfg(feature = "steam")]
@@ -39,6 +40,7 @@ pub mod gizmos;
 pub mod input;
 pub mod menu;
 pub mod networking;
+pub mod sound;
 pub mod ui;
 pub mod ui_widgets;
 
@@ -104,6 +106,7 @@ fn main() {
     client.add_plugins(EntitiesPlugin);
     client.add_plugins(UiPlugin);
     client.add_plugins(GizmosPlugin);
+    client.add_plugins(SoundPlugin);
     client.add_systems(Startup, setup_background);
     client.add_plugins(ClientNetworkPlugin);
 

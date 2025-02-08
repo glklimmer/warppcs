@@ -8,6 +8,9 @@ use shared::networking::{Mounted, ServerMessages};
 
 pub struct PlayerPlugin;
 
+#[derive(Component)]
+pub struct ClientPlayer;
+
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(

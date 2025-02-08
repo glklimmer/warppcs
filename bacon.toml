@@ -1,0 +1,26 @@
+[jobs.run]
+command = [
+    "cargo",
+    "run",
+    "-p",
+    "client",
+    "server",
+    "--features",
+    "bevy/dynamic_linking",
+]
+need_stdout = true
+allow_warnings = true
+default_watch = true
+background = true
+
+
+[jobs.run_client]
+command = ["cargo", "run", "-p", "client", "--features", "bevy/dynamic_linking"]
+need_stdout = true
+allow_warnings = true
+default_watch = true
+background = true
+
+
+[keybindings]
+h = "job:run_client"

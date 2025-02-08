@@ -9,7 +9,7 @@ use spawn::SpawnPlugin;
 mod despawn;
 pub mod highlight;
 mod map;
-mod player;
+pub mod player;
 mod spawn;
 
 #[derive(Component, Default)]
