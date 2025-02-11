@@ -84,27 +84,24 @@ fn wall_collision(
     >,
     time: Res<Time>,
 ) {
-    for (mut velocity, player_transform, player_collider, player_scene, client_owner) in
-        query.iter_mut()
-    {
-        let future_position =
-            player_transform.translation.truncate() + velocity.0 * time.delta_secs();
-        let future_bounds = player_collider.at_pos(future_position);
+    for (mut velocity, transform, collider, scene, owner) in query.iter_mut() {
+        let future_position = transform.translation.truncate() + velocity.0 * time.delta_secs();
+        let future_bounds = collider.at_pos(future_position);
 
         for (
             building_transform,
             building_collider,
             building_scene,
-            owner,
+            building_owner,
             building,
             building_status,
         ) in buildings.iter()
         {
-            if player_scene.ne(building_scene) {
+            if scene.ne(building_scene) {
                 continue;
             }
 
-            if owner.eq(client_owner) {
+            if building_owner.eq(owner) {
                 continue;
             }
 
@@ -115,7 +112,7 @@ fn wall_collision(
                 let building_bounds = building_collider.at(building_transform);
 
                 if building_bounds.intersects(&future_bounds) {
-                    velocity.0 = Vec2::ZERO;
+                    velocity.0.x = 0.;
                     break;
                 }
             }
