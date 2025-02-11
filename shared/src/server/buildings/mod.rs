@@ -168,7 +168,7 @@ fn check_building_interaction(
     building: Query<(Entity, &Building, &BuildStatus)>,
 ) {
     for event in interactions.read() {
-        let InteractionType::Building = &event.interaction else {
+        let InteractionType::PresetBuilding = &event.interaction else {
             continue;
         };
 

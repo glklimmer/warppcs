@@ -190,22 +190,22 @@ fn load_game_scene(
                         buildings,
                         &mut commands,
                         &asset_server,
-                        base.archer_building,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::ArcherBuilding),
+                        base.first_right_marker,
+                        SceneBuildingIndicator::Base(BaseSceneIndicator::FirstRightMarker),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
-                        base.warrior_building,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::WarriorBuilding),
+                        base.first_left_marker,
+                        SceneBuildingIndicator::Base(BaseSceneIndicator::FirstLeftMarker),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
-                        base.pikeman_building,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::PikemanBuilding),
+                        base.second_left_marker,
+                        SceneBuildingIndicator::Base(BaseSceneIndicator::SecondRightMarker),
                     );
                     spawn_building(
                         buildings,

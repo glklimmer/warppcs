@@ -278,40 +278,40 @@ fn duel_map(
             SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
         ));
         commands.spawn((
-            base.archer_building,
+            base.first_right_marker,
             server_components,
             RecruitBuilding,
             Interactable {
-                kind: InteractionType::Building,
+                kind: InteractionType::Marker,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::ArcherBuilding),
+            SceneBuildingIndicator::Base(BaseSceneIndicator::FirstRightMarker),
         ));
         commands.spawn((
-            base.warrior_building,
+            base.first_left_marker,
             server_components,
             RecruitBuilding,
             Interactable {
-                kind: InteractionType::Building,
+                kind: InteractionType::Marker,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::WarriorBuilding),
+            SceneBuildingIndicator::Base(BaseSceneIndicator::FirstLeftMarker),
         ));
         commands.spawn((
-            base.pikeman_building,
+            base.second_right_marker,
             server_components,
             RecruitBuilding,
             Interactable {
-                kind: InteractionType::Building,
+                kind: InteractionType::Marker,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::PikemanBuilding),
+            SceneBuildingIndicator::Base(BaseSceneIndicator::SecondRightMarker),
         ));
         commands.spawn((
             base.left_wall,
             server_components,
             Interactable {
-                kind: InteractionType::Building,
+                kind: InteractionType::PresetBuilding,
                 restricted_to: Some(owner),
             },
             SceneBuildingIndicator::Base(BaseSceneIndicator::LeftWall),
@@ -321,7 +321,7 @@ fn duel_map(
             base.right_wall,
             server_components,
             Interactable {
-                kind: InteractionType::Building,
+                kind: InteractionType::PresetBuilding,
                 restricted_to: Some(owner),
             },
             SceneBuildingIndicator::Base(BaseSceneIndicator::RightWall),
@@ -332,7 +332,7 @@ fn duel_map(
             base.left_gold_farm,
             server_components,
             Interactable {
-                kind: InteractionType::Building,
+                kind: InteractionType::PresetBuilding,
                 restricted_to: Some(owner),
             },
             SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
@@ -341,7 +341,7 @@ fn duel_map(
             base.right_gold_farm,
             server_components,
             Interactable {
-                kind: InteractionType::Building,
+                kind: InteractionType::PresetBuilding,
                 restricted_to: Some(owner),
             },
             SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
@@ -428,7 +428,7 @@ fn duel_map(
             server_components,
             Interactable {
                 kind: InteractionType::Chest,
-                restricted_to: Some(owner),
+                restricted_to: None,
             },
             SceneBuildingIndicator::Camp(CampSceneIndicator::Chest),
         ));

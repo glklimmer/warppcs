@@ -86,6 +86,27 @@ impl Building {
 const BUILDUING_SCALE: Vec3 = Vec3::new(3., 3., 1.);
 
 #[derive(Bundle, Clone, Copy)]
+pub struct BuildingMarkerBundle {
+    pub build_status: BuildStatus,
+    pub collider: BoxCollider,
+    pub transform: Transform,
+}
+
+impl BuildingMarkerBundle {
+    pub fn new(x: f32) -> Self {
+        Self {
+            build_status: BuildStatus::Marker,
+            collider: BoxCollider {
+                dimension: Vec2::new(80., 110.),
+                offset: Some(Vec2::new(0., -20.)),
+            },
+            transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
+                .with_scale(BUILDUING_SCALE),
+        }
+    }
+}
+
+#[derive(Bundle, Clone, Copy)]
 pub struct BuildingBundle {
     pub building: Building,
     pub collider: BoxCollider,

@@ -7,6 +7,7 @@ use crate::{networking::UnitType, unit_collider, BoxCollider};
 use super::physics::{movement::Velocity, PushBack};
 
 pub mod health;
+pub mod item;
 
 #[derive(Component, Clone)]
 #[require(BoxCollider(unit_collider), Velocity, PushBack)]

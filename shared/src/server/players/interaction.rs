@@ -16,7 +16,8 @@ pub enum InteractionType {
     Chest,
     Mount,
     Travel,
-    Building,
+    PresetBuilding,
+    Marker,
     Recruit,
     Flag,
 }
@@ -51,7 +52,8 @@ impl InteractionType {
             Self::Chest => 140,
             Self::Travel => 130,
             Self::Mount => 125,
-            Self::Building => 122,
+            Self::PresetBuilding => 122,
+            Self::Marker => 121,
             Self::Flag => 120,
             Self::Recruit => 96,
         }

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use chest::open_chest;
 use flag::{drop_flag, flag_interact, pick_flag, DropFlagEvent, PickFlagEvent};
 use interaction::{InteractPlugin, InteractionTriggeredEvent};
 use mount::mount;
@@ -10,6 +11,8 @@ use crate::{
 };
 
 use super::networking::{NetworkEvent, SendServerMessage, ServerLobby};
+
+mod chest;
 
 pub mod flag;
 pub mod interaction;
@@ -28,7 +31,7 @@ impl Plugin for PlayerPlugin {
             FixedUpdate,
             (
                 attack.run_if(on_event::<NetworkEvent>),
-                (mount, flag_interact).run_if(on_event::<InteractionTriggeredEvent>),
+                (mount, flag_interact, open_chest).run_if(on_event::<InteractionTriggeredEvent>),
                 drop_flag.run_if(on_event::<DropFlagEvent>),
                 pick_flag.run_if(on_event::<PickFlagEvent>),
             ),

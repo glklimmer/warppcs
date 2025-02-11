@@ -1,14 +1,19 @@
 use bevy::prelude::*;
 
-use crate::map::{buildings::BuildingBundle, spawn_point::SpawnPointBundle};
+use crate::map::{
+    buildings::{BuildingBundle, BuildingMarkerBundle},
+    spawn_point::SpawnPointBundle,
+    ChestBundle,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
 pub struct BaseScene {
     pub main_building: BuildingBundle,
-    pub archer_building: BuildingBundle,
-    pub warrior_building: BuildingBundle,
-    pub pikeman_building: BuildingBundle,
+    pub starter_chest: ChestBundle,
+    pub first_right_marker: BuildingMarkerBundle,
+    pub first_left_marker: BuildingMarkerBundle,
+    pub second_right_marker: BuildingMarkerBundle,
     pub left_wall: BuildingBundle,
     pub right_wall: BuildingBundle,
     pub left_gold_farm: BuildingBundle,
@@ -20,9 +25,10 @@ pub struct BaseScene {
 #[derive(Copy, Clone, Component, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum BaseSceneIndicator {
     MainBuilding,
-    ArcherBuilding,
-    WarriorBuilding,
-    PikemanBuilding,
+    StarterChest,
+    FirstRightMarker,
+    FirstLeftMarker,
+    SecondRightMarker,
     LeftWall,
     RightWall,
     LeftGoldFarm,
@@ -35,9 +41,10 @@ impl BaseScene {
     pub fn new() -> Self {
         BaseScene {
             main_building: BuildingBundle::main(0.),
-            archer_building: BuildingBundle::archer(400.),
-            warrior_building: BuildingBundle::warrior(-400.),
-            pikeman_building: BuildingBundle::pikeman(650.),
+            starter_chest: ChestBundle::new(200.),
+            first_right_marker: BuildingMarkerBundle::new(400.),
+            first_left_marker: BuildingMarkerBundle::new(-400.),
+            second_right_marker: BuildingMarkerBundle::new(650.),
             left_wall: BuildingBundle::wall(-1050.),
             right_wall: BuildingBundle::wall(1050.),
             left_gold_farm: BuildingBundle::gold_farm(-800.),
