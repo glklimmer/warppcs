@@ -63,13 +63,13 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(PlayerPlugin);
         app.add_plugins(EntityPlugin);
 
-        app.add_systems(FixedPreUpdate, receive_client_messages);
-
-        app.add_systems(FixedUpdate, (sync_networked_entities, client_connections));
+        app.add_systems(FixedFirst, receive_client_messages);
 
         app.add_systems(
-            FixedPostUpdate,
+            FixedLast,
             (
+                sync_networked_entities,
+                client_connections,
                 send_server_messages.run_if(on_event::<SendServerMessage>),
                 sync_player_inventory,
             ),
