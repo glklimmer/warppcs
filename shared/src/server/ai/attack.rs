@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use super::UnitBehaviour;
 use crate::{
     map::{GameSceneId, Layers},
-    networking::{Facing, Owner, ProjectileType, ServerMessages, SpawnProjectile, UnitType},
+    networking::{Facing, Hitby, Owner, ProjectileType, ServerMessages, SpawnProjectile, UnitType},
     server::{
         entities::{health::TakeDamage, Unit},
         networking::SendServerMessage,
@@ -115,6 +115,7 @@ fn process_attacks(
                                 true => Facing::Left,
                                 false => Facing::Right,
                             },
+                            by: Hitby::Meele,
                         });
                         sender.send(SendServerMessage {
                             message: ServerMessages::MeleeAttack { entity },

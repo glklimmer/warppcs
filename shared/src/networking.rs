@@ -159,6 +159,12 @@ pub enum Checkbox {
     Unchecked,
 }
 
+#[derive(Debug, Serialize, Deserialize, Component, Clone, Copy)]
+pub enum Hitby {
+    Arrow,
+    Meele,
+}
+
 #[derive(Debug, Serialize, Deserialize, Component)]
 pub enum ServerMessages {
     PlayerJoinedLobby {
@@ -205,6 +211,7 @@ pub enum ServerMessages {
     BuildingUpdate(BuildingUpdate),
     EntityHit {
         entity: Entity,
+        by: Hitby,
     },
     EntityDeath {
         entity: Entity,

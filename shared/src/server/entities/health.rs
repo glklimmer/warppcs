@@ -7,7 +7,7 @@ use crate::{
         scenes::SceneBuildingIndicator,
         GameSceneId,
     },
-    networking::{BuildingUpdate, Facing, Owner, ServerChannel, ServerMessages, UpdateType},
+    networking::{BuildingUpdate, Facing, Hitby, Owner, ServerChannel, ServerMessages, UpdateType},
     server::{networking::SendServerMessage, physics::movement::Velocity},
     BoxCollider, DelayedDespawn,
 };
@@ -30,6 +30,7 @@ pub struct TakeDamage {
     pub target_entity: Entity,
     pub damage: f32,
     pub direction: Facing,
+    pub by: Hitby,
 }
 
 pub struct HealthPlugin;
@@ -58,7 +59,10 @@ fn apply_damage(
             println!("New health: {}.", health.hitpoints);
 
             sender.send(SendServerMessage {
-                message: ServerMessages::EntityHit { entity },
+                message: ServerMessages::EntityHit {
+                    entity,
+                    by: event.by,
+                },
                 game_scene_id: *game_scene_id,
             });
         }

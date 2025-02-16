@@ -5,7 +5,7 @@ use bevy_renet::renet::RenetServer;
 
 use crate::{
     map::GameSceneId,
-    networking::{Facing, Owner, ProjectileType, ServerChannel, ServerMessages},
+    networking::{Facing, Hitby, Owner, ProjectileType, ServerChannel, ServerMessages},
     server::{
         ai::attack::projectile_damage,
         entities::health::{Health, TakeDamage},
@@ -81,6 +81,7 @@ fn projectile_collision(
                         true => Facing::Left,
                         false => Facing::Right,
                     },
+                    by: Hitby::Arrow,
                 });
                 commands.entity(entity).despawn();
                 let despawn = ServerMessages::DespawnEntity {
