@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 use crate::{
     animations::{king::KingAnimation, Change, EntityChangeEvent},
-    entities::PartOfScene,
+    entities::map::PartOfScene,
 };
 
 pub mod join_server;

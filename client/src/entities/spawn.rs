@@ -23,7 +23,7 @@ use shared::{
     projectile_collider, BoxCollider,
 };
 
-use super::{highlight::Highlighted, player::ClientPlayer, PartOfScene};
+use super::{highlight::Highlighted, map::PartOfScene, player::ClientPlayer};
 
 pub struct SpawnPlugin;
 

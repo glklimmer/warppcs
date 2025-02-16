@@ -16,7 +16,7 @@ use ui::UiPlugin;
 
 use animations::AnimationPlugin;
 use camera::CameraPlugin;
-use entities::{player::ClientPlayer, EntitiesPlugin};
+use entities::EntitiesPlugin;
 use input::InputPlugin;
 
 #[cfg(feature = "steam")]

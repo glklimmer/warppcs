@@ -8,12 +8,9 @@ use spawn::SpawnPlugin;
 
 mod despawn;
 pub mod highlight;
-mod map;
+pub mod map;
 pub mod player;
 mod spawn;
-
-#[derive(Component, Default)]
-pub struct PartOfScene;
 
 pub struct EntitiesPlugin;
 
