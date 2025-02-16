@@ -1,8 +1,14 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::{scenes::Slot, Layers};
-use crate::{physics::collider::BoxCollider, server::buildings::building_collider};
+use super::{scenes::SceneSlot, Layers};
+use crate::{
+    physics::collider::BoxCollider,
+    server::{
+        buildings::building_collider,
+        players::interaction::{Interactable, InteractionType},
+    },
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MainBuildingLevels {
@@ -85,55 +91,80 @@ impl Building {
 
 const BUILDUING_SCALE: Vec3 = Vec3::new(3., 3., 1.);
 
-pub fn marker(x: f32) -> Slot {
-    Slot {
-        initial_building: None,
+pub fn marker(x: f32) -> SceneSlot {
+    SceneSlot {
         collider: BoxCollider {
             dimension: Vec2::new(80., 110.),
             offset: Some(Vec2::new(0., -20.)),
         },
         transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
             .with_scale(BUILDUING_SCALE),
+        spawn_fn: |entity, owner| {
+            entity.insert((
+                owner,
+                Interactable {
+                    kind: InteractionType::Marker,
+                    restricted_to: Some(owner),
+                },
+                RecruitBuilding,
+            ));
+        },
     }
 }
 
-pub fn main(x: f32) -> Slot {
-    Slot {
-        initial_building: Some((
-            Building::MainBuilding {
-                level: MainBuildingLevels::Tent,
-            },
-            BuildStatus::Built,
-        )),
+pub fn main(x: f32) -> SceneSlot {
+    SceneSlot {
         collider: BoxCollider {
             dimension: Vec2::new(150., 110.),
             offset: Some(Vec2::new(0., -20.)),
         },
         transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
             .with_scale(BUILDUING_SCALE),
+        spawn_fn: |commands, owner| {
+            commands.insert((
+                owner,
+                Building::MainBuilding {
+                    level: MainBuildingLevels::Tent,
+                },
+                BuildStatus::Built,
+            ));
+        },
     }
 }
 
-pub fn wall(x: f32) -> Slot {
-    Slot {
-        initial_building: Some((
-            Building::Wall {
-                level: WallLevels::Wood,
-            },
-            BuildStatus::Marker,
-        )),
+pub fn wall(x: f32) -> SceneSlot {
+    SceneSlot {
         collider: building_collider(&Building::Wall {
             level: WallLevels::Basic,
         }),
         transform: Transform::from_xyz(x, 145., Layers::Wall.as_f32()).with_scale(BUILDUING_SCALE),
+        spawn_fn: |entity, owner| {
+            entity.insert((
+                owner,
+                Interactable {
+                    kind: InteractionType::PresetBuilding,
+                    restricted_to: Some(owner),
+                },
+            ));
+        },
     }
 }
 
-pub fn gold_farm(x: f32) -> Slot {
-    Slot {
-        initial_building: Some((Building::GoldFarm, BuildStatus::Marker)),
+pub fn gold_farm(x: f32) -> SceneSlot {
+    SceneSlot {
         collider: building_collider(&Building::GoldFarm),
         transform: Transform::from_xyz(x, 25., Layers::Building.as_f32())
             .with_scale(BUILDUING_SCALE),
+        spawn_fn: |entity, owner| {
+            entity.insert((
+                owner,
+                Building::GoldFarm,
+                BuildStatus::Marker,
+                Interactable {
+                    kind: InteractionType::PresetBuilding,
+                    restricted_to: Some(owner),
+                },
+            ));
+        },
     }
 }

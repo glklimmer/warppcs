@@ -4,13 +4,14 @@ use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;
 
 use crate::{
-    map::GameSceneId,
-    networking::{Facing, Owner, ProjectileType, ServerChannel, ServerMessages},
+    entities::{DelayedDespawn, Owner, ProjectileType},
+    map::scenes::GameSceneId,
+    networking::{Facing, ServerChannel, ServerMessages},
+    physics::collider::BoxCollider,
     server::{
         ai::attack::projectile_damage,
         entities::health::{Health, TakeDamage},
     },
-    BoxCollider, DelayedDespawn,
 };
 
 use super::movement::Velocity;

@@ -9,10 +9,11 @@ use crate::{
 };
 
 pub mod chest;
+pub mod mount;
 pub mod spawn_point;
 
 #[derive(Component)]
-pub struct DelayedDespawn(Timer);
+pub struct DelayedDespawn(pub Timer);
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
 pub enum UnitType {

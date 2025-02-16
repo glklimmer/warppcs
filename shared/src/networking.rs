@@ -8,7 +8,7 @@ use crate::{
     entities::{MountType, Owner, ProjectileType, UnitType},
     map::{
         buildings::{BuildStatus, Building},
-        scenes::{GameSceneType, SceneSlotIndicator},
+        scenes::GameSceneType,
     },
     player::{Inventory, Mounted},
 };
@@ -71,23 +71,16 @@ pub struct SpawnProjectile {
     pub direction: [f32; 2],
 }
 
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct BuildingUpdate {
-    pub indicator: SceneSlotIndicator,
-    pub update: UpdateType,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct LoadBuilding {
-    pub indicator: SceneSlotIndicator,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SlotEntity {
+    pub entity: Entity,
+    pub building: Option<Building>,
     pub status: BuildStatus,
-    pub building: Building,
 }
 
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub enum UpdateType {
-    Status { new_status: BuildStatus },
-    Upgrade { upgraded_building: Building },
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct SlotEntities {
+    pub slots: Vec<SlotEntity>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq, Copy)]
@@ -129,7 +122,7 @@ pub enum ServerMessages {
         units: Vec<SpawnUnit>,
         mounts: Vec<SpawnMount>,
         projectiles: Vec<SpawnProjectile>,
-        buildings: Vec<LoadBuilding>,
+        slots: Vec<SlotEntity>,
     },
     SpawnGroup {
         player: SpawnPlayer,
@@ -139,7 +132,7 @@ pub enum ServerMessages {
         entity: Entity,
     },
     SyncInventory(Inventory),
-    BuildingUpdate(BuildingUpdate),
+    BuildingUpdate(SlotEntity),
     EntityHit {
         entity: Entity,
     },

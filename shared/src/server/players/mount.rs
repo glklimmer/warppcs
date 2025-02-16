@@ -1,19 +1,20 @@
 use bevy::prelude::*;
 
 use crate::{
-    map::GameSceneId,
-    networking::{MountType, Mounted, ServerMessages},
+    entities::MountType,
+    map::scenes::GameSceneId,
+    networking::ServerMessages,
+    player::Mounted,
     server::{
         networking::SendServerMessage,
         physics::movement::{Speed, Velocity},
     },
-    unit_collider, BoxCollider,
 };
 
 use super::interaction::{InteractionTriggeredEvent, InteractionType};
 
 #[derive(Component, Clone)]
-#[require(BoxCollider(unit_collider), Velocity)]
+#[require(Velocity)]
 pub struct Mount {
     pub mount_type: MountType,
 }

@@ -1,13 +1,9 @@
 use bevy::prelude::*;
 
-use crate::{
-    map::GameSceneId,
-    networking::ServerMessages,
-    server::{
-        entities::item::ItemPool,
-        networking::SendServerMessage,
-        players::interaction::{InteractionTriggeredEvent, InteractionType},
-    },
+use crate::server::{
+    entities::item::ItemPool,
+    networking::SendServerMessage,
+    players::interaction::{InteractionTriggeredEvent, InteractionType},
 };
 
 pub fn open_chest(

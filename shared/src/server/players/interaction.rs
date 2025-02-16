@@ -1,12 +1,13 @@
-use bevy::{math::bounding::IntersectsVolume, prelude::*};
+use bevy::prelude::*;
 
+use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::ClientId;
 
 use crate::{
-    map::GameSceneId,
-    networking::{Faction, Owner},
+    entities::{Faction, Owner},
+    map::scenes::GameSceneId,
+    physics::collider::BoxCollider,
     server::networking::ServerLobby,
-    BoxCollider,
 };
 
 use super::super::networking::NetworkEvent;

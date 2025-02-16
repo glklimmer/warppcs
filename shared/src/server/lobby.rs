@@ -1,12 +1,15 @@
 use bevy::prelude::*;
+
 use bevy_renet::{
     netcode::NetcodeServerTransport,
     renet::{ClientId, RenetServer},
 };
-
 use std::collections::BTreeMap;
 
-use crate::networking::{Checkbox, PlayerCommand, ServerChannel, ServerMessages};
+use crate::{
+    networking::{Checkbox, ServerChannel, ServerMessages},
+    player::PlayerCommand,
+};
 
 use super::networking::NetworkEvent;
 

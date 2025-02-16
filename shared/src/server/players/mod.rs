@@ -5,10 +5,7 @@ use flag::{drop_flag, flag_interact, pick_flag, DropFlagEvent, PickFlagEvent};
 use interaction::{InteractPlugin, InteractionTriggeredEvent};
 use mount::mount;
 
-use crate::{
-    map::GameSceneId,
-    networking::{PlayerCommand, ServerMessages},
-};
+use crate::{map::scenes::GameSceneId, networking::ServerMessages, player::PlayerCommand};
 
 use super::networking::{NetworkEvent, SendServerMessage, ServerLobby};
 

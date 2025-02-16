@@ -1,34 +1,12 @@
-use bevy::prelude::*;
+use super::{GameScene, GameSceneId, GameSceneType};
+use crate::entities::{chest::chest, spawn_point::spawn_point};
 
-use crate::{entities::chest::ChestBundle, map::spawn_point::SpawnPointBundle};
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone)]
-pub struct CampScene {
-    pub chest: ChestBundle,
-    pub left_spawn_point: SpawnPointBundle,
-    pub right_spawn_point: SpawnPointBundle,
-}
-
-#[derive(Copy, Clone, Component, Serialize, Deserialize, Debug, PartialEq, Eq)]
-pub enum CampSceneIndicator {
-    Chest,
-    LeftSpawn,
-    RightSpawn,
-}
-
-impl CampScene {
-    pub fn new() -> Self {
-        Self {
-            chest: ChestBundle::new(0.),
-            left_spawn_point: SpawnPointBundle::new(-800.),
-            right_spawn_point: SpawnPointBundle::new(800.),
-        }
-    }
-}
-
-impl Default for CampScene {
-    fn default() -> Self {
-        Self::new()
+pub fn define_camp_scene(id: GameSceneId) -> GameScene {
+    GameScene {
+        id,
+        game_scene_type: GameSceneType::Camp,
+        slots: vec![chest(0.)],
+        left_portal: spawn_point(-800.),
+        right_portal: spawn_point(800.),
     }
 }

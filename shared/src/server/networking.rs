@@ -1,13 +1,16 @@
 use bevy::prelude::*;
 
-use crate::map::{GameScene, GameSceneId};
-use crate::networking::{
-    ClientChannel, Facing, Inventory, NetworkEntity, NetworkedEntities, PlayerCommand, PlayerInput,
-    ProjectileType, Rotation, ServerChannel, ServerMessages,
+use crate::{
+    entities::ProjectileType,
+    map::scenes::{GameScene, GameSceneId},
+    networking::{
+        ClientChannel, Facing, NetworkEntity, NetworkedEntities, Rotation, ServerChannel,
+        ServerMessages,
+    },
+    physics::collider::{player_collider, BoxCollider},
+    player::{Inventory, PlayerCommand, PlayerInput},
+    server::{entities::health::Health, physics::movement::Velocity},
 };
-use crate::server::entities::health::Health;
-use crate::server::physics::movement::Velocity;
-use crate::{player_collider, BoxCollider};
 
 use bevy_renet::{
     renet::{ClientId, RenetServer, ServerEvent},
@@ -15,13 +18,15 @@ use bevy_renet::{
 };
 use std::collections::HashMap;
 
-use super::ai::AIPlugin;
-use super::buildings::BuildingsPlugins;
-use super::entities::EntityPlugin;
-use super::game_scenes::GameScenesPlugin;
-use super::lobby::{LobbyPlugin, PlayerJoinedLobby, PlayerLeftLobby};
-use super::physics::PhysicsPlugin;
-use super::players::PlayerPlugin;
+use super::{
+    ai::AIPlugin,
+    buildings::BuildingsPlugins,
+    entities::EntityPlugin,
+    game_scenes::GameScenesPlugin,
+    lobby::{LobbyPlugin, PlayerJoinedLobby, PlayerLeftLobby},
+    physics::PhysicsPlugin,
+    players::PlayerPlugin,
+};
 
 #[derive(Debug, Default, Resource)]
 pub struct ServerLobby {
