@@ -6,7 +6,8 @@ use shared::{
 };
 
 use super::{
-    AnimationTrigger, Change, EntityChangeEvent, FullAnimation, SpriteSheet, SpriteSheetAnimation,
+    AnimationSound, AnimationSoundTrigger, AnimationTrigger, Change, EntityChangeEvent,
+    FullAnimation, SpriteSheet, SpriteSheetAnimation,
 };
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
@@ -56,6 +57,10 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Walk => SpriteSheetAnimation {
                 first_sprite_index: 20,
                 last_sprite_index: 25,
+                animation_sound: Some(AnimationSound {
+                    sound_file: "animation_sound/king/walk.ogg".to_string(),
+                    sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+                }),
                 ..default()
             },
             KingAnimation::Attack => SpriteSheetAnimation {
@@ -76,6 +81,10 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Mount => SpriteSheetAnimation {
                 first_sprite_index: 70,
                 last_sprite_index: 76,
+                animation_sound: Some(AnimationSound {
+                    sound_file: "animation_sound/horse/horse_sound.ogg".to_string(),
+                    sound_trigger: AnimationSoundTrigger::OnEnter,
+                }),
                 ..default()
             },
             KingAnimation::HorseIdle => SpriteSheetAnimation {

@@ -35,12 +35,28 @@ pub enum AnimationDirection {
     Backward,
 }
 
+#[derive(Component, Clone, Default, PartialEq, Eq)]
+pub enum AnimationSoundTrigger {
+    #[default]
+    OnEnter,
+    OnStartFrameTimer,
+    OnEndFrameTimer,
+}
+
+#[derive(Component, Clone)]
+#[require(AnimationSoundTrigger)]
+pub struct AnimationSound {
+    pub sound_file: String,
+    pub sound_trigger: AnimationSoundTrigger,
+}
+
 #[derive(Component, Clone)]
 pub struct SpriteSheetAnimation {
     pub first_sprite_index: usize,
     pub last_sprite_index: usize,
     pub frame_timer: Timer,
     pub direction: AnimationDirection,
+    pub animation_sound: Option<AnimationSound>,
 }
 
 impl Default for SpriteSheetAnimation {
@@ -50,6 +66,7 @@ impl Default for SpriteSheetAnimation {
             last_sprite_index: 0,
             frame_timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             direction: AnimationDirection::Forward,
+            animation_sound: None,
         }
     }
 }
@@ -187,6 +204,7 @@ fn trigger_hit(
     for event in network_events.read() {
         if let ServerMessages::EntityHit {
             entity: server_entity,
+            by: _,
         } = event.message
         {
             if let Some(client_entity) = network_mapping.0.get(&server_entity) {

@@ -4,7 +4,7 @@ use bandits::bandit::bandit;
 use humans::{archer::archer, pikeman::pikeman, shieldwarrior::shieldwarrior};
 use shared::{enum_map::*, networking::UnitType, unit_collider, BoxCollider};
 
-use crate::entities::PartOfScene;
+use crate::entities::map::PartOfScene;
 
 use super::{
     AnimationTrigger, Change, EntityChangeEvent, FullAnimation, PlayOnce, SpriteSheet,
