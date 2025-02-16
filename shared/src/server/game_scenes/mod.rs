@@ -6,7 +6,7 @@ use start_game::StartGamePlugin;
 use crate::{
     map::{
         buildings::{BuildStatus, Building},
-        scenes::SceneBuildingIndicator,
+        scenes::SceneSlotIndicator,
         GameSceneId,
     },
     networking::{
@@ -58,12 +58,7 @@ fn travel(
     units: Query<(&GameSceneId, &Owner, Entity, &Unit, &Transform)>,
     mounts: Query<(&GameSceneId, Entity, &Mount, &Transform)>,
     projectiles: Query<(&GameSceneId, Entity, &ProjectileType, &Transform, &Velocity)>,
-    buildings: Query<(
-        &GameSceneId,
-        &SceneBuildingIndicator,
-        &BuildStatus,
-        &Building,
-    )>,
+    buildings: Query<(&GameSceneId, &SceneSlotIndicator, &BuildStatus, &Building)>,
     player_query: Query<(&Transform, Option<&Mounted>)>,
     flag_holders: Query<&FlagHolder>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
@@ -224,7 +219,7 @@ fn travel(
             .map(|(_, indicator, status, building)| LoadBuilding {
                 indicator: *indicator,
                 status: *status,
-                upgrade: *building,
+                building: *building,
             })
             .collect();
 

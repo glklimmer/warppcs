@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use super::super::super::enum_map::*;
 use crate::map::buildings::BuildingBundle;
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +23,7 @@ pub struct FightScene {
     pub right_gold_farm: BuildingBundle,
 }
 
-#[derive(Copy, Clone, Component, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Component, Serialize, Deserialize, Debug, PartialEq, Eq, Mappable)]
 pub enum FightSceneIndicator {
     LeftMainBuilding,
     LeftArcherBuilding,

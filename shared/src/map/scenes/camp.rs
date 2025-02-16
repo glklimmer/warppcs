@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::map::{spawn_point::SpawnPointBundle, ChestBundle};
+use crate::{entities::chest::ChestBundle, map::spawn_point::SpawnPointBundle};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]

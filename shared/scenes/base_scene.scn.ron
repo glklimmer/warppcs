@@ -1,0 +1,170 @@
+(
+    entities: {
+        4294967296: (
+            components: {
+                "my_game::GameScene": (
+                    id: 1, 
+                    game_scene_type: "Base",
+                ),
+
+                "bevy_transform::components::transform::Transform": (
+                    translation: (x: 0.0, y: 0.0, z: 0.0),
+                    rotation: (x: 0.0, y: 0.0, z: 0.0, w: 1.0),
+                    scale:     (x: 1.0, y: 1.0, z: 1.0),
+                ),
+            },
+
+            children: [
+                4294967297, 
+                4294967298,
+                4294967299,
+                4294967300,
+                4294967301,
+                4294967302,
+                4294967303,
+                4294967304,
+                4294967305,
+                4294967306,
+                4294967307,
+            ],
+        ),
+
+        // Child #1 => "main.scn.ron" sub-scene
+        4294967297: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/main.scn.ron",
+                    transform: (
+                        // Additional offset if you want to override 
+                        // what's inside "main.scn.ron"
+                        translation: (x: 0.0, y: 72.0, z: 0.0),
+                        rotation: (x: 0.0, y: 0.0, z: 0.0, w: 1.0),
+                        scale: (x: 1.0, y: 1.0, z: 1.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #2 => "chest.scn.ron"
+        4294967298: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/chest.scn.ron",
+                    transform: (
+                        translation: (x: 200.0, y: 50.0, z: 0.0),
+                        rotation: (x: 0.0, y: 0.0, z: 0.0, w: 1.0),
+                        scale: (x: 1.0, y: 1.0, z: 1.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #3 => "marker.scn.ron" for firstRightSlot (x=400)
+        4294967299: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/marker.scn.ron",
+                    transform: (
+                        translation: (x: 400.0, y: 72.0, z: 0.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #4 => "marker.scn.ron" for firstLeftSlot (x=-400)
+        4294967300: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/marker.scn.ron",
+                    transform: (
+                        translation: (x: -400.0, y: 72.0, z: 0.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #5 => "marker.scn.ron" secondRightSlot (x=650)
+        4294967301: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/marker.scn.ron",
+                    transform: (
+                        translation: (x: 650.0, y: 72.0, z: 0.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #6 => "wall.scn.ron" leftWall (x=-1050)
+        4294967302: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/wall.scn.ron",
+                    transform: (
+                        translation: (x: -1050.0, y: 145.0, z: 0.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #7 => "wall.scn.ron" rightWall (x=1050)
+        4294967303: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/wall.scn.ron",
+                    transform: (
+                        translation: (x: 1050.0, y: 145.0, z: 0.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #8 => "gold_farm.scn.ron" leftGoldFarm (x=-800)
+        4294967304: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/gold_farm.scn.ron",
+                    transform: (
+                        translation: (x: -800.0, y: 25.0, z: 0.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #9 => "gold_farm.scn.ron" rightGoldFarm (x=875)
+        4294967305: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/gold_farm.scn.ron",
+                    transform: (
+                        translation: (x: 875.0, y: 25.0, z: 0.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #10 => "spawn_point.scn.ron" leftSpawn (x=-1800)
+        4294967306: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/spawn_point.scn.ron",
+                    transform: (
+                        translation: (x: -1800.0, y: 50.0, z: 0.0),
+                    ),
+                ),
+            },
+        ),
+
+        // Child #11 => "spawn_point.scn.ron" rightSpawn (x=1800)
+        4294967307: (
+            components: {
+                "my_game::SubSceneReference": (
+                    scene_path: "scenes/spawn_point.scn.ron",
+                    transform: (
+                        translation: (x: 1800.0, y: 50.0, z: 0.0),
+                    ),
+                ),
+            },
+        ),
+    }
+)

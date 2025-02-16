@@ -2,13 +2,16 @@ use bevy::prelude::*;
 
 use bevy::color::palettes::css::YELLOW;
 use shared::{
+    enum_map::EnumIter,
     map::{
-        buildings::{BuildStatus, Building, BuildingBundle, MainBuildingLevels, WallLevels},
+        buildings::{
+            BuildStatus, Building, BuildingBundle, ItemSlotBundle, MainBuildingLevels, WallLevels,
+        },
         scenes::{
             base::{BaseScene, BaseSceneIndicator},
             camp::{CampScene, CampSceneIndicator},
             fight::{FightScene, FightSceneIndicator},
-            SceneBuildingIndicator,
+            SceneSlotIndicator,
         },
         GameSceneType,
     },
@@ -81,49 +84,49 @@ fn load_game_scene(
                         &mut commands,
                         &asset_server,
                         fight.left_main_building,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.left_archer_building,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftArcherBuilding),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::LeftArcherBuilding),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.left_warrior_building,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftWarriorBuilding),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::LeftWarriorBuilding),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.left_pikeman_building,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftPikemanBuilding),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::LeftPikemanBuilding),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.left_left_wall,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftLeftWall),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::LeftLeftWall),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.left_right_wall,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftRightWall),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::LeftRightWall),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.left_gold_farm,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
                     );
 
                     spawn_building(
@@ -131,114 +134,125 @@ fn load_game_scene(
                         &mut commands,
                         &asset_server,
                         fight.right_main_building,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::RightMainBuilding),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.right_archer_building,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightArcherBuilding),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::RightArcherBuilding),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.right_warrior_building,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightWarriorBuilding),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::RightWarriorBuilding),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.right_pikeman_building,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightPikemanBuilding),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::RightPikemanBuilding),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.right_left_wall,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightLeftWall),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::RightLeftWall),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.right_right_wall,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightRightWall),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::RightRightWall),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         fight.right_gold_farm,
-                        SceneBuildingIndicator::Fight(FightSceneIndicator::RightGoldFarm),
+                        SceneSlotIndicator::Fight(FightSceneIndicator::RightGoldFarm),
                     );
                 }
                 GameSceneType::Base => {
                     let base = BaseScene::new();
+
+                    // I already have a iterator to iter over enums.
+                    // for indicator in BaseSceneIndicator::iter() {
+                    //     spawn_building(
+                    //         buildings,
+                    //         &mut commands,
+                    //         &asset_server,
+                    //         base.main_building,
+                    //         SceneBuildingIndicator::Base(*indicator),
+                    //     );
+                    // }
 
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         base.main_building,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
+                        SceneSlotIndicator::Base(BaseSceneIndicator::MainBuilding),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
-                        base.first_right_marker,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::FirstRightMarker),
+                        base.first_right_slot,
+                        SceneSlotIndicator::Base(BaseSceneIndicator::FirstRightSlot),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
-                        base.first_left_marker,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::FirstLeftMarker),
+                        base.first_left_slot,
+                        SceneSlotIndicator::Base(BaseSceneIndicator::FirstLeftSlot),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         base.second_left_marker,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::SecondRightMarker),
+                        SceneSlotIndicator::Base(BaseSceneIndicator::SecondRightSlot),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         base.left_wall,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::LeftWall),
+                        SceneSlotIndicator::Base(BaseSceneIndicator::LeftWall),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         base.right_wall,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::RightWall),
+                        SceneSlotIndicator::Base(BaseSceneIndicator::RightWall),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         base.left_gold_farm,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
+                        SceneSlotIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
                     );
                     spawn_building(
                         buildings,
                         &mut commands,
                         &asset_server,
                         base.right_gold_farm,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
+                        SceneSlotIndicator::Base(BaseSceneIndicator::RightGoldFarm),
                     );
 
                     commands.spawn((
                         base.left_spawn_point,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::LeftSpawnPoint),
+                        SceneSlotIndicator::Base(BaseSceneIndicator::LeftSpawnPoint),
                         (
                             Mesh2d(meshes.add(Rectangle::from_size(
                                 base.left_spawn_point.collider.dimension,
@@ -249,7 +263,7 @@ fn load_game_scene(
                     ));
                     commands.spawn((
                         base.right_spawn_point,
-                        SceneBuildingIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
+                        SceneSlotIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
                         (
                             Mesh2d(meshes.add(Rectangle::from_size(
                                 base.left_spawn_point.collider.dimension,
@@ -264,7 +278,7 @@ fn load_game_scene(
                     let sprite_sheet = &chest_sprite_sheet.sprite_sheet;
                     commands.spawn((
                         camp.chest,
-                        SceneBuildingIndicator::Camp(CampSceneIndicator::Chest),
+                        SceneSlotIndicator::Camp(CampSceneIndicator::Chest),
                         Sprite {
                             image: sprite_sheet.texture.clone(),
                             texture_atlas: Some(TextureAtlas {
@@ -278,7 +292,7 @@ fn load_game_scene(
 
                     commands.spawn((
                         camp.left_spawn_point,
-                        SceneBuildingIndicator::Camp(CampSceneIndicator::LeftSpawn),
+                        SceneSlotIndicator::Camp(CampSceneIndicator::LeftSpawn),
                         (
                             Mesh2d(meshes.add(Rectangle::from_size(
                                 camp.left_spawn_point.collider.dimension,
@@ -289,7 +303,7 @@ fn load_game_scene(
                     ));
                     commands.spawn((
                         camp.right_spawn_point,
-                        SceneBuildingIndicator::Camp(CampSceneIndicator::RightSpawn),
+                        SceneSlotIndicator::Camp(CampSceneIndicator::RightSpawn),
                         (
                             Mesh2d(meshes.add(Rectangle::from_size(
                                 camp.right_spawn_point.collider.dimension,
@@ -322,22 +336,18 @@ fn load_game_scene(
 }
 
 fn spawn_building(
-    buildings: &[LoadBuilding],
+    load_buildings: &[LoadBuilding],
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
     building_bundle: BuildingBundle,
-    indicator: SceneBuildingIndicator,
+    indicator: SceneSlotIndicator,
 ) {
-    let load = buildings
+    let load = load_buildings
         .iter()
         .find(|update| update.indicator.eq(&indicator));
-    let load = match load {
-        Some(load) => load,
-        None => &LoadBuilding {
-            indicator,
-            status: building_bundle.build_status,
-            upgrade: building_bundle.building,
-        },
+    let (status, building) = match load {
+        Some(load) => (load.status, load.building),
+        None => (building_bundle.build_status, building_bundle.building),
     };
     commands
         .spawn((
@@ -382,7 +392,7 @@ fn spawn_building(
 fn update_building(
     mut network_events: EventReader<NetworkEvent>,
     mut commands: Commands,
-    buildings: Query<(Entity, &SceneBuildingIndicator, &Building)>,
+    buildings: Query<(Entity, &SceneSlotIndicator, &Building)>,
     asset_server: Res<AssetServer>,
 ) {
     for event in network_events.read() {
@@ -414,16 +424,16 @@ fn update_building(
     }
 }
 
-fn building_flipped(indicator: &SceneBuildingIndicator) -> bool {
+fn building_flipped(indicator: &SceneSlotIndicator) -> bool {
     match indicator {
-        SceneBuildingIndicator::Base(base_scene_indicator) => {
+        SceneSlotIndicator::Base(base_scene_indicator) => {
             matches!(base_scene_indicator, BaseSceneIndicator::RightWall)
         }
-        SceneBuildingIndicator::Fight(fight_scene_indicator) => matches!(
+        SceneSlotIndicator::Fight(fight_scene_indicator) => matches!(
             fight_scene_indicator,
             FightSceneIndicator::LeftRightWall | FightSceneIndicator::RightRightWall
         ),
-        SceneBuildingIndicator::Camp(_camp_scene_indicator) => false,
+        SceneSlotIndicator::Camp(_camp_scene_indicator) => false,
     }
 }
 

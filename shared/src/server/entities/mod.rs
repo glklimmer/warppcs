@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use health::HealthPlugin;
+use item::ItemPlugin;
 
 use crate::{networking::UnitType, unit_collider, BoxCollider};
 
@@ -21,5 +22,6 @@ pub struct EntityPlugin;
 impl Plugin for EntityPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(HealthPlugin);
+        app.add_plugins(ItemPlugin);
     }
 }

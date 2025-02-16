@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::Layers;
-use crate::{server::buildings::building_collider, BoxCollider};
+use super::{scenes::Slot, Layers};
+use crate::{physics::collider::BoxCollider, server::buildings::building_collider};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MainBuildingLevels {
@@ -85,112 +85,55 @@ impl Building {
 
 const BUILDUING_SCALE: Vec3 = Vec3::new(3., 3., 1.);
 
-#[derive(Bundle, Clone, Copy)]
-pub struct BuildingMarkerBundle {
-    pub build_status: BuildStatus,
-    pub collider: BoxCollider,
-    pub transform: Transform,
-}
-
-impl BuildingMarkerBundle {
-    pub fn new(x: f32) -> Self {
-        Self {
-            build_status: BuildStatus::Marker,
-            collider: BoxCollider {
-                dimension: Vec2::new(80., 110.),
-                offset: Some(Vec2::new(0., -20.)),
-            },
-            transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
+pub fn marker(x: f32) -> Slot {
+    Slot {
+        initial_building: None,
+        collider: BoxCollider {
+            dimension: Vec2::new(80., 110.),
+            offset: Some(Vec2::new(0., -20.)),
+        },
+        transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
+            .with_scale(BUILDUING_SCALE),
     }
 }
 
-#[derive(Bundle, Clone, Copy)]
-pub struct BuildingBundle {
-    pub building: Building,
-    pub collider: BoxCollider,
-    pub build_status: BuildStatus,
-    pub transform: Transform,
-}
-
-impl BuildingBundle {
-    pub fn main(x: f32) -> Self {
-        Self {
-            building: Building::MainBuilding {
+pub fn main(x: f32) -> Slot {
+    Slot {
+        initial_building: Some((
+            Building::MainBuilding {
                 level: MainBuildingLevels::Tent,
             },
-            collider: BoxCollider {
-                dimension: Vec2::new(150., 110.),
-                offset: Some(Vec2::new(0., -20.)),
+            BuildStatus::Built,
+        )),
+        collider: BoxCollider {
+            dimension: Vec2::new(150., 110.),
+            offset: Some(Vec2::new(0., -20.)),
+        },
+        transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
+            .with_scale(BUILDUING_SCALE),
+    }
+}
+
+pub fn wall(x: f32) -> Slot {
+    Slot {
+        initial_building: Some((
+            Building::Wall {
+                level: WallLevels::Wood,
             },
-            build_status: BuildStatus::Built,
-            transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
+            BuildStatus::Marker,
+        )),
+        collider: building_collider(&Building::Wall {
+            level: WallLevels::Basic,
+        }),
+        transform: Transform::from_xyz(x, 145., Layers::Wall.as_f32()).with_scale(BUILDUING_SCALE),
     }
+}
 
-    pub fn archer(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::Archer,
-            collider: building_collider(&Building::Archer),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn warrior(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::Warrior,
-            collider: building_collider(&Building::Warrior),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn pikeman(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::Pikeman,
-            collider: building_collider(&Building::Pikeman),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn wall(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::Wall {
-                level: WallLevels::Basic,
-            },
-            collider: building_collider(&Building::Wall {
-                level: WallLevels::Basic,
-            }),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 145., Layers::Wall.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn tower() -> Self {
-        BuildingBundle {
-            building: Building::Tower,
-            collider: building_collider(&Building::Tower),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(0., 50., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn gold_farm(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::GoldFarm,
-            collider: building_collider(&Building::GoldFarm),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 25., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
+pub fn gold_farm(x: f32) -> Slot {
+    Slot {
+        initial_building: Some((Building::GoldFarm, BuildStatus::Marker)),
+        collider: building_collider(&Building::GoldFarm),
+        transform: Transform::from_xyz(x, 25., Layers::Building.as_f32())
+            .with_scale(BUILDUING_SCALE),
     }
 }

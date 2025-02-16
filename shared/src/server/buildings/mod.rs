@@ -7,7 +7,7 @@ use recruiting::{check_recruit, recruit, RecruitEvent};
 use crate::{
     map::{
         buildings::{BuildStatus, Building, Cost, MainBuildingLevels, RecruitBuilding, WallLevels},
-        scenes::SceneBuildingIndicator,
+        scenes::SceneSlotIndicator,
         GameSceneId,
     },
     networking::{BuildingUpdate, Inventory, Owner, ServerMessages, UpdateType},
@@ -217,7 +217,7 @@ fn construct_building(
         &mut BuildStatus,
         &Building,
         &GameSceneId,
-        &SceneBuildingIndicator,
+        &SceneSlotIndicator,
         &Owner,
         Option<&RecruitBuilding>,
     )>,
@@ -263,7 +263,7 @@ fn construct_building(
 fn upgrade_building(
     mut commands: Commands,
     mut upgrade: EventReader<BuildingUpgrade>,
-    mut building: Query<(&mut Building, &GameSceneId, &SceneBuildingIndicator)>,
+    mut building: Query<(&mut Building, &GameSceneId, &SceneSlotIndicator)>,
     mut inventory: Query<&mut Inventory>,
     mut sender: EventWriter<SendServerMessage>,
 ) {

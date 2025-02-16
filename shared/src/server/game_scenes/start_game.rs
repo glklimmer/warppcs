@@ -13,7 +13,7 @@ use crate::{
             base::{BaseScene, BaseSceneIndicator},
             camp::{CampScene, CampSceneIndicator},
             fight::{FightScene, FightSceneIndicator},
-            SceneBuildingIndicator,
+            SceneSlotIndicator,
         },
         GameScene, GameSceneId, GameSceneType, Layers,
     },
@@ -86,39 +86,39 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     commands.spawn((
         base.left_main_building,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
+        SceneSlotIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
     ));
     commands.spawn((
         base.left_archer_building,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftArcherBuilding),
+        SceneSlotIndicator::Fight(FightSceneIndicator::LeftArcherBuilding),
     ));
     commands.spawn((
         base.left_warrior_building,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftWarriorBuilding),
+        SceneSlotIndicator::Fight(FightSceneIndicator::LeftWarriorBuilding),
     ));
     commands.spawn((
         base.left_pikeman_building,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftPikemanBuilding),
+        SceneSlotIndicator::Fight(FightSceneIndicator::LeftPikemanBuilding),
     ));
     commands.spawn((
         base.left_left_wall,
         server_components,
         building_health(&base.left_left_wall.building),
-        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftLeftWall),
+        SceneSlotIndicator::Fight(FightSceneIndicator::LeftLeftWall),
     ));
     commands.spawn((
         base.left_right_wall,
         server_components,
         building_health(&base.left_right_wall.building),
-        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftRightWall),
+        SceneSlotIndicator::Fight(FightSceneIndicator::LeftRightWall),
     ));
     commands.spawn((
         base.left_gold_farm,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
+        SceneSlotIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
     ));
 
     let server_components = (
@@ -132,39 +132,39 @@ fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut Res
     commands.spawn((
         base.right_main_building,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::RightMainBuilding),
+        SceneSlotIndicator::Fight(FightSceneIndicator::RightMainBuilding),
     ));
     commands.spawn((
         base.right_archer_building,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::RightArcherBuilding),
+        SceneSlotIndicator::Fight(FightSceneIndicator::RightArcherBuilding),
     ));
     commands.spawn((
         base.right_warrior_building,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::RightWarriorBuilding),
+        SceneSlotIndicator::Fight(FightSceneIndicator::RightWarriorBuilding),
     ));
     commands.spawn((
         base.right_pikeman_building,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::RightPikemanBuilding),
+        SceneSlotIndicator::Fight(FightSceneIndicator::RightPikemanBuilding),
     ));
     commands.spawn((
         base.right_left_wall,
         server_components,
         building_health(&base.right_left_wall.building),
-        SceneBuildingIndicator::Fight(FightSceneIndicator::RightLeftWall),
+        SceneSlotIndicator::Fight(FightSceneIndicator::RightLeftWall),
     ));
     commands.spawn((
         base.right_right_wall,
         server_components,
         building_health(&base.right_right_wall.building),
-        SceneBuildingIndicator::Fight(FightSceneIndicator::RightRightWall),
+        SceneSlotIndicator::Fight(FightSceneIndicator::RightRightWall),
     ));
     commands.spawn((
         base.right_gold_farm,
         server_components,
-        SceneBuildingIndicator::Fight(FightSceneIndicator::RightGoldFarm),
+        SceneSlotIndicator::Fight(FightSceneIndicator::RightGoldFarm),
     ));
 
     // Create Player entities
@@ -275,37 +275,37 @@ fn duel_map(
         commands.spawn((
             base.main_building,
             server_components,
-            SceneBuildingIndicator::Base(BaseSceneIndicator::MainBuilding),
+            SceneSlotIndicator::Base(BaseSceneIndicator::MainBuilding),
         ));
         commands.spawn((
-            base.first_right_marker,
+            base.first_right_slot,
             server_components,
             RecruitBuilding,
             Interactable {
                 kind: InteractionType::Marker,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::FirstRightMarker),
+            SceneSlotIndicator::Base(BaseSceneIndicator::FirstRightSlot),
         ));
         commands.spawn((
-            base.first_left_marker,
+            base.first_left_slot,
             server_components,
             RecruitBuilding,
             Interactable {
                 kind: InteractionType::Marker,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::FirstLeftMarker),
+            SceneSlotIndicator::Base(BaseSceneIndicator::FirstLeftSlot),
         ));
         commands.spawn((
-            base.second_right_marker,
+            base.second_right_slot,
             server_components,
             RecruitBuilding,
             Interactable {
                 kind: InteractionType::Marker,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::SecondRightMarker),
+            SceneSlotIndicator::Base(BaseSceneIndicator::SecondRightSlot),
         ));
         commands.spawn((
             base.left_wall,
@@ -314,7 +314,7 @@ fn duel_map(
                 kind: InteractionType::PresetBuilding,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftWall),
+            SceneSlotIndicator::Base(BaseSceneIndicator::LeftWall),
             building_health(&base.left_wall.building),
         ));
         commands.spawn((
@@ -324,7 +324,7 @@ fn duel_map(
                 kind: InteractionType::PresetBuilding,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::RightWall),
+            SceneSlotIndicator::Base(BaseSceneIndicator::RightWall),
             building_health(&base.right_wall.building),
         ));
 
@@ -335,7 +335,7 @@ fn duel_map(
                 kind: InteractionType::PresetBuilding,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
+            SceneSlotIndicator::Base(BaseSceneIndicator::LeftGoldFarm),
         ));
         commands.spawn((
             base.right_gold_farm,
@@ -344,7 +344,7 @@ fn duel_map(
                 kind: InteractionType::PresetBuilding,
                 restricted_to: Some(owner),
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::RightGoldFarm),
+            SceneSlotIndicator::Base(BaseSceneIndicator::RightGoldFarm),
         ));
 
         commands.spawn((
@@ -355,7 +355,7 @@ fn duel_map(
                 kind: InteractionType::Travel,
                 restricted_to: None,
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::LeftSpawnPoint),
+            SceneSlotIndicator::Base(BaseSceneIndicator::LeftSpawnPoint),
         ));
         commands.spawn((
             base.right_spawn_point,
@@ -365,7 +365,7 @@ fn duel_map(
                 kind: InteractionType::Travel,
                 restricted_to: None,
             },
-            SceneBuildingIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
+            SceneSlotIndicator::Base(BaseSceneIndicator::RightSpawnPoint),
         ));
 
         let game_scene_type = GameSceneType::Base;
@@ -430,7 +430,7 @@ fn duel_map(
                 kind: InteractionType::Chest,
                 restricted_to: None,
             },
-            SceneBuildingIndicator::Camp(CampSceneIndicator::Chest),
+            SceneSlotIndicator::Camp(CampSceneIndicator::Chest),
         ));
         commands.spawn((
             base.left_spawn_point,
@@ -443,7 +443,7 @@ fn duel_map(
                 kind: InteractionType::Travel,
                 restricted_to: None,
             },
-            SceneBuildingIndicator::Camp(CampSceneIndicator::LeftSpawn),
+            SceneSlotIndicator::Camp(CampSceneIndicator::LeftSpawn),
         ));
         commands.spawn((
             base.right_spawn_point,
@@ -456,7 +456,7 @@ fn duel_map(
                 kind: InteractionType::Travel,
                 restricted_to: None,
             },
-            SceneBuildingIndicator::Camp(CampSceneIndicator::RightSpawn),
+            SceneSlotIndicator::Camp(CampSceneIndicator::RightSpawn),
         ));
         commands.spawn((
             Transform::from_xyz(1400., 45., Layers::Unit.as_f32()),

@@ -4,7 +4,7 @@ use bevy_renet::renet::RenetServer;
 use crate::{
     map::{
         buildings::{BuildStatus, Building},
-        scenes::SceneBuildingIndicator,
+        scenes::SceneSlotIndicator,
         GameSceneId,
     },
     networking::{BuildingUpdate, Facing, Owner, ServerChannel, ServerMessages, UpdateType},
@@ -96,7 +96,7 @@ fn on_building_destroy(
         Entity,
         &Health,
         &GameSceneId,
-        &SceneBuildingIndicator,
+        &SceneSlotIndicator,
         &Building,
         &Owner,
     )>,

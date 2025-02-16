@@ -1,49 +1,19 @@
 use bevy::prelude::*;
 
-use super::enum_map::*;
 use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::{
-    horse_collider,
+    entities::{MountType, Owner, ProjectileType, UnitType},
     map::{
         buildings::{BuildStatus, Building},
-        scenes::SceneBuildingIndicator,
-        GameSceneType,
+        scenes::{GameSceneType, SceneSlotIndicator},
     },
-    projectile_collider, BoxCollider,
+    player::{Inventory, Mounted},
 };
 
 pub const PROTOCOL_ID: u64 = 7;
-
-#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
-pub struct PlayerInput {
-    pub left: bool,
-    pub right: bool,
-}
-
-#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
-pub enum UnitType {
-    Shieldwarrior,
-    Pikeman,
-    Archer,
-    Bandit,
-}
-
-#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
-#[require(BoxCollider(horse_collider))]
-pub enum MountType {
-    Horse,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event)]
-pub enum PlayerCommand {
-    StartGame,
-    Interact,
-    MeleeAttack,
-    LobbyReadyState(Checkbox),
-}
 
 pub enum ClientChannel {
     Input,
@@ -52,39 +22,6 @@ pub enum ClientChannel {
 pub enum ServerChannel {
     ServerMessages,
     NetworkedEntities,
-}
-
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
-pub enum Faction {
-    Player { client_id: ClientId },
-    Bandits,
-}
-
-#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
-pub struct Owner {
-    pub faction: Faction,
-}
-
-#[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
-#[require(BoxCollider(projectile_collider))]
-pub enum ProjectileType {
-    Arrow,
-}
-
-#[derive(Component, Debug, Serialize, Deserialize, Clone)]
-pub struct Inventory {
-    pub gold: u16,
-}
-
-impl Default for Inventory {
-    fn default() -> Self {
-        Self { gold: 600 }
-    }
-}
-
-#[derive(Component, Debug, Serialize, Deserialize, Clone)]
-pub struct Mounted {
-    pub mount_type: MountType,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
@@ -136,15 +73,15 @@ pub struct SpawnProjectile {
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct BuildingUpdate {
-    pub indicator: SceneBuildingIndicator,
+    pub indicator: SceneSlotIndicator,
     pub update: UpdateType,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]
 pub struct LoadBuilding {
-    pub indicator: SceneBuildingIndicator,
+    pub indicator: SceneSlotIndicator,
     pub status: BuildStatus,
-    pub upgrade: Building,
+    pub building: Building,
 }
 
 #[derive(Debug, Serialize, Deserialize, Event, Clone)]

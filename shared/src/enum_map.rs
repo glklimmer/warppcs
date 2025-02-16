@@ -43,4 +43,9 @@ pub trait EnumIter: Copy + 'static {
 
     /// Maps `Self` into an index (0..COUNT).
     fn as_index(&self) -> usize;
+
+    /// Returns an iterator over all variants.
+    fn iter() -> impl Iterator<Item = &'static Self> {
+        Self::all_variants().iter()
+    }
 }
