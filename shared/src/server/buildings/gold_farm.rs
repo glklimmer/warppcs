@@ -9,7 +9,7 @@ use crate::{
 use super::BuildingConstruction;
 
 const GOLD_PER_TICK: u16 = 10;
-const GOLD_TIMER: f32 = 10.;
+const GOLD_TIMER: f32 = 2.;
 
 #[derive(Component)]
 pub struct GoldFarmTimer {
@@ -49,9 +49,13 @@ pub fn gold_farm_output(
 
         if farm_timer.timer.just_finished() {
             if let Faction::Player { client_id } = owner.faction {
-                let player_entity = lobby.players.get(&client_id).unwrap();
-                let mut inventory = inventory.get_mut(*player_entity).unwrap();
-                inventory.gold += GOLD_PER_TICK;
+                match lobby.players.get(&client_id) {
+                    Some(player_entity) => {
+                        let mut inventory = inventory.get_mut(*player_entity).unwrap();
+                        inventory.gold += GOLD_PER_TICK;
+                    }
+                    None => error!(name:"gold_farm_output", "Player not found"),
+                }
             }
         }
     }
