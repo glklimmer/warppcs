@@ -3,7 +3,8 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    map::scenes::SceneSlot,
+    map::scenes::SlotPrefab,
+    networking::SlotType,
     physics::collider::BoxCollider,
     server::players::interaction::{Interactable, InteractionType},
 };
@@ -22,22 +23,29 @@ pub enum ChestStatus {
     Open,
 }
 
-pub fn chest(x: f32) -> SceneSlot {
-    SceneSlot {
-        collider: BoxCollider {
-            dimension: Vec2::new(100., 100.),
-            offset: None,
-        },
-        transform: Transform::from_xyz(x, 50., 0.),
-        spawn_fn: |entity, _| {
-            entity.insert((
-                Chest::Normal,
-                ChestStatus::Closed,
-                Interactable {
-                    kind: InteractionType::Chest,
-                    restricted_to: None,
-                },
-            ));
-        },
+pub trait Prefab {
+    fn prefab() -> SlotPrefab;
+}
+
+impl SlotType for Prefab {
+    fn prefab(&self, x: f32) -> SlotPrefab {
+        SlotPrefab {
+            slot_type: SlotType::Chest,
+            collider: BoxCollider {
+                dimension: Vec2::new(100., 100.),
+                offset: None,
+            },
+            transform: Transform::from_xyz(x, 50., 0.),
+            spawn_fn: |entity, _| {
+                entity.insert((
+                    Chest::Normal,
+                    ChestStatus::Closed,
+                    Interactable {
+                        kind: InteractionType::Chest,
+                        restricted_to: None,
+                    },
+                ));
+            },
+        }
     }
 }

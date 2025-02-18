@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    map::{scenes::SceneSlot, Layers},
+    map::{scenes::SlotPrefab, Layers},
     physics::collider::BoxCollider,
     server::players::{
         interaction::{Interactable, InteractionType},
@@ -11,8 +11,8 @@ use crate::{
 
 use super::MountType;
 
-pub fn horse(x: f32) -> SceneSlot {
-    SceneSlot {
+pub fn horse(x: f32) -> SlotPrefab {
+    SlotPrefab {
         collider: BoxCollider {
             dimension: Vec2::new(40., 35.),
             offset: Some(Vec2::new(0., -28.)),

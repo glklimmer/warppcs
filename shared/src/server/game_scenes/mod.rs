@@ -23,6 +23,3 @@ impl Plugin for GameScenesPlugin {
         app.add_systems(FixedUpdate, travel_player);
     }
 }
-
-#[derive(Component, Clone, Copy, Debug)]
-pub struct Slot;

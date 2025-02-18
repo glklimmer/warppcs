@@ -1,16 +1,16 @@
-use super::{GameScene, GameSceneId, GameSceneType};
+use super::{GameScene, GameSceneType};
 use crate::{
-    entities::{chest::chest, spawn_point::spawn_point},
+    entities::spawn_point::spawn_point,
     map::buildings::{gold_farm, main, marker, wall},
+    networking::SlotType,
 };
 
-pub fn define_base_scene(id: GameSceneId) -> GameScene {
+pub fn define_base_scene() -> GameScene {
     GameScene {
-        id,
         game_scene_type: GameSceneType::Base,
         slots: vec![
             main(0.),
-            chest(200.),
+            SlotType::chest(200.),
             marker(400.),
             marker(-400.),
             marker(650.),

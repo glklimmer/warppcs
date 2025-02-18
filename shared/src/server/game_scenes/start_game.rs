@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 use bevy_renet::renet::RenetServer;
-use std::env;
 
 use crate::{
     entities::{Faction, MountType, Owner, UnitType},
@@ -9,7 +8,7 @@ use crate::{
         scenes::{base::define_base_scene, camp::define_camp_scene, GameSceneId},
         Layers,
     },
-    networking::{ServerChannel, ServerMessages, SpawnPlayer},
+    networking::{ServerChannel, ServerMessages, Slot, SlotEntity, SlotType, SpawnPlayer},
     player::{Inventory, PlayerCommand, PlayerInput},
     server::{
         ai::{
@@ -52,176 +51,10 @@ fn start_game(
                 continue;
             }
             println!("Starting game...");
-            let args: Vec<String> = env::args().collect();
-            if args.contains(&String::from("fight")) {
-                //     fight_map(&lobby, &mut commands, &mut server);
-            } else {
-                circle_map(&lobby, &mut game_world, &mut commands, &mut server);
-            }
+            circle_map(&lobby, &mut game_world, &mut commands, &mut server);
         }
     }
 }
-
-// fn fight_map(lobby: &Res<ServerLobby>, commands: &mut Commands, server: &mut ResMut<RenetServer>) {
-//     let mut players: Vec<(&ClientId, &Entity)> = lobby.players.iter().collect();
-//     let (left_client_id, left_player_entity) = players.pop().unwrap();
-//     let (right_client_id, right_player_entity) = players.pop().unwrap();
-//
-//     // Create Fight Scene
-//     let base = FightScene::new();
-//     let server_components = (
-//         Owner {
-//             faction: Faction::Player {
-//                 client_id: *left_client_id,
-//             },
-//         },
-//         GameSceneId(1),
-//     );
-//     commands.spawn((
-//         base.left_main_building,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::LeftMainBuilding),
-//     ));
-//     commands.spawn((
-//         base.left_archer_building,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::LeftArcherBuilding),
-//     ));
-//     commands.spawn((
-//         base.left_warrior_building,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::LeftWarriorBuilding),
-//     ));
-//     commands.spawn((
-//         base.left_pikeman_building,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::LeftPikemanBuilding),
-//     ));
-//     commands.spawn((
-//         base.left_left_wall,
-//         server_components,
-//         building_health(&base.left_left_wall.building),
-//         SceneSlotIndicator::Fight(FightSceneIndicator::LeftLeftWall),
-//     ));
-//     commands.spawn((
-//         base.left_right_wall,
-//         server_components,
-//         building_health(&base.left_right_wall.building),
-//         SceneSlotIndicator::Fight(FightSceneIndicator::LeftRightWall),
-//     ));
-//     commands.spawn((
-//         base.left_gold_farm,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::LeftGoldFarm),
-//     ));
-//
-//     let server_components = (
-//         Owner {
-//             faction: Faction::Player {
-//                 client_id: *right_client_id,
-//             },
-//         },
-//         GameSceneId(1),
-//     );
-//     commands.spawn((
-//         base.right_main_building,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::RightMainBuilding),
-//     ));
-//     commands.spawn((
-//         base.right_archer_building,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::RightArcherBuilding),
-//     ));
-//     commands.spawn((
-//         base.right_warrior_building,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::RightWarriorBuilding),
-//     ));
-//     commands.spawn((
-//         base.right_pikeman_building,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::RightPikemanBuilding),
-//     ));
-//     commands.spawn((
-//         base.right_left_wall,
-//         server_components,
-//         building_health(&base.right_left_wall.building),
-//         SceneSlotIndicator::Fight(FightSceneIndicator::RightLeftWall),
-//     ));
-//     commands.spawn((
-//         base.right_right_wall,
-//         server_components,
-//         building_health(&base.right_right_wall.building),
-//         SceneSlotIndicator::Fight(FightSceneIndicator::RightRightWall),
-//     ));
-//     commands.spawn((
-//         base.right_gold_farm,
-//         server_components,
-//         SceneSlotIndicator::Fight(FightSceneIndicator::RightGoldFarm),
-//     ));
-//
-//     // Create Player entities
-//     let left_transform = Transform::from_xyz(-200., 50., Layers::Player.as_f32());
-//     let inventory = Inventory { gold: 1000 };
-//     commands.entity(*left_player_entity).insert((
-//         left_transform,
-//         GameSceneId(1),
-//         inventory.clone(),
-//         Owner {
-//             faction: Faction::Player {
-//                 client_id: *left_client_id,
-//             },
-//         },
-//     ));
-//
-//     let message = ServerMessages::SyncInventory(inventory.clone());
-//     let message = bincode::serialize(&message).unwrap();
-//     server.send_message(*left_client_id, ServerChannel::ServerMessages, message);
-//
-//     let right_transform = Transform::from_xyz(200., 50., Layers::Player.as_f32());
-//     commands.entity(*right_player_entity).insert((
-//         right_transform,
-//         GameSceneId(1),
-//         inventory.clone(),
-//         Owner {
-//             faction: Faction::Player {
-//                 client_id: *right_client_id,
-//             },
-//         },
-//     ));
-//
-//     let message = ServerMessages::SyncInventory(inventory);
-//     let message = bincode::serialize(&message).unwrap();
-//     server.send_message(*right_client_id, ServerChannel::ServerMessages, message);
-//
-//     let players = vec![
-//         SpawnPlayer {
-//             id: *left_client_id,
-//             entity: *left_player_entity,
-//             translation: left_transform.translation.into(),
-//             mounted: None,
-//         },
-//         SpawnPlayer {
-//             id: *right_client_id,
-//             entity: *right_player_entity,
-//             translation: right_transform.translation.into(),
-//             mounted: None,
-//         },
-//     ];
-//
-//     let message = ServerMessages::LoadGameScene {
-//         game_scene_type: GameSceneType::Fight,
-//         players,
-//         units: Vec::new(),
-//         mounts: Vec::new(),
-//         projectiles: Vec::new(),
-//         buildings: Vec::new(),
-//         flag: None,
-//     };
-//     let message = bincode::serialize(&message).unwrap();
-//     server.broadcast_message(ServerChannel::ServerMessages, message);
-// }
 
 fn circle_map(
     lobby: &Res<ServerLobby>,
@@ -249,13 +82,28 @@ fn circle_map(
                     client_id: *client_id,
                 },
             };
-            let base = define_base_scene(game_scene_id);
+            let base = define_base_scene();
 
-            for slot in base.slots {
-                let entity = commands
-                    .spawn((game_scene_id, slot.transform, slot.collider))
-                    .id();
-                (slot.spawn_fn)(&mut commands.entity(entity), owner);
+            let mut slots: Vec<SlotEntity>;
+            for prefab in base.slots {
+                let slot = Slot {
+                    slot_type: prefab.slot_type,
+                };
+                let mut entity =
+                    commands.spawn((slot, game_scene_id, prefab.transform, prefab.collider));
+                if let SlotType::Building { building, status } = prefab.slot_type {
+                    entity.insert(status);
+                    if let Some(building) = building {
+                        entity.insert(building);
+                    }
+                }
+                let entity = entity.id();
+                (prefab.spawn_fn)(&mut commands.entity(entity), owner);
+                slots.push(SlotEntity {
+                    entity,
+                    slot,
+                    translation: prefab.transform.translation.into(),
+                });
             }
 
             let left_portal = commands
@@ -267,6 +115,13 @@ fn circle_map(
                 ))
                 .id();
             (base.left_portal.spawn_fn)(&mut commands.entity(left_portal), owner);
+            slots.push(SlotEntity {
+                entity: left_portal,
+                slot: Slot {
+                    slot_type: SlotType::Portal,
+                },
+                translation: base.left_portal.transform.translation.into(),
+            });
             let right_portal = commands
                 .spawn((
                     game_scene_id,
@@ -276,6 +131,13 @@ fn circle_map(
                 ))
                 .id();
             (base.right_portal.spawn_fn)(&mut commands.entity(right_portal), owner);
+            slots.push(SlotEntity {
+                entity: right_portal,
+                slot: Slot {
+                    slot_type: SlotType::Portal,
+                },
+                translation: base.right_portal.transform.translation.into(),
+            });
 
             game_world.game_scenes.insert(game_scene_id, base);
 
@@ -307,8 +169,8 @@ fn circle_map(
                 units: Vec::new(),
                 projectiles: Vec::new(),
                 mounts: Vec::new(),
-                buildings: Vec::new(),
                 flag: None,
+                slots,
             };
             let message = bincode::serialize(&message).unwrap();
             server.send_message(*client_id, ServerChannel::ServerMessages, message);
@@ -334,11 +196,14 @@ fn circle_map(
             let owner = Owner {
                 faction: Faction::Bandits,
             };
-            let camp = define_camp_scene(game_scene_id);
+            let camp = define_camp_scene();
 
             for slot in camp.slots {
+                let slot_comp = Slot {
+                    slot_type: SlotType::Chest,
+                };
                 let entity = commands
-                    .spawn((game_scene_id, slot.transform, slot.collider))
+                    .spawn((slot_comp, game_scene_id, slot.transform, slot.collider))
                     .id();
                 (slot.spawn_fn)(&mut commands.entity(entity), owner);
             }

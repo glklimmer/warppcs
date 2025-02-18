@@ -71,11 +71,26 @@ pub struct SpawnProjectile {
     pub direction: [f32; 2],
 }
 
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum SlotType {
+    Building {
+        building: Option<Building>,
+        status: BuildStatus,
+    },
+    Chest,
+    Portal,
+}
+
+#[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct Slot {
+    pub slot_type: SlotType,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SlotEntity {
     pub entity: Entity,
-    pub building: Option<Building>,
-    pub status: BuildStatus,
+    pub slot: Slot,
+    pub translation: [f32; 3],
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]

@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::{scenes::SceneSlot, Layers};
+use super::{scenes::SlotPrefab, Layers};
 use crate::{
+    networking::SlotType,
     physics::collider::BoxCollider,
     server::{
         buildings::building_collider,
@@ -91,8 +92,12 @@ impl Building {
 
 const BUILDUING_SCALE: Vec3 = Vec3::new(3., 3., 1.);
 
-pub fn marker(x: f32) -> SceneSlot {
-    SceneSlot {
+pub fn marker(x: f32) -> SlotPrefab {
+    SlotPrefab {
+        slot_type: SlotType::Building {
+            building: None,
+            status: BuildStatus::Marker,
+        },
         collider: BoxCollider {
             dimension: Vec2::new(80., 110.),
             offset: Some(Vec2::new(0., -20.)),
@@ -112,8 +117,14 @@ pub fn marker(x: f32) -> SceneSlot {
     }
 }
 
-pub fn main(x: f32) -> SceneSlot {
-    SceneSlot {
+pub fn main(x: f32) -> SlotPrefab {
+    SlotPrefab {
+        slot_type: SlotType::Building {
+            building: Some(Building::MainBuilding {
+                level: MainBuildingLevels::Tent,
+            }),
+            status: BuildStatus::Built,
+        },
         collider: BoxCollider {
             dimension: Vec2::new(150., 110.),
             offset: Some(Vec2::new(0., -20.)),
@@ -121,19 +132,19 @@ pub fn main(x: f32) -> SceneSlot {
         transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
             .with_scale(BUILDUING_SCALE),
         spawn_fn: |commands, owner| {
-            commands.insert((
-                owner,
-                Building::MainBuilding {
-                    level: MainBuildingLevels::Tent,
-                },
-                BuildStatus::Built,
-            ));
+            commands.insert((owner,));
         },
     }
 }
 
-pub fn wall(x: f32) -> SceneSlot {
-    SceneSlot {
+pub fn wall(x: f32) -> SlotPrefab {
+    SlotPrefab {
+        slot_type: SlotType::Building {
+            building: Some(Building::Wall {
+                level: WallLevels::Basic,
+            }),
+            status: BuildStatus::Marker,
+        },
         collider: building_collider(&Building::Wall {
             level: WallLevels::Basic,
         }),
@@ -150,16 +161,18 @@ pub fn wall(x: f32) -> SceneSlot {
     }
 }
 
-pub fn gold_farm(x: f32) -> SceneSlot {
-    SceneSlot {
+pub fn gold_farm(x: f32) -> SlotPrefab {
+    SlotPrefab {
+        slot_type: SlotType::Building {
+            building: Some(Building::GoldFarm),
+            status: BuildStatus::Marker,
+        },
         collider: building_collider(&Building::GoldFarm),
         transform: Transform::from_xyz(x, 25., Layers::Building.as_f32())
             .with_scale(BUILDUING_SCALE),
         spawn_fn: |entity, owner| {
             entity.insert((
                 owner,
-                Building::GoldFarm,
-                BuildStatus::Marker,
                 Interactable {
                     kind: InteractionType::PresetBuilding,
                     restricted_to: Some(owner),
