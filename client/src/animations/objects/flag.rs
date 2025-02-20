@@ -4,7 +4,7 @@ use shared::{enum_map::*, flag_collider, BoxCollider};
 
 use crate::{
     animations::{SpriteSheet, SpriteSheetAnimation},
-    entities::{highlight::Highlightable, PartOfScene},
+    entities::{highlight::Highlightable, map::PartOfScene},
 };
 
 #[derive(Component)]
