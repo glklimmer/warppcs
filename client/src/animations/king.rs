@@ -135,7 +135,7 @@ pub fn next_king_animation(
                 },
                 Change::Attack => Some(KingAnimation::Attack),
                 Change::Rotation(_) => None,
-                Change::Hit => Some(KingAnimation::Hit),
+                Change::Hit(_) => Some(KingAnimation::Hit),
                 Change::Death => Some(KingAnimation::Death),
             };
 

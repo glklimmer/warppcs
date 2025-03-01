@@ -13,7 +13,7 @@ use crate::networking::{NetworkEvent, NetworkMapping};
 
 use shared::{
     enum_map::*,
-    networking::{Facing, Rotation, ServerMessages},
+    networking::{Facing, Rotation, ServerMessages, Hitby},
 };
 use units::{next_unit_animation, set_unit_sprite_animation, UnitAnimation, UnitSpriteSheets};
 
@@ -126,7 +126,7 @@ pub enum Change {
     Rotation(Rotation),
     Movement(bool),
     Attack,
-    Hit,
+    Hit(Hitby),
     Death,
 }
 
@@ -202,16 +202,16 @@ fn trigger_hit(
     network_mapping: Res<NetworkMapping>,
 ) {
     for event in network_events.read() {
-        if let ServerMessages::EntityHit {
-            entity: server_entity,
-            by: _,
-        } = event.message
-        {
+            if let ServerMessages::EntityHit {
+                entity: server_entity,
+                by,
+            } = event.message
+            {
             if let Some(client_entity) = network_mapping.0.get(&server_entity) {
-                change.send(EntityChangeEvent {
-                    entity: *client_entity,
-                    change: Change::Hit,
-                });
+                    change.send(EntityChangeEvent {
+                        entity: *client_entity,
+                        change: Change::Hit(by),
+                    });
             }
         }
     }

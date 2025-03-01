@@ -70,7 +70,7 @@ pub fn next_unit_animation(
                 },
                 Change::Attack => Some(UnitAnimation::Attack),
                 Change::Rotation(_) => None,
-                Change::Hit => Some(UnitAnimation::Hit),
+                Change::Hit(_) => Some(UnitAnimation::Hit),
                 Change::Death => Some(UnitAnimation::Death),
             };
 

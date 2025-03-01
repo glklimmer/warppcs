@@ -63,7 +63,7 @@ pub fn next_horse_animation(
     for event in network_events.read() {
         if let Ok(mut current_animation) = query.get_mut(event.entity) {
             let maybe_new_animation = match &event.change {
-                Change::Attack | Change::Rotation(_) | Change::Hit | Change::Death => None,
+                Change::Attack | Change::Rotation(_) | Change::Hit(_) | Change::Death => None,
                 Change::Movement(moving) => match moving {
                     true => Some(HorseAnimation::Walk),
                     false => Some(HorseAnimation::Idle),

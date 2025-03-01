@@ -65,6 +65,29 @@ pub struct Owner {
     pub faction: Faction,
 }
 
+pub trait FactionComparison {
+    fn is_different_faction(&self, other: &Self) -> bool;
+    fn is_same_faction(&self, other: &Self) -> bool;
+}
+
+impl FactionComparison for Owner {
+    fn is_different_faction(&self, other: &Self) -> bool {
+        match (self.faction, other.faction) {
+            // Two players - compare client IDs
+            (Faction::Player { client_id: id1 }, Faction::Player { client_id: id2 }) => id1 != id2,
+            // Different enum variants means different factions
+            (Faction::Player { .. }, Faction::Bandits)
+            | (Faction::Bandits, Faction::Player { .. }) => true,
+            // Both bandits are the same faction
+            (Faction::Bandits, Faction::Bandits) => false,
+        }
+    }
+
+    fn is_same_faction(&self, other: &Self) -> bool {
+        !self.is_different_faction(other)
+    }
+}
+
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
 #[require(BoxCollider(projectile_collider))]
 pub enum ProjectileType {
@@ -209,13 +232,13 @@ pub enum ServerMessages {
     },
     SyncInventory(Inventory),
     BuildingUpdate(BuildingUpdate),
-    EntityHit {
-        entity: Entity,
-        by: Hitby,
-    },
-    EntityDeath {
-        entity: Entity,
-    },
+        EntityHit {
+            entity: Entity,
+            by: Hitby,
+        },
+        EntityDeath {
+            entity: Entity,
+        },
     PlayerDefeat(Owner),
     Mount {
         entity: Entity,

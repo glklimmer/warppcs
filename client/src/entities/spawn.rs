@@ -17,8 +17,8 @@ use crate::{
 use shared::{
     map::Layers,
     networking::{
-        DropFlag, MountType, Mounted, PickFlag, ProjectileType, ServerMessages, SpawnFlag,
-        SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
+        DropFlag, Faction, MountType, Mounted, Owner, PickFlag, ProjectileType, ServerMessages,
+        SpawnFlag, SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
     projectile_collider, BoxCollider,
 };
@@ -145,6 +145,9 @@ fn spawn_player(
                 3.,
             ),
             PartOfScene,
+            Owner {
+                faction: Faction::Player { client_id: *id },
+            },
         ));
 
         if let Some(mounted) = mounted {
@@ -156,7 +159,7 @@ fn spawn_player(
         let player_entity = client_player_entity.id();
 
         if client_id.eq(id) {
-            client_player_entity.insert(ControlledPlayer);
+            client_player_entity.insert((ControlledPlayer, SpatialListener::new(50.0)));
             commands
                 .entity(camera.single())
                 .insert(CameraFollow::fixed(player_entity));

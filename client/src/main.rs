@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    audio::{AudioPlugin, SpatialScale},
+    prelude::*,
+};
 
 use bevy::app::ScheduleRunnerPlugin;
 use bevy_parallax::ParallaxPlugin;
@@ -43,6 +46,11 @@ pub mod networking;
 pub mod sound;
 pub mod ui;
 pub mod ui_widgets;
+
+/// Spatial audio uses the distance to attenuate the sound volume. In 2D with the default camera,
+/// 1 pixel is 1 unit of distance, so we use a scale so that 100 pixels is 1 unit of distance for
+/// audio.
+const AUDIO_SCALE: f32 = 1. / 200.0;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -92,7 +100,12 @@ fn main() {
                 primary_window: Some(primary_window),
                 ..default()
             })
-            .set(ImagePlugin::default_nearest()),
+            .set(ImagePlugin::default_nearest())
+            .set(AudioPlugin {
+                global_volume: GlobalVolume::new(0.2),
+                default_spatial_scale: SpatialScale::new_2d(AUDIO_SCALE),
+                ..default()
+            }),
     );
 
     client.insert_state(MainMenuStates::TitleScreen);
