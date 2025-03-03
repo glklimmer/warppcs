@@ -102,7 +102,7 @@ fn main() {
             })
             .set(ImagePlugin::default_nearest())
             .set(AudioPlugin {
-                global_volume: GlobalVolume::new(0.2),
+                global_volume: GlobalVolume::new(0.4),
                 default_spatial_scale: SpatialScale::new_2d(AUDIO_SCALE),
                 ..default()
             }),

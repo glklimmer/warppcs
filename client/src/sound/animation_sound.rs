@@ -16,7 +16,7 @@ struct PlayAnimationSoundEvent {
     volume: f32,
 }
 
-const ANIMATION_VOLUME: f32 = 0.10;
+const ANIMATION_VOLUME: f32 = 0.35;
 
 pub struct AnimationSoundPlugin;
 
