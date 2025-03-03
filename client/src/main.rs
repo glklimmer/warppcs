@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    audio::{AudioPlugin, SpatialScale},
+    prelude::*,
+};
 
 use bevy::app::ScheduleRunnerPlugin;
 use bevy_parallax::ParallaxPlugin;
@@ -8,6 +11,7 @@ use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
 use shared::{server::networking::ServerNetworkPlugin, GameState};
+use sound::SoundPlugin;
 use std::env;
 use std::f32::consts::PI;
 use std::thread;
@@ -39,8 +43,14 @@ pub mod gizmos;
 pub mod input;
 pub mod menu;
 pub mod networking;
+pub mod sound;
 pub mod ui;
 pub mod ui_widgets;
+
+/// Spatial audio uses the distance to attenuate the sound volume. In 2D with the default camera,
+/// 1 pixel is 1 unit of distance, so we use a scale so that 100 pixels is 1 unit of distance for
+/// audio.
+const AUDIO_SCALE: f32 = 1. / 200.0;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -90,7 +100,12 @@ fn main() {
                 primary_window: Some(primary_window),
                 ..default()
             })
-            .set(ImagePlugin::default_nearest()),
+            .set(ImagePlugin::default_nearest())
+            .set(AudioPlugin {
+                global_volume: GlobalVolume::new(0.4),
+                default_spatial_scale: SpatialScale::new_2d(AUDIO_SCALE),
+                ..default()
+            }),
     );
 
     client.insert_state(MainMenuStates::TitleScreen);
@@ -104,6 +119,7 @@ fn main() {
     client.add_plugins(EntitiesPlugin);
     client.add_plugins(UiPlugin);
     client.add_plugins(GizmosPlugin);
+    client.add_plugins(SoundPlugin);
     client.add_systems(Startup, setup_background);
     client.add_plugins(ClientNetworkPlugin);
 

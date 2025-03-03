@@ -25,7 +25,8 @@ use crate::{
     networking::{Connected, NetworkEvent},
 };
 
-use super::PartOfScene;
+#[derive(Component, Default)]
+pub struct PartOfScene;
 
 pub struct MapPlugin;
 

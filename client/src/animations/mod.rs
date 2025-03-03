@@ -13,7 +13,7 @@ use crate::networking::{NetworkEvent, NetworkMapping};
 
 use shared::{
     enum_map::*,
-    networking::{Facing, Rotation, ServerMessages},
+    networking::{Facing, Rotation, ServerMessages, Hitby},
 };
 use units::{next_unit_animation, set_unit_sprite_animation, UnitAnimation, UnitSpriteSheets};
 
@@ -35,12 +35,28 @@ pub enum AnimationDirection {
     Backward,
 }
 
+#[derive(Component, Clone, Default, PartialEq, Eq)]
+pub enum AnimationSoundTrigger {
+    #[default]
+    OnEnter,
+    OnStartFrameTimer,
+    OnEndFrameTimer,
+}
+
+#[derive(Component, Clone)]
+#[require(AnimationSoundTrigger)]
+pub struct AnimationSound {
+    pub sound_file: String,
+    pub sound_trigger: AnimationSoundTrigger,
+}
+
 #[derive(Component, Clone)]
 pub struct SpriteSheetAnimation {
     pub first_sprite_index: usize,
     pub last_sprite_index: usize,
     pub frame_timer: Timer,
     pub direction: AnimationDirection,
+    pub animation_sound: Option<AnimationSound>,
 }
 
 impl Default for SpriteSheetAnimation {
@@ -50,6 +66,7 @@ impl Default for SpriteSheetAnimation {
             last_sprite_index: 0,
             frame_timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             direction: AnimationDirection::Forward,
+            animation_sound: None,
         }
     }
 }
@@ -109,7 +126,7 @@ pub enum Change {
     Rotation(Rotation),
     Movement(bool),
     Attack,
-    Hit,
+    Hit(Hitby),
     Death,
 }
 
@@ -185,15 +202,16 @@ fn trigger_hit(
     network_mapping: Res<NetworkMapping>,
 ) {
     for event in network_events.read() {
-        if let ServerMessages::EntityHit {
-            entity: server_entity,
-        } = event.message
-        {
+            if let ServerMessages::EntityHit {
+                entity: server_entity,
+                by,
+            } = event.message
+            {
             if let Some(client_entity) = network_mapping.0.get(&server_entity) {
-                change.send(EntityChangeEvent {
-                    entity: *client_entity,
-                    change: Change::Hit,
-                });
+                    change.send(EntityChangeEvent {
+                        entity: *client_entity,
+                        change: Change::Hit(by),
+                    });
             }
         }
     }

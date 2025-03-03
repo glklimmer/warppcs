@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{AnimationSound, AnimationSoundTrigger, SpriteSheet, SpriteSheetAnimation};
 
 use super::super::UnitAnimation;
 
@@ -33,6 +33,10 @@ pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
         UnitAnimation::Attack => SpriteSheetAnimation {
             first_sprite_index: 18,
             last_sprite_index: 23,
+            animation_sound: Some(AnimationSound {
+                sound_file: "animation_sound/shieldwarrior/sword_hit.ogg".to_string(),
+                sound_trigger: AnimationSoundTrigger::OnEndFrameTimer,
+            }),
             ..default()
         },
         UnitAnimation::Hit => SpriteSheetAnimation {
