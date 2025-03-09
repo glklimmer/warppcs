@@ -3,6 +3,8 @@ use bevy::prelude::*;
 use bevy::app::ScheduleRunnerPlugin;
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
+use bevy_replicon::prelude::*;
+use bevy_replicon_renet::RepliconRenetPlugins;
 use core::time::Duration;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
@@ -26,7 +28,7 @@ use menu::JoinSteamLobby;
 use networking::join_server::join_steam_server;
 
 #[cfg(feature = "netcode")]
-use bevy_renet::netcode::{NetcodeClientPlugin, NetcodeServerPlugin, NetcodeTransportError};
+use bevy_renet::netcode::{NetcodeServerPlugin, NetcodeTransportError};
 #[cfg(feature = "netcode")]
 use networking::join_server::join_netcode_server;
 #[cfg(feature = "netcode")]
@@ -84,14 +86,16 @@ fn main() {
         ..default()
     };
 
-    client.add_plugins(
+    client.add_plugins((
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(primary_window),
                 ..default()
             })
             .set(ImagePlugin::default_nearest()),
-    );
+        RepliconPlugins,
+        RepliconRenetPlugins,
+    ));
 
     client.insert_state(MainMenuStates::TitleScreen);
     client.insert_state(GameState::MainMenu);
@@ -126,8 +130,6 @@ fn main() {
 
     #[cfg(feature = "netcode")]
     {
-        client.add_plugins(NetcodeClientPlugin);
-
         client.configure_sets(Update, Connected.run_if(client_connected));
 
         fn panic_on_error_system(mut renet_error: EventReader<NetcodeTransportError>) {

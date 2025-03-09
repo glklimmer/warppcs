@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use bevy_renet::{
     client_connected,
     renet::{ClientId, RenetClient},
-    RenetClientPlugin,
 };
 use shared::{
     networking::{
@@ -53,28 +52,26 @@ pub struct ClientNetworkPlugin;
 
 impl Plugin for ClientNetworkPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RenetClientPlugin);
-
-        app.insert_resource(NetworkMapping::default());
-        app.insert_resource(ClientPlayers::default());
-
-        app.add_event::<NetworkEvent>();
-
-        app.add_systems(
-            FixedPreUpdate,
-            (recieve_server_messages, recieve_networked_entities)
-                .run_if(client_connected)
-                .in_set(Connected),
-        );
-
-        app.add_systems(
-            Update,
-            (
-                send_input.run_if(resource_changed::<PlayerInput>),
-                send_player_commands.run_if(on_event::<PlayerCommand>),
-            )
-                .in_set(Connected),
-        );
+        // app.insert_resource(NetworkMapping::default());
+        // app.insert_resource(ClientPlayers::default());
+        //
+        // app.add_event::<NetworkEvent>();
+        //
+        // app.add_systems(
+        //     FixedPreUpdate,
+        //     (recieve_server_messages, recieve_networked_entities)
+        //         .run_if(client_connected)
+        //         .in_set(Connected),
+        // );
+        //
+        // app.add_systems(
+        //     Update,
+        //     (
+        //         send_input.run_if(resource_changed::<PlayerInput>),
+        //         send_player_commands.run_if(on_event::<PlayerCommand>),
+        //     )
+        //         .in_set(Connected),
+        // );
     }
 }
 

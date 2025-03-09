@@ -53,33 +53,33 @@ pub struct ServerNetworkPlugin;
 
 impl Plugin for ServerNetworkPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<NetworkEvent>();
-        app.add_event::<SendServerMessage>();
-
-        app.add_plugins(AIPlugin);
-        app.add_plugins(PhysicsPlugin);
-        app.add_plugins(GameScenesPlugin);
-        app.add_plugins(BuildingsPlugins);
-        app.add_plugins(PlayerPlugin);
-        app.add_plugins(EntityPlugin);
-
-        app.add_systems(FixedFirst, receive_client_messages);
-
-        app.add_systems(
-            FixedLast,
-            (
-                sync_networked_entities,
-                client_connections,
-                send_server_messages.run_if(on_event::<SendServerMessage>),
-                sync_player_inventory,
-            ),
-        );
-
-        app.insert_resource(ServerLobby::default());
-        app.add_plugins(RenetServerPlugin);
-        app.add_plugins(LobbyPlugin);
-
-        app.insert_resource(GameWorld::default());
+        // app.add_event::<NetworkEvent>();
+        // app.add_event::<SendServerMessage>();
+        //
+        // app.add_plugins(AIPlugin);
+        // app.add_plugins(PhysicsPlugin);
+        // app.add_plugins(GameScenesPlugin);
+        // app.add_plugins(BuildingsPlugins);
+        // app.add_plugins(PlayerPlugin);
+        // app.add_plugins(EntityPlugin);
+        //
+        // app.add_systems(FixedFirst, receive_client_messages);
+        //
+        // app.add_systems(
+        //     FixedLast,
+        //     (
+        //         sync_networked_entities,
+        //         client_connections,
+        //         send_server_messages.run_if(on_event::<SendServerMessage>),
+        //         sync_player_inventory,
+        //     ),
+        // );
+        //
+        // app.insert_resource(ServerLobby::default());
+        // app.add_plugins(RenetServerPlugin);
+        // app.add_plugins(LobbyPlugin);
+        //
+        // app.insert_resource(GameWorld::default());
     }
 }
 

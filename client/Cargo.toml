@@ -11,6 +11,8 @@ netcode = []
 [dependencies]
 bevy = { version = "0.15.0" }
 bevy_renet = { version = "1.0.0", features = ["steam"] }
+bevy_replicon = "0.30.1"
+bevy_replicon_renet = { version = "0.7.0" }
 renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }
 bincode = "1.3.3"
 fastrand = "2.3.0"
