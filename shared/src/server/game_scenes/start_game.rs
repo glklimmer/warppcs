@@ -1,9 +1,11 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::*;
 
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
 use crate::map::buildings::RecruitBuilding;
+use crate::networking::PlayerLobbyEvent;
 use crate::server::physics::movement::Speed;
 use crate::server::players::interaction::{Interactable, InteractionType};
 use crate::server::players::mount::Mount;
@@ -39,7 +41,19 @@ pub struct StartGamePlugin;
 
 impl Plugin for StartGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, (start_game).run_if(on_event::<NetworkEvent>));
+        //app.add_systems(FixedUpdate, (start_game).run_if(on_event::<NetworkEvent>));
+        app.add_systems(
+            PreUpdate,
+            receive_events
+                .after(ServerSet::Receive)
+                .run_if(server_running),
+        );
+    }
+}
+
+fn receive_events(mut lobby_events: EventReader<FromClient<PlayerLobbyEvent>>) {
+    for FromClient { client_id, event } in lobby_events.read() {
+        info!("received event {event:?} from {client_id:?}");
     }
 }
 

@@ -1,9 +1,11 @@
 use bevy::prelude::*;
+use bevy_replicon::RepliconPlugins;
+use bevy_replicon_renet::RepliconRenetPlugins;
 
 use crate::map::{GameScene, GameSceneId};
 use crate::networking::{
-    ClientChannel, Facing, Inventory, NetworkEntity, NetworkedEntities, PlayerCommand, PlayerInput,
-    ProjectileType, Rotation, ServerChannel, ServerMessages,
+    ClientChannel, Facing, Inventory, NetworkEntity, NetworkRegistry, NetworkedEntities,
+    PlayerCommand, PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
 };
 use crate::server::entities::health::Health;
 use crate::server::physics::movement::Velocity;
@@ -18,6 +20,7 @@ use std::collections::HashMap;
 use super::ai::AIPlugin;
 use super::buildings::BuildingsPlugins;
 use super::entities::EntityPlugin;
+use super::game_scenes::start_game::StartGamePlugin;
 use super::game_scenes::GameScenesPlugin;
 use super::lobby::{LobbyPlugin, PlayerJoinedLobby, PlayerLeftLobby};
 use super::physics::PhysicsPlugin;
@@ -53,6 +56,12 @@ pub struct ServerNetworkPlugin;
 
 impl Plugin for ServerNetworkPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins((
+            RepliconPlugins,
+            RepliconRenetPlugins,
+            NetworkRegistry,
+            StartGamePlugin,
+        ));
         // app.add_event::<NetworkEvent>();
         // app.add_event::<SendServerMessage>();
         //

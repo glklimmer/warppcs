@@ -9,7 +9,7 @@ use core::time::Duration;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
-use shared::{server::networking::ServerNetworkPlugin, GameState};
+use shared::{networking::NetworkRegistry, server::networking::ServerNetworkPlugin, GameState};
 use std::env;
 use std::f32::consts::PI;
 use std::thread;
@@ -62,7 +62,6 @@ fn main() {
 
                 #[cfg(feature = "netcode")]
                 {
-                    server.add_plugins(NetcodeServerPlugin);
                     server.add_systems(Startup, create_netcode_server);
                 }
 
@@ -95,6 +94,7 @@ fn main() {
             .set(ImagePlugin::default_nearest()),
         RepliconPlugins,
         RepliconRenetPlugins,
+        NetworkRegistry,
     ));
 
     client.insert_state(MainMenuStates::TitleScreen);

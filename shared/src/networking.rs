@@ -1,9 +1,9 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::*;
 
 use super::enum_map::*;
-use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
+use bevy_renet::renet::ClientId;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
 use crate::{
     horse_collider,
@@ -21,6 +21,19 @@ pub const PROTOCOL_ID: u64 = 7;
 pub struct PlayerInput {
     pub left: bool,
     pub right: bool,
+}
+
+pub struct NetworkRegistry;
+
+impl Plugin for NetworkRegistry {
+    fn build(&self, app: &mut App) {
+        app.add_client_event::<PlayerLobbyEvent>(ChannelKind::Ordered);
+    }
+}
+
+#[derive(Debug, Deserialize, Event, Serialize)]
+pub enum PlayerLobbyEvent {
+    StartGame,
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
@@ -251,59 +264,11 @@ impl From<ClientChannel> for u8 {
     }
 }
 
-impl ClientChannel {
-    pub fn channels_config() -> Vec<ChannelConfig> {
-        vec![
-            ChannelConfig {
-                channel_id: Self::Input.into(),
-                max_memory_usage_bytes: 5 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::ZERO,
-                },
-            },
-            ChannelConfig {
-                channel_id: Self::Command.into(),
-                max_memory_usage_bytes: 5 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::ZERO,
-                },
-            },
-        ]
-    }
-}
-
 impl From<ServerChannel> for u8 {
     fn from(channel_id: ServerChannel) -> Self {
         match channel_id {
             ServerChannel::NetworkedEntities => 0,
             ServerChannel::ServerMessages => 1,
         }
-    }
-}
-
-impl ServerChannel {
-    pub fn channels_config() -> Vec<ChannelConfig> {
-        vec![
-            ChannelConfig {
-                channel_id: Self::NetworkedEntities.into(),
-                max_memory_usage_bytes: 10 * 1024 * 1024,
-                send_type: SendType::Unreliable,
-            },
-            ChannelConfig {
-                channel_id: Self::ServerMessages.into(),
-                max_memory_usage_bytes: 10 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::from_millis(200),
-                },
-            },
-        ]
-    }
-}
-
-pub fn connection_config() -> ConnectionConfig {
-    ConnectionConfig {
-        available_bytes_per_tick: 1024 * 1024,
-        client_channels_config: ClientChannel::channels_config(),
-        server_channels_config: ServerChannel::channels_config(),
     }
 }
