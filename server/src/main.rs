@@ -19,6 +19,8 @@ fn main() {
         MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(Duration::from_secs_f64(
             1.0 / 60.0,
         ))),
+        RepliconPlugins,
+        RepliconRenetPlugins,
     ));
 
     app.add_plugins(ServerNetworkPlugin);

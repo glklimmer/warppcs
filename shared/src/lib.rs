@@ -7,6 +7,7 @@ pub mod map;
 pub mod networking;
 pub mod server;
 pub mod steamworks;
+pub mod test_plugin;
 
 pub const GRAVITY_G: f32 = 9.81 * 100.;
 

@@ -9,7 +9,10 @@ use core::time::Duration;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
-use shared::{networking::NetworkRegistry, server::networking::ServerNetworkPlugin, GameState};
+use shared::{
+    networking::NetworkRegistry, server::networking::ServerNetworkPlugin, test_plugin::TestPlugin,
+    GameState,
+};
 use std::env;
 use std::f32::consts::PI;
 use std::thread;
@@ -45,30 +48,30 @@ pub mod ui;
 pub mod ui_widgets;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.contains(&String::from("server")) {
-        thread::Builder::new()
-            .name("server".into())
-            .spawn(|| {
-                let mut server = App::new();
-
-                server.add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
-                    Duration::from_secs_f64(1.0 / 60.0),
-                )));
-
-                server.add_plugins(ServerNetworkPlugin);
-
-                println!("Starting netcode server...");
-
-                #[cfg(feature = "netcode")]
-                {
-                    server.add_systems(Startup, create_netcode_server);
-                }
-
-                server.run();
-            })
-            .unwrap();
-    }
+    // let args: Vec<String> = env::args().collect();
+    // if args.contains(&String::from("server")) {
+    //     thread::Builder::new()
+    //         .name("server".into())
+    //         .spawn(|| {
+    //             let mut server = App::new();
+    //
+    //             server.add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
+    //                 Duration::from_secs_f64(1.0 / 60.0),
+    //             )));
+    //
+    //             server.add_plugins(ServerNetworkPlugin);
+    //
+    //             println!("Starting netcode server...");
+    //
+    //             #[cfg(feature = "netcode")]
+    //             {
+    //                 server.add_systems(Startup, create_netcode_server);
+    //             }
+    //
+    //             server.run();
+    //         })
+    //         .unwrap();
+    // }
 
     let mut client = App::new();
 
@@ -85,31 +88,35 @@ fn main() {
         ..default()
     };
 
+    client.add_plugins((DefaultPlugins
+        .set(WindowPlugin {
+            primary_window: Some(primary_window),
+            ..default()
+        })
+        .set(ImagePlugin::default_nearest()),));
+
+    client
+        .insert_state(MainMenuStates::TitleScreen)
+        .insert_state(GameState::MainMenu)
+        .add_plugins((
+            ParallaxPlugin,
+            CameraPlugin,
+            InputPlugin,
+            AnimationPlugin,
+            MenuPlugin,
+            EntitiesPlugin,
+            UiPlugin,
+            GizmosPlugin,
+        ));
+
     client.add_plugins((
-        DefaultPlugins
-            .set(WindowPlugin {
-                primary_window: Some(primary_window),
-                ..default()
-            })
-            .set(ImagePlugin::default_nearest()),
         RepliconPlugins,
         RepliconRenetPlugins,
-        NetworkRegistry,
+        ClientNetworkPlugin,
+        TestPlugin,
     ));
 
-    client.insert_state(MainMenuStates::TitleScreen);
-    client.insert_state(GameState::MainMenu);
-
-    client.add_plugins(ParallaxPlugin);
-    client.add_plugins(CameraPlugin);
-    client.add_plugins(InputPlugin);
-    client.add_plugins(AnimationPlugin);
-    client.add_plugins(MenuPlugin);
-    client.add_plugins(EntitiesPlugin);
-    client.add_plugins(UiPlugin);
-    client.add_plugins(GizmosPlugin);
     client.add_systems(Startup, setup_background);
-    client.add_plugins(ClientNetworkPlugin);
 
     #[cfg(feature = "steam")]
     {
@@ -140,7 +147,17 @@ fn main() {
         }
 
         client.add_systems(Update, panic_on_error_system.run_if(client_connected));
-        client.add_systems(Startup, join_netcode_server);
+
+        let args: Vec<String> = env::args().collect();
+        if args.contains(&String::from("server")) {
+            client
+                .add_plugins(ServerNetworkPlugin)
+                .add_systems(Startup, create_netcode_server);
+        } else if args.contains(&String::from("client")) {
+            client
+                .add_plugins(NetworkRegistry)
+                .add_systems(Startup, join_netcode_server);
+        }
     }
 
     client.run();

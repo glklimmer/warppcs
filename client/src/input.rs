@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
 use bevy_replicon::client::ClientSet;
-use shared::networking::{PlayerCommand, PlayerInput, PlayerLobbyEvent};
+use shared::networking::{LobbyEvent, PlayerCommand, PlayerInput};
 
 use crate::gizmos::GizmosSettings;
 
@@ -16,19 +16,17 @@ impl Plugin for InputPlugin {
         //     Update,
         //     (player_input, gizmos_settings).run_if(resource_changed::<ButtonInput<KeyCode>>),
         // );
-        app.add_systems(
-            PostUpdate,
-            send_events.before(ClientSet::Send).run_if(client_connected),
-        );
+        app.add_systems(PostUpdate, lobby_input.before(ClientSet::Send));
     }
 }
 
-fn send_events(
+fn lobby_input(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut lobby_events: EventWriter<PlayerLobbyEvent>,
+    mut lobby_events: EventWriter<LobbyEvent>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Enter) {
-        lobby_events.send(PlayerLobbyEvent::StartGame);
+        println!("sending enter");
+        lobby_events.send(LobbyEvent::StartGame);
     }
 }
 

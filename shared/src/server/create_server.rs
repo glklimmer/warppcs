@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::*;
 
 use bevy_renet::{
     netcode::{NetcodeServerTransport, ServerAuthentication, ServerConfig},
@@ -6,6 +7,8 @@ use bevy_renet::{
 };
 use bevy_replicon::prelude::RepliconChannels;
 use bevy_replicon_renet::RenetChannelsExt;
+
+use crate::server::networking::Player;
 
 pub fn create_steam_server(mut commands: Commands, channels: Res<RepliconChannels>) {
     use crate::steamworks::SteamworksClient;
@@ -67,4 +70,7 @@ pub fn create_netcode_server(mut commands: Commands, channels: Res<RepliconChann
     let transport = NetcodeServerTransport::new(server_config, socket).unwrap();
     commands.insert_resource(server);
     commands.insert_resource(transport);
+
+    commands.spawn(Player(ClientId::SERVER));
+    println!("Successfully started server.")
 }

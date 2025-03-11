@@ -83,6 +83,7 @@ pub fn join_netcode_server(mut commands: Commands, channels: Res<RepliconChannel
             commands.insert_resource(client);
             commands.insert_resource(transport);
             commands.insert_resource(CurrentClientId(client_id));
+            println!("Successfully joined server.");
         }
         Err(error) => println!("join_netcode_server error {}", error),
     }
