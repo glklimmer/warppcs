@@ -7,6 +7,7 @@ use bevy_replicon_renet::RepliconRenetPlugins;
 use shared::{
     server::{create_server::create_steam_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,
+    SharedPlugin,
 };
 
 use std::time::Duration;
@@ -21,6 +22,7 @@ fn main() {
         ))),
         RepliconPlugins,
         RepliconRenetPlugins,
+        SharedPlugin,
     ));
 
     app.add_plugins(ServerNetworkPlugin);

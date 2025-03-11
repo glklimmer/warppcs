@@ -8,10 +8,7 @@ pub struct TestPlugin;
 impl Plugin for TestPlugin {
     fn build(&self, app: &mut App) {
         app.add_client_event::<TestEvent>(ChannelKind::Ordered)
-            .add_systems(
-                PostUpdate,
-                send_test.before(ClientSet::Send).run_if(client_connected),
-            )
+            .add_systems(PostUpdate, send_test.before(ClientSet::Send))
             .add_systems(
                 PreUpdate,
                 recieve_test

@@ -39,14 +39,7 @@ pub struct GameWorld {
 }
 
 #[derive(Component, Deserialize, Serialize)]
-#[require(
-    Health,
-    BoxCollider(player_collider),
-    PlayerInput,
-    Velocity,
-    Inventory,
-    Replicated
-)]
+#[require(Health, Inventory, Replicated)]
 pub struct Player(pub bevy_replicon::core::ClientId);
 
 #[derive(Event)]

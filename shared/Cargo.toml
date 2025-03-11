@@ -19,3 +19,4 @@ fastrand = "2.3.0"
 serde = { version = "1.0.217", features = ["derive"] }
 renet_steam = { version = "1.0.0", features = ["bevy"] }
 steamworks = { version = "0.11" }
+avian2d = "0.2.1"

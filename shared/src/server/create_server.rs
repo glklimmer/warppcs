@@ -8,7 +8,7 @@ use bevy_renet::{
 use bevy_replicon::prelude::RepliconChannels;
 use bevy_replicon_renet::RenetChannelsExt;
 
-use crate::server::networking::Player;
+use crate::{server::networking::Player, PhysicalPlayer};
 
 pub fn create_steam_server(mut commands: Commands, channels: Res<RepliconChannels>) {
     use crate::steamworks::SteamworksClient;
@@ -72,5 +72,6 @@ pub fn create_netcode_server(mut commands: Commands, channels: Res<RepliconChann
     commands.insert_resource(transport);
 
     commands.spawn(Player(ClientId::SERVER));
+    commands.spawn(PhysicalPlayer(ClientId::SERVER));
     println!("Successfully started server.")
 }

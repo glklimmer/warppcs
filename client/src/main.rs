@@ -11,7 +11,7 @@ use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
 use shared::{
     networking::NetworkRegistry, server::networking::ServerNetworkPlugin, test_plugin::TestPlugin,
-    GameState,
+    GameState, SharedPlugin,
 };
 use std::env;
 use std::f32::consts::PI;
@@ -48,31 +48,6 @@ pub mod ui;
 pub mod ui_widgets;
 
 fn main() {
-    // let args: Vec<String> = env::args().collect();
-    // if args.contains(&String::from("server")) {
-    //     thread::Builder::new()
-    //         .name("server".into())
-    //         .spawn(|| {
-    //             let mut server = App::new();
-    //
-    //             server.add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
-    //                 Duration::from_secs_f64(1.0 / 60.0),
-    //             )));
-    //
-    //             server.add_plugins(ServerNetworkPlugin);
-    //
-    //             println!("Starting netcode server...");
-    //
-    //             #[cfg(feature = "netcode")]
-    //             {
-    //                 server.add_systems(Startup, create_netcode_server);
-    //             }
-    //
-    //             server.run();
-    //         })
-    //         .unwrap();
-    // }
-
     let mut client = App::new();
 
     #[cfg(feature = "steam")]
@@ -81,19 +56,24 @@ fn main() {
         client.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
     }
 
-    let primary_window = Window {
-        title: "WARPPCS".to_string(),
-        resolution: (1280.0, 720.0).into(),
-        resizable: false,
-        ..default()
-    };
-
     client.add_plugins((DefaultPlugins
         .set(WindowPlugin {
-            primary_window: Some(primary_window),
+            primary_window: Some(Window {
+                title: "WARPPCS".to_string(),
+                resolution: (1280.0, 720.0).into(),
+                resizable: false,
+                ..default()
+            }),
             ..default()
         })
         .set(ImagePlugin::default_nearest()),));
+
+    client.add_plugins((
+        RepliconPlugins,
+        RepliconRenetPlugins,
+        ClientNetworkPlugin,
+        SharedPlugin,
+    ));
 
     client
         .insert_state(MainMenuStates::TitleScreen)
@@ -108,13 +88,6 @@ fn main() {
             UiPlugin,
             GizmosPlugin,
         ));
-
-    client.add_plugins((
-        RepliconPlugins,
-        RepliconRenetPlugins,
-        ClientNetworkPlugin,
-        TestPlugin,
-    ));
 
     client.add_systems(Startup, setup_background);
 

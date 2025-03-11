@@ -83,7 +83,7 @@ impl Building {
     }
 }
 
-const BUILDUING_SCALE: Vec3 = Vec3::new(3., 3., 1.);
+const BUILDING_SCALE: Vec3 = Vec3::new(3., 3., 1.);
 
 #[derive(Bundle, Clone, Copy)]
 pub struct BuildingBundle {
@@ -105,7 +105,7 @@ impl BuildingBundle {
             },
             build_status: BuildStatus::Built,
             transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
+                .with_scale(BUILDING_SCALE),
         }
     }
 
@@ -115,7 +115,7 @@ impl BuildingBundle {
             collider: building_collider(&Building::Archer),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
+                .with_scale(BUILDING_SCALE),
         }
     }
 
@@ -125,7 +125,7 @@ impl BuildingBundle {
             collider: building_collider(&Building::Warrior),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
+                .with_scale(BUILDING_SCALE),
         }
     }
 
@@ -135,7 +135,7 @@ impl BuildingBundle {
             collider: building_collider(&Building::Pikeman),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
+                .with_scale(BUILDING_SCALE),
         }
     }
 
@@ -149,7 +149,7 @@ impl BuildingBundle {
             }),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 145., Layers::Wall.as_f32())
-                .with_scale(BUILDUING_SCALE),
+                .with_scale(BUILDING_SCALE),
         }
     }
 
@@ -159,7 +159,7 @@ impl BuildingBundle {
             collider: building_collider(&Building::Tower),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(0., 50., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
+                .with_scale(BUILDING_SCALE),
         }
     }
 
@@ -169,7 +169,7 @@ impl BuildingBundle {
             collider: building_collider(&Building::GoldFarm),
             build_status: BuildStatus::Marker,
             transform: Transform::from_xyz(x, 25., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
+                .with_scale(BUILDING_SCALE),
         }
     }
 }
