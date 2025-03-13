@@ -3,7 +3,10 @@ use bevy_replicon::prelude::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{PhysicalPlayer, WorldPosition};
+use crate::{
+    server::physics::movement::{Speed, Velocity},
+    PhysicalPlayer,
+};
 
 pub struct PlayerMovement;
 
@@ -20,10 +23,10 @@ struct MovePlayer(Vec2);
 
 fn read_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
     let mut direction = Vec2::ZERO;
-    if input.pressed(KeyCode::KeyA) {
+    if input.pressed(KeyCode::KeyA) || input.pressed(KeyCode::ArrowLeft) {
         direction.x -= 1.0;
     }
-    if input.pressed(KeyCode::KeyD) {
+    if input.pressed(KeyCode::KeyD) || input.pressed(KeyCode::ArrowRight) {
         direction.x += 1.0;
     }
 
@@ -34,14 +37,27 @@ fn read_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
 
 fn apply_movement(
     trigger: Trigger<FromClient<MovePlayer>>,
-    time: Res<Time>,
-    mut boxes: Query<(&PhysicalPlayer, &mut WorldPosition)>,
+    mut players: Query<(&PhysicalPlayer, &mut Velocity, &Speed)>,
 ) {
-    const MOVE_SPEED: f32 = 300.0;
-    for (player, mut position) in &mut boxes {
+    for (player, mut velocity, speed) in &mut players {
         if trigger.client_id == **player {
-            position.transform.translation +=
-                Vec3::new(trigger.event.x, trigger.event.y, 0.0) * time.delta_secs() * MOVE_SPEED;
+            let direction = Vec2::new(trigger.event.x, 0.).normalize_or_zero();
+            velocity.0 = direction * speed.0;
         }
     }
 }
+
+// fn apply_movement(
+//     trigger: Trigger<FromClient<MovePlayer>>,
+//     time: Res<Time>,
+//     mut boxes: Query<(&PhysicalPlayer, &mut Transform)>,
+// ) {
+//     const MOVE_SPEED: f32 = 300.0;
+//     info!("received movement from `{:?}`", trigger.client_id);
+//     for (player, mut transform) in &mut boxes {
+//         if trigger.client_id == **player {
+//             transform.translation +=
+//                 Vec3::new(trigger.event.x, trigger.event.y, 0.0) * time.delta_secs() * MOVE_SPEED;
+//         }
+//     }
+// }

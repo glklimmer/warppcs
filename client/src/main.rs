@@ -68,12 +68,7 @@ fn main() {
         })
         .set(ImagePlugin::default_nearest()),));
 
-    client.add_plugins((
-        RepliconPlugins,
-        RepliconRenetPlugins,
-        ClientNetworkPlugin,
-        SharedPlugin,
-    ));
+    client.add_plugins((ClientNetworkPlugin, SharedPlugin));
 
     client
         .insert_state(MainMenuStates::TitleScreen)

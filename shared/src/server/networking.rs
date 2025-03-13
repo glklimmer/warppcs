@@ -63,7 +63,7 @@ impl Plugin for ServerNetworkPlugin {
         // app.add_event::<SendServerMessage>();
         //
         // app.add_plugins(AIPlugin);
-        // app.add_plugins(PhysicsPlugin);
+        app.add_plugins(PhysicsPlugin);
         // app.add_plugins(GameScenesPlugin);
         // app.add_plugins(BuildingsPlugins);
         // app.add_plugins(PlayerPlugin);

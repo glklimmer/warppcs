@@ -1,10 +1,13 @@
-use avian2d::prelude::*;
-use bevy::{color::palettes::css::BLUE, prelude::*};
+use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
+use bevy::color::palettes::css::BLUE;
 use bevy::math::bounding::Aabb2d;
+use bevy_replicon_renet::RepliconRenetPlugins;
+use map::GameSceneId;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
+use server::physics::movement::{Speed, Velocity};
 use test_plugin::TestPlugin;
 
 pub mod enum_map;
@@ -21,70 +24,74 @@ pub struct SharedPlugin;
 
 impl Plugin for SharedPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((PhysicsPlugins::default(), TestPlugin, PlayerMovement))
-            .replicate::<PhysicalPlayer>()
-            .replicate::<WorldPosition>()
-            .add_observer(spawn_clients)
-            .add_systems(Startup, basic_map.run_if(server_or_singleplayer))
-            .add_systems(Update, draw_boxes);
+        app.add_plugins((
+            RepliconPlugins.set(ServerPlugin {
+                visibility_policy: VisibilityPolicy::Whitelist,
+                ..Default::default()
+            }),
+            RepliconRenetPlugins,
+            TestPlugin,
+            PlayerMovement,
+        ))
+        .replicate_group::<(PhysicalPlayer, Transform)>()
+        .add_observer(spawn_clients)
+        .add_systems(Startup, basic_map.run_if(server_or_singleplayer))
+        .add_systems(Update, draw_boxes)
+        .add_systems(Update, update_visibility.run_if(server_or_singleplayer));
     }
 }
 
 fn basic_map(mut commands: Commands) {
-    commands.spawn((
-        Ground,
-        WorldPosition {
-            transform: Transform::from_xyz(0.0, -1000.0, 0.0),
-        },
-        Collider::rectangle(6000., 2000.),
-    ));
+    // commands.spawn(bundle)
 }
 
 fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
     info!("spawning player for `{:?}`", trigger.client_id);
     commands.spawn((
         PhysicalPlayer(trigger.client_id),
-        WorldPosition {
-            transform: Transform::from_xyz(50.0, 0.0, 0.0),
-        },
+        Transform::from_xyz(50.0, 0.0, 0.0),
+        GameSceneId(1),
     ));
 }
 
-fn draw_boxes(mut gizmos: Gizmos, players: Query<&WorldPosition, With<PhysicalPlayer>>) {
-    for position in &players {
+fn draw_boxes(mut gizmos: Gizmos, players: Query<&Transform, With<PhysicalPlayer>>) {
+    for transform in &players {
         gizmos.rect(
-            Vec3::new(
-                position.transform.translation.x,
-                position.transform.translation.y,
-                0.0,
-            ),
+            Vec3::new(transform.translation.x, transform.translation.y, 0.0),
             Vec2::ONE * 50.0,
             BLUE,
         );
     }
 }
 
-#[derive(Component, Deserialize, Serialize, Deref)]
-#[require(Replicated, WorldPosition, RigidBody(|| RigidBody::Dynamic), Collider)]
-pub struct PhysicalPlayer(bevy_replicon::core::ClientId);
+fn update_visibility(
+    mut replicated_clients: ResMut<ReplicatedClients>,
+    moved_players: Query<(&Transform, &PhysicalPlayer)>,
+    other_players: Query<(Entity, &Transform, &PhysicalPlayer)>,
+) {
+    for (moved_transform, moved_player) in &moved_players {
+        let Some(client) = replicated_clients.get_client_mut(moved_player.0) else {
+            continue;
+        };
 
-#[derive(Component, Default, Copy, Clone, Serialize, Deserialize)]
-#[require(Replicated, WorldSceneId, WorldPosition, RigidBody(|| RigidBody::Static), Collider)]
-struct Ground;
-
-#[derive(Component, Default, Copy, Clone, Serialize, Deserialize)]
-#[require(Replicated, WorldSceneId, WorldPosition, RigidBody(|| RigidBody::Static), Collider)]
-pub struct WorldBuilding;
-
-#[derive(Component, Default, Copy, Clone)]
-pub struct WorldSceneId(pub u64);
-
-#[derive(Component, Default, Copy, Clone, Serialize, Deserialize)]
-pub struct WorldPosition {
-    pub transform: Transform,
+        for (entity, transform, _) in other_players
+            .iter()
+            .filter(|(.., player)| player.0 != moved_player.0)
+        {
+            const VISIBLE_DISTANCE: f32 = 100.0;
+            let distance = moved_transform.translation.distance(transform.translation);
+            client
+                .visibility_mut()
+                .set_visibility(entity, distance < VISIBLE_DISTANCE);
+        }
+    }
 }
 
-#[derive(Component, Copy, Clone)]
+#[derive(Component, Deserialize, Serialize, Deref)]
+#[require(Replicated, Transform, BoxCollider, Speed, Velocity, GameSceneId)]
+pub struct PhysicalPlayer(bevy_replicon::core::ClientId);
+
+#[derive(Component, Copy, Clone, Default)]
 pub struct BoxCollider {
     pub dimension: Vec2,
     pub offset: Option<Vec2>,

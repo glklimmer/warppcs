@@ -9,7 +9,7 @@ pub mod buildings;
 pub mod scenes;
 pub mod spawn_point;
 
-#[derive(Component, Clone, Copy, Eq, PartialEq, Hash, Deserialize, Serialize, Debug)]
+#[derive(Component, Clone, Copy, Eq, PartialEq, Hash, Debug, Default)]
 pub struct GameSceneId(pub u64);
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]

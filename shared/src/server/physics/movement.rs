@@ -34,7 +34,14 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            ((set_player_velocity, set_unit_velocity), wall_collision).chain(),
+            (
+                (
+                    // set_player_velocity
+                    set_unit_velocity
+                ),
+                wall_collision,
+            )
+                .chain(),
         );
         app.add_systems(FixedPostUpdate, (apply_gravity, apply_velocity).chain());
     }
@@ -120,16 +127,16 @@ fn wall_collision(
     }
 }
 
-fn set_player_velocity(mut query: Query<(&mut Velocity, &PlayerInput, &Speed)>) {
-    for (mut velocity, input, speed) in query.iter_mut() {
-        let x = (input.right as i8 - input.left as i8) as f32;
-
-        let direction = Vec2::new(x, 0.).normalize_or_zero();
-        let desired_velocity = direction * speed.0;
-
-        velocity.0 = desired_velocity
-    }
-}
+// fn set_player_velocity(mut query: Query<(&mut Velocity, &PlayerInput, &Speed)>) {
+//     for (mut velocity, input, speed) in query.iter_mut() {
+//         let x = (input.right as i8 - input.left as i8) as f32;
+//
+//         let direction = Vec2::new(x, 0.).normalize_or_zero();
+//         let desired_velocity = direction * speed.0;
+//
+//         velocity.0 = desired_velocity
+//     }
+// }
 
 const MOVE_EPSILON: f32 = 1.;
 
