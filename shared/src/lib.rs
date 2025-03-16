@@ -54,8 +54,16 @@ fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
     ));
 }
 
-fn draw_boxes(mut gizmos: Gizmos, players: Query<&Transform, With<PhysicalPlayer>>) {
-    for transform in &players {
+fn draw_boxes(
+    mut gizmos: Gizmos,
+    players: Query<(&Transform, Option<&GameSceneId>), With<PhysicalPlayer>>,
+    player: Query<&GameSceneId, With<ControlledPhysicalPlayer>>,
+) {
+    for (transform, game_scene_id) in &players {
+        match (game_scene_id, player.get_single()) {
+            (Some(id), Ok(scene)) if id != scene => continue,
+            _ => {}
+        }
         gizmos.rect(
             Vec3::new(transform.translation.x, transform.translation.y, 0.0),
             Vec2::ONE * 50.0,
@@ -66,23 +74,18 @@ fn draw_boxes(mut gizmos: Gizmos, players: Query<&Transform, With<PhysicalPlayer
 
 fn update_visibility(
     mut replicated_clients: ResMut<ReplicatedClients>,
-    moved_players: Query<(&Transform, &PhysicalPlayer)>,
-    other_players: Query<(Entity, &Transform, &PhysicalPlayer)>,
+    players: Query<(&GameSceneId, &PhysicalPlayer)>,
+    other_players: Query<(Entity, &GameSceneId)>,
 ) {
-    for (moved_transform, moved_player) in &moved_players {
-        let Some(client) = replicated_clients.get_client_mut(moved_player.0) else {
+    for (game_scene, player) in &players {
+        let Some(client) = replicated_clients.get_client_mut(player.0) else {
             continue;
         };
 
-        for (entity, transform, _) in other_players
-            .iter()
-            .filter(|(.., player)| player.0 != moved_player.0)
-        {
-            const VISIBLE_DISTANCE: f32 = 100.0;
-            let distance = moved_transform.translation.distance(transform.translation);
+        for (other_entity, other_scene) in other_players.iter() {
             client
                 .visibility_mut()
-                .set_visibility(entity, distance < VISIBLE_DISTANCE);
+                .set_visibility(other_entity, *game_scene == *other_scene);
         }
     }
 }
@@ -90,6 +93,9 @@ fn update_visibility(
 #[derive(Component, Deserialize, Serialize, Deref)]
 #[require(Replicated, Transform, BoxCollider, Speed, Velocity, GameSceneId)]
 pub struct PhysicalPlayer(bevy_replicon::core::ClientId);
+
+#[derive(Component)]
+struct ControlledPhysicalPlayer;
 
 #[derive(Component, Copy, Clone, Default)]
 pub struct BoxCollider {

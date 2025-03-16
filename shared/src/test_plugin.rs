@@ -3,6 +3,8 @@ use bevy_replicon::prelude::*;
 
 use serde::{Deserialize, Serialize};
 
+use crate::{map::GameSceneId, PhysicalPlayer};
+
 pub struct TestPlugin;
 
 impl Plugin for TestPlugin {
@@ -28,9 +30,16 @@ fn send_test(keyboard_input: Res<ButtonInput<KeyCode>>, mut lobby_events: EventW
     }
 }
 
-fn recieve_test(mut lobby_events: EventReader<FromClient<TestEvent>>) {
+fn recieve_test(
+    mut commands: Commands,
+    mut lobby_events: EventReader<FromClient<TestEvent>>,
+    query: Query<Entity, With<PhysicalPlayer>>,
+) {
     for FromClient { client_id, event } in lobby_events.read() {
         info!("received event {event:?} from {client_id:?}");
         println!("------ TEST EVENT ------");
+        for entity in &query {
+            commands.entity(entity).insert(GameSceneId(0));
+        }
     }
 }
