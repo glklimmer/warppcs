@@ -21,8 +21,12 @@ use shared::{
 };
 
 use crate::{
-    animations::objects::chest::ChestSpriteSheet,
+    animations::{
+        objects::chest::ChestSpriteSheet, AnimationSound, AnimationSoundTrigger,
+        SpriteSheetAnimation,
+    },
     networking::{Connected, NetworkEvent},
+    sound::CRAFTING_SOUND_PATH,
 };
 
 #[derive(Component, Default)]
@@ -405,11 +409,33 @@ fn update_building(
                     }
                 };
                 let image = asset_server.load::<Image>(texture);
-                commands.entity(entity).insert(Sprite {
-                    image,
-                    flip_x: building_flipped(indicator),
-                    ..default()
-                });
+                commands.entity(entity).insert((
+                    Sprite {
+                        image,
+                        flip_x: building_flipped(indicator),
+                        ..default()
+                    },
+                    SpriteSheetAnimation {
+                        animation_sound: Some(AnimationSound {
+                            sound_files: vec![
+                                format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_1.ogg",),
+                                format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_2.ogg",),
+                                format!(
+                                    "{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_1.ogg",
+                                ),
+                                format!(
+                                    "{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_2.ogg",
+                                ),   format!(
+                                    "{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_3.ogg",
+                                ),   format!(
+                                    "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammering_&_chiseling_stone_1.ogg",
+                                ),
+                            ],
+                            sound_trigger: AnimationSoundTrigger::OnEnter,
+                        }),
+                        ..default()
+                    },
+                ));
             }
         }
     }
