@@ -58,7 +58,7 @@ impl FromWorld for KingSpriteSheet {
                 first_sprite_index: 20,
                 last_sprite_index: 25,
                 animation_sound: Some(AnimationSound {
-                    sound_file: "animation_sound/king/walk.ogg".to_string(),
+                    sound_files: vec!["animation_sound/king/walk.ogg".to_string()],
                     sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
                 }),
                 ..default()
@@ -82,7 +82,7 @@ impl FromWorld for KingSpriteSheet {
                 first_sprite_index: 70,
                 last_sprite_index: 76,
                 animation_sound: Some(AnimationSound {
-                    sound_file: "animation_sound/horse/horse_sound.ogg".to_string(),
+                    sound_files: vec!["animation_sound/horse/horse_sound.ogg".to_string()],
                     sound_trigger: AnimationSoundTrigger::OnEnter,
                 }),
                 ..default()

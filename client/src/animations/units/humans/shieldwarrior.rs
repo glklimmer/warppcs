@@ -34,7 +34,7 @@ pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
             first_sprite_index: 18,
             last_sprite_index: 23,
             animation_sound: Some(AnimationSound {
-                sound_file: "animation_sound/shieldwarrior/sword_hit.ogg".to_string(),
+                sound_files: vec!["animation_sound/shieldwarrior/sword_hit.ogg".to_string()],
                 sound_trigger: AnimationSoundTrigger::OnEndFrameTimer,
             }),
             ..default()

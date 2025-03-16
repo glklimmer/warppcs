@@ -13,7 +13,7 @@ use crate::networking::{NetworkEvent, NetworkMapping};
 
 use shared::{
     enum_map::*,
-    networking::{Facing, Rotation, ServerMessages, Hitby},
+    networking::{Facing, Hitby, Rotation, ServerMessages},
 };
 use units::{next_unit_animation, set_unit_sprite_animation, UnitAnimation, UnitSpriteSheets};
 
@@ -46,7 +46,7 @@ pub enum AnimationSoundTrigger {
 #[derive(Component, Clone)]
 #[require(AnimationSoundTrigger)]
 pub struct AnimationSound {
-    pub sound_file: String,
+    pub sound_files: Vec<String>,
     pub sound_trigger: AnimationSoundTrigger,
 }
 
@@ -202,16 +202,16 @@ fn trigger_hit(
     network_mapping: Res<NetworkMapping>,
 ) {
     for event in network_events.read() {
-            if let ServerMessages::EntityHit {
-                entity: server_entity,
-                by,
-            } = event.message
-            {
+        if let ServerMessages::EntityHit {
+            entity: server_entity,
+            by,
+        } = event.message
+        {
             if let Some(client_entity) = network_mapping.0.get(&server_entity) {
-                    change.send(EntityChangeEvent {
-                        entity: *client_entity,
-                        change: Change::Hit(by),
-                    });
+                change.send(EntityChangeEvent {
+                    entity: *client_entity,
+                    change: Change::Hit(by),
+                });
             }
         }
     }
@@ -251,7 +251,9 @@ fn advance_animation(
 ) {
     for (entity, mut animation, mut sprite, maybe_full, maybe_play_once) in &mut query {
         animation.frame_timer.tick(time.delta());
-        let atlas = sprite.texture_atlas.as_mut().unwrap();
+        let Some(atlas) = sprite.texture_atlas.as_mut() else {
+            continue;
+        };
 
         if animation.frame_timer.just_finished() {
             atlas.index = if atlas.index == animation.last_sprite_index {
