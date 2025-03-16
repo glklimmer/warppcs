@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use super::PushBack;
 use crate::{
     map::{buildings::Building, GameSceneId},
     networking::{Owner, PlayerInput},
@@ -11,10 +12,17 @@ use crate::{
 };
 use bevy::math::bounding::IntersectsVolume;
 
-use super::PushBack;
-
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);
+
+#[derive(Component)]
+pub struct RandomVelocityMul(f32);
+
+impl Default for RandomVelocityMul {
+    fn default() -> Self {
+        Self(fastrand::choice([0.9, 0.95, 1.0, 1.1, 1.15]).unwrap())
+    }
+}
 
 #[derive(Component, Debug, Copy, Clone)]
 pub struct Speed(pub f32);
@@ -123,10 +131,17 @@ fn move_players_system(
 const MOVE_EPSILON: f32 = 1.;
 
 fn determine_unit_velocity(
-    mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit, &PushBack)>,
+    mut query: Query<(
+        &mut Velocity,
+        &Transform,
+        &UnitBehaviour,
+        &Unit,
+        &PushBack,
+        &RandomVelocityMul,
+    )>,
     transform_query: Query<&Transform>,
 ) {
-    for (mut velocity, transform, behaviour, unit, push_back) in &mut query {
+    for (mut velocity, transform, behaviour, unit, push_back, rand_velocity_mul) in &mut query {
         match behaviour {
             UnitBehaviour::Idle => {}
             UnitBehaviour::AttackTarget(_) => {
@@ -145,10 +160,9 @@ fn determine_unit_velocity(
                 }
 
                 let target_right = target.x > transform.translation.x;
-
                 match target_right {
-                    true => velocity.0.x = unit_speed(&unit.unit_type),
-                    false => velocity.0.x = -unit_speed(&unit.unit_type),
+                    true => velocity.0.x = unit_speed(&unit.unit_type) * rand_velocity_mul.0,
+                    false => velocity.0.x = -unit_speed(&unit.unit_type) * rand_velocity_mul.0,
                 }
             }
         }

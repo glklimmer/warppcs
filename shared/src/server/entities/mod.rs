@@ -4,12 +4,15 @@ use health::HealthPlugin;
 
 use crate::{networking::UnitType, unit_collider, BoxCollider};
 
-use super::physics::{movement::Velocity, PushBack};
+use super::physics::{
+    movement::{RandomVelocityMul, Velocity},
+    PushBack,
+};
 
 pub mod health;
 
 #[derive(Component, Clone)]
-#[require(BoxCollider(unit_collider), Velocity, PushBack)]
+#[require(BoxCollider(unit_collider), Velocity, PushBack, RandomVelocityMul)]
 pub struct Unit {
     pub unit_type: UnitType,
     pub swing_timer: Timer,
