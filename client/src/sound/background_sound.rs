@@ -7,7 +7,7 @@ use shared::{
     GameState,
 };
 
-use crate::networking::ControlledPlayer;
+use crate::{animations::units::UnitAnimation, networking::ControlledPlayer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 enum MusicTrack {
@@ -45,7 +45,7 @@ struct MusicTransitionEvent {
 #[derive(Event)]
 struct AdjustSpatialSoundEvent;
 
-const BACKGROUND_VOLUME: f32 = 0.10;
+const BACKGROUND_VOLUME: f32 = 0.05;
 const COMBAT_DISTANCE_THRESHOLD: f32 = 550.0;
 pub struct BackgroundSoundPlugin;
 
@@ -88,13 +88,13 @@ fn setup_music(mut commands: Commands, asset_server: Res<AssetServer>) {
         &mut commands,
         &asset_server,
         MusicTrack::Victory,
-        "music/victory.ogg",
+        "music/music_chill.ogg",
     );
     spawn_music_track(
         &mut commands,
         &asset_server,
         MusicTrack::GameOver,
-        "music/game_over.ogg",
+        "music/music_chill.ogg",
     );
 
     commands.insert_resource(MusicState {
@@ -123,7 +123,6 @@ fn spawn_music_track(
             mode: PlaybackMode::Loop,
             volume: Volume::new(0.0),
             paused: true,
-            spatial: true,
             ..default()
         },
         MusicPlayer {
@@ -137,7 +136,7 @@ fn spawn_music_track(
 
 fn handle_music_transitions(
     mut music_state: ResMut<MusicState>,
-    mut music_players: Query<(&mut MusicPlayer, &SpatialAudioSink)>,
+    mut music_players: Query<(&mut MusicPlayer, &AudioSink)>,
     mut transition_events: EventReader<MusicTransitionEvent>,
 ) {
     for event in transition_events.read() {
@@ -167,7 +166,7 @@ fn handle_music_transitions(
 fn update_music_volume(
     time: Res<Time>,
     mut music_state: ResMut<MusicState>,
-    mut music_players: Query<(&mut MusicPlayer, &SpatialAudioSink)>,
+    mut music_players: Query<(&mut MusicPlayer, &AudioSink)>,
 ) {
     if !music_state.is_transitioning {
         return;
@@ -203,11 +202,14 @@ fn play_fight_music(
     mut music_state: ResMut<MusicState>,
     mut music_events: EventWriter<MusicTransitionEvent>,
     player_query: Query<(&Transform, &Owner), With<ControlledPlayer>>,
-    unit_query: Query<(&Transform, &Owner), Without<ControlledPlayer>>,
+    unit_query: Query<(&Transform, &Owner, &UnitAnimation), Without<ControlledPlayer>>,
 ) {
     if let Ok((player_transform, player_owner)) = player_query.get_single() {
         let mut enemy_nearby = false;
-        for (unit_transform, unit_owner) in unit_query.iter() {
+        for (unit_transform, unit_owner, unit_animations) in unit_query.iter() {
+            if unit_animations.eq(&UnitAnimation::Death) {
+                continue;
+            }
             if player_owner.is_different_faction(unit_owner) {
                 let enemy_distance = player_transform
                     .translation
