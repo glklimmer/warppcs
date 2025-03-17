@@ -9,7 +9,6 @@ use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
 use shared::{server::networking::ServerNetworkPlugin, GameState};
 use std::env;
-use std::f32::consts::PI;
 use std::thread;
 use ui::UiPlugin;
 
@@ -154,18 +153,5 @@ fn setup_background(
         Mesh2d(meshes.add(Rectangle::new(6000.0, 2000.0))),
         MeshMaterial2d(materials.add(Color::hsl(109., 0.97, 0.88))),
         Transform::from_xyz(0.0, -1000.0, 0.0),
-    ));
-
-    // light
-    commands.spawn((
-        DirectionalLight {
-            shadows_enabled: true,
-            ..default()
-        },
-        Transform {
-            translation: Vec3::new(0.0, 2.0, 0.0),
-            rotation: Quat::from_rotation_x(-PI / 4.),
-            ..default()
-        },
     ));
 }
