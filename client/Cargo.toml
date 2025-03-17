@@ -43,7 +43,7 @@ bevy = { version = "0.15.3", default-features = false, features = [
     # "tonemapping_luts",
     "vorbis",
     # "webgl2",
-    "x11",
+    "wayland",
 ] }
 bevy_renet = { version = "1.0.0", features = ["steam"] }
 renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }
