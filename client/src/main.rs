@@ -9,7 +9,6 @@ use menu::{MainMenuStates, MenuPlugin};
 use networking::{ClientNetworkPlugin, Connected};
 use shared::{server::networking::ServerNetworkPlugin, GameState};
 use std::env;
-use std::f32::consts::PI;
 use std::thread;
 use ui::UiPlugin;
 
