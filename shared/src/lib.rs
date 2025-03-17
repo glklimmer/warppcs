@@ -4,7 +4,6 @@ use bevy_replicon::prelude::*;
 use bevy::color::palettes::css::BLUE;
 use bevy::math::bounding::Aabb2d;
 use bevy_replicon_renet::RepliconRenetPlugins;
-use map::GameSceneId;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
 use server::physics::movement::{Speed, Velocity};
@@ -26,7 +25,7 @@ impl Plugin for SharedPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             RepliconPlugins.set(ServerPlugin {
-                visibility_policy: VisibilityPolicy::Whitelist,
+                visibility_policy: VisibilityPolicy::All,
                 ..Default::default()
             }),
             RepliconRenetPlugins,
@@ -36,8 +35,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(PhysicalPlayer, Transform)>()
         .add_observer(spawn_clients)
         .add_systems(Startup, basic_map.run_if(server_or_singleplayer))
-        .add_systems(Update, draw_boxes)
-        .add_systems(Update, update_visibility.run_if(server_or_singleplayer));
+        .add_systems(Update, draw_boxes);
     }
 }
 
@@ -45,25 +43,18 @@ fn basic_map(mut commands: Commands) {
     // commands.spawn(bundle)
 }
 
+const PIXEL_SCALE: Vec3 = Vec3::new(3., 3., 1.);
+
 fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
     info!("spawning player for `{:?}`", trigger.client_id);
     commands.spawn((
         PhysicalPlayer(trigger.client_id),
-        Transform::from_xyz(50.0, 0.0, 0.0),
-        GameSceneId(1),
+        Transform::from_xyz(50.0, 0.0, 0.0).with_scale(PIXEL_SCALE),
     ));
 }
 
-fn draw_boxes(
-    mut gizmos: Gizmos,
-    players: Query<(&Transform, Option<&GameSceneId>), With<PhysicalPlayer>>,
-    player: Query<&GameSceneId, With<ControlledPhysicalPlayer>>,
-) {
-    for (transform, game_scene_id) in &players {
-        match (game_scene_id, player.get_single()) {
-            (Some(id), Ok(scene)) if id != scene => continue,
-            _ => {}
-        }
+fn draw_boxes(mut gizmos: Gizmos, players: Query<&Transform, With<PhysicalPlayer>>) {
+    for transform in &players {
         gizmos.rect(
             Vec3::new(transform.translation.x, transform.translation.y, 0.0),
             Vec2::ONE * 50.0,
@@ -72,30 +63,9 @@ fn draw_boxes(
     }
 }
 
-fn update_visibility(
-    mut replicated_clients: ResMut<ReplicatedClients>,
-    players: Query<(&GameSceneId, &PhysicalPlayer)>,
-    other_players: Query<(Entity, &GameSceneId)>,
-) {
-    for (game_scene, player) in &players {
-        let Some(client) = replicated_clients.get_client_mut(player.0) else {
-            continue;
-        };
-
-        for (other_entity, other_scene) in other_players.iter() {
-            client
-                .visibility_mut()
-                .set_visibility(other_entity, *game_scene == *other_scene);
-        }
-    }
-}
-
 #[derive(Component, Deserialize, Serialize, Deref)]
-#[require(Replicated, Transform, BoxCollider, Speed, Velocity, GameSceneId)]
+#[require(Replicated, Transform(|| Transform::from_scale(PIXEL_SCALE)), BoxCollider, Speed, Velocity, Sprite)]
 pub struct PhysicalPlayer(bevy_replicon::core::ClientId);
-
-#[derive(Component)]
-struct ControlledPhysicalPlayer;
 
 #[derive(Component, Copy, Clone, Default)]
 pub struct BoxCollider {

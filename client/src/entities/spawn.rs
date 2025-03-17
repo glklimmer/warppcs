@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_parallax::CameraFollow;
+use bevy_replicon::core::ClientId;
 
 use crate::{
     animations::{
@@ -15,12 +16,12 @@ use crate::{
     },
 };
 use shared::{
-    map::Layers,
+    map::{GameSceneId, Layers},
     networking::{
         DropFlag, MountType, Mounted, PickFlag, ProjectileType, ServerMessages, SpawnFlag,
         SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
     },
-    projectile_collider, BoxCollider,
+    projectile_collider, BoxCollider, PhysicalPlayer,
 };
 
 use super::{highlight::Highlighted, PartOfScene};
@@ -33,38 +34,59 @@ pub struct Projectile;
 
 impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<FlagSpriteSheet>();
+        app.add_observer(init_player_sprite);
 
-        app.add_event::<SpawnPlayer>();
-        app.add_event::<SpawnUnit>();
-        app.add_event::<SpawnMount>();
-        app.add_event::<SpawnProjectile>();
-        app.add_event::<SpawnFlag>();
-        app.add_event::<DropFlag>();
-        app.add_event::<PickFlag>();
+        //app.init_resource::<FlagSpriteSheet>()
 
-        app.add_systems(
-            FixedPostUpdate,
-            (
-                spawn.run_if(on_event::<NetworkEvent>),
-                (
-                    (
-                        spawn_player.run_if(on_event::<SpawnPlayer>),
-                        spawn_flag.run_if(on_event::<SpawnFlag>),
-                    )
-                        .chain(),
-                    spawn_unit.run_if(on_event::<SpawnUnit>),
-                    spawn_mount.run_if(on_event::<SpawnMount>),
-                    spawn_projectile.run_if(on_event::<SpawnProjectile>),
-                ),
-            )
-                .chain()
-                .in_set(Connected),
-        );
+        // app.add_event::<SpawnPlayer>();
+        // app.add_event::<SpawnUnit>();
+        // app.add_event::<SpawnMount>();
+        // app.add_event::<SpawnProjectile>();
+        // app.add_event::<SpawnFlag>();
+        // app.add_event::<DropFlag>();
+        // app.add_event::<PickFlag>();
 
-        app.add_systems(FixedUpdate, drop_flag.run_if(on_event::<DropFlag>));
-        app.add_systems(FixedUpdate, pick_flag.run_if(on_event::<PickFlag>));
+        // app.add_systems(
+        //     FixedPostUpdate,
+        //     (
+        //         spawn.run_if(on_event::<NetworkEvent>),
+        //         (
+        //             (
+        //                 spawn_player.run_if(on_event::<SpawnPlayer>),
+        //                 spawn_flag.run_if(on_event::<SpawnFlag>),
+        //             )
+        //                 .chain(),
+        //             spawn_unit.run_if(on_event::<SpawnUnit>),
+        //             spawn_mount.run_if(on_event::<SpawnMount>),
+        //             spawn_projectile.run_if(on_event::<SpawnProjectile>),
+        //         ),
+        //     )
+        //         .chain()
+        //         .in_set(Connected),
+        // );
+        //
+        // app.add_systems(FixedUpdate, drop_flag.run_if(on_event::<DropFlag>));
+        // app.add_systems(FixedUpdate, pick_flag.run_if(on_event::<PickFlag>));
     }
+}
+
+fn init_player_sprite(
+    trigger: Trigger<OnAdd, Sprite>,
+    mut players: Query<&mut Sprite, With<PhysicalPlayer>>,
+    mut commands: Commands,
+    king_sprite_sheet: Res<KingSpriteSheet>,
+) {
+    let Ok(mut sprite) = players.get_mut(trigger.entity()) else {
+        return;
+    };
+    let sprite_sheet = &king_sprite_sheet.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+    let animation = sprite_sheet.animations.get(KingAnimation::Idle);
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+    commands.entity(trigger.entity()).insert(animation.clone());
 }
 
 #[allow(clippy::too_many_arguments)]
