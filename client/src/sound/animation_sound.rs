@@ -9,7 +9,8 @@ use shared::{
 
 use crate::{
     animations::{
-        units::Unit, AnimationSoundTrigger, Change, EntityChangeEvent, SpriteSheetAnimation,
+        units::Unit, AnimationSound, AnimationSoundTrigger, Change, EntityChangeEvent,
+        SpriteSheetAnimation,
     },
     networking::NetworkMapping,
 };
@@ -104,8 +105,8 @@ fn play_sound_on_entity_change(
     for event in entity_change_events.read() {
         if let Change::Hit(hit_by) = &event.change {
             let sound = match hit_by {
-                Hitby::Arrow => "animation_sound/arrow/arrow-hits-flesh.ogg",
-                Hitby::Meele => "animation_sound/arrow/arrow-hits-flesh.ogg",
+                Hitby::Arrow => "animation_sound/arrow/arrow_hits_flesh.ogg",
+                Hitby::Meele => "animation_sound/arrow/arrow_hits_flesh.ogg",
             };
             sound_events.send(PlayAnimationSoundEvent {
                 entity: event.entity,
@@ -155,10 +156,15 @@ fn play_recruite_unit_call(
 
 fn play_animation_on_frame_timer(
     mut sound_events: EventWriter<PlayAnimationSoundEvent>,
-    query: Query<(Entity, &SpriteSheetAnimation, &Sprite)>,
+    query: Query<(
+        Entity,
+        &SpriteSheetAnimation,
+        Option<&AnimationSound>,
+        &Sprite,
+    )>,
 ) {
-    for (entity, animation, sprite) in query.iter() {
-        let sound = match &animation.animation_sound {
+    for (entity, sprite_animation, animation, sprite) in query.iter() {
+        let sound = match &animation {
             Some(sound) => sound,
             None => continue,
         };
@@ -170,7 +176,9 @@ fn play_animation_on_frame_timer(
             continue;
         }
         let atlas = sprite.texture_atlas.as_ref().unwrap();
-        if animation.frame_timer.just_finished() && atlas.index == animation.first_sprite_index {
+        if sprite_animation.frame_timer.just_finished()
+            && atlas.index == sprite_animation.first_sprite_index
+        {
             sound_events.send(PlayAnimationSoundEvent {
                 entity,
                 sound_files: sound.sound_files.clone(),
@@ -183,10 +191,10 @@ fn play_animation_on_frame_timer(
 
 fn play_animation_on_enter(
     mut sound_events: EventWriter<PlayAnimationSoundEvent>,
-    mut query: Query<(Entity, &mut SpriteSheetAnimation)>,
+    mut query: Query<(Entity, Option<&AnimationSound>)>,
 ) {
-    for (entity, mut animation) in query.iter_mut() {
-        let sound = match &animation.animation_sound {
+    for (entity, animation) in query.iter_mut() {
+        let sound = match &animation {
             Some(sound) => sound,
             None => continue,
         };
@@ -201,7 +209,5 @@ fn play_animation_on_enter(
             speed: 1.5,
             volume: ANIMATION_VOLUME,
         });
-
-        animation.animation_sound = None;
     }
 }

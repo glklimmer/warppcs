@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use shared::{enum_map::*, flag_collider, BoxCollider};
 
 use crate::{
-    animations::{SpriteSheet, SpriteSheetAnimation},
+    animations::{AnimationSound, AnimationSoundTrigger, SpriteSheet, SpriteSheetAnimation},
     entities::{highlight::Highlightable, map::PartOfScene},
 };
 
@@ -44,11 +44,19 @@ impl FromWorld for FlagSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            FlagAnimation::Wave => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+        });
+
         FlagSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }

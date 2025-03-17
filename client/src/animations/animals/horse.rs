@@ -3,7 +3,8 @@ use bevy::prelude::*;
 use shared::enum_map::*;
 
 use crate::animations::{
-    AnimationTrigger, Change, EntityChangeEvent, SpriteSheet, SpriteSheetAnimation,
+    AnimationSound, AnimationSoundTrigger, AnimationTrigger, Change, EntityChangeEvent,
+    SpriteSheet, SpriteSheetAnimation,
 };
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
@@ -35,7 +36,7 @@ impl FromWorld for HorseSpriteSheet {
         let animations = EnumMap::new(|c| match c {
             HorseAnimation::Idle => SpriteSheetAnimation {
                 first_sprite_index: 0,
-                last_sprite_index: 7,
+                last_sprite_index: 3,
                 ..default()
             },
             HorseAnimation::Walk => SpriteSheetAnimation {
@@ -45,11 +46,23 @@ impl FromWorld for HorseSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            HorseAnimation::Idle => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+            HorseAnimation::Walk => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+        });
+
         HorseSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }

@@ -32,17 +32,6 @@ pub fn archer(world: &mut World) -> SpriteSheet<UnitAnimation> {
         UnitAnimation::Walk => SpriteSheetAnimation {
             first_sprite_index: 11,
             last_sprite_index: 16,
-            animation_sound: Some(AnimationSound {
-                sound_files: vec![
-                    format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_1.ogg"),
-                    format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_2.ogg"),
-                    format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_3.ogg"),
-                    format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_4.ogg"),
-                    format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_5.ogg"),
-                    format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_6.ogg"),
-                ],
-                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-            }),
             ..default()
         },
         UnitAnimation::Attack => SpriteSheetAnimation {
@@ -62,9 +51,40 @@ pub fn archer(world: &mut World) -> SpriteSheet<UnitAnimation> {
         },
     });
 
+    let animations_sound = EnumMap::new(|c| match c {
+        UnitAnimation::Idle => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnEnter,
+        },
+        UnitAnimation::Walk => AnimationSound {
+            sound_files: vec![
+                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_1.ogg"),
+                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_2.ogg"),
+                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_3.ogg"),
+                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_4.ogg"),
+                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_5.ogg"),
+                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_6.ogg"),
+            ],
+            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+        },
+        UnitAnimation::Attack => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnEnter,
+        },
+        UnitAnimation::Hit => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnEnter,
+        },
+        UnitAnimation::Death => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnEnter,
+        },
+    });
+
     SpriteSheet {
         texture,
         layout,
         animations,
+        animations_sound,
     }
 }

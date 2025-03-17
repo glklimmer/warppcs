@@ -2,7 +2,10 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{SpriteSheet, SpriteSheetAnimation};
+use crate::{
+    animations::{AnimationSound, AnimationSoundTrigger, SpriteSheet, SpriteSheetAnimation},
+    sound::DIRT_FOOTSTEPS_SOUND_PATH,
+};
 
 use super::super::UnitAnimation;
 
@@ -18,7 +21,6 @@ pub fn pikeman(world: &mut World) -> SpriteSheet<UnitAnimation> {
         None,
         None,
     ));
-
     let animations = EnumMap::new(|c| match c {
         UnitAnimation::Idle => SpriteSheetAnimation {
             first_sprite_index: 0,
@@ -47,9 +49,40 @@ pub fn pikeman(world: &mut World) -> SpriteSheet<UnitAnimation> {
         },
     });
 
+    let animations_sound = EnumMap::new(|c| match c {
+        UnitAnimation::Idle => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+        },
+        UnitAnimation::Walk => AnimationSound {
+            sound_files: vec![
+                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_1.ogg"),
+                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_2.ogg"),
+                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_3.ogg"),
+                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_4.ogg"),
+                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_5.ogg"),
+                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_6.ogg"),
+            ],
+            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+        },
+        UnitAnimation::Attack => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+        },
+        UnitAnimation::Hit => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+        },
+        UnitAnimation::Death => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+        },
+    });
+
     SpriteSheet {
         texture,
         layout,
         animations,
+        animations_sound,
     }
 }

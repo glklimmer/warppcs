@@ -27,6 +27,7 @@ pub struct SpriteSheet<E: EnumIter> {
     pub texture: Handle<Image>,
     pub layout: Handle<TextureAtlasLayout>,
     pub animations: EnumMap<E, SpriteSheetAnimation>,
+    pub animations_sound: EnumMap<E, AnimationSound>,
 }
 
 #[derive(Clone)]
@@ -56,7 +57,6 @@ pub struct SpriteSheetAnimation {
     pub last_sprite_index: usize,
     pub frame_timer: Timer,
     pub direction: AnimationDirection,
-    pub animation_sound: Option<AnimationSound>,
 }
 
 impl Default for SpriteSheetAnimation {
@@ -66,7 +66,6 @@ impl Default for SpriteSheetAnimation {
             last_sprite_index: 0,
             frame_timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             direction: AnimationDirection::Forward,
-            animation_sound: None,
         }
     }
 }

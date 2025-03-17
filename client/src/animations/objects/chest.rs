@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::AnimationDirection;
+use crate::animations::{AnimationDirection, AnimationSound, AnimationSoundTrigger};
 
 use super::super::{SpriteSheet, SpriteSheetAnimation};
 
@@ -45,11 +45,23 @@ impl FromWorld for ChestSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            ChestAnimation::Open => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+            ChestAnimation::Close => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+        });
+
         ChestSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }

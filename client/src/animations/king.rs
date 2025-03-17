@@ -57,10 +57,6 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Walk => SpriteSheetAnimation {
                 first_sprite_index: 20,
                 last_sprite_index: 25,
-                animation_sound: Some(AnimationSound {
-                    sound_files: vec!["animation_sound/king/walk.ogg".to_string()],
-                    sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-                }),
                 ..default()
             },
             KingAnimation::Attack => SpriteSheetAnimation {
@@ -81,10 +77,6 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Mount => SpriteSheetAnimation {
                 first_sprite_index: 70,
                 last_sprite_index: 76,
-                animation_sound: Some(AnimationSound {
-                    sound_files: vec!["animation_sound/horse/horse_sound.ogg".to_string()],
-                    sound_trigger: AnimationSoundTrigger::OnEnter,
-                }),
                 ..default()
             },
             KingAnimation::HorseIdle => SpriteSheetAnimation {
@@ -99,11 +91,51 @@ impl FromWorld for KingSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            KingAnimation::Idle => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Drink => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Walk => AnimationSound {
+                sound_files: vec!["animation_sound/king/walk.ogg".to_string()],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Attack => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Hit => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Death => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Mount => AnimationSound {
+                sound_files: vec!["animation_sound/horse/horse_sound.ogg".to_string()],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+            KingAnimation::HorseIdle => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::HorseWalk => AnimationSound {
+                sound_files: vec!["animation_sound/horse/horse_gallop.ogg".to_string()],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+        });
+
         KingSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }

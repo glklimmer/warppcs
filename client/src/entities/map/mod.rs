@@ -415,8 +415,7 @@ fn update_building(
                         flip_x: building_flipped(indicator),
                         ..default()
                     },
-                    SpriteSheetAnimation {
-                        animation_sound: Some(AnimationSound {
+                   AnimationSound {
                             sound_files: vec![
                                 format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_1.ogg",),
                                 format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_2.ogg",),
@@ -432,9 +431,7 @@ fn update_building(
                                 ),
                             ],
                             sound_trigger: AnimationSoundTrigger::OnEnter,
-                        }),
-                        ..default()
-                    },
+                        }
                 ));
             }
         }
