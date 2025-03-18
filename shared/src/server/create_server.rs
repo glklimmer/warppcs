@@ -73,5 +73,5 @@ pub fn create_netcode_server(mut commands: Commands, channels: Res<RepliconChann
 
     commands.spawn(Player(ClientId::SERVER));
     commands.spawn(PhysicalPlayer(ClientId::SERVER));
-    println!("Successfully started server.")
+    info!("Successfully started server.")
 }

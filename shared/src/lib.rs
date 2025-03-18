@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
-use bevy::color::palettes::css::BLUE;
-use bevy::math::bounding::Aabb2d;
+use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d};
 use bevy_replicon_renet::RepliconRenetPlugins;
+use player_attacks::PlayerAttacks;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
 use server::physics::movement::{Speed, Velocity};
@@ -12,6 +12,7 @@ use test_plugin::TestPlugin;
 pub mod enum_map;
 pub mod map;
 pub mod networking;
+pub mod player_attacks;
 pub mod player_movement;
 pub mod server;
 pub mod steamworks;
@@ -31,16 +32,36 @@ impl Plugin for SharedPlugin {
             RepliconRenetPlugins,
             TestPlugin,
             PlayerMovement,
+            PlayerAttacks,
         ))
         .replicate_group::<(PhysicalPlayer, Transform)>()
+        .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
         .add_observer(spawn_clients)
-        .add_systems(Startup, basic_map.run_if(server_or_singleplayer))
-        .add_systems(Update, draw_boxes);
+        .add_systems(Startup, basic_map.run_if(server_or_singleplayer));
     }
 }
 
 fn basic_map(mut commands: Commands) {
     // commands.spawn(bundle)
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Event, Serialize)]
+pub enum AnimationChange {
+    Attack,
+    Hit,
+    Death,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Event, Serialize)]
+pub struct AnimationChangeEvent {
+    pub entity: Entity,
+    pub change: AnimationChange,
+}
+
+impl MapEntities for AnimationChangeEvent {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.entity = entity_mapper.map_entity(self.entity);
+    }
 }
 
 const PIXEL_SCALE: Vec3 = Vec3::new(3., 3., 1.);
@@ -51,16 +72,6 @@ fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
         PhysicalPlayer(trigger.client_id),
         Transform::from_xyz(50.0, 0.0, 0.0).with_scale(PIXEL_SCALE),
     ));
-}
-
-fn draw_boxes(mut gizmos: Gizmos, players: Query<&Transform, With<PhysicalPlayer>>) {
-    for transform in &players {
-        gizmos.rect(
-            Vec3::new(transform.translation.x, transform.translation.y, 0.0),
-            Vec2::ONE * 50.0,
-            BLUE,
-        );
-    }
 }
 
 #[derive(Component, Deserialize, Serialize, Deref)]

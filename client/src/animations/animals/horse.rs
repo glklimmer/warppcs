@@ -1,10 +1,8 @@
 use bevy::prelude::*;
 
-use shared::enum_map::*;
+use shared::{enum_map::*, AnimationChange, AnimationChangeEvent};
 
-use crate::animations::{
-    AnimationTrigger, Change, EntityChangeEvent, SpriteSheet, SpriteSheetAnimation,
-};
+use crate::animations::{AnimationTrigger, SpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum HorseAnimation {
@@ -57,17 +55,17 @@ impl FromWorld for HorseSpriteSheet {
 
 pub fn next_horse_animation(
     mut query: Query<&mut HorseAnimation>,
-    mut network_events: EventReader<EntityChangeEvent>,
+    mut network_events: EventReader<AnimationChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<HorseAnimation>>,
 ) {
     for event in network_events.read() {
         if let Ok(mut current_animation) = query.get_mut(event.entity) {
             let maybe_new_animation = match &event.change {
-                Change::Attack | Change::Rotation(_) | Change::Hit | Change::Death => None,
-                Change::Movement(moving) => match moving {
-                    true => Some(HorseAnimation::Walk),
-                    false => Some(HorseAnimation::Idle),
-                },
+                AnimationChange::Attack | AnimationChange::Hit | AnimationChange::Death => None,
+                // AnimationChange::Movement(moving) => match moving {
+                //     true => Some(HorseAnimation::Walk),
+                //     false => Some(HorseAnimation::Idle),
+                // },
             };
 
             if let Some(new_animation) = maybe_new_animation {

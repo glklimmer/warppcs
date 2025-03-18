@@ -104,21 +104,6 @@ pub struct FullAnimation;
 #[derive(Component)]
 struct PlayOnce;
 
-#[derive(Debug)]
-pub enum Change {
-    Rotation(Rotation),
-    Movement(bool),
-    Attack,
-    Hit,
-    Death,
-}
-
-#[derive(Event)]
-pub struct EntityChangeEvent {
-    pub entity: Entity,
-    pub change: Change,
-}
-
 pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
@@ -137,12 +122,12 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<HorseSpriteSheet>();
         app.add_event::<AnimationTrigger<HorseAnimation>>();
 
-        app.add_event::<EntityChangeEvent>();
+        // app.add_event::<EntityChangeEvent>();
 
-        app.add_systems(
-            FixedUpdate,
-            (trigger_meele_attack, trigger_hit, trigger_death),
-        );
+        // app.add_systems(
+        //     FixedUpdate,
+        //     (trigger_meele_attack, trigger_hit, trigger_death),
+        // );
 
         app.add_systems(
             Update,
@@ -151,73 +136,73 @@ impl Plugin for AnimationPlugin {
                 (set_king_sprite_animation, next_king_animation),
                 (set_horse_sprite_animation, next_horse_animation),
                 advance_animation,
-                set_unit_facing,
-                set_free_orientation,
-                mirror_sprite,
+                // set_unit_facing,
+                // set_free_orientation,
+                // mirror_sprite,
             ),
         );
     }
 }
 
-fn trigger_meele_attack(
-    mut network_events: EventReader<NetworkEvent>,
-    mut change: EventWriter<EntityChangeEvent>,
-    network_mapping: Res<NetworkMapping>,
-) {
-    for event in network_events.read() {
-        if let ServerMessages::MeleeAttack {
-            entity: server_entity,
-        } = event.message
-        {
-            if let Some(client_entity) = network_mapping.0.get(&server_entity) {
-                change.send(EntityChangeEvent {
-                    entity: *client_entity,
-                    change: Change::Attack,
-                });
-            }
-        }
-    }
-}
-
-fn trigger_hit(
-    mut network_events: EventReader<NetworkEvent>,
-    mut change: EventWriter<EntityChangeEvent>,
-    network_mapping: Res<NetworkMapping>,
-) {
-    for event in network_events.read() {
-        if let ServerMessages::EntityHit {
-            entity: server_entity,
-        } = event.message
-        {
-            if let Some(client_entity) = network_mapping.0.get(&server_entity) {
-                change.send(EntityChangeEvent {
-                    entity: *client_entity,
-                    change: Change::Hit,
-                });
-            }
-        }
-    }
-}
-
-fn trigger_death(
-    mut network_events: EventReader<NetworkEvent>,
-    mut change: EventWriter<EntityChangeEvent>,
-    network_mapping: Res<NetworkMapping>,
-) {
-    for event in network_events.read() {
-        if let ServerMessages::EntityDeath {
-            entity: server_entity,
-        } = event.message
-        {
-            if let Some(client_entity) = network_mapping.0.get(&server_entity) {
-                change.send(EntityChangeEvent {
-                    entity: *client_entity,
-                    change: Change::Death,
-                });
-            }
-        }
-    }
-}
+// fn trigger_meele_attack(
+//     mut network_events: EventReader<NetworkEvent>,
+//     mut change: EventWriter<EntityChangeEvent>,
+//     network_mapping: Res<NetworkMapping>,
+// ) {
+//     for event in network_events.read() {
+//         if let ServerMessages::MeleeAttack {
+//             entity: server_entity,
+//         } = event.message
+//         {
+//             if let Some(client_entity) = network_mapping.0.get(&server_entity) {
+//                 change.send(EntityChangeEvent {
+//                     entity: *client_entity,
+//                     change: Change::Attack,
+//                 });
+//             }
+//         }
+//     }
+// }
+//
+// fn trigger_hit(
+//     mut network_events: EventReader<NetworkEvent>,
+//     mut change: EventWriter<EntityChangeEvent>,
+//     network_mapping: Res<NetworkMapping>,
+// ) {
+//     for event in network_events.read() {
+//         if let ServerMessages::EntityHit {
+//             entity: server_entity,
+//         } = event.message
+//         {
+//             if let Some(client_entity) = network_mapping.0.get(&server_entity) {
+//                 change.send(EntityChangeEvent {
+//                     entity: *client_entity,
+//                     change: Change::Hit,
+//                 });
+//             }
+//         }
+//     }
+// }
+//
+// fn trigger_death(
+//     mut network_events: EventReader<NetworkEvent>,
+//     mut change: EventWriter<EntityChangeEvent>,
+//     network_mapping: Res<NetworkMapping>,
+// ) {
+//     for event in network_events.read() {
+//         if let ServerMessages::EntityDeath {
+//             entity: server_entity,
+//         } = event.message
+//         {
+//             if let Some(client_entity) = network_mapping.0.get(&server_entity) {
+//                 change.send(EntityChangeEvent {
+//                     entity: *client_entity,
+//                     change: Change::Death,
+//                 });
+//             }
+//         }
+//     }
+// }
 
 #[allow(clippy::type_complexity)]
 fn advance_animation(
@@ -254,40 +239,40 @@ fn advance_animation(
     }
 }
 
-fn set_unit_facing(mut commands: Commands, mut movements: EventReader<EntityChangeEvent>) {
-    for event in movements.read() {
-        if let Change::Rotation(Rotation::LeftRight {
-            facing: Some(new_facing),
-        }) = &event.change
-        {
-            if let Some(mut entity) = commands.get_entity(event.entity) {
-                entity.try_insert(UnitFacing(new_facing.clone()));
-            }
-        }
-    }
-}
-
-fn set_free_orientation(
-    mut query: Query<&mut Transform>,
-    mut movements: EventReader<EntityChangeEvent>,
-) {
-    for event in movements.read() {
-        if let Change::Rotation(Rotation::Free { angle }) = &event.change {
-            if let Ok(mut transform) = query.get_mut(event.entity) {
-                transform.rotation = Quat::from_axis_angle(Vec3::Z, *angle);
-            }
-        }
-    }
-}
-
-fn mirror_sprite(mut query: Query<(&UnitFacing, &mut Transform)>) {
-    for (unit_facing, mut transform) in &mut query {
-        let new_scale_x = match unit_facing.0 {
-            Facing::Left => -transform.scale.x.abs(),
-            Facing::Right => transform.scale.x.abs(),
-        };
-        if transform.scale.x != new_scale_x {
-            transform.scale.x = new_scale_x;
-        }
-    }
-}
+// fn set_unit_facing(mut commands: Commands, mut movements: EventReader<EntityChangeEvent>) {
+//     for event in movements.read() {
+//         if let Change::Rotation(Rotation::LeftRight {
+//             facing: Some(new_facing),
+//         }) = &event.change
+//         {
+//             if let Some(mut entity) = commands.get_entity(event.entity) {
+//                 entity.try_insert(UnitFacing(new_facing.clone()));
+//             }
+//         }
+//     }
+// }
+//
+// fn set_free_orientation(
+//     mut query: Query<&mut Transform>,
+//     mut movements: EventReader<EntityChangeEvent>,
+// ) {
+//     for event in movements.read() {
+//         if let Change::Rotation(Rotation::Free { angle }) = &event.change {
+//             if let Ok(mut transform) = query.get_mut(event.entity) {
+//                 transform.rotation = Quat::from_axis_angle(Vec3::Z, *angle);
+//             }
+//         }
+//     }
+// }
+//
+// fn mirror_sprite(mut query: Query<(&UnitFacing, &mut Transform)>) {
+//     for (unit_facing, mut transform) in &mut query {
+//         let new_scale_x = match unit_facing.0 {
+//             Facing::Left => -transform.scale.x.abs(),
+//             Facing::Right => transform.scale.x.abs(),
+//         };
+//         if transform.scale.x != new_scale_x {
+//             transform.scale.x = new_scale_x;
+//         }
+//     }
+// }

@@ -3,11 +3,10 @@ use bevy::prelude::*;
 use shared::{
     enum_map::*,
     networking::{MountType, Mounted},
+    AnimationChange, AnimationChangeEvent,
 };
 
-use super::{
-    AnimationTrigger, Change, EntityChangeEvent, FullAnimation, SpriteSheet, SpriteSheetAnimation,
-};
+use super::{AnimationTrigger, FullAnimation, SpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum KingAnimation {
@@ -103,31 +102,30 @@ impl FromWorld for KingSpriteSheet {
 pub fn next_king_animation(
     mut commands: Commands,
     mut query: Query<(&mut KingAnimation, Option<&FullAnimation>, Option<&Mounted>)>,
-    mut network_events: EventReader<EntityChangeEvent>,
+    mut animation_changes: EventReader<AnimationChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
 ) {
-    for event in network_events.read() {
+    for event in animation_changes.read() {
         if let Ok((mut current_animation, maybe_full, maybe_mounted)) = query.get_mut(event.entity)
         {
             let maybe_new_animation = match &event.change {
-                Change::Movement(moving) => match moving {
-                    true => match maybe_mounted {
-                        Some(mounted) => match mounted.mount_type {
-                            MountType::Horse => Some(KingAnimation::HorseWalk),
-                        },
-                        None => Some(KingAnimation::Walk),
-                    },
-                    false => match maybe_mounted {
-                        Some(mounted) => match mounted.mount_type {
-                            MountType::Horse => Some(KingAnimation::HorseIdle),
-                        },
-                        None => Some(KingAnimation::Idle),
-                    },
-                },
-                Change::Attack => Some(KingAnimation::Attack),
-                Change::Rotation(_) => None,
-                Change::Hit => Some(KingAnimation::Hit),
-                Change::Death => Some(KingAnimation::Death),
+                // AnimationChange::Movement(moving) => match moving {
+                //     true => match maybe_mounted {
+                //         Some(mounted) => match mounted.mount_type {
+                //             MountType::Horse => Some(KingAnimation::HorseWalk),
+                //         },
+                //         None => Some(KingAnimation::Walk),
+                //     },
+                //     false => match maybe_mounted {
+                //         Some(mounted) => match mounted.mount_type {
+                //             MountType::Horse => Some(KingAnimation::HorseIdle),
+                //         },
+                //         None => Some(KingAnimation::Idle),
+                //     },
+                // },
+                AnimationChange::Attack => Some(KingAnimation::Attack),
+                AnimationChange::Hit => Some(KingAnimation::Hit),
+                AnimationChange::Death => Some(KingAnimation::Death),
             };
 
             if let Some(new_animation) = maybe_new_animation {

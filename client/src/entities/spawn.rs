@@ -86,7 +86,9 @@ fn init_player_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
-    commands.entity(trigger.entity()).insert(animation.clone());
+    commands
+        .entity(trigger.entity())
+        .insert((animation.clone(), KingAnimation::default()));
 }
 
 #[allow(clippy::too_many_arguments)]

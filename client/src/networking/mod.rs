@@ -12,10 +12,7 @@ use shared::{
 };
 use std::collections::HashMap;
 
-use crate::{
-    animations::{king::KingAnimation, Change, EntityChangeEvent},
-    entities::PartOfScene,
-};
+use crate::{animations::king::KingAnimation, entities::PartOfScene};
 
 pub mod join_server;
 
@@ -85,43 +82,43 @@ fn recieve_server_messages(
     }
 }
 
-fn recieve_networked_entities(
-    mut client: ResMut<RenetClient>,
-    mut change_events: EventWriter<EntityChangeEvent>,
-    mut transforms: Query<&mut Transform>,
-    network_mapping: Res<NetworkMapping>,
-) {
-    while let Some(message) = client.receive_message(ServerChannel::NetworkedEntities) {
-        let maybe_net_entities: Result<NetworkedEntities, _> = bincode::deserialize(&message);
-        match maybe_net_entities {
-            Ok(networked_entities) => {
-                for i in 0..networked_entities.entities.len() {
-                    if let Some(client_entity) = network_mapping
-                        .0
-                        .get(&networked_entities.entities[i].entity)
-                    {
-                        let network_entity = &networked_entities.entities[i];
-
-                        if let Ok(mut transform) = transforms.get_mut(*client_entity) {
-                            transform.translation = network_entity.translation.into();
-                        }
-
-                        change_events.send(EntityChangeEvent {
-                            entity: *client_entity,
-                            change: Change::Rotation(network_entity.rotation.clone()),
-                        });
-
-                        change_events.send(EntityChangeEvent {
-                            entity: *client_entity,
-                            change: Change::Movement(network_entity.moving),
-                        });
-                    }
-                }
-            }
-            Err(error) => error!("Error on deserialize: {}", error),
-        }
-    }
-}
+// fn recieve_networked_entities(
+//     mut client: ResMut<RenetClient>,
+//     mut change_events: EventWriter<EntityChangeEvent>,
+//     mut transforms: Query<&mut Transform>,
+//     network_mapping: Res<NetworkMapping>,
+// ) {
+//     while let Some(message) = client.receive_message(ServerChannel::NetworkedEntities) {
+//         let maybe_net_entities: Result<NetworkedEntities, _> = bincode::deserialize(&message);
+//         match maybe_net_entities {
+//             Ok(networked_entities) => {
+//                 for i in 0..networked_entities.entities.len() {
+//                     if let Some(client_entity) = network_mapping
+//                         .0
+//                         .get(&networked_entities.entities[i].entity)
+//                     {
+//                         let network_entity = &networked_entities.entities[i];
+//
+//                         if let Ok(mut transform) = transforms.get_mut(*client_entity) {
+//                             transform.translation = network_entity.translation.into();
+//                         }
+//
+//                         change_events.send(EntityChangeEvent {
+//                             entity: *client_entity,
+//                             change: Change::Rotation(network_entity.rotation.clone()),
+//                         });
+//
+//                         change_events.send(EntityChangeEvent {
+//                             entity: *client_entity,
+//                             change: Change::Movement(network_entity.moving),
+//                         });
+//                     }
+//                 }
+//             }
+//             Err(error) => error!("Error on deserialize: {}", error),
+//         }
+//     }
+// }
 
 fn send_input(player_input: Res<PlayerInput>, mut client: ResMut<RenetClient>) {
     let input_message = bincode::serialize(&*player_input).unwrap();

@@ -2,14 +2,14 @@ use bevy::prelude::*;
 
 use bandits::bandit::bandit;
 use humans::{archer::archer, pikeman::pikeman, shieldwarrior::shieldwarrior};
-use shared::{enum_map::*, networking::UnitType, unit_collider, BoxCollider};
+use shared::{
+    enum_map::*, networking::UnitType, unit_collider, AnimationChange, AnimationChangeEvent,
+    BoxCollider,
+};
 
 use crate::entities::PartOfScene;
 
-use super::{
-    AnimationTrigger, Change, EntityChangeEvent, FullAnimation, PlayOnce, SpriteSheet,
-    SpriteSheetAnimation,
-};
+use super::{AnimationTrigger, FullAnimation, PlayOnce, SpriteSheet, SpriteSheetAnimation};
 
 pub mod bandits;
 pub mod humans;
@@ -54,7 +54,7 @@ impl FromWorld for UnitSpriteSheets {
 pub fn next_unit_animation(
     mut commands: Commands,
     mut query: Query<(&mut UnitAnimation, Option<&FullAnimation>)>,
-    mut network_events: EventReader<EntityChangeEvent>,
+    mut network_events: EventReader<AnimationChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
 ) {
     for event in network_events.read() {
@@ -64,14 +64,13 @@ pub fn next_unit_animation(
             }
 
             let maybe_new_animation = match &event.change {
-                Change::Movement(moving) => match moving {
-                    true => Some(UnitAnimation::Walk),
-                    false => Some(UnitAnimation::Idle),
-                },
-                Change::Attack => Some(UnitAnimation::Attack),
-                Change::Rotation(_) => None,
-                Change::Hit => Some(UnitAnimation::Hit),
-                Change::Death => Some(UnitAnimation::Death),
+                // AnimationChange::Movement(moving) => match moving {
+                //     true => Some(UnitAnimation::Walk),
+                //     false => Some(UnitAnimation::Idle),
+                // },
+                AnimationChange::Attack => Some(UnitAnimation::Attack),
+                AnimationChange::Hit => Some(UnitAnimation::Hit),
+                AnimationChange::Death => Some(UnitAnimation::Death),
             };
 
             if let Some(new_animation) = maybe_new_animation {

@@ -14,14 +14,14 @@ impl Plugin for PlayerMovement {
     fn build(&self, app: &mut App) {
         app.add_client_trigger::<MovePlayer>(ChannelKind::Ordered)
             .add_observer(apply_movement)
-            .add_systems(Update, read_input.before(ClientSet::Send));
+            .add_systems(Update, movement_input.before(ClientSet::Send));
     }
 }
 
 #[derive(Deserialize, Deref, Event, Serialize)]
 struct MovePlayer(Vec2);
 
-fn read_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
+fn movement_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
     let mut direction = Vec2::ZERO;
     if input.pressed(KeyCode::KeyA) || input.pressed(KeyCode::ArrowLeft) {
         direction.x -= 1.0;
@@ -37,12 +37,13 @@ fn read_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
 
 fn apply_movement(
     trigger: Trigger<FromClient<MovePlayer>>,
-    mut players: Query<(&PhysicalPlayer, &mut Velocity, &Speed)>,
+    mut players: Query<(&PhysicalPlayer, &mut Velocity, &mut Transform, &Speed)>,
 ) {
-    for (player, mut velocity, speed) in &mut players {
+    for (player, mut velocity, mut transform, speed) in &mut players {
         if trigger.client_id == **player {
             let direction = Vec2::new(trigger.event.x, 0.).normalize_or_zero();
             velocity.0 = direction * speed.0;
+            transform.scale.x = direction.x.signum() * 3.;
         }
     }
 }
