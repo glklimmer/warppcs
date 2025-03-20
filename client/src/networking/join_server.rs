@@ -4,7 +4,7 @@ use bevy_renet::renet::{ConnectionConfig, RenetClient};
 use bevy_replicon::prelude::RepliconChannels;
 use bevy_replicon_renet::RenetChannelsExt;
 
-use crate::networking::CurrentClientId;
+use shared::LocalClientId;
 
 #[cfg(feature = "steam")]
 use crate::menu::{JoinSteamLobby, MainMenuStates};
@@ -44,7 +44,7 @@ pub fn join_steam_server(
         Ok(transport) => {
             commands.insert_resource(transport);
             commands.insert_resource(client);
-            commands.insert_resource(CurrentClientId(steam_client.user().steam_id().raw()));
+            commands.insert_resource(LocalClientId::new(steam_client.user().steam_id().raw()));
             ui.set(MainMenuStates::Lobby);
         }
         Err(error) => println!("join_netcode_server error {}", error),
@@ -82,7 +82,7 @@ pub fn join_netcode_server(mut commands: Commands, channels: Res<RepliconChannel
         Ok(transport) => {
             commands.insert_resource(client);
             commands.insert_resource(transport);
-            commands.insert_resource(CurrentClientId(client_id));
+            commands.insert_resource(LocalClientId::new(client_id));
             info!("Successfully joined server.");
         }
         Err(error) => println!("join_netcode_server error {}", error),

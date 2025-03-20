@@ -78,6 +78,15 @@ fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
 #[require(Replicated, Transform(|| Transform::from_scale(PIXEL_SCALE)), BoxCollider, Speed, Velocity, Sprite)]
 pub struct PhysicalPlayer(bevy_replicon::core::ClientId);
 
+#[derive(Debug, Resource, Deref)]
+pub struct LocalClientId(bevy_replicon::core::ClientId);
+
+impl LocalClientId {
+    pub const fn new(value: u64) -> Self {
+        Self(ClientId::new(value))
+    }
+}
+
 #[derive(Component, Copy, Clone, Default)]
 pub struct BoxCollider {
     pub dimension: Vec2,

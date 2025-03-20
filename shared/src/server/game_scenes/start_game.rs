@@ -9,6 +9,7 @@ use crate::networking::LobbyEvent;
 use crate::server::physics::movement::Speed;
 use crate::server::players::interaction::{Interactable, InteractionType};
 use crate::server::players::mount::Mount;
+use crate::PhysicalPlayer;
 use crate::{
     map::{
         scenes::{
@@ -50,11 +51,27 @@ impl Plugin for StartGamePlugin {
     }
 }
 
-fn start_game(mut lobby_events: EventReader<FromClient<LobbyEvent>>) {
-    for FromClient { client_id, event } in lobby_events.read() {
-        info!("received event {event:?} from {client_id:?}");
+#[derive(Component)]
+struct MapScene;
+
+fn start_game(
+    mut lobby_events: EventReader<FromClient<LobbyEvent>>,
+    mut commands: Commands,
+    players: Query<Entity, With<PhysicalPlayer>>,
+) {
+    for FromClient {
+        client_id: _,
+        event,
+    } in lobby_events.read()
+    {
         if let LobbyEvent::StartGame = &event {
-            println!("------ TEST ------");
+            for (i, player) in players.iter().enumerate() {
+                info!("Creating base for player {}", i);
+                let x_offset = 10000.0 * i as f32;
+                commands
+                    .spawn((MapScene, Transform::from_xyz(0. + x_offset, 0., 0.)))
+                    .add_child(player);
+            }
         }
     }
 }
