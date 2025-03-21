@@ -1,6 +1,4 @@
 use bevy::prelude::*;
-use bevy_parallax::CameraFollow;
-use bevy_replicon::core::ClientId;
 
 use crate::{
     animations::{
@@ -15,8 +13,13 @@ use crate::{
         PlayerEntityMapping,
     },
 };
+use bevy::sprite::Anchor;
+use bevy_parallax::CameraFollow;
 use shared::{
-    map::{GameSceneId, Layers},
+    map::{
+        buildings::{BuildStatus, Building, MainBuildingLevels, WallLevels},
+        GameSceneId, Layers,
+    },
     networking::{
         DropFlag, MountType, Mounted, PickFlag, ProjectileType, ServerMessages, SpawnFlag,
         SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
@@ -35,7 +38,8 @@ pub struct Projectile;
 impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_player_sprite)
-            .add_observer(init_controlled_player);
+            .add_observer(init_local_player)
+            .add_observer(init_building_sprite);
 
         //app.init_resource::<FlagSpriteSheet>()
 
@@ -71,7 +75,7 @@ impl Plugin for SpawnPlugin {
     }
 }
 
-fn init_controlled_player(
+fn init_local_player(
     trigger: Trigger<OnAdd, PhysicalPlayer>,
     mut commands: Commands,
     players: Query<&PhysicalPlayer>,
@@ -109,6 +113,50 @@ fn init_player_sprite(
     });
     let mut player_commands = commands.entity(trigger.entity());
     player_commands.insert((animation.clone(), KingAnimation::default()));
+}
+
+fn init_building_sprite(
+    trigger: Trigger<OnAdd, Sprite>,
+    mut buildings: Query<(&mut Sprite, &Building, &BuildStatus)>,
+    asset_server: Res<AssetServer>,
+) {
+    let Ok((mut sprite, building, status)) = buildings.get_mut(trigger.entity()) else {
+        return;
+    };
+
+    sprite.image = asset_server.load::<Image>(building_texture(*building, *status));
+}
+
+fn building_texture(building_type: Building, status: BuildStatus) -> &'static str {
+    match status {
+        BuildStatus::Marker => match building_type {
+            Building::MainBuilding { level: _ } => "sprites/buildings/main_house_blue.png",
+            Building::Archer => "sprites/buildings/sign.png",
+            Building::Warrior => "sprites/buildings/sign.png",
+            Building::Pikeman => "sprites/buildings/sign.png",
+            Building::Wall { level: _ } => "sprites/buildings/sign.png",
+            Building::Tower => "",
+            Building::GoldFarm => "sprites/buildings/sign.png",
+        },
+        BuildStatus::Built => match building_type {
+            Building::MainBuilding { level } => match level {
+                MainBuildingLevels::Tent => "sprites/buildings/main_house_blue.png",
+                MainBuildingLevels::Hall => "sprites/buildings/main_hall.png",
+                MainBuildingLevels::Castle => "sprites/buildings/main_castle.png",
+            },
+            Building::Archer => "sprites/buildings/archer_house.png",
+            Building::Warrior => "sprites/buildings/warrior_house.png",
+            Building::Pikeman => "sprites/buildings/pike_man_house.png",
+            Building::Wall { level } => match level {
+                WallLevels::Basic => "sprites/buildings/wall_1.png",
+                WallLevels::Wood => "sprites/buildings/wall_2.png",
+                WallLevels::Tower => "sprites/buildings/wall_3.png",
+            },
+            Building::Tower => "sprites/buildings/archer_house.png",
+            Building::GoldFarm => "sprites/buildings/warrior_house.png",
+        },
+        BuildStatus::Destroyed => "",
+    }
 }
 
 // #[allow(clippy::too_many_arguments)]

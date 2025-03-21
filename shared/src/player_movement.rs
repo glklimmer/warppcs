@@ -43,7 +43,7 @@ fn apply_movement(
         if trigger.client_id == **player {
             let direction = Vec2::new(trigger.event.x, 0.).normalize_or_zero();
             velocity.0 = direction * speed.0;
-            transform.scale.x = direction.x.signum() * 3.;
+            transform.scale.x = direction.x.signum();
         }
     }
 }

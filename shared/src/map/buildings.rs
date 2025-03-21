@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
+use bevy_replicon::prelude::*;
+
 use serde::{Deserialize, Serialize};
 
 use super::Layers;
@@ -26,6 +28,13 @@ pub struct Cost {
 }
 
 #[derive(Component, Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    Transform,
+    BoxCollider,
+    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
+    BuildStatus(|| BuildStatus::Built)
+)]
 pub enum Building {
     MainBuilding { level: MainBuildingLevels },
     Archer,

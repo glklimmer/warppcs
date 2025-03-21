@@ -1,10 +1,11 @@
 use bevy::prelude::*;
+use bevy::state::commands;
 use bevy_replicon::prelude::*;
 
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
-use crate::map::buildings::RecruitBuilding;
+use crate::map::buildings::{Building, MainBuildingLevels, RecruitBuilding};
 use crate::networking::LobbyEvent;
 use crate::server::physics::movement::Speed;
 use crate::server::players::interaction::{Interactable, InteractionType};
@@ -51,13 +52,10 @@ impl Plugin for StartGamePlugin {
     }
 }
 
-#[derive(Component)]
-struct MapScene;
-
 fn start_game(
     mut lobby_events: EventReader<FromClient<LobbyEvent>>,
+    mut players: Query<&mut Transform, With<PhysicalPlayer>>,
     mut commands: Commands,
-    players: Query<Entity, With<PhysicalPlayer>>,
 ) {
     for FromClient {
         client_id: _,
@@ -65,15 +63,35 @@ fn start_game(
     } in lobby_events.read()
     {
         if let LobbyEvent::StartGame = &event {
-            for (i, player) in players.iter().enumerate() {
+            for (i, mut transform) in players.iter_mut().enumerate() {
                 info!("Creating base for player {}", i);
-                let x_offset = 10000.0 * i as f32;
-                commands
-                    .spawn((MapScene, Transform::from_xyz(0. + x_offset, 0., 0.)))
-                    .add_child(player);
+                let offset = Vec3::new(10000. * i as f32, 0., 0.);
+                transform.translation = offset;
+
+                player_base(commands.reborrow(), offset);
             }
         }
     }
+}
+
+fn player_base(mut commands: Commands, offset: Vec3) {
+    // TODO: Add building sprites
+    commands.spawn((
+        Building::MainBuilding {
+            level: MainBuildingLevels::Tent,
+        },
+        Transform::from_translation(offset),
+    ));
+    commands.spawn((
+        Building::Archer,
+        RecruitBuilding,
+        Transform::from_translation(Vec3::ZERO.with_x(400.) + offset),
+    ));
+    commands.spawn((
+        Building::Warrior,
+        RecruitBuilding,
+        Transform::from_translation(Vec3::ZERO.with_x(-400.) + offset),
+    ));
 }
 
 //#[allow(clippy::too_many_arguments)]

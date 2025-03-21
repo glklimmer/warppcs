@@ -1,8 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 use bevy_replicon::prelude::*;
 
 use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d};
 use bevy_replicon_renet::RepliconRenetPlugins;
+use map::Layers;
 use player_attacks::PlayerAttacks;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
@@ -64,18 +65,23 @@ impl MapEntities for AnimationChangeEvent {
     }
 }
 
-const PIXEL_SCALE: Vec3 = Vec3::new(3., 3., 1.);
-
 fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
     info!("spawning player for `{:?}`", trigger.client_id);
     commands.spawn((
         PhysicalPlayer(trigger.client_id),
-        Transform::from_xyz(50.0, 0.0, 0.0).with_scale(PIXEL_SCALE),
+        Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
     ));
 }
 
 #[derive(Component, Deserialize, Serialize, Deref)]
-#[require(Replicated, Transform(|| Transform::from_scale(PIXEL_SCALE)), BoxCollider, Speed, Velocity, Sprite)]
+#[require(
+    Replicated,
+    Transform(|| Transform::from_xyz(0., 0., Layers::Player.as_f32())),
+    BoxCollider,
+    Speed,
+    Velocity,
+    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()})
+)]
 pub struct PhysicalPlayer(bevy_replicon::core::ClientId);
 
 #[derive(Debug, Resource, Deref)]
