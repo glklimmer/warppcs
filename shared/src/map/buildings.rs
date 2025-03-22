@@ -90,6 +90,91 @@ impl Building {
     pub fn can_upgrade(&self) -> bool {
         self.upgrade_building().is_some()
     }
+
+    pub fn collider(&self) -> BoxCollider {
+        match self {
+            Building::MainBuilding { level } => match level {
+                MainBuildingLevels::Tent => BoxCollider {
+                    dimension: Vec2::new(44., 35.),
+                    offset: Some(Vec2::new(0., 17.5)),
+                },
+                MainBuildingLevels::Hall => BoxCollider {
+                    dimension: Vec2::new(64., 48.),
+                    offset: Some(Vec2::new(0., 24.)),
+                },
+                MainBuildingLevels::Castle => BoxCollider {
+                    dimension: Vec2::new(64., 48.),
+                    offset: Some(Vec2::new(0., 24.)),
+                },
+            },
+            Building::Archer => BoxCollider {
+                dimension: Vec2::new(100., 50.),
+                offset: Some(Vec2::new(0., 25.)),
+            },
+            Building::Warrior => BoxCollider {
+                dimension: Vec2::new(80., 40.),
+                offset: Some(Vec2::new(0., 20.)),
+            },
+            Building::Pikeman => BoxCollider {
+                dimension: Vec2::new(80., 40.),
+                offset: Some(Vec2::new(0., 20.)),
+            },
+            Building::Wall { level } => match level {
+                WallLevels::Basic => BoxCollider {
+                    dimension: Vec2::new(20., 11.),
+                    offset: Some(Vec2::new(0., 5.5)),
+                },
+                WallLevels::Wood => BoxCollider {
+                    dimension: Vec2::new(23., 36.),
+                    offset: Some(Vec2::new(0., 18.)),
+                },
+                WallLevels::Tower => BoxCollider {
+                    dimension: Vec2::new(110., 190.),
+                    offset: Some(Vec2::new(0., -45.)),
+                },
+            },
+            Building::Tower => BoxCollider {
+                dimension: Vec2::new(200., 100.),
+                offset: None,
+            },
+            Building::GoldFarm => BoxCollider {
+                dimension: Vec2::new(80., 40.),
+                offset: Some(Vec2::new(0., 20.)),
+            },
+        }
+    }
+
+    pub fn texture(&self, status: BuildStatus) -> &'static str {
+        match status {
+            BuildStatus::Marker => match self {
+                Building::MainBuilding { level: _ } => "sprites/buildings/main_house_blue.png",
+                Building::Archer => "sprites/buildings/sign.png",
+                Building::Warrior => "sprites/buildings/sign.png",
+                Building::Pikeman => "sprites/buildings/sign.png",
+                Building::Wall { level: _ } => "sprites/buildings/sign.png",
+                Building::Tower => "",
+                Building::GoldFarm => "sprites/buildings/sign.png",
+            },
+            BuildStatus::Built => match self {
+                Building::MainBuilding { level } => match level {
+                    MainBuildingLevels::Tent => "sprites/buildings/main_house_blue.png",
+                    MainBuildingLevels::Hall => "sprites/buildings/main_hall.png",
+                    MainBuildingLevels::Castle => "sprites/buildings/main_castle.png",
+                },
+                Building::Archer => "sprites/buildings/archer_house.png",
+                Building::Warrior => "sprites/buildings/warrior_house.png",
+                Building::Pikeman => "sprites/buildings/pike_man_house.png",
+                Building::Wall { level } => match level {
+                    WallLevels::Basic => "sprites/buildings/wall_1.png",
+                    WallLevels::Wood => "sprites/buildings/wall_2.png",
+                    WallLevels::Tower => "sprites/buildings/wall_3.png",
+                },
+                Building::Tower => "sprites/buildings/archer_house.png",
+                Building::GoldFarm => "sprites/buildings/warrior_house.png",
+            },
+            BuildStatus::Destroyed => "",
+        }
+    }
 }
 
 const BUILDING_SCALE: Vec3 = Vec3::new(3., 3., 1.);

@@ -5,7 +5,7 @@ use bevy_replicon::prelude::*;
 use bevy_renet::renet::{ClientId, RenetServer};
 use std::env;
 
-use crate::map::buildings::{Building, MainBuildingLevels, RecruitBuilding};
+use crate::map::buildings::{Building, MainBuildingLevels, RecruitBuilding, WallLevels};
 use crate::networking::LobbyEvent;
 use crate::server::physics::movement::Speed;
 use crate::server::players::interaction::{Interactable, InteractionType};
@@ -68,29 +68,73 @@ fn start_game(
                 let offset = Vec3::new(10000. * i as f32, 0., 0.);
                 transform.translation = offset;
 
-                player_base(commands.reborrow(), offset);
+                player_base(
+                    commands.reborrow(),
+                    offset.with_z(Layers::Building.as_f32()),
+                );
             }
         }
     }
 }
 
-fn player_base(mut commands: Commands, offset: Vec3) {
-    // TODO: Add building sprites
+fn player_base(mut commands: Commands, building_offset: Vec3) {
     commands.spawn((
         Building::MainBuilding {
             level: MainBuildingLevels::Tent,
         },
-        Transform::from_translation(offset),
+        Building::MainBuilding {
+            level: MainBuildingLevels::Tent,
+        }
+        .collider(),
+        Transform::from_translation(building_offset),
     ));
     commands.spawn((
         Building::Archer,
+        Building::Archer.collider(),
         RecruitBuilding,
-        Transform::from_translation(Vec3::ZERO.with_x(400.) + offset),
+        Transform::from_translation(Vec3::ZERO.with_x(135.) + building_offset),
     ));
     commands.spawn((
         Building::Warrior,
+        Building::Warrior.collider(),
         RecruitBuilding,
-        Transform::from_translation(Vec3::ZERO.with_x(-400.) + offset),
+        Transform::from_translation(Vec3::ZERO.with_x(-135.) + building_offset),
+    ));
+    commands.spawn((
+        Building::Pikeman,
+        Building::Pikeman.collider(),
+        RecruitBuilding,
+        Transform::from_translation(Vec3::ZERO.with_x(235.) + building_offset),
+    ));
+    commands.spawn((
+        Building::Wall {
+            level: WallLevels::Basic,
+        },
+        Building::Wall {
+            level: WallLevels::Basic,
+        }
+        .collider(),
+        Transform::from_translation(Vec3::ZERO.with_x(390.) + building_offset),
+    ));
+    commands.spawn((
+        Building::Wall {
+            level: WallLevels::Basic,
+        },
+        Building::Wall {
+            level: WallLevels::Basic,
+        }
+        .collider(),
+        Transform::from_translation(Vec3::ZERO.with_x(-345.) + building_offset),
+    ));
+    commands.spawn((
+        Building::GoldFarm,
+        Building::GoldFarm.collider(),
+        Transform::from_translation(Vec3::ZERO.with_x(320.) + building_offset),
+    ));
+    commands.spawn((
+        Building::GoldFarm,
+        Building::GoldFarm.collider(),
+        Transform::from_translation(Vec3::ZERO.with_x(-265.) + building_offset),
     ));
 }
 

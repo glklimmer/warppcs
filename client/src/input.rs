@@ -16,7 +16,11 @@ impl Plugin for InputPlugin {
         //     Update,
         //     (player_input, gizmos_settings).run_if(resource_changed::<ButtonInput<KeyCode>>),
         // );
-        app.add_systems(PostUpdate, lobby_input.before(ClientSet::Send));
+        app.add_systems(PostUpdate, lobby_input.before(ClientSet::Send))
+            .add_systems(
+                Update,
+                gizmos_settings.run_if(resource_changed::<ButtonInput<KeyCode>>),
+            );
     }
 }
 

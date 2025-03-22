@@ -3,7 +3,10 @@ use bevy_replicon::prelude::*;
 
 use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d};
 use bevy_replicon_renet::RepliconRenetPlugins;
-use map::Layers;
+use map::{
+    buildings::{BuildStatus, Building},
+    Layers,
+};
 use player_attacks::PlayerAttacks;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
@@ -35,15 +38,11 @@ impl Plugin for SharedPlugin {
             PlayerMovement,
             PlayerAttacks,
         ))
-        .replicate_group::<(PhysicalPlayer, Transform)>()
+        .replicate_group::<(PhysicalPlayer, BoxCollider, Transform)>()
+        .replicate_group::<(Building, BuildStatus, BoxCollider, Transform)>()
         .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
-        .add_observer(spawn_clients)
-        .add_systems(Startup, basic_map.run_if(server_or_singleplayer));
+        .add_observer(spawn_clients);
     }
-}
-
-fn basic_map(mut commands: Commands) {
-    // commands.spawn(bundle)
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Event, Serialize)]
@@ -77,7 +76,7 @@ fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
 #[require(
     Replicated,
     Transform(|| Transform::from_xyz(0., 0., Layers::Player.as_f32())),
-    BoxCollider,
+    BoxCollider(player_collider),
     Speed,
     Velocity,
     Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()})
@@ -93,7 +92,7 @@ impl LocalClientId {
     }
 }
 
-#[derive(Component, Copy, Clone, Default)]
+#[derive(Component, Copy, Clone, Default, Deserialize, Serialize)]
 pub struct BoxCollider {
     pub dimension: Vec2,
     pub offset: Option<Vec2>,
@@ -118,8 +117,8 @@ impl BoxCollider {
 
 pub fn player_collider() -> BoxCollider {
     BoxCollider {
-        dimension: Vec2::new(50., 45.),
-        offset: Some(Vec2::new(0., -23.)),
+        dimension: Vec2::new(16., 16.),
+        offset: Some(Vec2::new(0., 8.)),
     }
 }
 
