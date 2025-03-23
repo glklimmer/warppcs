@@ -26,7 +26,8 @@ impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_player_sprite)
             .add_observer(init_local_player)
-            .add_observer(init_building_sprite);
+            .add_observer(init_building_sprite)
+            .add_systems(Update, update_building_sprite);
 
         //app.init_resource::<FlagSpriteSheet>()
 
@@ -112,6 +113,15 @@ fn init_building_sprite(
     };
 
     sprite.image = asset_server.load::<Image>(building.texture(*status));
+}
+
+fn update_building_sprite(
+    mut buildings: Query<(&mut Sprite, &Building, &BuildStatus), Changed<BuildStatus>>,
+    asset_server: Res<AssetServer>,
+) {
+    for (mut sprite, building, status) in buildings.iter_mut() {
+        sprite.image = asset_server.load(building.texture(*status));
+    }
 }
 
 // #[allow(clippy::too_many_arguments)]

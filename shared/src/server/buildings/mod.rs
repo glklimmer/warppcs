@@ -65,6 +65,7 @@ fn check_building_interaction(
         let InteractionType::Building = &event.interaction else {
             continue;
         };
+        info!("Checking building interact.");
 
         let inventory = player.get(event.player).unwrap();
 
@@ -105,25 +106,22 @@ fn check_building_interaction(
 fn construct_building(
     mut commands: Commands,
     mut builds: EventReader<BuildingConstruction>,
-    mut building: Query<(
-        &mut BuildStatus,
-        &Building,
-        &Owner,
-        Option<&RecruitBuilding>,
-    )>,
+    building_query: Query<(&Owner, Option<&RecruitBuilding>)>,
     mut inventory: Query<&mut Inventory>,
 ) {
     for build in builds.read() {
-        let (mut status, building, owner, maybe_recruit) =
-            building.get_mut(build.0.entity).unwrap();
-        *status = BuildStatus::Built;
-
         let mut building_entity = commands.entity(build.0.entity);
-        building_entity.insert(build.0.building_type.health());
+        let building = &build.0.building_type;
+
+        info!("Constructing building: {:?}", building);
+
+        building_entity.insert((building.health(), building.collider(), BuildStatus::Built));
 
         if !building.can_upgrade() {
             building_entity.remove::<Interactable>();
         }
+
+        let (owner, maybe_recruit) = building_query.get(build.0.entity).unwrap();
 
         if maybe_recruit.is_some() {
             building_entity.insert(Interactable {

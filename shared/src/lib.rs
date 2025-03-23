@@ -7,6 +7,7 @@ use map::{
     buildings::{BuildStatus, Building},
     Layers,
 };
+use networking::Inventory;
 use player_attacks::PlayerAttacks;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
@@ -79,7 +80,8 @@ fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
     BoxCollider(player_collider),
     Speed,
     Velocity,
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()})
+    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
+    Inventory
 )]
 // TODO: Rename to player
 pub struct PhysicalPlayer(bevy_replicon::core::ClientId);

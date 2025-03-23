@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
-use bevy_renet::renet::ClientId;
-
 use crate::{
     map::{
         buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
@@ -39,7 +37,7 @@ fn start_game(
         if let LobbyEvent::StartGame = &event {
             for (i, (player, mut transform)) in players.iter_mut().enumerate() {
                 info!("Creating base for player {}", i);
-                let offset = Vec3::new(10000. * i as f32, 0., 0.);
+                let offset = Vec3::new(10000. * i as f32, 0., Layers::Player.as_f32());
                 transform.translation = offset;
 
                 player_base(
