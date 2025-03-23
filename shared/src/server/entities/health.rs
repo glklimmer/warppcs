@@ -98,7 +98,7 @@ fn on_building_destroy(mut commands: Commands, query: Query<(Entity, &Health, &B
             commands.entity(entity).despawn_recursive();
 
             if let Building::MainBuilding { level: _ } = building {
-                // todo: handle player dead
+                // TODO: handle player dead
             }
         }
     }

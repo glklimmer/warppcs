@@ -15,7 +15,6 @@ use crate::{
             UnitBehaviour,
         },
         entities::{health::Health, Unit},
-        networking::ServerLobby,
         physics::attachment::AttachedTo,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },

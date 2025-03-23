@@ -27,11 +27,6 @@ use super::lobby::{LobbyPlugin, PlayerJoinedLobby, PlayerLeftLobby};
 use super::physics::PhysicsPlugin;
 use super::players::PlayerPlugin;
 
-#[derive(Debug, Default, Resource)]
-pub struct ServerLobby {
-    pub players: HashMap<ClientId, Entity>,
-}
-
 #[derive(Event)]
 pub struct NetworkEvent {
     pub client_id: ClientId,

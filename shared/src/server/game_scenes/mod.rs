@@ -12,7 +12,6 @@ use crate::{
 use super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
     entities::Unit,
-    networking::ServerLobby,
     physics::movement::Velocity,
     players::{interaction::InteractionTriggeredEvent, mount::Mount},
 };
@@ -29,8 +28,6 @@ pub struct GameScenesPlugin;
 
 impl Plugin for GameScenesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(StartGamePlugin);
-
         // app.add_systems(FixedUpdate, travel);
     }
 }
