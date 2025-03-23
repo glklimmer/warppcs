@@ -121,7 +121,7 @@ fn main() {
             client
                 .add_plugins(ServerNetworkPlugin)
                 .add_systems(Startup, create_netcode_server);
-        } else if args.contains(&String::from("client")) {
+        } else {
             client
                 .add_plugins(NetworkRegistry)
                 .add_systems(Startup, join_netcode_server);
