@@ -7,15 +7,13 @@ use shared::{
     BoxCollider,
 };
 
-use crate::entities::PartOfScene;
-
 use super::{AnimationTrigger, FullAnimation, PlayOnce, SpriteSheet, SpriteSheetAnimation};
 
 pub mod bandits;
 pub mod humans;
 
 #[derive(Component)]
-#[require(PartOfScene, BoxCollider(unit_collider), UnitAnimation)]
+#[require(BoxCollider(unit_collider), UnitAnimation)]
 pub struct Unit;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]

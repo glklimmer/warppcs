@@ -1,16 +1,13 @@
 use bevy::prelude::*;
 
 use crate::{
-    map::{
-        buildings::{BuildStatus, Building},
-        GameSceneId,
-    },
-    networking::{Owner, PlayerInput},
+    map::buildings::{BuildStatus, Building},
+    networking::PlayerInput,
     server::{
         ai::{attack::unit_speed, UnitBehaviour},
         entities::{health::Health, Unit},
     },
-    BoxCollider, GRAVITY_G,
+    BoxCollider, Owner, GRAVITY_G,
 };
 use bevy::math::bounding::IntersectsVolume;
 
@@ -71,43 +68,17 @@ fn apply_velocity(
 }
 
 fn wall_collision(
-    mut query: Query<(
-        &mut Velocity,
-        &Transform,
-        &BoxCollider,
-        &GameSceneId,
-        &Owner,
-    )>,
-    buildings: Query<
-        (
-            &Transform,
-            &BoxCollider,
-            &GameSceneId,
-            &Owner,
-            &Building,
-            &BuildStatus,
-        ),
-        With<Health>,
-    >,
+    mut query: Query<(&mut Velocity, &Transform, &BoxCollider, &Owner)>,
+    buildings: Query<(&Transform, &BoxCollider, &Owner, &Building, &BuildStatus), With<Health>>,
     time: Res<Time>,
 ) {
-    for (mut velocity, transform, collider, scene, owner) in query.iter_mut() {
+    for (mut velocity, transform, collider, owner) in query.iter_mut() {
         let future_position = transform.translation.truncate() + velocity.0 * time.delta_secs();
         let future_bounds = collider.at_pos(future_position);
 
-        for (
-            building_transform,
-            building_collider,
-            building_scene,
-            building_owner,
-            building,
-            building_status,
-        ) in buildings.iter()
+        for (building_transform, building_collider, building_owner, building, building_status) in
+            buildings.iter()
         {
-            if scene.ne(building_scene) {
-                continue;
-            }
-
             if building_owner.eq(owner) {
                 continue;
             }

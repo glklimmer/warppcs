@@ -4,11 +4,11 @@ use shared::{enum_map::*, flag_collider, BoxCollider};
 
 use crate::{
     animations::{SpriteSheet, SpriteSheetAnimation},
-    entities::{highlight::Highlightable, PartOfScene},
+    entities::highlight::Highlightable,
 };
 
 #[derive(Component)]
-#[require(PartOfScene, FlagAnimation, BoxCollider(flag_collider), Highlightable)]
+#[require(FlagAnimation, BoxCollider(flag_collider), Highlightable)]
 pub struct Flag;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]

@@ -3,8 +3,6 @@ use bevy_replicon::prelude::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{map::GameSceneId, PhysicalPlayer};
-
 pub struct TestPlugin;
 
 impl Plugin for TestPlugin {

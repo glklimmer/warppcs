@@ -4,13 +4,12 @@ use bevy::math::bounding::IntersectsVolume;
 use bevy_renet::renet::RenetServer;
 
 use crate::{
-    map::GameSceneId,
-    networking::{Facing, Owner, ProjectileType, ServerChannel, ServerMessages},
+    networking::{Facing, ProjectileType, ServerChannel, ServerMessages},
     server::{
         ai::attack::projectile_damage,
         entities::health::{Health, TakeDamage},
     },
-    BoxCollider, DelayedDespawn,
+    BoxCollider, DelayedDespawn, Owner,
 };
 
 use super::movement::Velocity;
@@ -23,13 +22,7 @@ impl Plugin for ProjectilePlugin {
     }
 }
 
-type TargetComponents<'a> = (
-    Entity,
-    &'a Transform,
-    &'a BoxCollider,
-    &'a Owner,
-    &'a GameSceneId,
-);
+type TargetComponents<'a> = (Entity, &'a Transform, &'a BoxCollider, &'a Owner);
 
 fn projectile_collision(
     mut commands: Commands,
@@ -40,15 +33,12 @@ fn projectile_collision(
         &BoxCollider,
         &ProjectileType,
         &Owner,
-        &GameSceneId,
     )>,
     targets: Query<TargetComponents, (With<Health>, Without<ProjectileType>)>,
     mut server: ResMut<RenetServer>,
     mut attack_events: EventWriter<TakeDamage>,
 ) {
-    for (entity, transform, mut velocity, collider, projectile_type, owner, scene_id) in
-        &mut projectiles
-    {
+    for (entity, transform, mut velocity, collider, projectile_type, owner) in &mut projectiles {
         if transform.translation.y - collider.dimension.y <= 0.0 {
             velocity.0 = Vec2::ZERO;
             commands.entity(entity).remove::<BoxCollider>();
@@ -58,13 +48,8 @@ fn projectile_collision(
             continue;
         }
 
-        for (target_entity, target_transform, target_collider, target_owner, target_scene_id) in
-            targets.iter()
-        {
+        for (target_entity, target_transform, target_collider, target_owner) in targets.iter() {
             if owner == target_owner {
-                continue;
-            }
-            if scene_id != target_scene_id {
                 continue;
             }
 

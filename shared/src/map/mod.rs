@@ -6,24 +6,13 @@ use serde::{Deserialize, Serialize};
 use crate::BoxCollider;
 
 pub mod buildings;
-pub mod scenes;
 pub mod spawn_point;
-
-#[derive(Component, Clone, Copy, Eq, PartialEq, Hash, Debug, Default)]
-pub struct GameSceneId(pub u64);
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub enum GameSceneType {
     Base,
     Fight,
     Camp,
-}
-
-pub struct GameScene {
-    pub id: GameSceneId,
-    pub game_scene_type: GameSceneType,
-    pub left_game_scenes: Vec<GameSceneId>,
-    pub right_game_scenes: Vec<GameSceneId>,
 }
 
 #[enum_as_f32]

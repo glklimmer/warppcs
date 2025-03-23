@@ -12,7 +12,7 @@ use shared::{
 };
 use std::collections::HashMap;
 
-use crate::{animations::king::KingAnimation, entities::PartOfScene};
+use crate::animations::king::KingAnimation;
 
 pub mod join_server;
 
@@ -25,7 +25,7 @@ pub struct ClientPlayers {
 }
 
 #[derive(Component)]
-#[require(PartOfScene, BoxCollider(player_collider), KingAnimation)]
+#[require(BoxCollider(player_collider), KingAnimation)]
 pub struct ControlledPlayer;
 
 #[derive(Debug, Resource)]

@@ -6,11 +6,9 @@ use crate::{
     flag_collider,
     map::{
         buildings::{Building, Cost},
-        GameSceneId, Layers,
+        Layers,
     },
-    networking::{
-        Faction, Inventory, Owner, ServerChannel, ServerMessages, SpawnFlag, SpawnUnit, UnitType,
-    },
+    networking::{Inventory, UnitType},
     server::{
         ai::{
             attack::{unit_health, unit_swing_timer},
@@ -21,7 +19,7 @@ use crate::{
         physics::attachment::AttachedTo,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
-    BoxCollider,
+    BoxCollider, Faction, Owner,
 };
 
 #[derive(Component)]
@@ -38,21 +36,16 @@ pub struct FlagAssignment(pub Entity, pub Vec2);
 #[derive(Event)]
 pub struct RecruitEvent {
     player: Entity,
-    client_id: ClientId,
     building_type: Building,
 }
 
 pub fn recruit(
     mut commands: Commands,
     mut recruit: EventReader<RecruitEvent>,
-    mut server: ResMut<RenetServer>,
-    mut player_query: Query<(&Transform, &mut Inventory, &GameSceneId)>,
-    lobby: Res<ServerLobby>,
-    scene_ids: Query<&GameSceneId>,
+    mut player_query: Query<(&Transform, &mut Inventory)>,
 ) {
     for event in recruit.read() {
-        let (player_transform, mut inventory, scene_id) =
-            player_query.get_mut(event.player).unwrap();
+        let (player_transform, mut inventory) = player_query.get_mut(event.player).unwrap();
         let player_translation = player_transform.translation;
         let flag_translation = Vec3::new(
             player_translation.x,
@@ -66,11 +59,7 @@ pub fn recruit(
             continue;
         }
 
-        let owner = Owner {
-            faction: Faction::Player {
-                client_id: event.client_id,
-            },
-        };
+        let owner = Owner(Faction::Player(event.player));
 
         let flag_entity = commands
             .spawn((
@@ -81,20 +70,12 @@ pub fn recruit(
                     restricted_to: Some(owner),
                 },
                 owner,
-                *scene_id,
             ))
             .id();
+        // TODO: replicate flag
         commands
             .entity(event.player)
             .insert(FlagHolder(flag_entity));
-
-        let message = ServerMessages::SpawnFlag(SpawnFlag { flag: flag_entity });
-        let message = bincode::serialize(&message).unwrap();
-        server.send_message(
-            event.client_id,
-            ServerChannel::ServerMessages,
-            message.clone(),
-        );
 
         let unit_type = match event.building_type {
             Building::Archer => UnitType::Archer,
@@ -116,30 +97,15 @@ pub fn recruit(
 
         for unit_number in 1..=4 {
             let offset = Vec2::new(40. * (unit_number - 3) as f32 + 20., 0.);
-            let unit_entity = commands
-                .spawn((
-                    Transform::from_translation(flag_translation),
-                    unit.clone(),
-                    health.clone(),
-                    owner,
-                    FlagAssignment(flag_entity, offset),
-                    UnitBehaviour::FollowFlag(flag_entity, offset),
-                    *scene_id,
-                ))
-                .id();
-            let message = ServerMessages::SpawnUnit(SpawnUnit {
-                entity: unit_entity,
+            // TODO: replicate units
+            commands.spawn((
+                Transform::from_translation(flag_translation),
+                unit.clone(),
+                health.clone(),
                 owner,
-                unit_type,
-                translation: player_transform.translation.into(),
-            });
-            let message = bincode::serialize(&message).unwrap();
-            for (client_id, entity) in lobby.players.iter() {
-                let player_scene_id = scene_ids.get(*entity).unwrap();
-                if scene_id.eq(player_scene_id) {
-                    server.send_message(*client_id, ServerChannel::ServerMessages, message.clone());
-                }
-            }
+                FlagAssignment(flag_entity, offset),
+                UnitBehaviour::FollowFlag(flag_entity, offset),
+            ));
         }
     }
 }
@@ -169,13 +135,12 @@ pub fn check_recruit(
 
         recruit.send(RecruitEvent {
             player: event.player,
-            client_id: event.client_id,
             building_type: *building,
         });
     }
 }
 
-pub fn recruitment_cost(building_type: &Building) -> Option<Cost> {
+fn recruitment_cost(building_type: &Building) -> Option<Cost> {
     let gold = match building_type {
         Building::MainBuilding { level: _ }
         | Building::Wall { level: _ }

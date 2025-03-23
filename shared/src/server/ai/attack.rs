@@ -1,17 +1,17 @@
 use std::f32::consts::FRAC_PI_4;
 
 use bevy::prelude::*;
+use bevy_replicon::prelude::{SendMode, ToClients};
 
 use super::UnitBehaviour;
 use crate::{
-    map::{GameSceneId, Layers},
-    networking::{Facing, Owner, ProjectileType, ServerMessages, SpawnProjectile, UnitType},
+    map::Layers,
+    networking::{Facing, ProjectileType, UnitType},
     server::{
         entities::{health::TakeDamage, Unit},
-        networking::SendServerMessage,
         physics::movement::Velocity,
     },
-    GRAVITY_G,
+    AnimationChange, AnimationChangeEvent, Owner, GRAVITY_G,
 };
 
 pub struct AttackPlugin;
@@ -74,29 +74,18 @@ pub fn projectile_damage(projectile_type: &ProjectileType) -> f32 {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn process_attacks(
     mut commands: Commands,
-    mut query: Query<(
-        Entity,
-        &UnitBehaviour,
-        &mut Unit,
-        &Owner,
-        &Transform,
-        &GameSceneId,
-    )>,
+    mut query: Query<(Entity, &UnitBehaviour, &mut Unit, &Owner, &Transform)>,
     mut attack_events: EventWriter<TakeDamage>,
-    mut sender: EventWriter<SendServerMessage>,
+    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
-    scene_ids: Query<&GameSceneId>,
     time: Res<Time>,
 ) {
-    for (entity, behaviour, mut unit, owner, transform, game_scene_id) in query.iter_mut() {
+    for (entity, behaviour, mut unit, owner, transform) in query.iter_mut() {
         if let UnitBehaviour::AttackTarget(target_entity) = behaviour {
             unit.swing_timer.tick(time.delta());
             if unit.swing_timer.finished() {
-                let target_scene_id = scene_ids.get(*target_entity).unwrap();
-
                 let target_pos = if let Ok(target_transform) = position.get(*target_entity) {
                     target_transform.translation
                 } else {
@@ -116,9 +105,12 @@ fn process_attacks(
                                 false => Facing::Right,
                             },
                         });
-                        sender.send(SendServerMessage {
-                            message: ServerMessages::MeleeAttack { entity },
-                            game_scene_id: *game_scene_id,
+                        animation.send(ToClients {
+                            mode: SendMode::Broadcast,
+                            event: AnimationChangeEvent {
+                                entity,
+                                change: AnimationChange::Attack,
+                            },
                         });
                     }
                     UnitType::Archer => {
@@ -155,27 +147,26 @@ fn process_attacks(
 
                         let velocity = Velocity(Vec2::from_angle(theta) * speed);
 
-                        let arrow = commands.spawn((
-                            arrow_transform,
-                            *owner,
-                            projectile_type,
-                            velocity,
-                            *target_scene_id,
-                        ));
-                        println!("arrow spawn: {:?}", target_scene_id);
+                        let arrow =
+                            commands.spawn((arrow_transform, *owner, projectile_type, velocity));
+                        println!("arrow spawn");
 
-                        sender.send(SendServerMessage {
-                            message: ServerMessages::SpawnProjectile(SpawnProjectile {
-                                entity: arrow.id(),
-                                projectile_type,
-                                translation: arrow_transform.translation.into(),
-                                direction: velocity.0.into(),
-                            }),
-                            game_scene_id: *target_scene_id,
-                        });
-                        sender.send(SendServerMessage {
-                            message: ServerMessages::MeleeAttack { entity },
-                            game_scene_id: *game_scene_id,
+                        // TODO: projectile spawning
+                        // sender.send(SendServerMessage {
+                        //     message: ServerMessages::SpawnProjectile(SpawnProjectile {
+                        //         entity: arrow.id(),
+                        //         projectile_type,
+                        //         translation: arrow_transform.translation.into(),
+                        //         direction: velocity.0.into(),
+                        //     }),
+                        //     game_scene_id: *target_scene_id,
+                        // });
+                        animation.send(ToClients {
+                            mode: SendMode::Broadcast,
+                            event: AnimationChangeEvent {
+                                entity,
+                                change: AnimationChange::Attack,
+                            },
                         });
                     }
                 }

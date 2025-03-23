@@ -1,42 +1,16 @@
 use bevy::prelude::*;
-use bevy::state::commands;
 use bevy_replicon::prelude::*;
 
-use bevy_renet::renet::{ClientId, RenetServer};
-use std::env;
+use bevy_renet::renet::ClientId;
 
-use crate::map::buildings::{Building, MainBuildingLevels, RecruitBuilding, WallLevels};
-use crate::networking::LobbyEvent;
-use crate::server::physics::movement::Speed;
-use crate::server::players::interaction::{Interactable, InteractionType};
-use crate::server::players::mount::Mount;
-use crate::PhysicalPlayer;
 use crate::{
     map::{
-        scenes::{
-            base::{BaseScene, BaseSceneIndicator},
-            camp::{CampScene, CampSceneIndicator},
-            fight::{FightScene, FightSceneIndicator},
-            SceneBuildingIndicator,
-        },
-        GameScene, GameSceneId, GameSceneType, Layers,
+        buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
+        Layers,
     },
-    networking::{
-        Faction, Inventory, MountType, Owner, PlayerCommand, PlayerInput, ServerChannel,
-        ServerMessages, SpawnPlayer, UnitType,
-    },
-    server::{
-        ai::{
-            attack::{unit_health, unit_swing_timer},
-            UnitBehaviour,
-        },
-        buildings::{building_health, recruiting::FlagAssignment},
-        entities::{health::Health, Unit},
-        game_scenes::GameSceneDestination,
-        lobby::GameLobby,
-        networking::{GameWorld, NetworkEvent, ServerLobby},
-        physics::movement::Velocity,
-    },
+    networking::LobbyEvent,
+    server::players::interaction::{Interactable, InteractionType},
+    Faction, Owner, PhysicalPlayer,
 };
 
 pub struct StartGamePlugin;
@@ -54,7 +28,7 @@ impl Plugin for StartGamePlugin {
 
 fn start_game(
     mut lobby_events: EventReader<FromClient<LobbyEvent>>,
-    mut players: Query<&mut Transform, With<PhysicalPlayer>>,
+    mut players: Query<(Entity, &mut Transform), With<PhysicalPlayer>>,
     mut commands: Commands,
 ) {
     for FromClient {
@@ -63,7 +37,7 @@ fn start_game(
     } in lobby_events.read()
     {
         if let LobbyEvent::StartGame = &event {
-            for (i, mut transform) in players.iter_mut().enumerate() {
+            for (i, (player, mut transform)) in players.iter_mut().enumerate() {
                 info!("Creating base for player {}", i);
                 let offset = Vec3::new(10000. * i as f32, 0., 0.);
                 transform.translation = offset;
@@ -71,13 +45,16 @@ fn start_game(
                 player_base(
                     commands.reborrow(),
                     offset.with_z(Layers::Building.as_f32()),
+                    player,
                 );
             }
         }
     }
 }
 
-fn player_base(mut commands: Commands, building_offset: Vec3) {
+fn player_base(mut commands: Commands, building_offset: Vec3, player: Entity) {
+    let owner = Owner(Faction::Player(player));
+
     commands.spawn((
         Building::MainBuilding {
             level: MainBuildingLevels::Tent,
@@ -86,55 +63,79 @@ fn player_base(mut commands: Commands, building_offset: Vec3) {
             level: MainBuildingLevels::Tent,
         }
         .collider(),
+        BuildStatus::Built,
         Transform::from_translation(building_offset),
+        owner,
     ));
     commands.spawn((
         Building::Archer,
-        Building::Archer.collider(),
         RecruitBuilding,
         Transform::from_translation(Vec3::ZERO.with_x(135.) + building_offset),
+        owner,
+        Interactable {
+            kind: InteractionType::Building,
+            restricted_to: Some(owner),
+        },
     ));
     commands.spawn((
         Building::Warrior,
-        Building::Warrior.collider(),
         RecruitBuilding,
         Transform::from_translation(Vec3::ZERO.with_x(-135.) + building_offset),
+        owner,
+        Interactable {
+            kind: InteractionType::Building,
+            restricted_to: Some(owner),
+        },
     ));
     commands.spawn((
         Building::Pikeman,
-        Building::Pikeman.collider(),
         RecruitBuilding,
         Transform::from_translation(Vec3::ZERO.with_x(235.) + building_offset),
+        owner,
+        Interactable {
+            kind: InteractionType::Building,
+            restricted_to: Some(owner),
+        },
     ));
     commands.spawn((
         Building::Wall {
             level: WallLevels::Basic,
         },
-        Building::Wall {
-            level: WallLevels::Basic,
-        }
-        .collider(),
         Transform::from_translation(Vec3::ZERO.with_x(390.) + building_offset),
+        owner,
+        Interactable {
+            kind: InteractionType::Building,
+            restricted_to: Some(owner),
+        },
     ));
     commands.spawn((
         Building::Wall {
             level: WallLevels::Basic,
         },
-        Building::Wall {
-            level: WallLevels::Basic,
-        }
-        .collider(),
         Transform::from_translation(Vec3::ZERO.with_x(-345.) + building_offset),
+        owner,
+        Interactable {
+            kind: InteractionType::Building,
+            restricted_to: Some(owner),
+        },
     ));
     commands.spawn((
         Building::GoldFarm,
-        Building::GoldFarm.collider(),
         Transform::from_translation(Vec3::ZERO.with_x(320.) + building_offset),
+        owner,
+        Interactable {
+            kind: InteractionType::Building,
+            restricted_to: Some(owner),
+        },
     ));
     commands.spawn((
         Building::GoldFarm,
-        Building::GoldFarm.collider(),
         Transform::from_translation(Vec3::ZERO.with_x(-265.) + building_offset),
+        owner,
+        Interactable {
+            kind: InteractionType::Building,
+            restricted_to: Some(owner),
+        },
     ));
 }
 

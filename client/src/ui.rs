@@ -1,8 +1,5 @@
 use bevy::prelude::*;
-use shared::{
-    networking::{Faction, ServerMessages},
-    GameState,
-};
+use shared::{networking::ServerMessages, Faction, GameState};
 
 use crate::networking::NetworkEvent;
 
@@ -62,8 +59,8 @@ fn update_gold_amount(
 fn display_player_defeat(mut network_events: EventReader<NetworkEvent>) {
     for event in network_events.read() {
         if let ServerMessages::PlayerDefeat(player) = &event.message {
-            match player.faction {
-                Faction::Player { client_id } => println!("Player {} lost.", client_id),
+            match **player {
+                Faction::Player(player) => println!("Player {} lost.", player),
                 Faction::Bandits => todo!(),
             }
         }

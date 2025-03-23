@@ -1,38 +1,25 @@
 use bevy::prelude::*;
 
 use crate::{
-    animations::{
-        animals::horse::{HorseAnimation, HorseSpriteSheet},
-        king::{KingAnimation, KingSpriteSheet},
-        objects::flag::{Flag, FlagAnimation, FlagSpriteSheet},
-        units::{Unit, UnitAnimation, UnitSpriteSheets},
-        SpriteAnimationBundle,
-    },
-    networking::{
-        ClientPlayers, Connected, ControlledPlayer, CurrentClientId, NetworkEvent, NetworkMapping,
-        PlayerEntityMapping,
-    },
+    animations::king::{KingAnimation, KingSpriteSheet},
+    networking::{ClientPlayers, ControlledPlayer, CurrentClientId, NetworkMapping},
 };
-use bevy::sprite::Anchor;
 use bevy_parallax::CameraFollow;
 use shared::{
     map::{
-        buildings::{BuildStatus, Building, MainBuildingLevels, WallLevels},
-        GameSceneId, Layers,
+        buildings::{BuildStatus, Building},
+        Layers,
     },
-    networking::{
-        DropFlag, MountType, Mounted, PickFlag, ProjectileType, ServerMessages, SpawnFlag,
-        SpawnMount, SpawnPlayer, SpawnProjectile, SpawnUnit,
-    },
+    networking::{DropFlag, PickFlag},
     projectile_collider, BoxCollider, LocalClientId, PhysicalPlayer,
 };
 
-use super::{highlight::Highlighted, player, PartOfScene};
+use super::highlight::Highlighted;
 
 pub struct SpawnPlugin;
 
 #[derive(Component)]
-#[require(PartOfScene, BoxCollider(projectile_collider))]
+#[require(BoxCollider(projectile_collider))]
 pub struct Projectile;
 
 impl Plugin for SpawnPlugin {

@@ -4,7 +4,6 @@ use bevy_renet::renet::ClientId;
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
-use crate::map::{GameScene, GameSceneId};
 use crate::networking::{
     ClientChannel, Facing, Inventory, NetworkEntity, NetworkRegistry, NetworkedEntities,
     PlayerCommand, PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
@@ -33,25 +32,10 @@ pub struct ServerLobby {
     pub players: HashMap<ClientId, Entity>,
 }
 
-#[derive(Default, Resource)]
-pub struct GameWorld {
-    pub game_scenes: HashMap<GameSceneId, GameScene>,
-}
-
-#[derive(Component, Deserialize, Serialize)]
-#[require(Health, Inventory, Replicated)]
-pub struct Player(pub bevy_replicon::core::ClientId);
-
 #[derive(Event)]
 pub struct NetworkEvent {
     pub client_id: ClientId,
     pub message: PlayerCommand,
-}
-
-#[derive(Event)]
-pub struct SendServerMessage {
-    pub message: ServerMessages,
-    pub game_scene_id: GameSceneId,
 }
 
 pub struct ServerNetworkPlugin;

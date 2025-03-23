@@ -1,12 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    map::GameSceneId,
-    networking::{MountType, Mounted, ServerMessages},
-    server::{
-        networking::SendServerMessage,
-        physics::movement::{Speed, Velocity},
-    },
+    networking::{MountType, Mounted},
+    server::physics::movement::{Speed, Velocity},
     unit_collider, BoxCollider,
 };
 
@@ -20,9 +16,8 @@ pub struct Mount {
 
 pub fn mount(
     mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut player_query: Query<(&mut Speed, &GameSceneId)>,
+    mut player_query: Query<&mut Speed>,
     mut commands: Commands,
-    mut sender: EventWriter<SendServerMessage>,
     mount_query: Query<&Mount>,
 ) {
     for event in interactions.read() {
@@ -30,7 +25,7 @@ pub fn mount(
             continue;
         };
 
-        let (mut speed, scene_id) = player_query.get_mut(event.player).unwrap();
+        let mut speed = player_query.get_mut(event.player).unwrap();
         let mount = mount_query.get(event.interactable).unwrap();
 
         let new_speed = mount_speed(&mount.mount_type);
@@ -41,25 +36,19 @@ pub fn mount(
             mount_type: mount.mount_type,
         });
 
-        sender.send(SendServerMessage {
-            message: ServerMessages::DespawnEntity {
-                entities: vec![event.interactable],
-            },
-            game_scene_id: *scene_id,
-        });
-
-        sender.send(SendServerMessage {
-            message: ServerMessages::Mount {
-                entity: event.player,
-                mount_type: mount.mount_type,
-            },
-            game_scene_id: *scene_id,
-        });
+        // TODO: add mount events
+        // sender.send(SendServerMessage {
+        //     message: ServerMessages::Mount {
+        //         entity: event.player,
+        //         mount_type: mount.mount_type,
+        //     },
+        //     game_scene_id: *scene_id,
+        // });
     }
 }
 
 fn mount_speed(mount_type: &MountType) -> f32 {
     match mount_type {
-        MountType::Horse => 450.,
+        MountType::Horse => 150.,
     }
 }

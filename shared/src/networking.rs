@@ -9,10 +9,9 @@ use crate::{
     horse_collider,
     map::{
         buildings::{BuildStatus, Building},
-        scenes::SceneBuildingIndicator,
         GameSceneType,
     },
-    projectile_collider, BoxCollider,
+    projectile_collider, BoxCollider, Owner,
 };
 
 pub const PROTOCOL_ID: u64 = 7;
@@ -68,17 +67,6 @@ pub enum ServerChannel {
     NetworkedEntities,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
-pub enum Faction {
-    Player { client_id: ClientId },
-    Bandits,
-}
-
-#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
-pub struct Owner {
-    pub faction: Faction,
-}
-
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
 #[require(BoxCollider(projectile_collider))]
 pub enum ProjectileType {
@@ -125,48 +113,6 @@ pub struct PickFlag {
     pub flag: Entity,
 }
 
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct SpawnUnit {
-    pub owner: Owner,
-    pub entity: Entity,
-    pub unit_type: UnitType,
-    pub translation: [f32; 3],
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct SpawnMount {
-    pub entity: Entity,
-    pub mount_type: MountType,
-    pub translation: [f32; 3],
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct SpawnProjectile {
-    pub entity: Entity,
-    pub projectile_type: ProjectileType,
-    pub translation: [f32; 3],
-    pub direction: [f32; 2],
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct BuildingUpdate {
-    pub indicator: SceneBuildingIndicator,
-    pub update: UpdateType,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct LoadBuilding {
-    pub indicator: SceneBuildingIndicator,
-    pub status: BuildStatus,
-    pub upgrade: Building,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub enum UpdateType {
-    Status { new_status: BuildStatus },
-    Upgrade { upgraded_building: Building },
-}
-
 #[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq, Copy)]
 pub enum Checkbox {
     Checked,
@@ -190,33 +136,16 @@ pub enum ServerMessages {
     SpawnFlag(SpawnFlag),
     DropFlag(DropFlag),
     PickFlag(PickFlag),
-    SpawnUnit(SpawnUnit),
-    SpawnMount(SpawnMount),
-    SpawnProjectile(SpawnProjectile),
     PlayerDisconnected {
         id: ClientId,
     },
     DespawnEntity {
         entities: Vec<Entity>,
     },
-    LoadGameScene {
-        game_scene_type: GameSceneType,
-        players: Vec<SpawnPlayer>,
-        flag: Option<SpawnFlag>,
-        units: Vec<SpawnUnit>,
-        mounts: Vec<SpawnMount>,
-        projectiles: Vec<SpawnProjectile>,
-        buildings: Vec<LoadBuilding>,
-    },
-    SpawnGroup {
-        player: SpawnPlayer,
-        units: Vec<SpawnUnit>,
-    },
     MeleeAttack {
         entity: Entity,
     },
     SyncInventory(Inventory),
-    BuildingUpdate(BuildingUpdate),
     EntityHit {
         entity: Entity,
     },

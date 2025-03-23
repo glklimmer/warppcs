@@ -81,6 +81,7 @@ fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
     Velocity,
     Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()})
 )]
+// TODO: Rename to player
 pub struct PhysicalPlayer(bevy_replicon::core::ClientId);
 
 #[derive(Debug, Resource, Deref)]
@@ -149,6 +150,15 @@ pub fn flag_collider() -> BoxCollider {
         offset: None,
     }
 }
+
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
+pub enum Faction {
+    Player(Entity),
+    Bandits,
+}
+
+#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref)]
+pub struct Owner(Faction);
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);
