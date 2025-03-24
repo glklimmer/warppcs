@@ -1,20 +1,18 @@
+use bevy::prelude::*;
+
 use animals::horse::{
     next_horse_animation, set_horse_sprite_animation, HorseAnimation, HorseSpriteSheet,
 };
-use bevy::prelude::*;
-
-use king::{next_king_animation, set_king_sprite_animation, KingAnimation, KingSpriteSheet};
+use bevy_replicon::client::ClientSet;
+use king::{
+    set_king_idle, set_king_sprite_animation, set_king_walking, trigger_king_animation,
+    KingAnimation, KingSpriteSheet,
+};
 use objects::{
     chest::ChestSpriteSheet,
     flag::{FlagAnimation, FlagSpriteSheet},
 };
-
-use crate::networking::{NetworkEvent, NetworkMapping};
-
-use shared::{
-    enum_map::*,
-    networking::{Facing, Rotation, ServerMessages},
-};
+use shared::{enum_map::*, networking::Facing};
 use units::{next_unit_animation, set_unit_sprite_animation, UnitAnimation, UnitSpriteSheets};
 
 pub mod animals;
@@ -129,11 +127,15 @@ impl Plugin for AnimationPlugin {
         //     (trigger_meele_attack, trigger_hit, trigger_death),
         // );
 
+        app.add_systems(PreUpdate, trigger_king_animation.after(ClientSet::Receive))
+            .add_observer(set_king_walking)
+            .add_observer(set_king_idle);
+
         app.add_systems(
             Update,
             (
                 (set_unit_sprite_animation, next_unit_animation),
-                (set_king_sprite_animation, next_king_animation),
+                (set_king_sprite_animation),
                 (set_horse_sprite_animation, next_horse_animation),
                 advance_animation,
                 // set_unit_facing,

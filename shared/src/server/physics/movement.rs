@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::server_or_singleplayer;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     map::buildings::{BuildStatus, Building},
-    networking::PlayerInput,
     server::{
         ai::{attack::unit_speed, UnitBehaviour},
         entities::{health::Health, Unit},
@@ -19,6 +20,12 @@ pub struct Velocity(pub Vec2);
 #[derive(Component, Debug, Copy, Clone)]
 pub struct Speed(pub f32);
 
+#[derive(Component, Clone, Copy, Debug, Deserialize, Serialize)]
+pub struct Grounded;
+
+#[derive(Component, Clone, Copy, Debug, Deserialize, Serialize)]
+pub struct Moving;
+
 impl Default for Speed {
     fn default() -> Self {
         Self(70.0)
@@ -32,15 +39,18 @@ impl Plugin for MovementPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                (
-                    // set_player_velocity
-                    set_unit_velocity
-                ),
+                (set_unit_velocity, set_grounded, set_walking, apply_friction),
                 wall_collision,
             )
-                .chain(),
+                .chain()
+                .run_if(server_or_singleplayer),
         );
-        app.add_systems(FixedPostUpdate, (apply_gravity, apply_velocity).chain());
+        app.add_systems(
+            FixedPostUpdate,
+            (apply_gravity, apply_velocity)
+                .chain()
+                .run_if(server_or_singleplayer),
+        );
     }
 }
 
@@ -64,6 +74,39 @@ fn apply_velocity(
 ) {
     for (velocity, mut transform) in query.iter_mut() {
         transform.translation += velocity.0.extend(0.) * time.delta_secs();
+    }
+}
+
+fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Time>) {
+    let friction_force = 400.0 * time.delta_secs();
+    for mut velocity in query.iter_mut() {
+        if velocity.0.x.abs() <= friction_force {
+            velocity.0.x = 0.0;
+        } else {
+            velocity.0.x -= velocity.0.x.signum() * friction_force;
+        }
+    }
+}
+
+fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
+    for (entity, transform) in &entities {
+        let mut entity = commands.entity(entity);
+        if transform.translation.y == 0. {
+            entity.insert(Grounded);
+        } else {
+            entity.remove::<Grounded>();
+        }
+    }
+}
+
+fn set_walking(mut commands: Commands, entities: Query<(Entity, &Velocity, Option<&Grounded>)>) {
+    for (entity, velocity, maybe_grounded) in &entities {
+        let mut entity = commands.entity(entity);
+        if maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
+            entity.insert(Moving);
+        } else {
+            entity.remove::<Moving>();
+        }
     }
 }
 
@@ -97,17 +140,6 @@ fn wall_collision(
         }
     }
 }
-
-// fn set_player_velocity(mut query: Query<(&mut Velocity, &PlayerInput, &Speed)>) {
-//     for (mut velocity, input, speed) in query.iter_mut() {
-//         let x = (input.right as i8 - input.left as i8) as f32;
-//
-//         let direction = Vec2::new(x, 0.).normalize_or_zero();
-//         let desired_velocity = direction * speed.0;
-//
-//         velocity.0 = desired_velocity
-//     }
-// }
 
 const MOVE_EPSILON: f32 = 1.;
 

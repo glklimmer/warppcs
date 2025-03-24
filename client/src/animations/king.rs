@@ -3,10 +3,11 @@ use bevy::prelude::*;
 use shared::{
     enum_map::*,
     networking::{MountType, Mounted},
+    server::physics::movement::Moving,
     AnimationChange, AnimationChangeEvent,
 };
 
-use super::{AnimationTrigger, FullAnimation, SpriteSheet, SpriteSheetAnimation};
+use super::{AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum KingAnimation {
@@ -99,83 +100,66 @@ impl FromWorld for KingSpriteSheet {
     }
 }
 
-pub fn next_king_animation(
-    mut commands: Commands,
-    mut query: Query<(&mut KingAnimation, Option<&FullAnimation>, Option<&Mounted>)>,
+pub fn trigger_king_animation(
     mut animation_changes: EventReader<AnimationChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    mut commands: Commands,
+    mounted: Query<Option<&Mounted>>,
 ) {
     for event in animation_changes.read() {
-        if let Ok((mut current_animation, maybe_full, maybe_mounted)) = query.get_mut(event.entity)
-        {
-            let maybe_new_animation = match &event.change {
-                // AnimationChange::Movement(moving) => match moving {
-                //     true => match maybe_mounted {
-                //         Some(mounted) => match mounted.mount_type {
-                //             MountType::Horse => Some(KingAnimation::HorseWalk),
-                //         },
-                //         None => Some(KingAnimation::Walk),
-                //     },
-                //     false => match maybe_mounted {
-                //         Some(mounted) => match mounted.mount_type {
-                //             MountType::Horse => Some(KingAnimation::HorseIdle),
-                //         },
-                //         None => Some(KingAnimation::Idle),
-                //     },
-                // },
-                AnimationChange::Attack => Some(KingAnimation::Attack),
-                AnimationChange::Hit => Some(KingAnimation::Hit),
-                AnimationChange::Death => Some(KingAnimation::Death),
+        if let Ok(maybe_mounted) = mounted.get(event.entity) {
+            let new_animation = match maybe_mounted {
+                Some(_) => todo!(),
+                None => match &event.change {
+                    AnimationChange::Attack => KingAnimation::Attack,
+                    AnimationChange::Hit => KingAnimation::Hit,
+                    AnimationChange::Death => KingAnimation::Death,
+                },
             };
 
-            if let Some(new_animation) = maybe_new_animation {
-                if is_interupt_animation(&new_animation)
-                    || (maybe_full.is_none() && new_animation != *current_animation)
-                {
-                    *current_animation = new_animation;
+            commands.entity(event.entity).insert(PlayOnce);
 
-                    if is_full_animation(&new_animation) {
-                        commands.entity(event.entity).insert(FullAnimation);
-                    }
-                    animation_trigger.send(AnimationTrigger {
-                        entity: event.entity,
-                        state: new_animation,
-                    });
-
-                    if is_full_animation(&new_animation) {
-                        break;
-                    }
-                }
-            }
+            animation_trigger.send(AnimationTrigger {
+                entity: event.entity,
+                state: new_animation,
+            });
         }
     }
 }
 
-fn is_interupt_animation(animation: &KingAnimation) -> bool {
-    match animation {
-        KingAnimation::Idle => false,
-        KingAnimation::Drink => false,
-        KingAnimation::Walk => false,
-        KingAnimation::Attack => true,
-        KingAnimation::Hit => false,
-        KingAnimation::Death => true,
-        KingAnimation::Mount => true,
-        KingAnimation::HorseIdle => false,
-        KingAnimation::HorseWalk => false,
+pub fn set_king_walking(
+    trigger: Trigger<OnAdd, Moving>,
+    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    mounted: Query<Option<&Mounted>>,
+) {
+    if let Ok(maybe_mounted) = mounted.get(trigger.entity()) {
+        let new_animation = match maybe_mounted {
+            Some(_) => KingAnimation::HorseWalk,
+            None => KingAnimation::Walk,
+        };
+
+        animation_trigger.send(AnimationTrigger {
+            entity: trigger.entity(),
+            state: new_animation,
+        });
     }
 }
 
-fn is_full_animation(animation: &KingAnimation) -> bool {
-    match animation {
-        KingAnimation::Idle => false,
-        KingAnimation::Drink => false,
-        KingAnimation::Walk => false,
-        KingAnimation::Attack => true,
-        KingAnimation::Hit => false,
-        KingAnimation::Death => true,
-        KingAnimation::Mount => true,
-        KingAnimation::HorseIdle => false,
-        KingAnimation::HorseWalk => false,
+pub fn set_king_idle(
+    trigger: Trigger<OnRemove, Moving>,
+    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    mounted: Query<Option<&Mounted>>,
+) {
+    if let Ok(maybe_mounted) = mounted.get(trigger.entity()) {
+        let new_animation = match maybe_mounted {
+            Some(_) => KingAnimation::HorseIdle,
+            None => KingAnimation::Idle,
+        };
+
+        animation_trigger.send(AnimationTrigger {
+            entity: trigger.entity(),
+            state: new_animation,
+        });
     }
 }
 
