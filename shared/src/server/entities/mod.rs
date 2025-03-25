@@ -42,8 +42,6 @@ pub struct EntityPlugin;
 
 impl Plugin for EntityPlugin {
     fn build(&self, app: &mut App) {
-        app.replicate::<Flag>();
-        app.replicate::<Unit>();
         app.add_plugins(HealthPlugin);
     }
 }
