@@ -96,7 +96,7 @@ pub fn recruit(
         };
 
         for unit_number in 1..=4 {
-            let offset = Vec2::new(15. * (unit_number - 3) as f32, 0.);
+            let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
             commands.spawn((
                 Transform::from_translation(flag_translation),
                 unit.clone(),
