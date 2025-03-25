@@ -113,8 +113,6 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.replicate::<Flag>();
-        app.replicate::<Unit>();
         app.init_resource::<UnitSpriteSheets>();
         app.add_event::<AnimationTrigger<UnitAnimation>>();
 
