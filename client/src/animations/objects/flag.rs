@@ -1,15 +1,8 @@
 use bevy::prelude::*;
 
-use shared::{enum_map::*, flag_collider, BoxCollider};
+use shared::enum_map::*;
 
-use crate::{
-    animations::{SpriteSheet, SpriteSheetAnimation},
-    entities::highlight::Highlightable,
-};
-
-#[derive(Component)]
-#[require(FlagAnimation, BoxCollider(flag_collider), Highlightable)]
-pub struct Flag;
+use crate::animations::{SpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum FlagAnimation {

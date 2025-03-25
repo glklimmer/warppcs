@@ -61,10 +61,10 @@ pub fn unit_swing_timer(unit_type: &UnitType) -> Timer {
 
 pub fn unit_speed(unit_type: &UnitType) -> f32 {
     match unit_type {
-        UnitType::Shieldwarrior => 80.,
-        UnitType::Pikeman => 100.,
-        UnitType::Archer => 120.,
-        UnitType::Bandit => 100.,
+        UnitType::Shieldwarrior => 25.,
+        UnitType::Pikeman => 33.,
+        UnitType::Archer => 45.,
+        UnitType::Bandit => 33.,
     }
 }
 

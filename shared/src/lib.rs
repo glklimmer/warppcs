@@ -11,7 +11,11 @@ use networking::Inventory;
 use player_attacks::PlayerAttacks;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
-use server::physics::movement::{Grounded, Moving, Speed, Velocity};
+use server::{
+    buildings::recruiting::Flag,
+    entities::Unit,
+    physics::movement::{Grounded, Moving, Speed, Velocity},
+};
 use test_plugin::TestPlugin;
 
 pub mod enum_map;
@@ -43,6 +47,8 @@ impl Plugin for SharedPlugin {
         .replicate::<Grounded>()
         .replicate_group::<(PhysicalPlayer, BoxCollider, Transform)>()
         .replicate_group::<(Building, BuildStatus, BoxCollider, Transform)>()
+        .replicate_group::<(Flag, BoxCollider, Transform)>()
+        .replicate_group::<(Unit, BoxCollider, Transform)>()
         .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
         .add_observer(spawn_clients);
     }

@@ -3,28 +3,14 @@ use bevy::prelude::*;
 use bandits::bandit::bandit;
 use humans::{archer::archer, pikeman::pikeman, shieldwarrior::shieldwarrior};
 use shared::{
-    enum_map::*, networking::UnitType, unit_collider, AnimationChange, AnimationChangeEvent,
-    BoxCollider,
+    enum_map::*, networking::UnitType, server::entities::UnitAnimation, unit_collider,
+    AnimationChange, AnimationChangeEvent, BoxCollider,
 };
 
 use super::{AnimationTrigger, FullAnimation, PlayOnce, SpriteSheet, SpriteSheetAnimation};
 
 pub mod bandits;
 pub mod humans;
-
-#[derive(Component)]
-#[require(BoxCollider(unit_collider), UnitAnimation)]
-pub struct Unit;
-
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
-pub enum UnitAnimation {
-    #[default]
-    Idle,
-    Walk,
-    Attack,
-    Hit,
-    Death,
-}
 
 #[derive(Resource)]
 pub struct UnitSpriteSheets {
