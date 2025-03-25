@@ -109,8 +109,8 @@ fn init_player_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
-    let mut player_commands = commands.entity(trigger.entity());
-    player_commands.insert((animation.clone(), KingAnimation::default()));
+    let mut commands = commands.entity(trigger.entity());
+    commands.insert((animation.clone(), KingAnimation::default()));
 }
 
 fn init_building_sprite(
@@ -151,8 +151,8 @@ fn init_unit_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
-    let mut player_commands = commands.entity(trigger.entity());
-    player_commands.insert((animation.clone(), UnitAnimation::default()));
+    let mut commands = commands.entity(trigger.entity());
+    commands.insert((animation.clone(), UnitAnimation::default()));
 }
 
 fn init_flag_sprite(
@@ -174,8 +174,8 @@ fn init_flag_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
-    let mut player_commands = commands.entity(trigger.entity());
-    player_commands.insert((
+    let mut commands = commands.entity(trigger.entity());
+    commands.insert((
         animation.clone(),
         FlagAnimation::default(),
         Highlightable::default(),
