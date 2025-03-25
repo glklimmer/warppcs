@@ -39,7 +39,9 @@ impl Plugin for SharedPlugin {
             PlayerMovement,
             PlayerAttacks,
         ))
-        .replicate_group::<(PhysicalPlayer, BoxCollider, Transform, Moving, Grounded)>()
+        .replicate::<Moving>()
+        .replicate::<Grounded>()
+        .replicate_group::<(PhysicalPlayer, BoxCollider, Transform)>()
         .replicate_group::<(Building, BuildStatus, BoxCollider, Transform)>()
         .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
         .add_observer(spawn_clients);
