@@ -1,6 +1,7 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 
-use bevy_renet::renet::{ClientId, RenetServer};
+use bevy_replicon::prelude::Replicated;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     flag_collider,
@@ -21,8 +22,8 @@ use crate::{
     BoxCollider, Faction, Owner,
 };
 
-#[derive(Component)]
-#[require(BoxCollider(flag_collider), Transform)]
+#[derive(Component, Deserialize, Serialize)]
+#[require(Replicated, Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}), BoxCollider(flag_collider), Transform)]
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder
@@ -59,7 +60,7 @@ pub fn recruit(
         }
 
         let owner = Owner(Faction::Player(event.player));
-
+        // TODO: Refactor with Bevy 0.16 Parent API
         let flag_entity = commands
             .spawn((
                 Flag,
@@ -71,7 +72,7 @@ pub fn recruit(
                 owner,
             ))
             .id();
-        // TODO: replicate flag
+
         commands
             .entity(event.player)
             .insert(FlagHolder(flag_entity));
@@ -95,8 +96,7 @@ pub fn recruit(
         };
 
         for unit_number in 1..=4 {
-            let offset = Vec2::new(40. * (unit_number - 3) as f32 + 20., 0.);
-            // TODO: replicate units
+            let offset = Vec2::new(15. * (unit_number - 3) as f32, 0.);
             commands.spawn((
                 Transform::from_translation(flag_translation),
                 unit.clone(),

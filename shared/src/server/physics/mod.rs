@@ -18,7 +18,7 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MovementPlugin);
         // app.add_plugins(ProjectilePlugin);
-        // app.add_plugins(AttachmentPlugin);
+        app.add_plugins(AttachmentPlugin);
 
         // app.add_systems(FixedUpdate, (apply_force_on_hit, push_back_timer));
     }

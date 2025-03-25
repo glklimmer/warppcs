@@ -1,7 +1,12 @@
 use bevy::prelude::*;
 
 use crate::{
-    animations::king::{KingAnimation, KingSpriteSheet},
+    animations::{
+        king::{KingAnimation, KingSpriteSheet},
+        objects::flag::{FlagAnimation, FlagSpriteSheet},
+        units::UnitSpriteSheets,
+    },
+    entities::highlight::Highlightable,
     networking::{ClientPlayers, ControlledPlayer, CurrentClientId, NetworkMapping},
 };
 use bevy_parallax::CameraFollow;
@@ -11,7 +16,12 @@ use shared::{
         Layers,
     },
     networking::{DropFlag, PickFlag},
-    projectile_collider, BoxCollider, LocalClientId, PhysicalPlayer,
+    projectile_collider,
+    server::{
+        buildings::recruiting::Flag,
+        entities::{Unit, UnitAnimation},
+    },
+    BoxCollider, LocalClientId, PhysicalPlayer,
 };
 
 use super::highlight::Highlighted;
@@ -27,9 +37,9 @@ impl Plugin for SpawnPlugin {
         app.add_observer(init_player_sprite)
             .add_observer(init_local_player)
             .add_observer(init_building_sprite)
+            .add_observer(init_unit_sprite)
+            .add_observer(init_flag_sprite)
             .add_systems(Update, update_building_sprite);
-
-        //app.init_resource::<FlagSpriteSheet>()
 
         // app.add_event::<SpawnPlayer>();
         // app.add_event::<SpawnUnit>();
@@ -122,6 +132,54 @@ fn update_building_sprite(
     for (mut sprite, building, status) in buildings.iter_mut() {
         sprite.image = asset_server.load(building.texture(*status));
     }
+}
+
+fn init_unit_sprite(
+    trigger: Trigger<OnAdd, Sprite>,
+    mut units: Query<(&mut Sprite, &Unit)>,
+    sprite_sheets: Res<UnitSpriteSheets>,
+    mut commands: Commands,
+) {
+    let Ok((mut sprite, unit)) = units.get_mut(trigger.entity()) else {
+        return;
+    };
+
+    let sprite_sheet = &sprite_sheets.sprite_sheets.get(unit.unit_type);
+    sprite.image = sprite_sheet.texture.clone();
+    let animation = sprite_sheet.animations.get(UnitAnimation::Idle);
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+    let mut player_commands = commands.entity(trigger.entity());
+    player_commands.insert((animation.clone(), UnitAnimation::default()));
+}
+
+fn init_flag_sprite(
+    trigger: Trigger<OnAdd, Sprite>,
+    mut commands: Commands,
+    mut flag: Query<&mut Sprite, With<Flag>>,
+    flag_sprite_sheet: Res<FlagSpriteSheet>,
+) {
+    let Ok((mut sprite)) = flag.get_mut(trigger.entity()) else {
+        return;
+    };
+
+    print!("Flag");
+
+    let sprite_sheet = &flag_sprite_sheet.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+    let animation = sprite_sheet.animations.get(FlagAnimation::Wave);
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+    let mut player_commands = commands.entity(trigger.entity());
+    player_commands.insert((
+        animation.clone(),
+        FlagAnimation::default(),
+        Highlightable::default(),
+    ));
 }
 
 // #[allow(clippy::too_many_arguments)]
@@ -230,36 +288,7 @@ fn update_building_sprite(
 //     }
 // }
 //
-// fn spawn_unit(
-//     mut commands: Commands,
-//     mut spawn_unit: EventReader<SpawnUnit>,
-//     mut network_mapping: ResMut<NetworkMapping>,
-//     sprite_sheets: Res<UnitSpriteSheets>,
-// ) {
-//     for spawn in spawn_unit.read() {
-//         let SpawnUnit {
-//             entity: server_unit_entity,
-//             owner,
-//             translation,
-//             unit_type,
-//         } = spawn;
-//
-//         let sprite_sheet = sprite_sheets.sprite_sheets.get(*unit_type);
-//
-//         let client_unit_entity = commands
-//             .spawn((
-//                 Unit,
-//                 SpriteAnimationBundle::new(translation, sprite_sheet, UnitAnimation::Idle, 3.),
-//                 *unit_type,
-//                 *owner,
-//             ))
-//             .id();
-//
-//         network_mapping
-//             .0
-//             .insert(*server_unit_entity, client_unit_entity);
-//     }
-// }
+
 //
 // fn spawn_mount(
 //     mut commands: Commands,

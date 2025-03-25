@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use animals::horse::{
     next_horse_animation, set_horse_sprite_animation, HorseAnimation, HorseSpriteSheet,
 };
-use bevy_replicon::client::ClientSet;
+use bevy_replicon::{client::ClientSet, prelude::AppRuleExt};
 use king::{
     set_animation_after_play_once, set_king_idle, set_king_sprite_animation, set_king_walking,
     trigger_king_animation, KingAnimation, KingSpriteSheet,
@@ -12,8 +12,15 @@ use objects::{
     chest::ChestSpriteSheet,
     flag::{FlagAnimation, FlagSpriteSheet},
 };
-use shared::{enum_map::*, networking::Facing};
-use units::{next_unit_animation, set_unit_sprite_animation, UnitAnimation, UnitSpriteSheets};
+use shared::{
+    enum_map::*,
+    networking::Facing,
+    server::{
+        buildings::recruiting::Flag,
+        entities::{Unit, UnitAnimation},
+    },
+};
+use units::{next_unit_animation, set_unit_sprite_animation, UnitSpriteSheets};
 
 pub mod animals;
 pub mod king;
@@ -106,6 +113,8 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
+        app.replicate::<Flag>();
+        app.replicate::<Unit>();
         app.init_resource::<UnitSpriteSheets>();
         app.add_event::<AnimationTrigger<UnitAnimation>>();
 
