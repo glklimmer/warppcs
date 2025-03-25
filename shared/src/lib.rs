@@ -47,8 +47,8 @@ impl Plugin for SharedPlugin {
         .replicate::<Grounded>()
         .replicate_group::<(PhysicalPlayer, BoxCollider, Transform)>()
         .replicate_group::<(Building, BuildStatus, BoxCollider, Transform)>()
-        .replicate_group::<(Flag, Transform)>()
-        .replicate_group::<(Unit, Transform)>()
+        .replicate_group::<(Flag, BoxCollider, Transform)>()
+        .replicate_group::<(Unit, BoxCollider, Transform)>()
         .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
         .add_observer(spawn_clients);
     }
