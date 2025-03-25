@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 
-use bevy_replicon::prelude::AppRuleExt;
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use recruiting::{check_recruit, recruit, RecruitEvent};
 
