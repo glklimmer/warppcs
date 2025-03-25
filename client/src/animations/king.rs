@@ -145,6 +145,27 @@ pub fn set_king_walking(
     }
 }
 
+pub fn set_animation_after_play_once(
+    trigger: Trigger<OnRemove, PlayOnce>,
+    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    mounted: Query<(&KingAnimation, Option<&Mounted>)>,
+) {
+    if let Ok((animation, maybe_mounted)) = mounted.get(trigger.entity()) {
+        let new_animation = match animation {
+            KingAnimation::Attack => match maybe_mounted {
+                Some(_) => KingAnimation::HorseIdle,
+                None => KingAnimation::Idle,
+            },
+            _ => *animation,
+        };
+
+        animation_trigger.send(AnimationTrigger {
+            entity: trigger.entity(),
+            state: new_animation,
+        });
+    }
+}
+
 pub fn set_king_idle(
     trigger: Trigger<OnRemove, Moving>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
@@ -164,12 +185,14 @@ pub fn set_king_idle(
 }
 
 pub fn set_king_sprite_animation(
-    mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite)>,
+    mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite, &mut KingAnimation)>,
     mut animation_changed: EventReader<AnimationTrigger<KingAnimation>>,
     king_sprite_sheet: Res<KingSpriteSheet>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((mut sprite_animation, mut sprite)) = query.get_mut(new_animation.entity) {
+        if let Ok((mut sprite_animation, mut sprite, mut current_animation)) =
+            query.get_mut(new_animation.entity)
+        {
             let animation = king_sprite_sheet
                 .sprite_sheet
                 .animations
@@ -179,6 +202,7 @@ pub fn set_king_sprite_animation(
                 atlas.index = animation.first_sprite_index;
             }
             *sprite_animation = animation.clone();
+            *current_animation = new_animation.state;
         }
     }
 }

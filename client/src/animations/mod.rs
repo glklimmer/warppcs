@@ -5,8 +5,8 @@ use animals::horse::{
 };
 use bevy_replicon::client::ClientSet;
 use king::{
-    set_king_idle, set_king_sprite_animation, set_king_walking, trigger_king_animation,
-    KingAnimation, KingSpriteSheet,
+    set_animation_after_play_once, set_king_idle, set_king_sprite_animation, set_king_walking,
+    trigger_king_animation, KingAnimation, KingSpriteSheet,
 };
 use objects::{
     chest::ChestSpriteSheet,
@@ -100,7 +100,7 @@ pub struct AnimationTrigger<E> {
 pub struct FullAnimation;
 
 #[derive(Component)]
-struct PlayOnce;
+pub struct PlayOnce;
 
 pub struct AnimationPlugin;
 
@@ -129,7 +129,8 @@ impl Plugin for AnimationPlugin {
 
         app.add_systems(PreUpdate, trigger_king_animation.after(ClientSet::Receive))
             .add_observer(set_king_walking)
-            .add_observer(set_king_idle);
+            .add_observer(set_king_idle)
+            .add_observer(set_animation_after_play_once);
 
         app.add_systems(
             Update,
@@ -225,6 +226,7 @@ fn advance_animation(
         if animation.frame_timer.just_finished() {
             atlas.index = if atlas.index == animation.last_sprite_index {
                 if maybe_play_once.is_some() {
+                    commands.entity(entity).remove::<PlayOnce>();
                     return;
                 }
                 if maybe_full.is_some() {
