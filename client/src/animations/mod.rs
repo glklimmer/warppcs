@@ -3,24 +3,20 @@ use bevy::prelude::*;
 use animals::horse::{
     next_horse_animation, set_horse_sprite_animation, HorseAnimation, HorseSpriteSheet,
 };
-use bevy_replicon::{client::ClientSet, prelude::AppRuleExt};
+use bevy_replicon::client::ClientSet;
 use king::{
-    set_animation_after_play_once, set_king_idle, set_king_sprite_animation, set_king_walking,
+    set_king_after_play_once, set_king_idle, set_king_sprite_animation, set_king_walking,
     trigger_king_animation, KingAnimation, KingSpriteSheet,
 };
 use objects::{
     chest::ChestSpriteSheet,
     flag::{FlagAnimation, FlagSpriteSheet},
 };
-use shared::{
-    enum_map::*,
-    networking::Facing,
-    server::{
-        buildings::recruiting::Flag,
-        entities::{Unit, UnitAnimation},
-    },
+use shared::{enum_map::*, networking::Facing, server::entities::UnitAnimation};
+use units::{
+    set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation, set_unit_walking,
+    trigger_unit_animation, UnitSpriteSheets,
 };
-use units::{next_unit_animation, set_unit_sprite_animation, UnitSpriteSheets};
 
 pub mod animals;
 pub mod king;
@@ -93,9 +89,6 @@ impl SpriteAnimationBundle {
     }
 }
 
-#[derive(Component)]
-pub struct UnitFacing(pub Facing);
-
 /// Gets only triggered if new animation
 #[derive(Debug, Event)]
 pub struct AnimationTrigger<E> {
@@ -134,15 +127,21 @@ impl Plugin for AnimationPlugin {
         //     (trigger_meele_attack, trigger_hit, trigger_death),
         // );
 
-        app.add_systems(PreUpdate, trigger_king_animation.after(ClientSet::Receive))
-            .add_observer(set_king_walking)
-            .add_observer(set_king_idle)
-            .add_observer(set_animation_after_play_once);
+        app.add_systems(
+            PreUpdate,
+            (trigger_king_animation, trigger_unit_animation).after(ClientSet::Receive),
+        )
+        .add_observer(set_king_walking)
+        .add_observer(set_king_idle)
+        .add_observer(set_king_after_play_once)
+        .add_observer(set_unit_walking)
+        .add_observer(set_unit_idle)
+        .add_observer(set_unit_after_play_once);
 
         app.add_systems(
             Update,
             (
-                (set_unit_sprite_animation, next_unit_animation),
+                (set_unit_sprite_animation),
                 (set_king_sprite_animation),
                 (set_horse_sprite_animation, next_horse_animation),
                 advance_animation,

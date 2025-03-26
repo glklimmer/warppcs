@@ -144,10 +144,16 @@ fn wall_collision(
 const MOVE_EPSILON: f32 = 1.;
 
 fn set_unit_velocity(
-    mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit, &PushBack)>,
-    transform_query: Query<&Transform>,
+    mut query: Query<(
+        &mut Velocity,
+        &mut Transform,
+        &UnitBehaviour,
+        &Unit,
+        &PushBack,
+    )>,
+    transform_query: Query<&Transform, Without<Unit>>,
 ) {
-    for (mut velocity, transform, behaviour, unit, push_back) in &mut query {
+    for (mut velocity, mut transform, behaviour, unit, push_back) in &mut query {
         match behaviour {
             UnitBehaviour::Idle => {}
             UnitBehaviour::AttackTarget(_) => {
@@ -159,17 +165,15 @@ fn set_unit_velocity(
             UnitBehaviour::FollowFlag(flag, offset) => {
                 let target = transform_query.get(*flag).unwrap().translation.truncate();
                 let target = target + *offset;
-                let target_right = target.x > transform.translation.x;
+                let direction = (target.x - transform.translation.x).signum();
 
                 if (transform.translation.x - target.x).abs() <= MOVE_EPSILON {
                     velocity.0.x = 0.;
                     continue;
                 }
 
-                match target_right {
-                    true => velocity.0.x = unit_speed(&unit.unit_type),
-                    false => velocity.0.x = -unit_speed(&unit.unit_type),
-                }
+                velocity.0.x = direction * unit_speed(&unit.unit_type);
+                transform.scale.x = direction;
             }
         }
     }

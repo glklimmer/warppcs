@@ -36,7 +36,7 @@ pub enum LobbyEvent {
     Ready(Checkbox),
 }
 
-#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
 pub enum UnitType {
     Shieldwarrior,
     Pikeman,

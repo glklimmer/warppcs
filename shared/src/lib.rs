@@ -135,15 +135,15 @@ pub fn player_collider() -> BoxCollider {
 
 pub fn unit_collider() -> BoxCollider {
     BoxCollider {
-        dimension: Vec2::new(40., 35.),
-        offset: Some(Vec2::new(0., -28.)),
+        dimension: Vec2::new(16., 16.),
+        offset: Some(Vec2::new(0., 8.)),
     }
 }
 
 pub fn horse_collider() -> BoxCollider {
     BoxCollider {
-        dimension: Vec2::new(40., 35.),
-        offset: Some(Vec2::new(0., -28.)),
+        dimension: Vec2::new(16., 16.),
+        offset: Some(Vec2::new(0., 8.)),
     }
 }
 

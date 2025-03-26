@@ -145,7 +145,7 @@ pub fn set_king_walking(
     }
 }
 
-pub fn set_animation_after_play_once(
+pub fn set_king_after_play_once(
     trigger: Trigger<OnRemove, PlayOnce>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<(&KingAnimation, Option<&Mounted>)>,

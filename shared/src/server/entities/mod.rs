@@ -1,16 +1,13 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use bevy_replicon::prelude::{AppRuleExt, Replicated};
+use bevy_replicon::prelude::Replicated;
 use enum_mappable::Mappable;
 use health::HealthPlugin;
 use serde::{Deserialize, Serialize};
 
 use crate::{enum_map::EnumIter, networking::UnitType, unit_collider, BoxCollider};
 
-use super::{
-    buildings::recruiting::Flag,
-    physics::{movement::Velocity, PushBack},
-};
+use super::physics::{movement::Velocity, PushBack};
 
 pub mod health;
 
@@ -27,6 +24,7 @@ pub enum UnitAnimation {
 #[derive(Component, Clone, Deserialize, Serialize)]
 #[require(
     Replicated,
+    Transform,
     BoxCollider(unit_collider),
     Velocity,
     PushBack,
