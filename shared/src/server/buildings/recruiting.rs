@@ -23,7 +23,11 @@ use crate::{
 };
 
 #[derive(Component, Deserialize, Serialize)]
-#[require(Replicated, Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}), BoxCollider(flag_collider), Transform)]
+#[require(
+    Replicated,
+    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
+    BoxCollider(flag_collider),
+    Transform( || Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()) , scale: Vec3::splat(0.3), ..default()}))]
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder

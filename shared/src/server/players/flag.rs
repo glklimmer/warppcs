@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::server::buildings::recruiting::Flag;
+
 use super::{
     super::{buildings::recruiting::FlagHolder, physics::attachment::AttachedTo},
     interaction::{InteractionTriggeredEvent, InteractionType},
@@ -47,9 +49,19 @@ pub fn flag_interact(
     }
 }
 
-pub fn pick_flag(mut commands: Commands, mut pick_flag: EventReader<PickFlagEvent>) {
+pub fn pick_flag(
+    mut commands: Commands,
+    mut pick_flag: EventReader<PickFlagEvent>,
+    mut flag_query: Query<(&mut Transform), With<Flag>>,
+) {
     for event in pick_flag.read() {
-        commands.entity(event.flag).insert(AttachedTo(event.player));
+        match flag_query.get_mut(event.flag) {
+            Ok(mut transform) => {
+                transform.translation.y = 10.;
+                commands.entity(event.flag).insert(AttachedTo(event.player));
+            }
+            Err(_) => todo!(),
+        }
 
         commands.entity(event.player).insert(FlagHolder(event.flag));
     }
@@ -69,6 +81,6 @@ pub fn drop_flag(
             continue;
         }
         commands.entity(flag_entity).remove::<AttachedTo>();
-        transform.translation.y = 30.;
+        transform.translation.y = 0.;
     }
 }

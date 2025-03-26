@@ -55,39 +55,8 @@ impl Default for SpriteSheetAnimation {
     }
 }
 
-#[derive(Bundle)]
-pub struct SpriteAnimationBundle {
-    pub sprite: Sprite,
-    pub transform: Transform,
-    pub initial_animation: SpriteSheetAnimation,
-}
-
-impl SpriteAnimationBundle {
-    pub fn new<E: EnumIter>(
-        translation: &[f32; 3],
-        sprite_sheet: &SpriteSheet<E>,
-        animation: E,
-        scale: f32,
-    ) -> Self {
-        let animation = sprite_sheet.animations.get(animation);
-        SpriteAnimationBundle {
-            sprite: Sprite {
-                image: sprite_sheet.texture.clone(),
-                texture_atlas: Some(TextureAtlas {
-                    layout: sprite_sheet.layout.clone(),
-                    index: animation.first_sprite_index,
-                }),
-                ..default()
-            },
-            transform: Transform {
-                translation: (*translation).into(),
-                scale: Vec3::splat(scale),
-                ..default()
-            },
-            initial_animation: animation.clone(),
-        }
-    }
-}
+#[derive(Component)]
+pub struct UnitFacing(pub Facing);
 
 /// Gets only triggered if new animation
 #[derive(Debug, Event)]

@@ -45,7 +45,7 @@ impl Plugin for ServerNetworkPlugin {
         app.add_plugins(PhysicsPlugin);
         // app.add_plugins(GameScenesPlugin);
         app.add_plugins(BuildingsPlugins);
-        // app.add_plugins(PlayerPlugin);
+        app.add_plugins(PlayerPlugin);
         // app.add_plugins(EntityPlugin);
         //
         // app.add_systems(FixedFirst, receive_client_messages);

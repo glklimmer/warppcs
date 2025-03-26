@@ -7,15 +7,11 @@ use crate::{
         units::UnitSpriteSheets,
     },
     entities::highlight::Highlightable,
-    networking::{ClientPlayers, ControlledPlayer, CurrentClientId, NetworkMapping},
+    networking::{ControlledPlayer, CurrentClientId, NetworkMapping},
 };
 use bevy_parallax::CameraFollow;
 use shared::{
-    map::{
-        buildings::{BuildStatus, Building},
-        Layers,
-    },
-    networking::{DropFlag, PickFlag},
+    map::buildings::{BuildStatus, Building},
     projectile_collider,
     server::{
         buildings::recruiting::Flag,
@@ -23,8 +19,6 @@ use shared::{
     },
     BoxCollider, LocalClientId, PhysicalPlayer,
 };
-
-use super::highlight::Highlighted;
 
 pub struct SpawnPlugin;
 
@@ -45,9 +39,6 @@ impl Plugin for SpawnPlugin {
         // app.add_event::<SpawnUnit>();
         // app.add_event::<SpawnMount>();
         // app.add_event::<SpawnProjectile>();
-        // app.add_event::<SpawnFlag>();
-        // app.add_event::<DropFlag>();
-        // app.add_event::<PickFlag>();
 
         // app.add_systems(
         //     FixedPostUpdate,
@@ -68,8 +59,6 @@ impl Plugin for SpawnPlugin {
         //         .in_set(Connected),
         // );
         //
-        // app.add_systems(FixedUpdate, drop_flag.run_if(on_event::<DropFlag>));
-        // app.add_systems(FixedUpdate, pick_flag.run_if(on_event::<PickFlag>));
     }
 }
 
@@ -165,8 +154,6 @@ fn init_flag_sprite(
         return;
     };
 
-    print!("Flag");
-
     let sprite_sheet = &flag_sprite_sheet.sprite_sheet;
     sprite.image = sprite_sheet.texture.clone();
     let animation = sprite_sheet.animations.get(FlagAnimation::Wave);
@@ -180,51 +167,4 @@ fn init_flag_sprite(
         FlagAnimation::default(),
         Highlightable::default(),
     ));
-}
-
-fn pick_flag(
-    mut commands: Commands,
-    network_mapping: ResMut<NetworkMapping>,
-    mut pick_flag: EventReader<PickFlag>,
-    client_id: Res<CurrentClientId>,
-    lobby: Res<ClientPlayers>,
-) {
-    for flag in pick_flag.read() {
-        let PickFlag {
-            flag: server_flag_entity,
-        } = flag;
-        let client_id = client_id.0;
-
-        let player_entity = lobby.players.get(&client_id).unwrap().client_entity;
-        let client_flag_entity = network_mapping.0.get(server_flag_entity).unwrap();
-
-        commands
-            .entity(*client_flag_entity)
-            .insert(Transform {
-                translation: Vec3::new(0., 0., Layers::Flag.as_f32()),
-                scale: Vec3::splat(0.2),
-                ..default()
-            })
-            .remove::<Highlighted>()
-            .set_parent(player_entity);
-    }
-}
-
-fn drop_flag(
-    mut commands: Commands,
-    network_mapping: Res<NetworkMapping>,
-    mut drop_flag: EventReader<DropFlag>,
-) {
-    for drop in drop_flag.read() {
-        let DropFlag {
-            flag: server_flag_entity,
-            translation,
-        } = drop;
-        let client_flag_entity = network_mapping.0.get(server_flag_entity).unwrap();
-
-        commands
-            .entity(*client_flag_entity)
-            .remove_parent()
-            .insert((Transform::from_translation(*translation),));
-    }
 }

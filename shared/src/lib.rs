@@ -14,7 +14,10 @@ use serde::{Deserialize, Serialize};
 use server::{
     buildings::recruiting::Flag,
     entities::Unit,
-    physics::movement::{Grounded, Moving, Speed, Velocity},
+    physics::{
+        attachment::AttachedTo,
+        movement::{Grounded, Moving, Speed, Velocity},
+    },
 };
 use test_plugin::TestPlugin;
 
@@ -45,10 +48,12 @@ impl Plugin for SharedPlugin {
         ))
         .replicate::<Moving>()
         .replicate::<Grounded>()
-        .replicate_group::<(PhysicalPlayer, BoxCollider, Transform)>()
-        .replicate_group::<(Building, BuildStatus, BoxCollider, Transform)>()
-        .replicate_group::<(Flag, BoxCollider, Transform)>()
-        .replicate_group::<(Unit, BoxCollider, Transform)>()
+        .replicate_mapped::<AttachedTo>()
+        .replicate::<BoxCollider>()
+        .replicate_group::<(PhysicalPlayer, Transform)>()
+        .replicate_group::<(Building, BuildStatus, Transform)>()
+        .replicate_group::<(Flag, Transform)>()
+        .replicate_group::<(Unit, Transform)>()
         .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
         .add_observer(spawn_clients);
     }
@@ -156,8 +161,8 @@ pub fn projectile_collider() -> BoxCollider {
 
 pub fn flag_collider() -> BoxCollider {
     BoxCollider {
-        dimension: Vec2::new(45., 75.),
-        offset: None,
+        dimension: Vec2::new(15., 20.),
+        offset: Some(Vec2::new(0., 10.)),
     }
 }
 

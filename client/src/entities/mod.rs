@@ -18,10 +18,9 @@ pub struct EntitiesPlugin;
 
 impl Plugin for EntitiesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SpawnPlugin).add_plugins(InteractPlugin);
-        // app.add_plugins(PlayerPlugin);
+        app.add_plugins(SpawnPlugin);
         // app.add_plugins(DespawnPlugin);
         // app.add_plugins(MapPlugin);
-        // app.add_plugins(HighlightPlugin);
+        app.add_plugins(HighlightPlugin);
     }
 }
