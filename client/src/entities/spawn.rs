@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     animations::{
+        animals::horse::{HorseAnimation, HorseSpriteSheet},
         king::{KingAnimation, KingSpriteSheet},
         objects::{
             flag::{FlagAnimation, FlagSpriteSheet},
@@ -20,6 +21,7 @@ use shared::{
         buildings::recruiting::Flag,
         entities::{Unit, UnitAnimation},
         game_scenes::Portal,
+        players::mount::Mount,
     },
     BoxCollider, LocalClientId, PhysicalPlayer,
 };
@@ -38,6 +40,7 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_unit_sprite)
             .add_observer(init_flag_sprite)
             .add_observer(init_portal_sprite)
+            .add_observer(init_horse_sprite)
             .add_systems(Update, update_building_sprite);
     }
 }
@@ -170,6 +173,31 @@ fn init_portal_sprite(
     commands.insert((
         animation.clone(),
         PortalAnimation::default(),
+        Highlightable::default(),
+    ));
+}
+
+fn init_horse_sprite(
+    trigger: Trigger<OnAdd, Mount>,
+    mut commands: Commands,
+    mut portal: Query<&mut Sprite>,
+    horse_sprite_sheet: Res<HorseSpriteSheet>,
+) {
+    let Ok(mut sprite) = portal.get_mut(trigger.entity()) else {
+        return;
+    };
+
+    let sprite_sheet = &horse_sprite_sheet.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+    let animation = sprite_sheet.animations.get(HorseAnimation::default());
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+    let mut commands = commands.entity(trigger.entity());
+    commands.insert((
+        animation.clone(),
+        HorseAnimation::default(),
         Highlightable::default(),
     ));
 }

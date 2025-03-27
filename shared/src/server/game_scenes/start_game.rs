@@ -6,8 +6,11 @@ use crate::{
         buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
         Layers,
     },
-    networking::LobbyEvent,
-    server::players::interaction::{Interactable, InteractionType},
+    networking::{LobbyEvent, MountType},
+    server::players::{
+        interaction::{Interactable, InteractionType},
+        mount::Mount,
+    },
     Faction, Owner, PhysicalPlayer,
 };
 use std::collections::VecDeque;
@@ -128,6 +131,12 @@ fn player_base(
         BuildStatus::Built,
         Transform::from_translation(offset),
         owner,
+    ));
+    commands.spawn((
+        Mount {
+            mount_type: MountType::Horse,
+        },
+        Transform::from_translation(Vec3::ZERO.with_x(50.) + offset),
     ));
     commands.spawn((
         Building::Archer,

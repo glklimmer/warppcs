@@ -50,6 +50,7 @@ pub fn trigger_unit_animation(
             AnimationChange::Attack => UnitAnimation::Attack,
             AnimationChange::Hit => UnitAnimation::Hit,
             AnimationChange::Death => UnitAnimation::Death,
+            AnimationChange::Mount => UnitAnimation::Idle,
         };
 
         commands.entity(event.entity).insert(PlayOnce);

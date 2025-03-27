@@ -54,41 +54,33 @@ impl FromWorld for HorseSpriteSheet {
 }
 
 pub fn next_horse_animation(
-    mut query: Query<&mut HorseAnimation>,
     mut network_events: EventReader<AnimationChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<HorseAnimation>>,
 ) {
     for event in network_events.read() {
-        if let Ok(mut current_animation) = query.get_mut(event.entity) {
-            let maybe_new_animation = match &event.change {
-                AnimationChange::Attack | AnimationChange::Hit | AnimationChange::Death => None,
-                // AnimationChange::Movement(moving) => match moving {
-                //     true => Some(HorseAnimation::Walk),
-                //     false => Some(HorseAnimation::Idle),
-                // },
-            };
+        let new_animation = match &event.change {
+            AnimationChange::Attack
+            | AnimationChange::Hit
+            | AnimationChange::Death
+            | AnimationChange::Mount => HorseAnimation::Idle,
+        };
 
-            if let Some(new_animation) = maybe_new_animation {
-                if new_animation != *current_animation {
-                    *current_animation = new_animation;
-
-                    animation_trigger.send(AnimationTrigger {
-                        entity: event.entity,
-                        state: new_animation,
-                    });
-                }
-            }
-        }
+        animation_trigger.send(AnimationTrigger {
+            entity: event.entity,
+            state: new_animation,
+        });
     }
 }
 
 pub fn set_horse_sprite_animation(
-    mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite)>,
+    mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite, &mut HorseAnimation)>,
     mut animation_changed: EventReader<AnimationTrigger<HorseAnimation>>,
     king_sprite_sheet: Res<HorseSpriteSheet>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((mut sprite_animation, mut sprite)) = query.get_mut(new_animation.entity) {
+        if let Ok((mut sprite_animation, mut sprite, mut current_animation)) =
+            query.get_mut(new_animation.entity)
+        {
             let animation = king_sprite_sheet
                 .sprite_sheet
                 .animations
@@ -98,6 +90,7 @@ pub fn set_horse_sprite_animation(
                 atlas.index = animation.first_sprite_index;
             }
             *sprite_animation = animation.clone();
+            *current_animation = new_animation.state;
         }
     }
 }

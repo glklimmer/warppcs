@@ -52,7 +52,7 @@ pub fn flag_interact(
 pub fn pick_flag(
     mut commands: Commands,
     mut pick_flag: EventReader<PickFlagEvent>,
-    mut flag_query: Query<(&mut Transform), With<Flag>>,
+    mut flag_query: Query<&mut Transform, With<Flag>>,
 ) {
     for event in pick_flag.read() {
         match flag_query.get_mut(event.flag) {

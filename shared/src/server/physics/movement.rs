@@ -90,7 +90,10 @@ fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Tim
 
 fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
     for (entity, transform) in &entities {
-        let mut entity = commands.entity(entity);
+        let Some(mut entity) = commands.get_entity(entity) else {
+            continue;
+        };
+
         if transform.translation.y == 0. {
             entity.insert(Grounded);
         } else {
@@ -101,7 +104,10 @@ fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
 
 fn set_walking(mut commands: Commands, entities: Query<(Entity, &Velocity, Option<&Grounded>)>) {
     for (entity, velocity, maybe_grounded) in &entities {
-        let mut entity = commands.entity(entity);
+        let Some(mut entity) = commands.get_entity(entity) else {
+            continue;
+        };
+
         if maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
             entity.insert(Moving);
         } else {

@@ -1,10 +1,8 @@
 use bevy::prelude::*;
 
 use shared::{
-    enum_map::*,
-    networking::{MountType, Mounted},
-    server::physics::movement::Moving,
-    AnimationChange, AnimationChangeEvent,
+    enum_map::*, networking::Mounted, server::physics::movement::Moving, AnimationChange,
+    AnimationChangeEvent,
 };
 
 use super::{AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};
@@ -109,11 +107,17 @@ pub fn trigger_king_animation(
     for event in animation_changes.read() {
         if let Ok(maybe_mounted) = mounted.get(event.entity) {
             let new_animation = match maybe_mounted {
-                Some(_) => todo!(),
+                Some(_) => match &event.change {
+                    AnimationChange::Attack => todo!(),
+                    AnimationChange::Hit => todo!(),
+                    AnimationChange::Death => todo!(),
+                    AnimationChange::Mount => KingAnimation::Mount,
+                },
                 None => match &event.change {
                     AnimationChange::Attack => KingAnimation::Attack,
                     AnimationChange::Hit => KingAnimation::Hit,
                     AnimationChange::Death => KingAnimation::Death,
+                    AnimationChange::Mount => KingAnimation::Mount,
                 },
             };
 
@@ -152,7 +156,7 @@ pub fn set_king_after_play_once(
 ) {
     if let Ok((animation, maybe_mounted)) = mounted.get(trigger.entity()) {
         let new_animation = match animation {
-            KingAnimation::Attack => match maybe_mounted {
+            KingAnimation::Attack | KingAnimation::Mount => match maybe_mounted {
                 Some(_) => KingAnimation::HorseIdle,
                 None => KingAnimation::Idle,
             },

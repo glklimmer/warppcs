@@ -7,7 +7,7 @@ use map::{
     buildings::{BuildStatus, Building},
     Layers,
 };
-use networking::Inventory;
+use networking::{Inventory, Mounted};
 use player_attacks::PlayerAttacks;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,7 @@ use server::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},
     },
-    players::interaction::InteractPlugin,
+    players::{interaction::InteractPlugin, mount::Mount},
 };
 use test_plugin::TestPlugin;
 
@@ -53,11 +53,13 @@ impl Plugin for SharedPlugin {
         .replicate::<Grounded>()
         .replicate_mapped::<AttachedTo>()
         .replicate::<BoxCollider>()
+        .replicate::<Mounted>()
         .replicate_group::<(PhysicalPlayer, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
         .replicate_group::<(Unit, Transform)>()
         .replicate_group::<(Portal, Transform)>()
+        .replicate_group::<(Mount, Transform)>()
         .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
         .add_observer(spawn_clients);
     }
@@ -68,6 +70,7 @@ pub enum AnimationChange {
     Attack,
     Hit,
     Death,
+    Mount,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Event, Serialize)]
