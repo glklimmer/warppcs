@@ -14,10 +14,12 @@ use serde::{Deserialize, Serialize};
 use server::{
     buildings::recruiting::Flag,
     entities::Unit,
+    game_scenes::Portal,
     physics::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},
     },
+    players::interaction::InteractPlugin,
 };
 use test_plugin::TestPlugin;
 
@@ -45,6 +47,7 @@ impl Plugin for SharedPlugin {
             TestPlugin,
             PlayerMovement,
             PlayerAttacks,
+            InteractPlugin,
         ))
         .replicate::<Moving>()
         .replicate::<Grounded>()
@@ -54,6 +57,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
         .replicate_group::<(Unit, Transform)>()
+        .replicate_group::<(Portal, Transform)>()
         .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
         .add_observer(spawn_clients);
     }

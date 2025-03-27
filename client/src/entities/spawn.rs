@@ -3,11 +3,14 @@ use bevy::prelude::*;
 use crate::{
     animations::{
         king::{KingAnimation, KingSpriteSheet},
-        objects::flag::{FlagAnimation, FlagSpriteSheet},
+        objects::{
+            flag::{FlagAnimation, FlagSpriteSheet},
+            portal::{PortalAnimation, PortalSpriteSheet},
+        },
         units::UnitSpriteSheets,
     },
     entities::highlight::Highlightable,
-    networking::{ControlledPlayer, CurrentClientId, NetworkMapping},
+    networking::ControlledPlayer,
 };
 use bevy_parallax::CameraFollow;
 use shared::{
@@ -16,6 +19,7 @@ use shared::{
     server::{
         buildings::recruiting::Flag,
         entities::{Unit, UnitAnimation},
+        game_scenes::Portal,
     },
     BoxCollider, LocalClientId, PhysicalPlayer,
 };
@@ -33,32 +37,8 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_building_sprite)
             .add_observer(init_unit_sprite)
             .add_observer(init_flag_sprite)
+            .add_observer(init_portal_sprite)
             .add_systems(Update, update_building_sprite);
-
-        // app.add_event::<SpawnPlayer>();
-        // app.add_event::<SpawnUnit>();
-        // app.add_event::<SpawnMount>();
-        // app.add_event::<SpawnProjectile>();
-
-        // app.add_systems(
-        //     FixedPostUpdate,
-        //     (
-        //         spawn.run_if(on_event::<NetworkEvent>),
-        //         (
-        //             (
-        //                 spawn_player.run_if(on_event::<SpawnPlayer>),
-        //                 spawn_flag.run_if(on_event::<SpawnFlag>),
-        //             )
-        //                 .chain(),
-        //             spawn_unit.run_if(on_event::<SpawnUnit>),
-        //             spawn_mount.run_if(on_event::<SpawnMount>),
-        //             spawn_projectile.run_if(on_event::<SpawnProjectile>),
-        //         ),
-        //     )
-        //         .chain()
-        //         .in_set(Connected),
-        // );
-        //
     }
 }
 
@@ -150,7 +130,7 @@ fn init_flag_sprite(
     mut flag: Query<&mut Sprite>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
 ) {
-    let Ok((mut sprite)) = flag.get_mut(trigger.entity()) else {
+    let Ok(mut sprite) = flag.get_mut(trigger.entity()) else {
         return;
     };
 
@@ -165,6 +145,31 @@ fn init_flag_sprite(
     commands.insert((
         animation.clone(),
         FlagAnimation::default(),
+        Highlightable::default(),
+    ));
+}
+
+fn init_portal_sprite(
+    trigger: Trigger<OnAdd, Portal>,
+    mut commands: Commands,
+    mut portal: Query<&mut Sprite>,
+    portal_sprite_sheet: Res<PortalSpriteSheet>,
+) {
+    let Ok(mut sprite) = portal.get_mut(trigger.entity()) else {
+        return;
+    };
+
+    let sprite_sheet = &portal_sprite_sheet.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+    let animation = sprite_sheet.animations.get(PortalAnimation::default());
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+    let mut commands = commands.entity(trigger.entity());
+    commands.insert((
+        animation.clone(),
+        PortalAnimation::default(),
         Highlightable::default(),
     ));
 }

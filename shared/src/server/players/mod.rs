@@ -12,8 +12,6 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(InteractPlugin);
-
         app.add_event::<DropFlagEvent>();
         app.add_event::<PickFlagEvent>();
 

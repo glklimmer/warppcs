@@ -1,31 +1,14 @@
 use bevy::prelude::*;
 
 use bevy_renet::renet::ClientId;
-use bevy_replicon::prelude::Replicated;
-use serde::{Deserialize, Serialize};
 
-use crate::networking::{
-    ClientChannel, Facing, Inventory, NetworkEntity, NetworkRegistry, NetworkedEntities,
-    PlayerCommand, PlayerInput, ProjectileType, Rotation, ServerChannel, ServerMessages,
+use super::{
+    buildings::BuildingsPlugins,
+    game_scenes::{start_game::StartGamePlugin, GameScenesPlugin},
+    physics::PhysicsPlugin,
+    players::PlayerPlugin,
 };
-use crate::server::entities::health::Health;
-use crate::server::physics::movement::Velocity;
-use crate::{player_collider, BoxCollider};
-
-use bevy_renet::{
-    renet::{RenetServer, ServerEvent},
-    RenetServerPlugin,
-};
-use std::collections::HashMap;
-
-use super::ai::AIPlugin;
-use super::buildings::BuildingsPlugins;
-use super::entities::EntityPlugin;
-use super::game_scenes::start_game::StartGamePlugin;
-use super::game_scenes::GameScenesPlugin;
-use super::lobby::{LobbyPlugin, PlayerJoinedLobby, PlayerLeftLobby};
-use super::physics::PhysicsPlugin;
-use super::players::PlayerPlugin;
+use crate::networking::{NetworkRegistry, PlayerCommand};
 
 #[derive(Event)]
 pub struct NetworkEvent {
@@ -42,10 +25,12 @@ impl Plugin for ServerNetworkPlugin {
         // app.add_event::<SendServerMessage>();
         //
         // app.add_plugins(AIPlugin);
-        app.add_plugins(PhysicsPlugin);
-        // app.add_plugins(GameScenesPlugin);
-        app.add_plugins(BuildingsPlugins);
-        app.add_plugins(PlayerPlugin);
+        app.add_plugins((
+            PhysicsPlugin,
+            GameScenesPlugin,
+            BuildingsPlugins,
+            PlayerPlugin,
+        ));
         // app.add_plugins(EntityPlugin);
         //
         // app.add_systems(FixedFirst, receive_client_messages);
