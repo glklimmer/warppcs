@@ -5,14 +5,7 @@ use super::enum_map::*;
 use bevy_renet::renet::ClientId;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    horse_collider,
-    map::{
-        buildings::{BuildStatus, Building},
-        GameSceneType,
-    },
-    projectile_collider, BoxCollider, Owner,
-};
+use crate::{horse_collider, BoxCollider, Owner};
 
 pub const PROTOCOL_ID: u64 = 7;
 

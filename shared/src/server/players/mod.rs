@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use flag::{drop_flag, flag_interact, pick_flag, DropFlagEvent, PickFlagEvent};
-use interaction::{InteractPlugin, InteractionTriggeredEvent};
+use interaction::InteractionTriggeredEvent;
 use mount::mount;
 
 pub mod flag;
