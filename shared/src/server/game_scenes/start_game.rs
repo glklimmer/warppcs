@@ -6,10 +6,13 @@ use crate::{
         buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
         Layers,
     },
-    networking::{LobbyEvent, MountType},
-    server::players::{
-        interaction::{Interactable, InteractionType},
-        mount::Mount,
+    networking::{LobbyEvent, MountType, UnitType},
+    server::{
+        entities::{health::Health, Unit},
+        players::{
+            interaction::{Interactable, InteractionType},
+            mount::Mount,
+        },
     },
     Faction, Owner, PhysicalPlayer,
 };
@@ -131,6 +134,15 @@ fn player_base(
         BuildStatus::Built,
         Transform::from_translation(offset),
         owner,
+    ));
+    commands.spawn((
+        Owner(Faction::Player(Entity::PLACEHOLDER)),
+        Unit {
+            unit_type: UnitType::Bandit,
+            swing_timer: Timer::default(),
+        },
+        Health::default(),
+        Transform::from_translation(Vec3::ZERO.with_x(-150.) + offset),
     ));
     commands.spawn((
         Mount {

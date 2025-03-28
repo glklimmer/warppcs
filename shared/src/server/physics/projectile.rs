@@ -1,10 +1,12 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 
 use bevy::math::bounding::IntersectsVolume;
-use bevy_renet::renet::RenetServer;
+use bevy_replicon::prelude::Replicated;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    networking::{Facing, ProjectileType, ServerChannel, ServerMessages},
+    networking::Facing,
+    projectile_collider,
     server::{
         ai::attack::projectile_damage,
         entities::health::{Health, TakeDamage},
@@ -13,6 +15,12 @@ use crate::{
 };
 
 use super::movement::Velocity;
+
+#[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
+#[require(Replicated, Velocity, Transform, BoxCollider(projectile_collider), Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),)]
+pub enum ProjectileType {
+    Arrow,
+}
 
 pub struct ProjectilePlugin;
 
@@ -35,7 +43,6 @@ fn projectile_collision(
         &Owner,
     )>,
     targets: Query<TargetComponents, (With<Health>, Without<ProjectileType>)>,
-    mut server: ResMut<RenetServer>,
     mut attack_events: EventWriter<TakeDamage>,
 ) {
     for (entity, transform, mut velocity, collider, projectile_type, owner) in &mut projectiles {
@@ -68,11 +75,6 @@ fn projectile_collision(
                     },
                 });
                 commands.entity(entity).despawn();
-                let despawn = ServerMessages::DespawnEntity {
-                    entities: vec![entity],
-                };
-                let message = bincode::serialize(&despawn).unwrap();
-                server.broadcast_message(ServerChannel::ServerMessages, message);
             }
         }
     }

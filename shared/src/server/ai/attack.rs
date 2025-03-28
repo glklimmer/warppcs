@@ -6,10 +6,10 @@ use bevy_replicon::prelude::{SendMode, ToClients};
 use super::UnitBehaviour;
 use crate::{
     map::Layers,
-    networking::{Facing, ProjectileType, UnitType},
+    networking::{Facing, UnitType},
     server::{
         entities::{health::TakeDamage, Unit},
-        physics::movement::Velocity,
+        physics::{movement::Velocity, projectile::ProjectileType},
     },
     AnimationChange, AnimationChangeEvent, Owner, GRAVITY_G,
 };
@@ -24,10 +24,10 @@ impl Plugin for AttackPlugin {
 
 pub fn unit_range(unit_type: &UnitType) -> f32 {
     match unit_type {
-        UnitType::Shieldwarrior => 50.,
-        UnitType::Pikeman => 140.,
-        UnitType::Archer => 600.,
-        UnitType::Bandit => 60.,
+        UnitType::Shieldwarrior => 20.,
+        UnitType::Pikeman => 30.,
+        UnitType::Archer => 200.,
+        UnitType::Bandit => 20.,
     }
 }
 
@@ -119,7 +119,7 @@ fn process_attacks(
                             transform.translation.y + 1.,
                             Layers::Projectile.as_f32(),
                         );
-                        let arrow_transform = Transform::from_translation(arrow_position);
+
                         let projectile_type = ProjectileType::Arrow;
 
                         let delta_y = target_pos.y - transform.translation.y;
@@ -147,20 +147,20 @@ fn process_attacks(
 
                         let velocity = Velocity(Vec2::from_angle(theta) * speed);
 
-                        let arrow =
-                            commands.spawn((arrow_transform, *owner, projectile_type, velocity));
+                        let direction: Vec2 = velocity.0;
+                        let position = arrow_position.truncate();
+                        // TODO: Angle is broken
+                        let angle = (direction - position).angle_to(position);
+
+                        let arrow_transform = Transform {
+                            translation: arrow_position,
+                            scale: Vec3::splat(1.0),
+                            rotation: Quat::from_rotation_z(angle),
+                        };
+
+                        commands.spawn((arrow_transform, *owner, projectile_type, velocity));
                         println!("arrow spawn");
 
-                        // TODO: projectile spawning
-                        // sender.send(SendServerMessage {
-                        //     message: ServerMessages::SpawnProjectile(SpawnProjectile {
-                        //         entity: arrow.id(),
-                        //         projectile_type,
-                        //         translation: arrow_transform.translation.into(),
-                        //         direction: velocity.0.into(),
-                        //     }),
-                        //     game_scene_id: *target_scene_id,
-                        // });
                         animation.send(ToClients {
                             mode: SendMode::Broadcast,
                             event: AnimationChangeEvent {

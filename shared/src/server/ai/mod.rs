@@ -31,7 +31,7 @@ impl Plugin for AIPlugin {
     }
 }
 
-pub const SIGHT_RANGE: f32 = 800.;
+pub const SIGHT_RANGE: f32 = 300.;
 
 struct TargetInfo {
     entity: Entity,
@@ -56,7 +56,6 @@ fn determine_behaviour(
             })
             .filter(|other| other.distance <= unit_range(&unit.unit_type))
             .min_by(|a, b| a.distance.total_cmp(&b.distance));
-
         match nearest {
             Some(nearest_enemy) => match *behaviour {
                 UnitBehaviour::AttackTarget(enemy) => {

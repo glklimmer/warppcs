@@ -16,21 +16,17 @@ use crate::{
 use bevy_parallax::CameraFollow;
 use shared::{
     map::buildings::{BuildStatus, Building},
-    projectile_collider,
     server::{
         buildings::recruiting::Flag,
         entities::{Unit, UnitAnimation},
         game_scenes::Portal,
+        physics::projectile::ProjectileType,
         players::mount::Mount,
     },
-    BoxCollider, LocalClientId, PhysicalPlayer,
+    LocalClientId, PhysicalPlayer,
 };
 
 pub struct SpawnPlugin;
-
-#[derive(Component)]
-#[require(BoxCollider(projectile_collider))]
-pub struct Projectile;
 
 impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
@@ -41,6 +37,7 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_flag_sprite)
             .add_observer(init_portal_sprite)
             .add_observer(init_horse_sprite)
+            .add_observer(init_projectile_sprite)
             .add_systems(Update, update_building_sprite);
     }
 }
@@ -200,4 +197,19 @@ fn init_horse_sprite(
         HorseAnimation::default(),
         Highlightable::default(),
     ));
+}
+
+fn init_projectile_sprite(
+    trigger: Trigger<OnAdd, ProjectileType>,
+    mut projectile: Query<(&mut Sprite, &ProjectileType)>,
+    asset_server: Res<AssetServer>,
+) {
+    let Ok((mut sprite, projectile_type)) = projectile.get_mut(trigger.entity()) else {
+        return;
+    };
+
+    let texture = match projectile_type {
+        ProjectileType::Arrow => asset_server.load("sprites/arrow.png"),
+    };
+    sprite.image = texture
 }

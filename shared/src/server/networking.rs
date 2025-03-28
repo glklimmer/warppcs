@@ -3,12 +3,17 @@ use bevy::prelude::*;
 use bevy_renet::renet::ClientId;
 
 use super::{
+    ai::AIPlugin,
     buildings::BuildingsPlugins,
+    entities::EntityPlugin,
     game_scenes::{start_game::StartGamePlugin, GameScenesPlugin},
     physics::PhysicsPlugin,
     players::PlayerPlugin,
 };
-use crate::networking::{NetworkRegistry, PlayerCommand};
+use crate::networking::{
+    ClientChannel, Facing, Inventory, NetworkEntity, NetworkRegistry, NetworkedEntities,
+    PlayerCommand, PlayerInput, Rotation, ServerChannel, ServerMessages,
+};
 
 #[derive(Event)]
 pub struct NetworkEvent {
@@ -24,14 +29,14 @@ impl Plugin for ServerNetworkPlugin {
         // app.add_event::<NetworkEvent>();
         // app.add_event::<SendServerMessage>();
         //
-        // app.add_plugins(AIPlugin);
+        app.add_plugins(AIPlugin);
         app.add_plugins((
             PhysicsPlugin,
             GameScenesPlugin,
             BuildingsPlugins,
             PlayerPlugin,
         ));
-        // app.add_plugins(EntityPlugin);
+        app.add_plugins(EntityPlugin);
         //
         // app.add_systems(FixedFirst, receive_client_messages);
         //

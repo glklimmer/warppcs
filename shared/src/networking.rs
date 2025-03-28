@@ -67,12 +67,6 @@ pub enum ServerChannel {
     NetworkedEntities,
 }
 
-#[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
-#[require(BoxCollider(projectile_collider))]
-pub enum ProjectileType {
-    Arrow,
-}
-
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub struct Inventory {
     pub gold: u16,

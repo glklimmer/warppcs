@@ -18,6 +18,7 @@ use server::{
     physics::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},
+        projectile::ProjectileType,
     },
     players::{interaction::InteractPlugin, mount::Mount},
 };
@@ -57,6 +58,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(PhysicalPlayer, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
+        .replicate_group::<(ProjectileType, Transform)>()
         .replicate_group::<(Unit, Transform)>()
         .replicate_group::<(Portal, Transform)>()
         .replicate_group::<(Mount, Transform)>()
@@ -161,8 +163,8 @@ pub fn horse_collider() -> BoxCollider {
 
 pub fn projectile_collider() -> BoxCollider {
     BoxCollider {
-        dimension: Vec2::new(20., 20.),
-        offset: None,
+        dimension: Vec2::new(14., 3.),
+        offset: Some(Vec2::new(1.0, 0.)),
     }
 }
 
