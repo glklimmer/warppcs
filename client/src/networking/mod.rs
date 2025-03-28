@@ -1,15 +1,7 @@
 use bevy::prelude::*;
 
-use bevy_renet::{
-    client_connected,
-    renet::{ClientId, RenetClient},
-};
-use shared::{
-    networking::{
-        ClientChannel, NetworkedEntities, PlayerCommand, PlayerInput, ServerChannel, ServerMessages,
-    },
-    player_collider, BoxCollider,
-};
+use bevy_renet::renet::ClientId;
+use shared::{networking::ServerMessages, player_collider, BoxCollider};
 use std::collections::HashMap;
 
 use crate::animations::king::KingAnimation;
@@ -72,16 +64,6 @@ impl Plugin for ClientNetworkPlugin {
     }
 }
 
-fn recieve_server_messages(
-    mut client: ResMut<RenetClient>,
-    mut network_event: EventWriter<NetworkEvent>,
-) {
-    while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
-        let message: ServerMessages = bincode::deserialize(&message).unwrap();
-        network_event.send(NetworkEvent { message });
-    }
-}
-
 // fn recieve_networked_entities(
 //     mut client: ResMut<RenetClient>,
 //     mut change_events: EventWriter<EntityChangeEvent>,
@@ -119,18 +101,3 @@ fn recieve_server_messages(
 //         }
 //     }
 // }
-
-fn send_input(player_input: Res<PlayerInput>, mut client: ResMut<RenetClient>) {
-    let input_message = bincode::serialize(&*player_input).unwrap();
-    client.send_message(ClientChannel::Input, input_message);
-}
-
-fn send_player_commands(
-    mut player_commands: EventReader<PlayerCommand>,
-    mut client: ResMut<RenetClient>,
-) {
-    for command in player_commands.read() {
-        let command_message = bincode::serialize(command).unwrap();
-        client.send_message(ClientChannel::Command, command_message);
-    }
-}
