@@ -70,16 +70,18 @@ pub fn pick_flag(
 pub fn drop_flag(
     mut drop_flag: EventReader<DropFlagEvent>,
     mut commands: Commands,
-    mut flag_query: Query<(Entity, &mut Transform, &AttachedTo)>,
+    mut flag_query: Query<(Entity, &mut Transform, Option<&AttachedTo>)>,
 ) {
     for event in drop_flag.read() {
-        commands.entity(event.player).remove::<FlagHolder>();
+        let (flag_entity, mut transform, maybe_attachted) = flag_query.get_mut(event.flag).unwrap();
 
-        let (flag_entity, mut transform, attachted_to) = flag_query.get_mut(event.flag).unwrap();
-
-        if attachted_to.0.ne(&event.player) {
+        if maybe_attachted
+            .as_ref()
+            .map_or(true, |attached| attached.0 != event.player)
+        {
             continue;
         }
+        commands.entity(event.player).remove::<FlagHolder>();
         commands.entity(flag_entity).remove::<AttachedTo>();
         transform.translation.y = 0.;
     }
