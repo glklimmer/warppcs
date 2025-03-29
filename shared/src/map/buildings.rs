@@ -1,8 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
+use bevy_replicon::prelude::*;
+
 use serde::{Deserialize, Serialize};
 
-use super::Layers;
-use crate::{server::buildings::building_collider, BoxCollider};
+use crate::{server::entities::health::Health, BoxCollider};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MainBuildingLevels {
@@ -26,6 +27,13 @@ pub struct Cost {
 }
 
 #[derive(Component, Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    Transform,
+    BoxCollider(marker_collider),
+    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
+    BuildStatus(|| BuildStatus::Marker),
+)]
 pub enum Building {
     MainBuilding { level: MainBuildingLevels },
     Archer,
@@ -81,95 +89,138 @@ impl Building {
     pub fn can_upgrade(&self) -> bool {
         self.upgrade_building().is_some()
     }
+
+    pub fn collider(&self) -> BoxCollider {
+        match self {
+            Building::MainBuilding { level } => match level {
+                MainBuildingLevels::Tent => BoxCollider {
+                    dimension: Vec2::new(44., 35.),
+                    offset: Some(Vec2::new(0., 17.5)),
+                },
+                MainBuildingLevels::Hall => BoxCollider {
+                    dimension: Vec2::new(64., 48.),
+                    offset: Some(Vec2::new(0., 24.)),
+                },
+                MainBuildingLevels::Castle => BoxCollider {
+                    dimension: Vec2::new(64., 48.),
+                    offset: Some(Vec2::new(0., 24.)),
+                },
+            },
+            Building::Archer => BoxCollider {
+                dimension: Vec2::new(100., 50.),
+                offset: Some(Vec2::new(0., 25.)),
+            },
+            Building::Warrior => BoxCollider {
+                dimension: Vec2::new(80., 40.),
+                offset: Some(Vec2::new(0., 20.)),
+            },
+            Building::Pikeman => BoxCollider {
+                dimension: Vec2::new(80., 40.),
+                offset: Some(Vec2::new(0., 20.)),
+            },
+            Building::Wall { level } => match level {
+                WallLevels::Basic => BoxCollider {
+                    dimension: Vec2::new(20., 11.),
+                    offset: Some(Vec2::new(0., 5.5)),
+                },
+                WallLevels::Wood => BoxCollider {
+                    dimension: Vec2::new(23., 36.),
+                    offset: Some(Vec2::new(0., 18.)),
+                },
+                WallLevels::Tower => BoxCollider {
+                    dimension: Vec2::new(110., 190.),
+                    offset: Some(Vec2::new(0., -45.)),
+                },
+            },
+            Building::Tower => BoxCollider {
+                dimension: Vec2::new(200., 100.),
+                offset: None,
+            },
+            Building::GoldFarm => BoxCollider {
+                dimension: Vec2::new(80., 40.),
+                offset: Some(Vec2::new(0., 20.)),
+            },
+        }
+    }
+
+    pub fn texture(&self, status: BuildStatus) -> &'static str {
+        match status {
+            BuildStatus::Marker => match self {
+                Building::MainBuilding { level: _ } => "sprites/buildings/main_house_blue.png",
+                Building::Archer => "sprites/buildings/sign.png",
+                Building::Warrior => "sprites/buildings/sign.png",
+                Building::Pikeman => "sprites/buildings/sign.png",
+                Building::Wall { level: _ } => "sprites/buildings/sign.png",
+                Building::Tower => "",
+                Building::GoldFarm => "sprites/buildings/sign.png",
+            },
+            BuildStatus::Built => match self {
+                Building::MainBuilding { level } => match level {
+                    MainBuildingLevels::Tent => "sprites/buildings/main_house_blue.png",
+                    MainBuildingLevels::Hall => "sprites/buildings/main_hall.png",
+                    MainBuildingLevels::Castle => "sprites/buildings/main_castle.png",
+                },
+                Building::Archer => "sprites/buildings/archer_house.png",
+                Building::Warrior => "sprites/buildings/warrior_house.png",
+                Building::Pikeman => "sprites/buildings/pike_man_house.png",
+                Building::Wall { level } => match level {
+                    WallLevels::Basic => "sprites/buildings/wall_1.png",
+                    WallLevels::Wood => "sprites/buildings/wall_2.png",
+                    WallLevels::Tower => "sprites/buildings/wall_3.png",
+                },
+                Building::Tower => "sprites/buildings/archer_house.png",
+                Building::GoldFarm => "sprites/buildings/warrior_house.png",
+            },
+            BuildStatus::Destroyed => "",
+        }
+    }
+
+    pub fn health(&self) -> Health {
+        let hitpoints = match self {
+            Building::MainBuilding { level } => match level {
+                MainBuildingLevels::Tent => 1200.,
+                MainBuildingLevels::Hall => 3600.,
+                MainBuildingLevels::Castle => 6400.,
+            },
+            Building::Archer => 800.,
+            Building::Warrior => 800.,
+            Building::Pikeman => 800.,
+            Building::Wall { level } => match level {
+                WallLevels::Basic => 600.,
+                WallLevels::Wood => 1200.,
+                WallLevels::Tower => 2400.,
+            },
+            Building::Tower => 400.,
+            Building::GoldFarm => 600.,
+        };
+        Health { hitpoints }
+    }
+
+    pub fn cost(&self) -> Cost {
+        let gold = match self {
+            Building::MainBuilding { level } => match level {
+                MainBuildingLevels::Tent => 0,
+                MainBuildingLevels::Hall => 1000,
+                MainBuildingLevels::Castle => 4000,
+            },
+            Building::Archer => 200,
+            Building::Warrior => 200,
+            Building::Pikeman => 200,
+            Building::Wall { level } => match level {
+                WallLevels::Basic => 100,
+                WallLevels::Wood => 300,
+                WallLevels::Tower => 900,
+            },
+            Building::Tower => 150,
+            Building::GoldFarm => 200,
+        };
+        Cost { gold }
+    }
 }
 
-const BUILDUING_SCALE: Vec3 = Vec3::new(3., 3., 1.);
-
-#[derive(Bundle, Clone, Copy)]
-pub struct BuildingBundle {
-    pub building: Building,
-    pub collider: BoxCollider,
-    pub build_status: BuildStatus,
-    pub transform: Transform,
-}
-
-impl BuildingBundle {
-    pub fn main(x: f32) -> Self {
-        Self {
-            building: Building::MainBuilding {
-                level: MainBuildingLevels::Tent,
-            },
-            collider: BoxCollider {
-                dimension: Vec2::new(150., 110.),
-                offset: Some(Vec2::new(0., -20.)),
-            },
-            build_status: BuildStatus::Built,
-            transform: Transform::from_xyz(x, 72., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn archer(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::Archer,
-            collider: building_collider(&Building::Archer),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn warrior(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::Warrior,
-            collider: building_collider(&Building::Warrior),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn pikeman(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::Pikeman,
-            collider: building_collider(&Building::Pikeman),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 75., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn wall(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::Wall {
-                level: WallLevels::Basic,
-            },
-            collider: building_collider(&Building::Wall {
-                level: WallLevels::Basic,
-            }),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 145., Layers::Wall.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn tower() -> Self {
-        BuildingBundle {
-            building: Building::Tower,
-            collider: building_collider(&Building::Tower),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(0., 50., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
-    }
-
-    pub fn gold_farm(x: f32) -> Self {
-        BuildingBundle {
-            building: Building::GoldFarm,
-            collider: building_collider(&Building::GoldFarm),
-            build_status: BuildStatus::Marker,
-            transform: Transform::from_xyz(x, 25., Layers::Building.as_f32())
-                .with_scale(BUILDUING_SCALE),
-        }
+fn marker_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(28., 26.),
+        offset: Some(Vec2::new(0., 13.)),
     }
 }

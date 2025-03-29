@@ -1,10 +1,8 @@
 use bevy::prelude::*;
 
-use shared::enum_map::*;
+use shared::{enum_map::*, server::entities::UnitAnimation};
 
 use crate::animations::{SpriteSheet, SpriteSheetAnimation};
-
-use super::super::UnitAnimation;
 
 pub fn archer(world: &mut World) -> SpriteSheet<UnitAnimation> {
     let asset_server = world.resource::<AssetServer>();

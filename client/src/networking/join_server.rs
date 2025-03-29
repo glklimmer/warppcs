@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::RenetClient;
-use shared::networking::connection_config;
+use bevy_renet::renet::{ConnectionConfig, RenetClient};
+use bevy_replicon::prelude::RepliconChannels;
+use bevy_replicon_renet::RenetChannelsExt;
 
-use crate::networking::CurrentClientId;
+use shared::LocalClientId;
 
 #[cfg(feature = "steam")]
 use crate::menu::{JoinSteamLobby, MainMenuStates};
@@ -14,9 +15,10 @@ use shared::steamworks::SteamworksClient;
 #[cfg(feature = "steam")]
 pub fn join_steam_server(
     mut commands: Commands,
-    steam_client: Res<SteamworksClient>,
     mut join_lobby: EventReader<JoinSteamLobby>,
     mut ui: ResMut<NextState<MainMenuStates>>,
+    steam_client: Res<SteamworksClient>,
+    channels: Res<RepliconChannels>,
 ) {
     let server_steam_id = match join_lobby.read().next() {
         Some(value) => value.0,
@@ -25,7 +27,14 @@ pub fn join_steam_server(
 
     use renet_steam::SteamClientTransport;
 
-    let client = RenetClient::new(connection_config());
+    let server_channels_config = channels.get_server_configs();
+    let client_channels_config = channels.get_client_configs();
+
+    let client = RenetClient::new(ConnectionConfig {
+        server_channels_config,
+        client_channels_config,
+        ..Default::default()
+    });
 
     steam_client.networking_utils().init_relay_network_access();
 
@@ -35,7 +44,7 @@ pub fn join_steam_server(
         Ok(transport) => {
             commands.insert_resource(transport);
             commands.insert_resource(client);
-            commands.insert_resource(CurrentClientId(steam_client.user().steam_id().raw()));
+            commands.insert_resource(LocalClientId::new(steam_client.user().steam_id().raw()));
             ui.set(MainMenuStates::Lobby);
         }
         Err(error) => println!("join_netcode_server error {}", error),
@@ -43,12 +52,19 @@ pub fn join_steam_server(
 }
 
 #[cfg(feature = "netcode")]
-pub fn join_netcode_server(mut commands: Commands) {
+pub fn join_netcode_server(mut commands: Commands, channels: Res<RepliconChannels>) {
     use bevy_renet::netcode::{ClientAuthentication, NetcodeClientTransport};
     use shared::networking::PROTOCOL_ID;
     use std::{net::UdpSocket, time::SystemTime};
 
-    let client = RenetClient::new(connection_config());
+    let server_channels_config = channels.get_server_configs();
+    let client_channels_config = channels.get_client_configs();
+
+    let client = RenetClient::new(ConnectionConfig {
+        server_channels_config,
+        client_channels_config,
+        ..Default::default()
+    });
 
     let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
     let current_time = SystemTime::now()
@@ -66,7 +82,8 @@ pub fn join_netcode_server(mut commands: Commands) {
         Ok(transport) => {
             commands.insert_resource(client);
             commands.insert_resource(transport);
-            commands.insert_resource(CurrentClientId(client_id));
+            commands.insert_resource(LocalClientId::new(client_id));
+            info!("Successfully joined server.");
         }
         Err(error) => println!("join_netcode_server error {}", error),
     }

@@ -1,20 +1,32 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::*;
 
 use bevy_renet::{
     netcode::{NetcodeServerTransport, ServerAuthentication, ServerConfig},
-    renet::RenetServer,
+    renet::{ConnectionConfig, RenetServer},
 };
+use bevy_replicon::prelude::RepliconChannels;
+use bevy_replicon_renet::RenetChannelsExt;
 
-use crate::networking::connection_config;
+use crate::{LocalClientId, PhysicalPlayer};
 
-pub fn create_steam_server(mut commands: Commands) {
+pub fn create_steam_server(mut commands: Commands, channels: Res<RepliconChannels>) {
     use crate::steamworks::SteamworksClient;
     use renet_steam::AccessPermission;
     use renet_steam::SteamServerConfig;
     use renet_steam::SteamServerTransport;
 
-    let server: RenetServer = RenetServer::new(connection_config());
+    let server_channels_config = channels.get_server_configs();
+    let client_channels_config = channels.get_client_configs();
+
+    let server = RenetServer::new(ConnectionConfig {
+        server_channels_config,
+        client_channels_config,
+        ..Default::default()
+    });
+
     commands.insert_resource(server);
+    commands.insert_resource(LocalClientId(ClientId::SERVER));
 
     commands.queue(|world: &mut World| {
         let steam_client = world.get_resource::<SteamworksClient>().unwrap();
@@ -30,11 +42,18 @@ pub fn create_steam_server(mut commands: Commands) {
     });
 }
 
-pub fn create_netcode_server(mut commands: Commands) {
+pub fn create_netcode_server(mut commands: Commands, channels: Res<RepliconChannels>) {
     use crate::networking::PROTOCOL_ID;
     use std::{net::UdpSocket, time::SystemTime};
 
-    let server = RenetServer::new(connection_config());
+    let server_channels_config = channels.get_server_configs();
+    let client_channels_config = channels.get_client_configs();
+
+    let server = RenetServer::new(ConnectionConfig {
+        server_channels_config,
+        client_channels_config,
+        ..Default::default()
+    });
 
     let public_addr = "127.0.0.1:5000".parse().unwrap();
     let socket = UdpSocket::bind(public_addr).unwrap();
@@ -52,4 +71,8 @@ pub fn create_netcode_server(mut commands: Commands) {
     let transport = NetcodeServerTransport::new(server_config, socket).unwrap();
     commands.insert_resource(server);
     commands.insert_resource(transport);
+    commands.insert_resource(LocalClientId(ClientId::SERVER));
+
+    commands.spawn(PhysicalPlayer(ClientId::SERVER));
+    info!("Successfully started server.")
 }
