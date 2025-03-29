@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, Faction, Owner, PhysicalPlayer};
+use crate::{BoxCollider, Faction, Highlightable, Owner, PhysicalPlayer};
 
 #[derive(Clone, Copy, Debug)]
 pub enum InteractionType {
@@ -17,6 +17,7 @@ pub enum InteractionType {
 }
 
 #[derive(Component, Clone, Copy, Debug)]
+#[require(Highlightable)]
 pub struct Interactable {
     pub kind: InteractionType,
     pub restricted_to: Option<Owner>,

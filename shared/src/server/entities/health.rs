@@ -90,7 +90,7 @@ fn on_unit_death(
 }
 
 fn on_building_destroy(mut commands: Commands, query: Query<(Entity, &Health, &Building, &Owner)>) {
-    for (entity, health, building, owner) in query.iter() {
+    for (entity, health, building, _) in query.iter() {
         if health.hitpoints <= 0. {
             commands.entity(entity).despawn_recursive();
 

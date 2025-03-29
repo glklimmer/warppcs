@@ -10,7 +10,6 @@ use crate::{
         },
         units::UnitSpriteSheets,
     },
-    entities::highlight::Highlightable,
     networking::ControlledPlayer,
 };
 use bevy_parallax::CameraFollow;
@@ -25,6 +24,8 @@ use shared::{
     },
     LocalClientId, PhysicalPlayer,
 };
+
+use super::highlight::Highlighted;
 
 pub struct SpawnPlugin;
 
@@ -95,11 +96,23 @@ fn init_building_sprite(
 }
 
 fn update_building_sprite(
-    mut buildings: Query<(&mut Sprite, &Building, &BuildStatus), Changed<BuildStatus>>,
+    mut buildings: Query<
+        (
+            &mut Sprite,
+            &Building,
+            &BuildStatus,
+            Option<&mut Highlighted>,
+        ),
+        Changed<BuildStatus>,
+    >,
     asset_server: Res<AssetServer>,
 ) {
-    for (mut sprite, building, status) in buildings.iter_mut() {
+    for (mut sprite, building, status, maybe_highlight) in buildings.iter_mut() {
         sprite.image = asset_server.load(building.texture(*status));
+
+        if let Some(mut highlight) = maybe_highlight {
+            highlight.original_handle = asset_server.load(building.texture(*status));
+        }
     }
 }
 
@@ -142,11 +155,7 @@ fn init_flag_sprite(
         index: animation.first_sprite_index,
     });
     let mut commands = commands.entity(trigger.entity());
-    commands.insert((
-        animation.clone(),
-        FlagAnimation::default(),
-        Highlightable::default(),
-    ));
+    commands.insert((animation.clone(), FlagAnimation::default()));
 }
 
 fn init_portal_sprite(
@@ -167,11 +176,7 @@ fn init_portal_sprite(
         index: animation.first_sprite_index,
     });
     let mut commands = commands.entity(trigger.entity());
-    commands.insert((
-        animation.clone(),
-        PortalAnimation::default(),
-        Highlightable::default(),
-    ));
+    commands.insert((animation.clone(), PortalAnimation::default()));
 }
 
 fn init_horse_sprite(
@@ -192,11 +197,7 @@ fn init_horse_sprite(
         index: animation.first_sprite_index,
     });
     let mut commands = commands.entity(trigger.entity());
-    commands.insert((
-        animation.clone(),
-        HorseAnimation::default(),
-        Highlightable::default(),
-    ));
+    commands.insert((animation.clone(), HorseAnimation::default()));
 }
 
 fn init_projectile_sprite(

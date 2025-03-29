@@ -9,8 +9,6 @@ use shared::{
     networking::NetworkRegistry, server::networking::ServerNetworkPlugin, GameState, SharedPlugin,
 };
 use std::env;
-use std::f32::consts::PI;
-use std::thread;
 use ui::UiPlugin;
 
 use animations::AnimationPlugin;
@@ -26,7 +24,7 @@ use menu::JoinSteamLobby;
 use networking::join_server::join_steam_server;
 
 #[cfg(feature = "netcode")]
-use bevy_renet::netcode::{NetcodeServerPlugin, NetcodeTransportError};
+use bevy_renet::netcode::NetcodeTransportError;
 #[cfg(feature = "netcode")]
 use networking::join_server::join_netcode_server;
 #[cfg(feature = "netcode")]
@@ -63,7 +61,7 @@ fn main() {
         })
         .set(ImagePlugin::default_nearest()),));
 
-    client.add_plugins((SharedPlugin));
+    client.add_plugins(SharedPlugin);
 
     client
         .insert_state(MainMenuStates::TitleScreen)

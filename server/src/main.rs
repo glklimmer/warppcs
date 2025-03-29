@@ -2,8 +2,6 @@ use bevy::prelude::*;
 
 use bevy::app::ScheduleRunnerPlugin;
 use bevy_renet::steam::SteamServerPlugin;
-use bevy_replicon::prelude::*;
-use bevy_replicon_renet::RepliconRenetPlugins;
 use shared::{
     server::{create_server::create_steam_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,

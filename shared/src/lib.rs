@@ -114,6 +114,19 @@ impl LocalClientId {
     }
 }
 
+#[derive(Component)]
+pub struct Highlightable {
+    pub outline_color: Color,
+}
+
+impl Default for Highlightable {
+    fn default() -> Self {
+        Self {
+            outline_color: Color::WHITE,
+        }
+    }
+}
+
 #[derive(Component, Copy, Clone, Default, Deserialize, Serialize)]
 pub struct BoxCollider {
     pub dimension: Vec2,

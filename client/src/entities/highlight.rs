@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
 };
 use image::{GenericImage, GenericImageView, Rgba};
-use shared::{server::physics::attachment::AttachedTo, BoxCollider};
+use shared::{server::physics::attachment::AttachedTo, BoxCollider, Highlightable};
 
 use crate::networking::ControlledPlayer;
 
@@ -24,20 +24,7 @@ fn on_remove_highlighted(mut world: DeferredWorld, entity: Entity, _id: Componen
 #[derive(Component)]
 #[component(on_remove = on_remove_highlighted)]
 pub struct Highlighted {
-    original_handle: Handle<Image>,
-}
-
-#[derive(Component)]
-pub struct Highlightable {
-    pub outline_color: Color,
-}
-
-impl Default for Highlightable {
-    fn default() -> Self {
-        Self {
-            outline_color: Color::WHITE,
-        }
-    }
+    pub original_handle: Handle<Image>,
 }
 
 pub struct HighlightPlugin;
@@ -52,8 +39,8 @@ fn highlight_entity(
     mut sprites: Query<&mut Sprite, Changed<Highlighted>>,
     mut images: ResMut<Assets<Image>>,
 ) {
-    for mut texture_handle in sprites.iter_mut() {
-        if let Some(texture) = images.get_mut(texture_handle.image.id()) {
+    for mut sprite in sprites.iter_mut() {
+        if let Some(texture) = images.get_mut(sprite.image.id()) {
             let width = texture.width();
             let height = texture.height();
             let dynamic_image = texture.clone().try_into_dynamic().unwrap();
@@ -74,7 +61,7 @@ fn highlight_entity(
 
             let outline_image =
                 Image::from_dynamic(outlined_image, true, RenderAssetUsages::RENDER_WORLD);
-            texture_handle.image = images.add(outline_image);
+            sprite.image = images.add(outline_image);
         }
     }
 }

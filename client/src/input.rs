@@ -1,8 +1,7 @@
 use bevy::prelude::*;
-use bevy_replicon::prelude::*;
 
 use bevy_replicon::client::ClientSet;
-use shared::networking::{LobbyEvent, PlayerCommand};
+use shared::networking::LobbyEvent;
 
 use crate::gizmos::GizmosSettings;
 

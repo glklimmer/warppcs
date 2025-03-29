@@ -10,9 +10,7 @@ use super::{
     physics::PhysicsPlugin,
     players::PlayerPlugin,
 };
-use crate::networking::{
-    ClientChannel, Facing, Inventory, NetworkRegistry, PlayerCommand, ServerChannel, ServerMessages,
-};
+use crate::networking::{NetworkRegistry, PlayerCommand};
 
 #[derive(Event)]
 pub struct NetworkEvent {
