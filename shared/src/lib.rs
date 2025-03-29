@@ -22,7 +22,6 @@ use server::{
     },
     players::{interaction::InteractPlugin, mount::Mount},
 };
-use test_plugin::TestPlugin;
 
 pub mod enum_map;
 pub mod map;
@@ -31,7 +30,6 @@ pub mod player_attacks;
 pub mod player_movement;
 pub mod server;
 pub mod steamworks;
-pub mod test_plugin;
 
 pub const GRAVITY_G: f32 = 9.81 * 100.;
 
@@ -45,7 +43,6 @@ impl Plugin for SharedPlugin {
                 ..Default::default()
             }),
             RepliconRenetPlugins,
-            TestPlugin,
             PlayerMovement,
             PlayerAttacks,
             InteractPlugin,

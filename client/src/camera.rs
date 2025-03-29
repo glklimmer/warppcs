@@ -23,7 +23,7 @@ fn setup_camera(mut commands: Commands, mut create_parallax: EventWriter<CreateP
         ))
         .insert(ParallaxCameraComponent::default())
         .id();
-
+    // TODO: Fix Parralax when travelling
     let event = CreateParallaxEvent {
         layers_data: vec![
             LayerData {

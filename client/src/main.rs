@@ -1,17 +1,12 @@
 use bevy::prelude::*;
 
-use bevy::app::ScheduleRunnerPlugin;
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
-use bevy_replicon::prelude::*;
-use bevy_replicon_renet::RepliconRenetPlugins;
-use core::time::Duration;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
-use networking::{ClientNetworkPlugin, Connected};
+use networking::Connected;
 use shared::{
-    networking::NetworkRegistry, server::networking::ServerNetworkPlugin, test_plugin::TestPlugin,
-    GameState, SharedPlugin,
+    networking::NetworkRegistry, server::networking::ServerNetworkPlugin, GameState, SharedPlugin,
 };
 use std::env;
 use std::f32::consts::PI;
@@ -68,7 +63,7 @@ fn main() {
         })
         .set(ImagePlugin::default_nearest()),));
 
-    client.add_plugins((ClientNetworkPlugin, SharedPlugin));
+    client.add_plugins((SharedPlugin));
 
     client
         .insert_state(MainMenuStates::TitleScreen)

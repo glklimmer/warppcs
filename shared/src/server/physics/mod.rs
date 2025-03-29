@@ -20,7 +20,7 @@ impl Plugin for PhysicsPlugin {
         app.add_plugins(ProjectilePlugin);
         app.add_plugins(AttachmentPlugin);
 
-        // app.add_systems(FixedUpdate, (apply_force_on_hit, push_back_timer));
+        app.add_systems(FixedUpdate, (apply_force_on_hit, push_back_timer));
     }
 }
 
@@ -44,8 +44,8 @@ fn apply_force_on_hit(
         if let Ok((mut velocity, mut push_back)) = query.get_mut(event.target_entity) {
             if push_back.timer.finished() {
                 let push = match event.direction {
-                    Facing::Left => Vec2::new(150., 150.),
-                    Facing::Right => Vec2::new(-150., 150.),
+                    Facing::Left => Vec2::new(50., 50.),
+                    Facing::Right => Vec2::new(-50., 50.),
                 };
                 push_back.timer.reset();
                 velocity.0 += push;

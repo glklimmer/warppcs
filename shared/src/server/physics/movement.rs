@@ -12,7 +12,7 @@ use crate::{
 };
 use bevy::math::bounding::IntersectsVolume;
 
-use super::PushBack;
+use super::{projectile::ProjectileType, PushBack};
 
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);
@@ -39,7 +39,13 @@ impl Plugin for MovementPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                (set_unit_velocity, set_grounded, set_walking, apply_friction),
+                (
+                    set_unit_velocity,
+                    set_grounded,
+                    set_walking,
+                    apply_friction,
+                    set_projectile_rotation,
+                ),
                 wall_collision,
             )
                 .chain()
@@ -113,6 +119,15 @@ fn set_walking(mut commands: Commands, entities: Query<(Entity, &Velocity, Optio
         } else {
             entity.remove::<Moving>();
         }
+    }
+}
+
+fn set_projectile_rotation(
+    mut projectiles: Query<(&mut Transform, &Velocity), With<ProjectileType>>,
+) {
+    for (mut transform, velocity) in projectiles.iter_mut() {
+        let angle = velocity.0.to_angle();
+        transform.rotation = Quat::from_rotation_z(angle);
     }
 }
 

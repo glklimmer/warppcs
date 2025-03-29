@@ -147,15 +147,10 @@ fn process_attacks(
 
                         let velocity = Velocity(Vec2::from_angle(theta) * speed);
 
-                        let direction: Vec2 = velocity.0;
-                        let position = arrow_position.truncate();
-                        // TODO: Angle is broken
-                        let angle = (direction - position).angle_to(position);
-
                         let arrow_transform = Transform {
                             translation: arrow_position,
                             scale: Vec3::splat(1.0),
-                            rotation: Quat::from_rotation_z(angle),
+                            rotation: Quat::from_rotation_z(theta),
                         };
 
                         commands.spawn((arrow_transform, *owner, projectile_type, velocity));
