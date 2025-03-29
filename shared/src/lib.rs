@@ -31,7 +31,7 @@ pub mod player_movement;
 pub mod server;
 pub mod steamworks;
 
-pub const GRAVITY_G: f32 = 9.81 * 100.;
+pub const GRAVITY_G: f32 = 9.81 * 33.;
 
 pub struct SharedPlugin;
 

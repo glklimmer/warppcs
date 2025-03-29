@@ -121,6 +121,7 @@ fn process_attacks(
                         );
 
                         let projectile_type = ProjectileType::Arrow;
+                        let target_pos = target_pos.with_y(14.);
 
                         let delta_y = target_pos.y - transform.translation.y;
 
