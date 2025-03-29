@@ -61,6 +61,7 @@ pub enum ServerChannel {
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
+#[require(Replicated)]
 pub struct Inventory {
     pub gold: u16,
 }

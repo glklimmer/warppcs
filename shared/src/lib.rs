@@ -55,7 +55,7 @@ impl Plugin for SharedPlugin {
         .replicate_mapped::<AttachedTo>()
         .replicate::<BoxCollider>()
         .replicate::<Mounted>()
-        .replicate_group::<(PhysicalPlayer, Transform)>()
+        .replicate_group::<(PhysicalPlayer, Transform, Inventory)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
         .replicate_group::<(ProjectileType, Transform)>()

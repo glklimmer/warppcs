@@ -36,16 +36,17 @@ pub fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingC
 
 pub fn gold_farm_output(
     mut gold_farms_query: Query<(&mut GoldFarmTimer, &Owner)>,
-    mut inventory: Query<&mut Inventory>,
+    mut inventory_query: Query<&mut Inventory>,
     time: Res<Time>,
 ) {
     for (mut farm_timer, owner) in &mut gold_farms_query {
         farm_timer.timer.tick(time.delta());
 
         if farm_timer.timer.just_finished() {
-            if let Faction::Player(entity) = **owner {
-                let mut inventory = inventory.get_mut(entity).unwrap();
-                inventory.gold += GOLD_PER_TICK;
+            if let Faction::Player(player_entity) = **owner {
+                if let Ok(mut inventory) = inventory_query.get_mut(player_entity) {
+                    inventory.gold += GOLD_PER_TICK;
+                }
             }
         }
     }
