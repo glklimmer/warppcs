@@ -47,18 +47,3 @@ fn apply_movement(
         }
     }
 }
-
-// fn apply_movement(
-//     trigger: Trigger<FromClient<MovePlayer>>,
-//     time: Res<Time>,
-//     mut boxes: Query<(&PhysicalPlayer, &mut Transform)>,
-// ) {
-//     const MOVE_SPEED: f32 = 300.0;
-//     info!("received movement from `{:?}`", trigger.client_id);
-//     for (player, mut transform) in &mut boxes {
-//         if trigger.client_id == **player {
-//             transform.translation +=
-//                 Vec3::new(trigger.event.x, trigger.event.y, 0.0) * time.delta_secs() * MOVE_SPEED;
-//         }
-//     }
-// }
