@@ -101,7 +101,7 @@ fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
         };
 
         if transform.translation.y == 0. {
-            entity.insert(Grounded);
+            entity.try_insert(Grounded);
         } else {
             entity.remove::<Grounded>();
         }
@@ -115,7 +115,7 @@ fn set_walking(mut commands: Commands, entities: Query<(Entity, &Velocity, Optio
         };
 
         if maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
-            entity.insert(Moving);
+            entity.try_insert(Moving);
         } else {
             entity.remove::<Moving>();
         }
