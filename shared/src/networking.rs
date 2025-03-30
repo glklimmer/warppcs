@@ -2,10 +2,9 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
 use super::enum_map::*;
-use bevy_renet::renet::ClientId;
 use serde::{Deserialize, Serialize};
 
-use crate::{horse_collider, BoxCollider, Owner};
+use crate::{horse_collider, BoxCollider};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -20,7 +19,6 @@ impl Plugin for NetworkRegistry {
 #[derive(Debug, Deserialize, Event, Serialize)]
 pub enum LobbyEvent {
     StartGame,
-    Ready(Checkbox),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
@@ -42,7 +40,6 @@ pub enum PlayerCommand {
     StartGame,
     Interact,
     MeleeAttack,
-    LobbyReadyState(Checkbox),
 }
 
 pub enum ClientChannel {
@@ -69,25 +66,6 @@ impl Default for Inventory {
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub struct Mounted {
     pub mount_type: MountType,
-}
-
-#[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq, Copy)]
-pub enum Checkbox {
-    Checked,
-    Unchecked,
-}
-
-#[derive(Debug, Serialize, Deserialize, Component)]
-pub enum ServerMessages {
-    PlayerJoinedLobby { id: ClientId, ready_state: Checkbox },
-    PlayerLeftLobby { id: ClientId },
-    LobbyPlayerReadyState { id: ClientId, ready_state: Checkbox },
-    PlayerDisconnected { id: ClientId },
-    DespawnEntity { entities: Vec<Entity> },
-    MeleeAttack { entity: Entity },
-    EntityHit { entity: Entity },
-    EntityDeath { entity: Entity },
-    PlayerDefeat(Owner),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
