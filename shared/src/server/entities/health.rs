@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
-    map::buildings::Building, networking::Facing, server::physics::movement::Velocity,
-    AnimationChange, AnimationChangeEvent, BoxCollider, DelayedDespawn, Owner,
+    map::buildings::Building, networking::Facing, AnimationChange, AnimationChangeEvent,
+    DelayedDespawn, Owner,
 };
 
 use super::Unit;
@@ -50,7 +50,6 @@ fn apply_damage(
     for event in attack_events.read() {
         if let Ok((entity, mut health)) = query.get_mut(event.target_entity) {
             health.hitpoints -= event.damage;
-            println!("New health: {}.", health.hitpoints);
 
             animation.send(ToClients {
                 mode: SendMode::Broadcast,
@@ -73,10 +72,7 @@ fn on_unit_death(
             commands
                 .entity(entity)
                 .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
-                .remove::<Health>()
-                .remove::<Velocity>()
-                .remove::<Unit>()
-                .remove::<BoxCollider>();
+                .remove::<Health>();
 
             animation.send(ToClients {
                 mode: SendMode::Broadcast,

@@ -6,7 +6,7 @@ use shared::{
     enum_map::*,
     networking::UnitType,
     server::{
-        entities::{Unit, UnitAnimation},
+        entities::{health::Health, Unit, UnitAnimation},
         physics::movement::Moving,
     },
     AnimationChange, AnimationChangeEvent,
@@ -65,7 +65,12 @@ pub fn trigger_unit_animation(
 pub fn set_unit_walking(
     trigger: Trigger<OnAdd, Moving>,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
+    query: Query<Entity, With<Health>>,
 ) {
+    if query.get(trigger.entity()).is_err() {
+        return;
+    }
+
     animation_trigger.send(AnimationTrigger {
         entity: trigger.entity(),
         state: UnitAnimation::Walk,
@@ -74,12 +79,19 @@ pub fn set_unit_walking(
 
 pub fn set_unit_after_play_once(
     trigger: Trigger<OnRemove, PlayOnce>,
+    mut commands: Commands,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
-    mounted: Query<&UnitAnimation>,
+    unit_animation: Query<&UnitAnimation>,
 ) {
-    if let Ok(animation) = mounted.get(trigger.entity()) {
+    if let Ok(animation) = unit_animation.get(trigger.entity()) {
+        let mut entity = commands.entity(trigger.entity());
+        if let UnitAnimation::Death = animation {
+            entity.remove::<SpriteSheetAnimation>();
+            return;
+        }
+
         let new_animation = match animation {
-            UnitAnimation::Attack => UnitAnimation::Idle,
+            UnitAnimation::Attack | UnitAnimation::Hit => UnitAnimation::Idle,
             _ => *animation,
         };
 
@@ -93,7 +105,12 @@ pub fn set_unit_after_play_once(
 pub fn set_unit_idle(
     trigger: Trigger<OnRemove, Moving>,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
+    query: Query<Entity, With<Health>>,
 ) {
+    if query.get(trigger.entity()).is_err() {
+        return;
+    }
+
     animation_trigger.send(AnimationTrigger {
         entity: trigger.entity(),
         state: UnitAnimation::Idle,

@@ -165,13 +165,16 @@ fn wall_collision(
 const MOVE_EPSILON: f32 = 1.;
 
 fn set_unit_velocity(
-    mut query: Query<(
-        &mut Velocity,
-        &mut Transform,
-        &UnitBehaviour,
-        &Unit,
-        &PushBack,
-    )>,
+    mut query: Query<
+        (
+            &mut Velocity,
+            &mut Transform,
+            &UnitBehaviour,
+            &Unit,
+            &PushBack,
+        ),
+        With<Health>,
+    >,
     transform_query: Query<&Transform, Without<Unit>>,
 ) {
     for (mut velocity, mut transform, behaviour, unit, push_back) in &mut query {

@@ -104,13 +104,24 @@ fn connect_portals(mut commands: Commands, left: Entity, right: Entity) {
 }
 
 fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_right_portal: Entity) {
+    for i in 1..10 {
+        commands.spawn((
+            Owner(Faction::Player(Entity::PLACEHOLDER)),
+            Unit {
+                unit_type: UnitType::Bandit,
+                swing_timer: Timer::default(),
+            },
+            Health { hitpoints: 20. },
+            Transform::from_translation(Vec3::ZERO.with_x(50. - 10. * i as f32) + offset),
+        ));
+    }
     commands.entity(camp_left_portal).insert((
         Portal,
-        Transform::from_translation(Vec3::ZERO.with_x(-450.) + offset),
+        Transform::from_translation(Vec3::ZERO.with_x(-150.) + offset),
     ));
     commands.entity(camp_right_portal).insert((
         Portal,
-        Transform::from_translation(Vec3::ZERO.with_x(450.) + offset),
+        Transform::from_translation(Vec3::ZERO.with_x(150.) + offset),
     ));
 }
 
@@ -134,15 +145,6 @@ fn player_base(
         BuildStatus::Built,
         Transform::from_translation(offset),
         owner,
-    ));
-    commands.spawn((
-        Owner(Faction::Player(Entity::PLACEHOLDER)),
-        Unit {
-            unit_type: UnitType::Bandit,
-            swing_timer: Timer::default(),
-        },
-        Health::default(),
-        Transform::from_translation(Vec3::ZERO.with_x(-150.) + offset),
     ));
     commands.spawn((
         Mount {

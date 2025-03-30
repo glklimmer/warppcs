@@ -95,8 +95,6 @@ fn process_attacks(
 
                 match unit.unit_type {
                     UnitType::Shieldwarrior | UnitType::Pikeman | UnitType::Bandit => {
-                        println!("Swinging at target: {}", target_entity);
-
                         attack_events.send(TakeDamage {
                             target_entity: *target_entity,
                             damage: unit_damage(&unit.unit_type),
@@ -134,7 +132,7 @@ fn process_attacks(
 
                         let denominator = 2.0 * (delta_x * tan_theta - delta_y) * cos_theta_squared;
                         if denominator <= 0.0 {
-                            println!(
+                            warn!(
                                 "Shooting not possible, theta: {}, delta_x: {}",
                                 theta, delta_x
                             );
@@ -155,7 +153,6 @@ fn process_attacks(
                         };
 
                         commands.spawn((arrow_transform, *owner, projectile_type, velocity));
-                        println!("arrow spawn");
 
                         animation.send(ToClients {
                             mode: SendMode::Broadcast,
