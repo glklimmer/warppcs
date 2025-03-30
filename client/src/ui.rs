@@ -1,10 +1,7 @@
 use bevy::prelude::*;
-use shared::{
-    networking::{Inventory, ServerMessages},
-    Faction,
-};
+use shared::networking::Inventory;
 
-use crate::networking::{ControlledPlayer, NetworkEvent};
+use crate::networking::ControlledPlayer;
 
 #[derive(Component)]
 pub struct GoldAmountDisplay;
@@ -15,7 +12,7 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PostStartup, setup_ui);
 
-        app.add_systems(FixedUpdate, (display_player_defeat, update_gold_amount));
+        app.add_systems(FixedUpdate, update_gold_amount);
     }
 }
 
@@ -51,16 +48,5 @@ fn update_gold_amount(
     if let Ok(inventory) = inventory_query.get_single() {
         let mut gold_display = gold_display_query.single_mut();
         gold_display.0 = format!("Gold Amount: {}", inventory.gold);
-    }
-}
-
-fn display_player_defeat(mut network_events: EventReader<NetworkEvent>) {
-    for event in network_events.read() {
-        if let ServerMessages::PlayerDefeat(player) = &event.message {
-            match **player {
-                Faction::Player(player) => println!("Player {} lost.", player),
-                Faction::Bandits => todo!(),
-            }
-        }
     }
 }

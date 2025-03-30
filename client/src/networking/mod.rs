@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_renet::renet::ClientId;
-use shared::{networking::ServerMessages, player_collider, BoxCollider};
+use shared::{player_collider, BoxCollider};
 
 use crate::animations::king::KingAnimation;
 
@@ -16,9 +16,3 @@ pub struct ControlledPlayer;
 
 #[derive(Debug, Resource)]
 pub struct CurrentClientId(pub ClientId);
-
-// TODO: Remove this
-#[derive(Event)]
-pub struct NetworkEvent {
-    pub message: ServerMessages,
-}

@@ -32,9 +32,5 @@ impl Plugin for ServerNetworkPlugin {
             PlayerPlugin,
             EntityPlugin,
         ));
-        //
-        // app.insert_resource(ServerLobby::default());
-        // app.add_plugins(LobbyPlugin);
-        //
     }
 }
