@@ -8,7 +8,11 @@ use king::{
     set_king_after_play_once, set_king_idle, set_king_sprite_animation, set_king_walking,
     trigger_king_animation, KingAnimation, KingSpriteSheet,
 };
-use objects::{chest::ChestSpriteSheet, flag::FlagSpriteSheet, portal::PortalSpriteSheet};
+use objects::{
+    chest::{play_chest_animation, set_chest_after_play_once, ChestSpriteSheet},
+    flag::FlagSpriteSheet,
+    portal::PortalSpriteSheet,
+};
 use shared::{enum_map::*, server::entities::UnitAnimation};
 use units::{
     set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation, set_unit_walking,
@@ -84,14 +88,20 @@ impl Plugin for AnimationPlugin {
 
         app.add_systems(
             PreUpdate,
-            (trigger_king_animation, trigger_unit_animation).after(ClientSet::Receive),
+            (
+                trigger_king_animation,
+                trigger_unit_animation,
+                play_chest_animation,
+            )
+                .after(ClientSet::Receive),
         )
         .add_observer(set_king_walking)
         .add_observer(set_king_idle)
         .add_observer(set_king_after_play_once)
         .add_observer(set_unit_walking)
         .add_observer(set_unit_idle)
-        .add_observer(set_unit_after_play_once);
+        .add_observer(set_unit_after_play_once)
+        .add_observer(set_chest_after_play_once);
 
         app.add_systems(
             Update,

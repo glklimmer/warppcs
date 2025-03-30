@@ -5,6 +5,7 @@ use crate::{
         animals::horse::{HorseAnimation, HorseSpriteSheet},
         king::{KingAnimation, KingSpriteSheet},
         objects::{
+            chest::ChestSpriteSheet,
             flag::{FlagAnimation, FlagSpriteSheet},
             portal::{PortalAnimation, PortalSpriteSheet},
         },
@@ -20,9 +21,9 @@ use shared::{
         entities::{Unit, UnitAnimation},
         game_scenes::Portal,
         physics::projectile::ProjectileType,
-        players::mount::Mount,
+        players::{chest::Chest, mount::Mount},
     },
-    LocalClientId, PhysicalPlayer,
+    ChestAnimation, LocalClientId, PhysicalPlayer,
 };
 
 use super::highlight::Highlighted;
@@ -39,6 +40,7 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_portal_sprite)
             .add_observer(init_horse_sprite)
             .add_observer(init_projectile_sprite)
+            .add_observer(init_chest_sprite)
             .add_systems(Update, update_building_sprite);
     }
 }
@@ -213,4 +215,22 @@ fn init_projectile_sprite(
         ProjectileType::Arrow => asset_server.load("sprites/arrow.png"),
     };
     sprite.image = texture
+}
+
+fn init_chest_sprite(
+    trigger: Trigger<OnAdd, Chest>,
+    mut chests: Query<&mut Sprite>,
+    sprite_sheets: Res<ChestSpriteSheet>,
+) {
+    let Ok(mut sprite) = chests.get_mut(trigger.entity()) else {
+        return;
+    };
+
+    let sprite_sheet = &sprite_sheets.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+    let animation = sprite_sheet.animations.get(ChestAnimation::Open);
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
 }

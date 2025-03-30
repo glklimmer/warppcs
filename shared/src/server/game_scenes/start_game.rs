@@ -10,6 +10,7 @@ use crate::{
     server::{
         entities::{health::Health, Unit},
         players::{
+            chest::Chest,
             interaction::{Interactable, InteractionType},
             mount::Mount,
         },
@@ -151,6 +152,10 @@ fn player_base(
             mount_type: MountType::Horse,
         },
         Transform::from_translation(Vec3::ZERO.with_x(50.) + offset),
+    ));
+    commands.spawn((
+        Chest::Normal,
+        Transform::from_translation(Vec3::ZERO.with_x(-50.) + offset),
     ));
     commands.spawn((
         Building::Archer,

@@ -1,7 +1,8 @@
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::prelude::*;
 use bevy_replicon::prelude::*;
+use enum_map::*;
 
-use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d};
+use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d, sprite::Anchor};
 use bevy_replicon_renet::RepliconRenetPlugins;
 use map::{
     buildings::{BuildStatus, Building},
@@ -60,11 +61,12 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Portal, Transform)>()
         .replicate_group::<(Mount, Transform)>()
         .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
+        .add_mapped_server_event::<ChestAnimationEvent>(ChannelKind::Ordered)
         .add_observer(spawn_clients);
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Event, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum AnimationChange {
     Attack,
     Hit,
@@ -72,13 +74,31 @@ pub enum AnimationChange {
     Mount,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Event, Serialize)]
+#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct AnimationChangeEvent {
     pub entity: Entity,
     pub change: AnimationChange,
 }
 
 impl MapEntities for AnimationChangeEvent {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.entity = entity_mapper.map_entity(self.entity);
+    }
+}
+
+#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Deserialize, Serialize)]
+pub enum ChestAnimation {
+    Open,
+    Close,
+}
+
+#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize)]
+pub struct ChestAnimationEvent {
+    pub entity: Entity,
+    pub animation: ChestAnimation,
+}
+
+impl MapEntities for ChestAnimationEvent {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.entity = entity_mapper.map_entity(self.entity);
     }

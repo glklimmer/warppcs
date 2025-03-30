@@ -1,16 +1,14 @@
 use bevy::prelude::*;
-
 use shared::enum_map::*;
 
+use shared::server::players::chest::Chest;
+use shared::ChestAnimation;
+use shared::ChestAnimationEvent;
+
 use crate::animations::AnimationDirection;
+use crate::animations::PlayOnce;
 
 use super::super::{SpriteSheet, SpriteSheetAnimation};
-
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable)]
-pub enum ChestAnimation {
-    Open,
-    Close,
-}
 
 #[derive(Resource)]
 pub struct ChestSpriteSheet {
@@ -55,44 +53,40 @@ impl FromWorld for ChestSpriteSheet {
     }
 }
 
-// pub fn next_chest_animation(
-//     mut commands: Commands,
-//     mut query: Query<(&mut ChestAnimation)>,
-//     mut network_events: EventReader<EntityChangeEvent>,
-//     mut animation_trigger: EventWriter<AnimationTrigger<ChestAnimation>>,
-// ) {
-//     for event in network_events.read() {
-//         if let Ok((mut current_animation, maybe_full)) = query.get_mut(event.entity) {
-//             let maybe_new_animation = match &event.change {
-//                 Change::Movement(moving) => match moving {
-//                     true => Some(KingAnimation::Walk),
-//                     false => Some(KingAnimation::Idle),
-//                 },
-//                 Change::Attack => Some(KingAnimation::Attack),
-//                 Change::Rotation(_) => None,
-//                 Change::Hit => Some(KingAnimation::Hit),
-//                 Change::Death => Some(KingAnimation::Death),
-//             };
-//
-//             if let Some(new_animation) = maybe_new_animation {
-//                 if is_interupt_animation(&new_animation)
-//                     || (maybe_full.is_none() && new_animation != *current_animation)
-//                 {
-//                     *current_animation = new_animation;
-//
-//                     if is_full_animation(&new_animation) {
-//                         commands.entity(event.entity).insert(FullAnimation);
-//                     }
-//                     animation_trigger.send(AnimationTrigger {
-//                         entity: event.entity,
-//                         state: new_animation,
-//                     });
-//
-//                     if is_full_animation(&new_animation) {
-//                         break;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+pub fn play_chest_animation(
+    mut animation_changes: EventReader<ChestAnimationEvent>,
+    mut commands: Commands,
+    mut query: Query<&mut Sprite>,
+    chest_sprite_sheet: Res<ChestSpriteSheet>,
+) {
+    for event in animation_changes.read() {
+        let Ok(mut sprite) = query.get_mut(event.entity) else {
+            continue;
+        };
+
+        let animation = chest_sprite_sheet
+            .sprite_sheet
+            .animations
+            .get(event.animation);
+
+        commands
+            .entity(event.entity)
+            .insert((PlayOnce, animation.clone()));
+
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            atlas.index = animation.first_sprite_index;
+        }
+    }
+}
+
+pub fn set_chest_after_play_once(
+    trigger: Trigger<OnRemove, PlayOnce>,
+    mut commands: Commands,
+    chest: Query<&Chest>,
+) {
+    if let Ok(_) = chest.get(trigger.entity()) {
+        commands
+            .entity(trigger.entity())
+            .remove::<SpriteSheetAnimation>();
+    }
+}

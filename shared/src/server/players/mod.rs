@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 
+use chest::open_chest;
 use flag::{drop_flag, flag_interact, pick_flag, DropFlagEvent, PickFlagEvent};
 use interaction::InteractionTriggeredEvent;
 use mount::mount;
 
+pub mod chest;
 pub mod flag;
 pub mod interaction;
 pub mod mount;
@@ -18,7 +20,7 @@ impl Plugin for PlayerPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                (mount, flag_interact).run_if(on_event::<InteractionTriggeredEvent>),
+                (mount, flag_interact, open_chest).run_if(on_event::<InteractionTriggeredEvent>),
                 drop_flag.run_if(on_event::<DropFlagEvent>),
                 pick_flag.run_if(on_event::<PickFlagEvent>),
             ),
