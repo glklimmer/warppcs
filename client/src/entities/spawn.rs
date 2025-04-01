@@ -23,7 +23,7 @@ use shared::{
         physics::projectile::ProjectileType,
         players::{chest::Chest, mount::Mount},
     },
-    ChestAnimation, LocalClientId, PhysicalPlayer,
+    ChestAnimation, Faction, LocalClientId, Owner, PhysicalPlayer,
 };
 
 use super::highlight::Highlighted;
@@ -58,7 +58,11 @@ fn init_local_player(
     if **player == **client_id {
         info!("init controlled player for {:?}", **player);
         let mut player_commands = commands.entity(entity);
-        player_commands.insert(ControlledPlayer);
+        player_commands.insert((
+            ControlledPlayer,
+            SpatialListener::new(50.0),
+            Owner(Faction::Player(entity)),
+        ));
         commands
             .entity(camera.single())
             .insert(CameraFollow::fixed(entity));

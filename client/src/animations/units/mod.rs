@@ -48,7 +48,7 @@ pub fn trigger_unit_animation(
     for event in network_events.read() {
         let new_animation = match &event.change {
             AnimationChange::Attack => UnitAnimation::Attack,
-            AnimationChange::Hit => UnitAnimation::Hit,
+            AnimationChange::Hit(_) => UnitAnimation::Hit,
             AnimationChange::Death => UnitAnimation::Death,
             AnimationChange::Mount => UnitAnimation::Idle,
         };
