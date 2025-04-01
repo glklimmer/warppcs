@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use shared::{enum_map::*, AnimationChange, AnimationChangeEvent};
 
-use crate::animations::{AnimationTrigger, SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{
+    AnimationSound, AnimationSoundTrigger, AnimationTrigger, SpriteSheet, SpriteSheetAnimation,
+};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum HorseAnimation {
@@ -43,11 +45,23 @@ impl FromWorld for HorseSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            HorseAnimation::Idle => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+            HorseAnimation::Walk => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+        });
+
         HorseSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }
@@ -60,7 +74,7 @@ pub fn next_horse_animation(
     for event in network_events.read() {
         let new_animation = match &event.change {
             AnimationChange::Attack
-            | AnimationChange::Hit
+            | AnimationChange::Hit(_)
             | AnimationChange::Death
             | AnimationChange::Mount => HorseAnimation::Idle,
         };

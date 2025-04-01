@@ -66,10 +66,16 @@ impl Plugin for SharedPlugin {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub enum Hitby {
+    Arrow,
+    Meele,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum AnimationChange {
     Attack,
-    Hit,
+    Hit(Hitby),
     Death,
     Mount,
 }
@@ -212,7 +218,25 @@ pub enum Faction {
 }
 
 #[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref)]
-pub struct Owner(Faction);
+pub struct Owner(pub Faction);
+
+impl Owner {
+    pub fn is_different_faction(&self, other: &Self) -> bool {
+        match (self.0, other.0) {
+            // Two players - compare client IDs
+            (Faction::Player { 0: id1 }, Faction::Player { 0: id2 }) => id1 != id2,
+            // Different enum variants means different factions
+            (Faction::Player { .. }, Faction::Bandits)
+            | (Faction::Bandits, Faction::Player { .. }) => true,
+            // Both bandits are the same faction
+            (Faction::Bandits, Faction::Bandits) => false,
+        }
+    }
+
+    pub fn is_same_faction(&self, other: &Self) -> bool {
+        !self.is_different_faction(other)
+    }
+}
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);

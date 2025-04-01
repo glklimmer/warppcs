@@ -11,7 +11,7 @@ use crate::{
         entities::{health::TakeDamage, Unit},
         physics::{movement::Velocity, projectile::ProjectileType},
     },
-    AnimationChange, AnimationChangeEvent, Owner, GRAVITY_G,
+    AnimationChange, AnimationChangeEvent, Hitby, Owner, GRAVITY_G,
 };
 
 pub struct AttackPlugin;
@@ -102,6 +102,7 @@ fn process_attacks(
                                 true => Facing::Left,
                                 false => Facing::Right,
                             },
+                            by: Hitby::Meele,
                         });
                         animation.send(ToClients {
                             mode: SendMode::Broadcast,

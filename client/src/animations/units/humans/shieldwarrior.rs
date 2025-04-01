@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 
-use shared::{enum_map::*, server::entities::UnitAnimation};
+use shared::enum_map::*;
 
-use crate::animations::{SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{AnimationSound, AnimationSoundTrigger, SpriteSheet, SpriteSheetAnimation};
+
+use super::super::UnitAnimation;
 
 pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
     let asset_server = world.resource::<AssetServer>();
@@ -45,9 +47,33 @@ pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
         },
     });
 
+    let animations_sound = EnumMap::new(|c| match c {
+        UnitAnimation::Idle => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnEnter,
+        },
+        UnitAnimation::Walk => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnEnter,
+        },
+        UnitAnimation::Attack => AnimationSound {
+            sound_files: vec!["animation_sound/shieldwarrior/sword_hit.ogg".to_string()],
+            sound_trigger: AnimationSoundTrigger::OnEndFrameTimer,
+        },
+        UnitAnimation::Hit => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnEnter,
+        },
+        UnitAnimation::Death => AnimationSound {
+            sound_files: vec![],
+            sound_trigger: AnimationSoundTrigger::OnEnter,
+        },
+    });
+
     SpriteSheet {
         texture,
         layout,
         animations,
+        animations_sound,
     }
 }

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{AnimationSound, AnimationSoundTrigger, SpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum PortalAnimation {
@@ -37,11 +37,19 @@ impl FromWorld for PortalSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            PortalAnimation::Swirle => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+        });
+
         PortalSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }

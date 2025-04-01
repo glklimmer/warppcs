@@ -5,7 +5,10 @@ use shared::{
     AnimationChangeEvent,
 };
 
-use super::{AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};
+use super::{
+    AnimationSound, AnimationSoundTrigger, AnimationTrigger, PlayOnce, SpriteSheet,
+    SpriteSheetAnimation,
+};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum KingAnimation {
@@ -88,11 +91,51 @@ impl FromWorld for KingSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            KingAnimation::Idle => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Drink => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Walk => AnimationSound {
+                sound_files: vec!["animation_sound/king/walk.ogg".to_string()],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Attack => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Hit => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Death => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::Mount => AnimationSound {
+                sound_files: vec!["animation_sound/horse/horse_sound.ogg".to_string()],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            },
+            KingAnimation::HorseIdle => AnimationSound {
+                sound_files: vec![],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+            KingAnimation::HorseWalk => AnimationSound {
+                sound_files: vec!["animation_sound/horse/horse_gallop.ogg".to_string()],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            },
+        });
+
         KingSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }
@@ -109,13 +152,13 @@ pub fn trigger_king_animation(
             let new_animation = match maybe_mounted {
                 Some(_) => match &event.change {
                     AnimationChange::Attack => todo!(),
-                    AnimationChange::Hit => todo!(),
+                    AnimationChange::Hit(_) => todo!(),
                     AnimationChange::Death => todo!(),
                     AnimationChange::Mount => KingAnimation::Mount,
                 },
                 None => match &event.change {
                     AnimationChange::Attack => KingAnimation::Attack,
-                    AnimationChange::Hit => KingAnimation::Hit,
+                    AnimationChange::Hit(_) => KingAnimation::Hit,
                     AnimationChange::Death => KingAnimation::Death,
                     AnimationChange::Mount => KingAnimation::Mount,
                 },
