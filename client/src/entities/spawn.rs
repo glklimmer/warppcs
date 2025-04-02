@@ -212,7 +212,7 @@ fn init_projectile_sprite(
     };
 
     let texture = match projectile_type {
-        ProjectileType::Arrow => asset_server.load("sprites/arrow.png"),
+        ProjectileType::Arrow => asset_server.load("sprites/objects/arrow.png"),
     };
     sprite.image = texture
 }
