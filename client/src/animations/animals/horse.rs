@@ -47,7 +47,7 @@ impl FromWorld for HorseSpriteSheet {
 
         let animations_sound = EnumMap::new(|c| match c {
             HorseAnimation::Idle => AnimationSound {
-                sound_files: vec![],
+                sound_files: vec!["animation_sound/horse/horse_sound.ogg".to_string()],
                 sound_trigger: AnimationSoundTrigger::OnEnter,
             },
             HorseAnimation::Walk => AnimationSound {
@@ -87,24 +87,37 @@ pub fn next_horse_animation(
 }
 
 pub fn set_horse_sprite_animation(
-    mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite, &mut HorseAnimation)>,
+    mut command: Commands,
+    mut query: Query<(
+        Entity,
+        &mut SpriteSheetAnimation,
+        &mut Sprite,
+        &mut HorseAnimation,
+    )>,
     mut animation_changed: EventReader<AnimationTrigger<HorseAnimation>>,
-    king_sprite_sheet: Res<HorseSpriteSheet>,
+    horse_sprite_sheet: Res<HorseSpriteSheet>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((mut sprite_animation, mut sprite, mut current_animation)) =
+        if let Ok((entity, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
         {
-            let animation = king_sprite_sheet
+            let animation = horse_sprite_sheet
                 .sprite_sheet
                 .animations
+                .get(new_animation.state);
+
+            let sound = horse_sprite_sheet
+                .sprite_sheet
+                .animations_sound
                 .get(new_animation.state);
 
             if let Some(atlas) = &mut sprite.texture_atlas {
                 atlas.index = animation.first_sprite_index;
             }
+
             *sprite_animation = animation.clone();
             *current_animation = new_animation.state;
+            command.entity(entity).insert(sound.clone());
         }
     }
 }

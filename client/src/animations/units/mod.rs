@@ -118,7 +118,9 @@ pub fn set_unit_idle(
 }
 
 pub fn set_unit_sprite_animation(
+    mut command: Commands,
     mut query: Query<(
+        Entity,
         &Unit,
         &mut SpriteSheetAnimation,
         &mut Sprite,
@@ -128,7 +130,7 @@ pub fn set_unit_sprite_animation(
     sprite_sheets: Res<UnitSpriteSheets>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((unit, mut sprite_animation, mut sprite, mut current_animation)) =
+        if let Ok((entity, unit, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
         {
             let animation = sprite_sheets
@@ -137,12 +139,19 @@ pub fn set_unit_sprite_animation(
                 .animations
                 .get(new_animation.state);
 
+            let sound = sprite_sheets
+                .sprite_sheets
+                .get(unit.unit_type)
+                .animations_sound
+                .get(new_animation.state);
+
             if let Some(atlas) = &mut sprite.texture_atlas {
                 atlas.index = animation.first_sprite_index;
             }
 
             *sprite_animation = animation.clone();
             *current_animation = new_animation.state;
+            command.entity(entity).insert(sound.clone());
         }
     }
 }
