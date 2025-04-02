@@ -1,20 +1,18 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::server_or_singleplayer;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    map::{
-        buildings::{BuildStatus, Building},
-        GameSceneId,
-    },
-    networking::{Owner, PlayerInput},
+    map::buildings::{BuildStatus, Building},
     server::{
         ai::{attack::unit_speed, UnitBehaviour},
         entities::{health::Health, Unit},
     },
-    BoxCollider, GRAVITY_G,
+    BoxCollider, Owner, GRAVITY_G,
 };
 use bevy::math::bounding::IntersectsVolume;
 
-use super::PushBack;
+use super::{projectile::ProjectileType, PushBack};
 
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);
@@ -22,9 +20,15 @@ pub struct Velocity(pub Vec2);
 #[derive(Component, Debug, Copy, Clone)]
 pub struct Speed(pub f32);
 
+#[derive(Component, Clone, Copy, Debug, Deserialize, Serialize)]
+pub struct Grounded;
+
+#[derive(Component, Clone, Copy, Debug, Deserialize, Serialize)]
+pub struct Moving;
+
 impl Default for Speed {
     fn default() -> Self {
-        Self(200.0)
+        Self(70.0)
     }
 }
 
@@ -34,9 +38,25 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            ((set_player_velocity, set_unit_velocity), wall_collision).chain(),
+            (
+                (
+                    set_unit_velocity,
+                    set_grounded,
+                    set_walking,
+                    apply_friction,
+                    set_projectile_rotation,
+                ),
+                wall_collision,
+            )
+                .chain()
+                .run_if(server_or_singleplayer),
         );
-        app.add_systems(FixedPostUpdate, (apply_gravity, apply_velocity).chain());
+        app.add_systems(
+            FixedPostUpdate,
+            (apply_gravity, apply_velocity)
+                .chain()
+                .run_if(server_or_singleplayer),
+        );
     }
 }
 
@@ -63,44 +83,66 @@ fn apply_velocity(
     }
 }
 
+fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Time>) {
+    let friction_force = 400.0 * time.delta_secs();
+    for mut velocity in query.iter_mut() {
+        if velocity.0.x.abs() <= friction_force {
+            velocity.0.x = 0.0;
+        } else {
+            velocity.0.x -= velocity.0.x.signum() * friction_force;
+        }
+    }
+}
+
+fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
+    for (entity, transform) in &entities {
+        let Some(mut entity) = commands.get_entity(entity) else {
+            continue;
+        };
+
+        if transform.translation.y == 0. {
+            entity.try_insert(Grounded);
+        } else {
+            entity.remove::<Grounded>();
+        }
+    }
+}
+
+fn set_walking(mut commands: Commands, entities: Query<(Entity, &Velocity, Option<&Grounded>)>) {
+    for (entity, velocity, maybe_grounded) in &entities {
+        let Some(mut entity) = commands.get_entity(entity) else {
+            continue;
+        };
+
+        if maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
+            entity.try_insert(Moving);
+        } else {
+            entity.remove::<Moving>();
+        }
+    }
+}
+
+fn set_projectile_rotation(
+    mut projectiles: Query<(&mut Transform, &Velocity), With<ProjectileType>>,
+) {
+    for (mut transform, velocity) in projectiles.iter_mut() {
+        let angle = velocity.0.to_angle();
+        transform.rotation = Quat::from_rotation_z(angle);
+    }
+}
+
 fn wall_collision(
-    mut query: Query<(
-        &mut Velocity,
-        &Transform,
-        &BoxCollider,
-        &GameSceneId,
-        &Owner,
-    )>,
-    buildings: Query<
-        (
-            &Transform,
-            &BoxCollider,
-            &GameSceneId,
-            &Owner,
-            &Building,
-            &BuildStatus,
-        ),
-        With<Health>,
-    >,
+    mut query: Query<(&mut Velocity, &Transform, &BoxCollider, &Owner)>,
+    buildings: Query<(&Transform, &BoxCollider, &Owner, &Building, &BuildStatus), With<Health>>,
     time: Res<Time>,
 ) {
-    for (mut velocity, transform, collider, scene, owner) in query.iter_mut() {
+    for (mut velocity, transform, collider, owner) in query.iter_mut() {
         let future_position = transform.translation.truncate() + velocity.0 * time.delta_secs();
         let future_bounds = collider.at_pos(future_position);
 
-        for (
-            building_transform,
-            building_collider,
-            building_scene,
-            building_owner,
-            building,
-            building_status,
-        ) in buildings.iter()
+        for (building_transform, building_collider, building_owner, building, building_status) in
+            buildings.iter()
         {
-            if scene.ne(building_scene) {
-                continue;
-            }
-
             if building_owner.eq(owner) {
                 continue;
             }
@@ -120,24 +162,22 @@ fn wall_collision(
     }
 }
 
-fn set_player_velocity(mut query: Query<(&mut Velocity, &PlayerInput, &Speed)>) {
-    for (mut velocity, input, speed) in query.iter_mut() {
-        let x = (input.right as i8 - input.left as i8) as f32;
-
-        let direction = Vec2::new(x, 0.).normalize_or_zero();
-        let desired_velocity = direction * speed.0;
-
-        velocity.0 = desired_velocity
-    }
-}
-
 const MOVE_EPSILON: f32 = 1.;
 
 fn set_unit_velocity(
-    mut query: Query<(&mut Velocity, &Transform, &UnitBehaviour, &Unit, &PushBack)>,
-    transform_query: Query<&Transform>,
+    mut query: Query<
+        (
+            &mut Velocity,
+            &mut Transform,
+            &UnitBehaviour,
+            &Unit,
+            &PushBack,
+        ),
+        With<Health>,
+    >,
+    transform_query: Query<&Transform, Without<Unit>>,
 ) {
-    for (mut velocity, transform, behaviour, unit, push_back) in &mut query {
+    for (mut velocity, mut transform, behaviour, unit, push_back) in &mut query {
         match behaviour {
             UnitBehaviour::Idle => {}
             UnitBehaviour::AttackTarget(_) => {
@@ -149,17 +189,15 @@ fn set_unit_velocity(
             UnitBehaviour::FollowFlag(flag, offset) => {
                 let target = transform_query.get(*flag).unwrap().translation.truncate();
                 let target = target + *offset;
-                let target_right = target.x > transform.translation.x;
+                let direction = (target.x - transform.translation.x).signum();
 
                 if (transform.translation.x - target.x).abs() <= MOVE_EPSILON {
                     velocity.0.x = 0.;
                     continue;
                 }
 
-                match target_right {
-                    true => velocity.0.x = unit_speed(&unit.unit_type),
-                    false => velocity.0.x = -unit_speed(&unit.unit_type),
-                }
+                velocity.0.x = direction * unit_speed(&unit.unit_type);
+                transform.scale.x = direction;
             }
         }
     }

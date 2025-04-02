@@ -1,10 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    map::buildings::Building,
-    networking::{Faction, Inventory, Owner},
-    server::networking::ServerLobby,
-};
+use crate::{map::buildings::Building, networking::Inventory, Faction, Owner};
 
 use super::BuildingConstruction;
 
@@ -40,21 +36,16 @@ pub fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingC
 
 pub fn gold_farm_output(
     mut gold_farms_query: Query<(&mut GoldFarmTimer, &Owner)>,
-    mut inventory: Query<&mut Inventory>,
+    mut inventory_query: Query<&mut Inventory>,
     time: Res<Time>,
-    lobby: Res<ServerLobby>,
 ) {
     for (mut farm_timer, owner) in &mut gold_farms_query {
         farm_timer.timer.tick(time.delta());
 
         if farm_timer.timer.just_finished() {
-            if let Faction::Player { client_id } = owner.faction {
-                match lobby.players.get(&client_id) {
-                    Some(player_entity) => {
-                        let mut inventory = inventory.get_mut(*player_entity).unwrap();
-                        inventory.gold += GOLD_PER_TICK;
-                    }
-                    None => error!(name:"gold_farm_output", "Player not found"),
+            if let Faction::Player(player_entity) = **owner {
+                if let Ok(mut inventory) = inventory_query.get_mut(player_entity) {
+                    inventory.gold += GOLD_PER_TICK;
                 }
             }
         }

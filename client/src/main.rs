@@ -1,15 +1,14 @@
 use bevy::prelude::*;
 
-use bevy::app::ScheduleRunnerPlugin;
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
-use core::time::Duration;
 use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
-use networking::{ClientNetworkPlugin, Connected};
-use shared::{server::networking::ServerNetworkPlugin, GameState};
+use networking::Connected;
+use shared::{
+    networking::NetworkRegistry, server::networking::ServerNetworkPlugin, GameState, SharedPlugin,
+};
 use std::env;
-use std::thread;
 use ui::UiPlugin;
 
 use animations::AnimationPlugin;
@@ -25,7 +24,7 @@ use menu::JoinSteamLobby;
 use networking::join_server::join_steam_server;
 
 #[cfg(feature = "netcode")]
-use bevy_renet::netcode::{NetcodeClientPlugin, NetcodeServerPlugin, NetcodeTransportError};
+use bevy_renet::netcode::NetcodeTransportError;
 #[cfg(feature = "netcode")]
 use networking::join_server::join_netcode_server;
 #[cfg(feature = "netcode")]
@@ -42,32 +41,6 @@ pub mod ui;
 pub mod ui_widgets;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.contains(&String::from("server")) {
-        thread::Builder::new()
-            .name("server".into())
-            .spawn(|| {
-                let mut server = App::new();
-
-                server.add_plugins(MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(
-                    Duration::from_secs_f64(1.0 / 60.0),
-                )));
-
-                server.add_plugins(ServerNetworkPlugin);
-
-                println!("Starting netcode server...");
-
-                #[cfg(feature = "netcode")]
-                {
-                    server.add_plugins(NetcodeServerPlugin);
-                    server.add_systems(Startup, create_netcode_server);
-                }
-
-                server.run();
-            })
-            .unwrap();
-    }
-
     let mut client = App::new();
 
     #[cfg(feature = "steam")]
@@ -76,35 +49,35 @@ fn main() {
         client.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
     }
 
-    let primary_window = Window {
-        title: "WARPPCS".to_string(),
-        resolution: (1280.0, 720.0).into(),
-        resizable: false,
-        ..default()
-    };
-
-    client.add_plugins(
-        DefaultPlugins
-            .set(WindowPlugin {
-                primary_window: Some(primary_window),
+    client.add_plugins((DefaultPlugins
+        .set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "WARPPCS".to_string(),
+                resolution: (1280.0, 720.0).into(),
+                resizable: false,
                 ..default()
-            })
-            .set(ImagePlugin::default_nearest()),
-    );
+            }),
+            ..default()
+        })
+        .set(ImagePlugin::default_nearest()),));
 
-    client.insert_state(MainMenuStates::TitleScreen);
-    client.insert_state(GameState::MainMenu);
+    client.add_plugins(SharedPlugin);
 
-    client.add_plugins(ParallaxPlugin);
-    client.add_plugins(CameraPlugin);
-    client.add_plugins(InputPlugin);
-    client.add_plugins(AnimationPlugin);
-    client.add_plugins(MenuPlugin);
-    client.add_plugins(EntitiesPlugin);
-    client.add_plugins(UiPlugin);
-    client.add_plugins(GizmosPlugin);
+    client
+        .insert_state(MainMenuStates::TitleScreen)
+        .insert_state(GameState::MainMenu)
+        .add_plugins((
+            ParallaxPlugin,
+            CameraPlugin,
+            InputPlugin,
+            AnimationPlugin,
+            MenuPlugin,
+            EntitiesPlugin,
+            UiPlugin,
+            GizmosPlugin,
+        ));
+
     client.add_systems(Startup, setup_background);
-    client.add_plugins(ClientNetworkPlugin);
 
     #[cfg(feature = "steam")]
     {
@@ -125,8 +98,6 @@ fn main() {
 
     #[cfg(feature = "netcode")]
     {
-        client.add_plugins(NetcodeClientPlugin);
-
         client.configure_sets(Update, Connected.run_if(client_connected));
 
         fn panic_on_error_system(mut renet_error: EventReader<NetcodeTransportError>) {
@@ -137,7 +108,17 @@ fn main() {
         }
 
         client.add_systems(Update, panic_on_error_system.run_if(client_connected));
-        client.add_systems(Startup, join_netcode_server);
+
+        let args: Vec<String> = env::args().collect();
+        if args.contains(&String::from("server")) {
+            client
+                .add_plugins(ServerNetworkPlugin)
+                .add_systems(Startup, create_netcode_server);
+        } else {
+            client
+                .add_plugins(NetworkRegistry)
+                .add_systems(Startup, join_netcode_server);
+        }
     }
 
     client.run();
@@ -150,7 +131,7 @@ fn setup_background(
 ) {
     // Plain
     commands.spawn((
-        Mesh2d(meshes.add(Rectangle::new(6000.0, 2000.0))),
+        Mesh2d(meshes.add(Rectangle::new(60000.0, 2000.0))),
         MeshMaterial2d(materials.add(Color::hsl(109., 0.97, 0.88))),
         Transform::from_xyz(0.0, -1000.0, 0.0),
     ));

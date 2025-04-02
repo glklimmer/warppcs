@@ -2,31 +2,20 @@ use bevy::prelude::*;
 
 use bandits::bandit::bandit;
 use humans::{archer::archer, pikeman::pikeman, shieldwarrior::shieldwarrior};
-use shared::{enum_map::*, networking::UnitType, unit_collider, BoxCollider};
-
-use crate::entities::PartOfScene;
-
-use super::{
-    AnimationTrigger, Change, EntityChangeEvent, FullAnimation, PlayOnce, SpriteSheet,
-    SpriteSheetAnimation,
+use shared::{
+    enum_map::*,
+    networking::UnitType,
+    server::{
+        entities::{health::Health, Unit, UnitAnimation},
+        physics::movement::Moving,
+    },
+    AnimationChange, AnimationChangeEvent,
 };
+
+use super::{AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};
 
 pub mod bandits;
 pub mod humans;
-
-#[derive(Component)]
-#[require(PartOfScene, BoxCollider(unit_collider), UnitAnimation)]
-pub struct Unit;
-
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
-pub enum UnitAnimation {
-    #[default]
-    Idle,
-    Walk,
-    Attack,
-    Hit,
-    Death,
-}
 
 #[derive(Resource)]
 pub struct UnitSpriteSheets {
@@ -51,85 +40,100 @@ impl FromWorld for UnitSpriteSheets {
     }
 }
 
-pub fn next_unit_animation(
+pub fn trigger_unit_animation(
     mut commands: Commands,
-    mut query: Query<(&mut UnitAnimation, Option<&FullAnimation>)>,
-    mut network_events: EventReader<EntityChangeEvent>,
+    mut network_events: EventReader<AnimationChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
 ) {
     for event in network_events.read() {
-        if let Ok((mut current_animation, maybe_full)) = query.get_mut(event.entity) {
-            if let UnitAnimation::Death = *current_animation {
-                return;
-            }
+        let new_animation = match &event.change {
+            AnimationChange::Attack => UnitAnimation::Attack,
+            AnimationChange::Hit => UnitAnimation::Hit,
+            AnimationChange::Death => UnitAnimation::Death,
+            AnimationChange::Mount => UnitAnimation::Idle,
+        };
 
-            let maybe_new_animation = match &event.change {
-                Change::Movement(moving) => match moving {
-                    true => Some(UnitAnimation::Walk),
-                    false => Some(UnitAnimation::Idle),
-                },
-                Change::Attack => Some(UnitAnimation::Attack),
-                Change::Rotation(_) => None,
-                Change::Hit => Some(UnitAnimation::Hit),
-                Change::Death => Some(UnitAnimation::Death),
-            };
+        commands.entity(event.entity).insert(PlayOnce);
 
-            if let Some(new_animation) = maybe_new_animation {
-                if is_interupt_animation(&new_animation)
-                    || (maybe_full.is_none() && new_animation != *current_animation)
-                {
-                    *current_animation = new_animation;
+        animation_trigger.send(AnimationTrigger {
+            entity: event.entity,
+            state: new_animation,
+        });
+    }
+}
 
-                    if is_full_animation(&new_animation) {
-                        commands.entity(event.entity).insert(FullAnimation);
-                    }
+pub fn set_unit_walking(
+    trigger: Trigger<OnAdd, Moving>,
+    mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
+    query: Query<Entity, With<Health>>,
+) {
+    if query.get(trigger.entity()).is_err() {
+        return;
+    }
 
-                    if let UnitAnimation::Death = new_animation {
-                        commands.entity(event.entity).insert(PlayOnce);
-                    }
+    animation_trigger.send(AnimationTrigger {
+        entity: trigger.entity(),
+        state: UnitAnimation::Walk,
+    });
+}
 
-                    animation_trigger.send(AnimationTrigger {
-                        entity: event.entity,
-                        state: new_animation,
-                    });
-                }
-            }
+pub fn set_unit_after_play_once(
+    trigger: Trigger<OnRemove, PlayOnce>,
+    mut commands: Commands,
+    mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
+    unit_animation: Query<&UnitAnimation>,
+) {
+    if let Ok(animation) = unit_animation.get(trigger.entity()) {
+        let mut entity = commands.entity(trigger.entity());
+        if let UnitAnimation::Death = animation {
+            entity.remove::<SpriteSheetAnimation>();
+            return;
         }
+
+        let new_animation = match animation {
+            UnitAnimation::Attack | UnitAnimation::Hit => UnitAnimation::Idle,
+            _ => *animation,
+        };
+
+        animation_trigger.send(AnimationTrigger {
+            entity: trigger.entity(),
+            state: new_animation,
+        });
     }
 }
 
-fn is_interupt_animation(animation: &UnitAnimation) -> bool {
-    match animation {
-        UnitAnimation::Idle => false,
-        UnitAnimation::Walk => false,
-        UnitAnimation::Attack => true,
-        UnitAnimation::Hit => false,
-        UnitAnimation::Death => true,
+pub fn set_unit_idle(
+    trigger: Trigger<OnRemove, Moving>,
+    mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
+    query: Query<Entity, With<Health>>,
+) {
+    if query.get(trigger.entity()).is_err() {
+        return;
     }
-}
 
-fn is_full_animation(animation: &UnitAnimation) -> bool {
-    match animation {
-        UnitAnimation::Idle => false,
-        UnitAnimation::Walk => false,
-        UnitAnimation::Attack => true,
-        UnitAnimation::Hit => true,
-        UnitAnimation::Death => true,
-    }
+    animation_trigger.send(AnimationTrigger {
+        entity: trigger.entity(),
+        state: UnitAnimation::Idle,
+    });
 }
 
 pub fn set_unit_sprite_animation(
-    mut query: Query<(&UnitType, &mut SpriteSheetAnimation, &mut Sprite)>,
+    mut query: Query<(
+        &Unit,
+        &mut SpriteSheetAnimation,
+        &mut Sprite,
+        &mut UnitAnimation,
+    )>,
     mut animation_changed: EventReader<AnimationTrigger<UnitAnimation>>,
     sprite_sheets: Res<UnitSpriteSheets>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((unit_type, mut sprite_animation, mut sprite)) =
+        if let Ok((unit, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
         {
             let animation = sprite_sheets
                 .sprite_sheets
-                .get(*unit_type)
+                .get(unit.unit_type)
                 .animations
                 .get(new_animation.state);
 
@@ -138,6 +142,7 @@ pub fn set_unit_sprite_animation(
             }
 
             *sprite_animation = animation.clone();
+            *current_animation = new_animation.state;
         }
     }
 }

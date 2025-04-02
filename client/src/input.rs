@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use shared::networking::{PlayerCommand, PlayerInput};
+use bevy_replicon::client::ClientSet;
+use shared::networking::LobbyEvent;
 
 use crate::gizmos::GizmosSettings;
 
@@ -8,35 +9,20 @@ pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(PlayerInput::default());
-        app.add_event::<PlayerCommand>();
-        app.add_systems(
-            Update,
-            (player_input, gizmos_settings).run_if(resource_changed::<ButtonInput<KeyCode>>),
-        );
+        app.add_systems(PostUpdate, lobby_input.before(ClientSet::Send))
+            .add_systems(
+                Update,
+                gizmos_settings.run_if(resource_changed::<ButtonInput<KeyCode>>),
+            );
     }
 }
 
-fn player_input(
+fn lobby_input(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut player_input: ResMut<PlayerInput>,
-    mut player_commands: EventWriter<PlayerCommand>,
+    mut lobby_events: EventWriter<LobbyEvent>,
 ) {
-    player_input.left =
-        keyboard_input.pressed(KeyCode::KeyA) || keyboard_input.pressed(KeyCode::ArrowLeft);
-    player_input.right =
-        keyboard_input.pressed(KeyCode::KeyD) || keyboard_input.pressed(KeyCode::ArrowRight);
-
-    if keyboard_input.just_pressed(KeyCode::KeyE) {
-        player_commands.send(PlayerCommand::MeleeAttack);
-    }
-
     if keyboard_input.just_pressed(KeyCode::Enter) {
-        player_commands.send(PlayerCommand::StartGame);
-    }
-
-    if keyboard_input.just_pressed(KeyCode::KeyF) {
-        player_commands.send(PlayerCommand::Interact);
+        lobby_events.send(LobbyEvent::StartGame);
     }
 }
 

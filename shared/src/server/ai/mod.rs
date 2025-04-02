@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use attack::{unit_range, AttackPlugin};
 
-use crate::{map::GameSceneId, networking::Owner};
+use crate::Owner;
 
 use super::{
     buildings::recruiting::FlagAssignment,
@@ -31,7 +31,7 @@ impl Plugin for AIPlugin {
     }
 }
 
-pub const SIGHT_RANGE: f32 = 800.;
+pub const SIGHT_RANGE: f32 = 300.;
 
 struct TargetInfo {
     entity: Entity,
@@ -39,32 +39,23 @@ struct TargetInfo {
 }
 
 fn determine_behaviour(
-    mut query: Query<(
-        Entity,
-        &mut UnitBehaviour,
-        &GameSceneId,
-        &Transform,
-        &Owner,
-        &Unit,
-    )>,
-    others: Query<(Entity, &GameSceneId, &Transform, &Owner), With<Health>>,
+    mut query: Query<(Entity, &mut UnitBehaviour, &Transform, &Owner, &Unit)>,
+    others: Query<(Entity, &Transform, &Owner), With<Health>>,
     flag: Query<&FlagAssignment>,
 ) {
-    for (entity, mut behaviour, scene_id, transform, owner, unit) in &mut query {
+    for (entity, mut behaviour, transform, owner, unit) in &mut query {
         let nearest = others
             .iter()
-            .filter(|other| other.1.eq(scene_id))
-            .filter(|other| other.3.ne(owner))
-            .map(|other| TargetInfo {
-                entity: other.0,
+            .filter(|(.., other_owner)| other_owner.ne(&owner))
+            .map(|(other_entity, other_transform, _)| TargetInfo {
+                entity: other_entity,
                 distance: transform
                     .translation
                     .truncate()
-                    .distance(other.2.translation.truncate()),
+                    .distance(other_transform.translation.truncate()),
             })
             .filter(|other| other.distance <= unit_range(&unit.unit_type))
             .min_by(|a, b| a.distance.total_cmp(&b.distance));
-
         match nearest {
             Some(nearest_enemy) => match *behaviour {
                 UnitBehaviour::AttackTarget(enemy) => {

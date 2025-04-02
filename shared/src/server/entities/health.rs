@@ -1,15 +1,10 @@
 use bevy::prelude::*;
-use bevy_renet::renet::RenetServer;
+
+use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
-    map::{
-        buildings::{BuildStatus, Building},
-        scenes::SceneBuildingIndicator,
-        GameSceneId,
-    },
-    networking::{BuildingUpdate, Facing, Owner, ServerChannel, ServerMessages, UpdateType},
-    server::{networking::SendServerMessage, physics::movement::Velocity},
-    BoxCollider, DelayedDespawn,
+    map::buildings::Building, networking::Facing, AnimationChange, AnimationChangeEvent,
+    DelayedDespawn, Owner,
 };
 
 use super::Unit;
@@ -48,18 +43,20 @@ impl Plugin for HealthPlugin {
 }
 
 fn apply_damage(
-    mut query: Query<(Entity, &mut Health, &GameSceneId)>,
+    mut query: Query<(Entity, &mut Health)>,
     mut attack_events: EventReader<TakeDamage>,
-    mut sender: EventWriter<SendServerMessage>,
+    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
 ) {
     for event in attack_events.read() {
-        if let Ok((entity, mut health, game_scene_id)) = query.get_mut(event.target_entity) {
+        if let Ok((entity, mut health)) = query.get_mut(event.target_entity) {
             health.hitpoints -= event.damage;
-            println!("New health: {}.", health.hitpoints);
 
-            sender.send(SendServerMessage {
-                message: ServerMessages::EntityHit { entity },
-                game_scene_id: *game_scene_id,
+            animation.send(ToClients {
+                mode: SendMode::Broadcast,
+                event: AnimationChangeEvent {
+                    entity,
+                    change: AnimationChange::Hit,
+                },
             });
         }
     }
@@ -67,58 +64,34 @@ fn apply_damage(
 
 fn on_unit_death(
     mut commands: Commands,
-    mut sender: EventWriter<SendServerMessage>,
-    query: Query<(Entity, &Health, &GameSceneId), With<Unit>>,
+    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    query: Query<(Entity, &Health), With<Unit>>,
 ) {
-    for (entity, health, game_scene_id) in query.iter() {
+    for (entity, health) in query.iter() {
         if health.hitpoints <= 0. {
             commands
                 .entity(entity)
                 .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
-                .remove::<Health>()
-                .remove::<Velocity>()
-                .remove::<Unit>()
-                .remove::<BoxCollider>();
+                .remove::<Health>();
 
-            sender.send(SendServerMessage {
-                message: ServerMessages::EntityDeath { entity },
-                game_scene_id: *game_scene_id,
+            animation.send(ToClients {
+                mode: SendMode::Broadcast,
+                event: AnimationChangeEvent {
+                    entity,
+                    change: AnimationChange::Death,
+                },
             });
         }
     }
 }
 
-fn on_building_destroy(
-    mut commands: Commands,
-    mut sender: EventWriter<SendServerMessage>,
-    mut server: ResMut<RenetServer>,
-    query: Query<(
-        Entity,
-        &Health,
-        &GameSceneId,
-        &SceneBuildingIndicator,
-        &Building,
-        &Owner,
-    )>,
-) {
-    for (entity, health, game_scene_id, indicator, building, owner) in query.iter() {
+fn on_building_destroy(mut commands: Commands, query: Query<(Entity, &Health, &Building, &Owner)>) {
+    for (entity, health, building, _) in query.iter() {
         if health.hitpoints <= 0. {
             commands.entity(entity).despawn_recursive();
 
-            sender.send(SendServerMessage {
-                message: ServerMessages::BuildingUpdate(BuildingUpdate {
-                    indicator: *indicator,
-                    update: UpdateType::Status {
-                        new_status: BuildStatus::Destroyed,
-                    },
-                }),
-                game_scene_id: *game_scene_id,
-            });
-
             if let Building::MainBuilding { level: _ } = building {
-                let message = ServerMessages::PlayerDefeat(*owner);
-                let message = bincode::serialize(&message).unwrap();
-                server.broadcast_message(ServerChannel::ServerMessages, message);
+                // TODO: handle player dead
             }
         }
     }
@@ -126,23 +99,15 @@ fn on_building_destroy(
 
 fn delayed_despawn(
     mut commands: Commands,
-    mut query: Query<(Entity, &GameSceneId, &mut DelayedDespawn)>,
-    mut sender: EventWriter<SendServerMessage>,
+    mut query: Query<(Entity, &mut DelayedDespawn)>,
     time: Res<Time>,
 ) {
-    for (entity, game_scene_id, mut delayed) in &mut query {
+    for (entity, mut delayed) in &mut query {
         let timer = &mut delayed.0;
         timer.tick(time.delta());
 
         if timer.just_finished() {
             commands.entity(entity).despawn_recursive();
-
-            sender.send(SendServerMessage {
-                message: ServerMessages::DespawnEntity {
-                    entities: vec![entity],
-                },
-                game_scene_id: *game_scene_id,
-            });
         }
     }
 }

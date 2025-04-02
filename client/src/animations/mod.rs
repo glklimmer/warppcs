@@ -1,21 +1,23 @@
+use bevy::prelude::*;
+
 use animals::horse::{
     next_horse_animation, set_horse_sprite_animation, HorseAnimation, HorseSpriteSheet,
 };
-use bevy::prelude::*;
-
-use king::{next_king_animation, set_king_sprite_animation, KingAnimation, KingSpriteSheet};
+use bevy_replicon::client::ClientSet;
+use king::{
+    set_king_after_play_once, set_king_idle, set_king_sprite_animation, set_king_walking,
+    trigger_king_animation, KingAnimation, KingSpriteSheet,
+};
 use objects::{
-    chest::ChestSpriteSheet,
-    flag::{FlagAnimation, FlagSpriteSheet},
+    chest::{play_chest_animation, set_chest_after_play_once, ChestSpriteSheet},
+    flag::FlagSpriteSheet,
+    portal::PortalSpriteSheet,
 };
-
-use crate::networking::{NetworkEvent, NetworkMapping};
-
-use shared::{
-    enum_map::*,
-    networking::{Facing, Rotation, ServerMessages},
+use shared::{enum_map::*, server::entities::UnitAnimation};
+use units::{
+    set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation, set_unit_walking,
+    trigger_unit_animation, UnitSpriteSheets,
 };
-use units::{next_unit_animation, set_unit_sprite_animation, UnitAnimation, UnitSpriteSheets};
 
 pub mod animals;
 pub mod king;
@@ -54,43 +56,6 @@ impl Default for SpriteSheetAnimation {
     }
 }
 
-#[derive(Bundle)]
-pub struct SpriteAnimationBundle {
-    pub sprite: Sprite,
-    pub transform: Transform,
-    pub initial_animation: SpriteSheetAnimation,
-}
-
-impl SpriteAnimationBundle {
-    pub fn new<E: EnumIter>(
-        translation: &[f32; 3],
-        sprite_sheet: &SpriteSheet<E>,
-        animation: E,
-        scale: f32,
-    ) -> Self {
-        let animation = sprite_sheet.animations.get(animation);
-        SpriteAnimationBundle {
-            sprite: Sprite {
-                image: sprite_sheet.texture.clone(),
-                texture_atlas: Some(TextureAtlas {
-                    layout: sprite_sheet.layout.clone(),
-                    index: animation.first_sprite_index,
-                }),
-                ..default()
-            },
-            transform: Transform {
-                translation: (*translation).into(),
-                scale: Vec3::splat(scale),
-                ..default()
-            },
-            initial_animation: animation.clone(),
-        }
-    }
-}
-
-#[derive(Component)]
-pub struct UnitFacing(pub Facing);
-
 /// Gets only triggered if new animation
 #[derive(Debug, Event)]
 pub struct AnimationTrigger<E> {
@@ -102,22 +67,7 @@ pub struct AnimationTrigger<E> {
 pub struct FullAnimation;
 
 #[derive(Component)]
-struct PlayOnce;
-
-#[derive(Debug)]
-pub enum Change {
-    Rotation(Rotation),
-    Movement(bool),
-    Attack,
-    Hit,
-    Death,
-}
-
-#[derive(Event)]
-pub struct EntityChangeEvent {
-    pub entity: Entity,
-    pub change: Change,
-}
+pub struct PlayOnce;
 
 pub struct AnimationPlugin;
 
@@ -130,92 +80,38 @@ impl Plugin for AnimationPlugin {
         app.add_event::<AnimationTrigger<KingAnimation>>();
 
         app.init_resource::<FlagSpriteSheet>();
-        app.add_event::<AnimationTrigger<FlagAnimation>>();
-
         app.init_resource::<ChestSpriteSheet>();
+        app.init_resource::<PortalSpriteSheet>();
 
         app.init_resource::<HorseSpriteSheet>();
         app.add_event::<AnimationTrigger<HorseAnimation>>();
 
-        app.add_event::<EntityChangeEvent>();
-
         app.add_systems(
-            FixedUpdate,
-            (trigger_meele_attack, trigger_hit, trigger_death),
-        );
+            PreUpdate,
+            (
+                trigger_king_animation,
+                trigger_unit_animation,
+                play_chest_animation,
+            )
+                .after(ClientSet::Receive),
+        )
+        .add_observer(set_king_walking)
+        .add_observer(set_king_idle)
+        .add_observer(set_king_after_play_once)
+        .add_observer(set_unit_walking)
+        .add_observer(set_unit_idle)
+        .add_observer(set_unit_after_play_once)
+        .add_observer(set_chest_after_play_once);
 
         app.add_systems(
             Update,
             (
-                (set_unit_sprite_animation, next_unit_animation),
-                (set_king_sprite_animation, next_king_animation),
+                (set_unit_sprite_animation),
+                (set_king_sprite_animation),
                 (set_horse_sprite_animation, next_horse_animation),
                 advance_animation,
-                set_unit_facing,
-                set_free_orientation,
-                mirror_sprite,
             ),
         );
-    }
-}
-
-fn trigger_meele_attack(
-    mut network_events: EventReader<NetworkEvent>,
-    mut change: EventWriter<EntityChangeEvent>,
-    network_mapping: Res<NetworkMapping>,
-) {
-    for event in network_events.read() {
-        if let ServerMessages::MeleeAttack {
-            entity: server_entity,
-        } = event.message
-        {
-            if let Some(client_entity) = network_mapping.0.get(&server_entity) {
-                change.send(EntityChangeEvent {
-                    entity: *client_entity,
-                    change: Change::Attack,
-                });
-            }
-        }
-    }
-}
-
-fn trigger_hit(
-    mut network_events: EventReader<NetworkEvent>,
-    mut change: EventWriter<EntityChangeEvent>,
-    network_mapping: Res<NetworkMapping>,
-) {
-    for event in network_events.read() {
-        if let ServerMessages::EntityHit {
-            entity: server_entity,
-        } = event.message
-        {
-            if let Some(client_entity) = network_mapping.0.get(&server_entity) {
-                change.send(EntityChangeEvent {
-                    entity: *client_entity,
-                    change: Change::Hit,
-                });
-            }
-        }
-    }
-}
-
-fn trigger_death(
-    mut network_events: EventReader<NetworkEvent>,
-    mut change: EventWriter<EntityChangeEvent>,
-    network_mapping: Res<NetworkMapping>,
-) {
-    for event in network_events.read() {
-        if let ServerMessages::EntityDeath {
-            entity: server_entity,
-        } = event.message
-        {
-            if let Some(client_entity) = network_mapping.0.get(&server_entity) {
-                change.send(EntityChangeEvent {
-                    entity: *client_entity,
-                    change: Change::Death,
-                });
-            }
-        }
     }
 }
 
@@ -238,6 +134,7 @@ fn advance_animation(
         if animation.frame_timer.just_finished() {
             atlas.index = if atlas.index == animation.last_sprite_index {
                 if maybe_play_once.is_some() {
+                    commands.entity(entity).remove::<PlayOnce>();
                     return;
                 }
                 if maybe_full.is_some() {
@@ -250,44 +147,6 @@ fn advance_animation(
                     AnimationDirection::Backward => atlas.index - 1,
                 }
             };
-        }
-    }
-}
-
-fn set_unit_facing(mut commands: Commands, mut movements: EventReader<EntityChangeEvent>) {
-    for event in movements.read() {
-        if let Change::Rotation(Rotation::LeftRight {
-            facing: Some(new_facing),
-        }) = &event.change
-        {
-            if let Some(mut entity) = commands.get_entity(event.entity) {
-                entity.try_insert(UnitFacing(new_facing.clone()));
-            }
-        }
-    }
-}
-
-fn set_free_orientation(
-    mut query: Query<&mut Transform>,
-    mut movements: EventReader<EntityChangeEvent>,
-) {
-    for event in movements.read() {
-        if let Change::Rotation(Rotation::Free { angle }) = &event.change {
-            if let Ok(mut transform) = query.get_mut(event.entity) {
-                transform.rotation = Quat::from_axis_angle(Vec3::Z, *angle);
-            }
-        }
-    }
-}
-
-fn mirror_sprite(mut query: Query<(&UnitFacing, &mut Transform)>) {
-    for (unit_facing, mut transform) in &mut query {
-        let new_scale_x = match unit_facing.0 {
-            Facing::Left => -transform.scale.x.abs(),
-            Facing::Right => transform.scale.x.abs(),
-        };
-        if transform.scale.x != new_scale_x {
-            transform.scale.x = new_scale_x;
         }
     }
 }

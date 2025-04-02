@@ -1,29 +1,27 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::*;
 
 use super::enum_map::*;
-use bevy_renet::renet::{ChannelConfig, ClientId, ConnectionConfig, SendType};
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
-use crate::{
-    horse_collider,
-    map::{
-        buildings::{BuildStatus, Building},
-        scenes::SceneBuildingIndicator,
-        GameSceneType,
-    },
-    projectile_collider, BoxCollider,
-};
+use crate::{horse_collider, BoxCollider};
 
 pub const PROTOCOL_ID: u64 = 7;
 
-#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Component, Resource)]
-pub struct PlayerInput {
-    pub left: bool,
-    pub right: bool,
+pub struct NetworkRegistry;
+
+impl Plugin for NetworkRegistry {
+    fn build(&self, app: &mut App) {
+        app.add_client_event::<LobbyEvent>(ChannelKind::Ordered);
+    }
 }
 
-#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
+#[derive(Debug, Deserialize, Event, Serialize)]
+pub enum LobbyEvent {
+    StartGame,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
 pub enum UnitType {
     Shieldwarrior,
     Pikeman,
@@ -42,7 +40,6 @@ pub enum PlayerCommand {
     StartGame,
     Interact,
     MeleeAttack,
-    LobbyReadyState(Checkbox),
 }
 
 pub enum ClientChannel {
@@ -54,24 +51,8 @@ pub enum ServerChannel {
     NetworkedEntities,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
-pub enum Faction {
-    Player { client_id: ClientId },
-    Bandits,
-}
-
-#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
-pub struct Owner {
-    pub faction: Faction,
-}
-
-#[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
-#[require(BoxCollider(projectile_collider))]
-pub enum ProjectileType {
-    Arrow,
-}
-
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
+#[require(Replicated)]
 pub struct Inventory {
     pub gold: u16,
 }
@@ -87,159 +68,11 @@ pub struct Mounted {
     pub mount_type: MountType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct SpawnPlayer {
-    pub id: ClientId,
-    pub entity: Entity,
-    pub translation: [f32; 3],
-    pub mounted: Option<Mounted>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct SpawnFlag {
-    pub flag: Entity,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct DropFlag {
-    pub flag: Entity,
-    pub translation: Vec3,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct PickFlag {
-    pub flag: Entity,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct SpawnUnit {
-    pub owner: Owner,
-    pub entity: Entity,
-    pub unit_type: UnitType,
-    pub translation: [f32; 3],
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct SpawnMount {
-    pub entity: Entity,
-    pub mount_type: MountType,
-    pub translation: [f32; 3],
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct SpawnProjectile {
-    pub entity: Entity,
-    pub projectile_type: ProjectileType,
-    pub translation: [f32; 3],
-    pub direction: [f32; 2],
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct BuildingUpdate {
-    pub indicator: SceneBuildingIndicator,
-    pub update: UpdateType,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub struct LoadBuilding {
-    pub indicator: SceneBuildingIndicator,
-    pub status: BuildStatus,
-    pub upgrade: Building,
-}
-
-#[derive(Debug, Serialize, Deserialize, Event, Clone)]
-pub enum UpdateType {
-    Status { new_status: BuildStatus },
-    Upgrade { upgraded_building: Building },
-}
-
-#[derive(Debug, Serialize, Deserialize, Component, Clone, PartialEq, Eq, Copy)]
-pub enum Checkbox {
-    Checked,
-    Unchecked,
-}
-
-#[derive(Debug, Serialize, Deserialize, Component)]
-pub enum ServerMessages {
-    PlayerJoinedLobby {
-        id: ClientId,
-        ready_state: Checkbox,
-    },
-    PlayerLeftLobby {
-        id: ClientId,
-    },
-    LobbyPlayerReadyState {
-        id: ClientId,
-        ready_state: Checkbox,
-    },
-    SpawnPlayer(SpawnPlayer),
-    SpawnFlag(SpawnFlag),
-    DropFlag(DropFlag),
-    PickFlag(PickFlag),
-    SpawnUnit(SpawnUnit),
-    SpawnMount(SpawnMount),
-    SpawnProjectile(SpawnProjectile),
-    PlayerDisconnected {
-        id: ClientId,
-    },
-    DespawnEntity {
-        entities: Vec<Entity>,
-    },
-    LoadGameScene {
-        game_scene_type: GameSceneType,
-        players: Vec<SpawnPlayer>,
-        flag: Option<SpawnFlag>,
-        units: Vec<SpawnUnit>,
-        mounts: Vec<SpawnMount>,
-        projectiles: Vec<SpawnProjectile>,
-        buildings: Vec<LoadBuilding>,
-    },
-    SpawnGroup {
-        player: SpawnPlayer,
-        units: Vec<SpawnUnit>,
-    },
-    MeleeAttack {
-        entity: Entity,
-    },
-    SyncInventory(Inventory),
-    BuildingUpdate(BuildingUpdate),
-    EntityHit {
-        entity: Entity,
-    },
-    EntityDeath {
-        entity: Entity,
-    },
-    PlayerDefeat(Owner),
-    Mount {
-        entity: Entity,
-        mount_type: MountType,
-    },
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub enum Facing {
     #[default]
     Left,
     Right,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum Rotation {
-    LeftRight { facing: Option<Facing> },
-    Free { angle: f32 },
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct NetworkEntity {
-    pub entity: Entity,
-    pub translation: [f32; 3],
-    pub rotation: Rotation,
-    pub moving: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct NetworkedEntities {
-    pub entities: Vec<NetworkEntity>,
 }
 
 impl From<ClientChannel> for u8 {
@@ -251,59 +84,11 @@ impl From<ClientChannel> for u8 {
     }
 }
 
-impl ClientChannel {
-    pub fn channels_config() -> Vec<ChannelConfig> {
-        vec![
-            ChannelConfig {
-                channel_id: Self::Input.into(),
-                max_memory_usage_bytes: 5 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::ZERO,
-                },
-            },
-            ChannelConfig {
-                channel_id: Self::Command.into(),
-                max_memory_usage_bytes: 5 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::ZERO,
-                },
-            },
-        ]
-    }
-}
-
 impl From<ServerChannel> for u8 {
     fn from(channel_id: ServerChannel) -> Self {
         match channel_id {
             ServerChannel::NetworkedEntities => 0,
             ServerChannel::ServerMessages => 1,
         }
-    }
-}
-
-impl ServerChannel {
-    pub fn channels_config() -> Vec<ChannelConfig> {
-        vec![
-            ChannelConfig {
-                channel_id: Self::NetworkedEntities.into(),
-                max_memory_usage_bytes: 10 * 1024 * 1024,
-                send_type: SendType::Unreliable,
-            },
-            ChannelConfig {
-                channel_id: Self::ServerMessages.into(),
-                max_memory_usage_bytes: 10 * 1024 * 1024,
-                send_type: SendType::ReliableOrdered {
-                    resend_time: Duration::from_millis(200),
-                },
-            },
-        ]
-    }
-}
-
-pub fn connection_config() -> ConnectionConfig {
-    ConnectionConfig {
-        available_bytes_per_tick: 1024 * 1024,
-        client_channels_config: ClientChannel::channels_config(),
-        server_channels_config: ServerChannel::channels_config(),
     }
 }
