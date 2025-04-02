@@ -101,7 +101,7 @@ fn play_sound_on_entity_change(
         let sound = match event.change {
             AnimationChange::Hit(hit_by) => match hit_by {
                 Hitby::Arrow => "animation_sound/arrow/arrow_hits_flesh.ogg",
-                Hitby::Meele => "animation_sound/arrow/arrow_hits_flesh.ogg",
+                Hitby::Melee => "animation_sound/arrow/arrow_hits_flesh.ogg",
             },
             _ => "",
         };

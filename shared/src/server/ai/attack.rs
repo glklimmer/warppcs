@@ -102,7 +102,7 @@ fn process_attacks(
                                 true => Facing::Left,
                                 false => Facing::Right,
                             },
-                            by: Hitby::Meele,
+                            by: Hitby::Melee,
                         });
                         animation.send(ToClients {
                             mode: SendMode::Broadcast,

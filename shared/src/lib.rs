@@ -69,7 +69,7 @@ impl Plugin for SharedPlugin {
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum Hitby {
     Arrow,
-    Meele,
+    Melee,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
