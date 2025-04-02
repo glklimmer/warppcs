@@ -6,11 +6,8 @@ use shared::{server::entities::UnitAnimation, Owner};
 
 use crate::networking::ControlledPlayer;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum MusicTrack {
-    #[default]
-    None,
-    MainMenu,
     Base,
     Combat,
 }
@@ -20,16 +17,14 @@ struct MusicState {
     current_track: MusicTrack,
     desired_track: MusicTrack,
     is_transitioning: bool,
-    volume: f32, // 0.0 to 1.0 scale for dynamic music intensity
 }
 
 impl Default for MusicState {
     fn default() -> Self {
         MusicState {
-            current_track: MusicTrack::None,
-            desired_track: MusicTrack::MainMenu,
+            current_track: MusicTrack::Base,
+            desired_track: MusicTrack::Base,
             is_transitioning: false,
-            volume: 1.0,
         }
     }
 }
@@ -48,8 +43,8 @@ struct MusicTransitionEvent {
     fade_time: f32, // in seconds
 }
 
-const BACKGROUND_VOLUME: f32 = 0.15;
-const COMBAT_DISTANCE_THRESHOLD: f32 = 550.0;
+const BACKGROUND_VOLUME: f32 = 0.05;
+const COMBAT_DISTANCE_THRESHOLD: f32 = 150.0;
 pub struct BackgroundSoundPlugin;
 
 impl Plugin for BackgroundSoundPlugin {
@@ -59,55 +54,43 @@ impl Plugin for BackgroundSoundPlugin {
 
         app.add_systems(Startup, setup_music);
         app.add_systems(
-            PostUpdate,
-            (handle_music_transitions, update_music_volume)
-                .run_if(on_event::<MusicTransitionEvent>),
+            Update,
+            (
+                handle_music_transitions.run_if(on_event::<MusicTransitionEvent>),
+                update_music_volume,
+            ),
         );
 
-        app.add_systems(PostUpdate, play_fight_music);
+        app.add_systems(Update, play_fight_music);
     }
 }
 
-fn setup_music(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut transition_events: EventWriter<MusicTransitionEvent>,
-) {
-    // Load all audio assets first
+fn setup_music(mut commands: Commands, asset_server: Res<AssetServer>) {
     let menu_track = asset_server.load("music/music_chill.ogg");
     let combat_track = asset_server.load("music/music_fight.ogg");
 
-    // Create a batch of music tracks with already loaded assets
     let music_tracks = [
-        (MusicTrack::MainMenu, menu_track.clone()),
-        (MusicTrack::Combat, combat_track.clone()),
-        (MusicTrack::Base, menu_track.clone()),
+        (MusicTrack::Combat, combat_track.clone(), true),
+        (MusicTrack::Base, menu_track.clone(), false),
     ];
 
-    // Spawn all music tracks in a batch
-    commands.spawn_batch(music_tracks.into_iter().map(|(track, handle)| {
+    commands.spawn_batch(music_tracks.into_iter().map(|(track, handle, paused)| {
         (
             AudioPlayer::new(handle),
             PlaybackSettings {
                 mode: PlaybackMode::Loop,
                 volume: Volume::new(BACKGROUND_VOLUME),
-                paused: true,
+                paused,
                 ..default()
             },
             MusicPlayer {
                 track,
-                volume: 0.0,
+                volume: BACKGROUND_VOLUME,
                 target_volume: 0.0,
                 fade_speed: 1.0,
             },
         )
     }));
-
-    // Send initial transition event
-    transition_events.send(MusicTransitionEvent {
-        track: MusicTrack::MainMenu,
-        fade_time: 2.0,
-    });
 }
 
 fn handle_music_transitions(
@@ -117,15 +100,15 @@ fn handle_music_transitions(
 ) {
     for event in transition_events.read() {
         music_state.is_transitioning = true;
-        println!("count: {}", music_players.iter().count());
+
         // Set target volumes and fade speeds for all players
         for (mut music_player, sink) in music_players.iter_mut() {
             if music_player.track == event.track {
-                music_player.target_volume = music_state.volume;
+                music_player.target_volume = BACKGROUND_VOLUME;
                 sink.play();
-                println!("playing");
             } else {
                 music_player.target_volume = 0.0;
+                sink.pause();
             }
 
             // Calculate fade speed based on desired fade time
@@ -200,21 +183,17 @@ fn play_fight_music(
         if enemy_nearby {
             if MusicTrack::Combat != music_state.desired_track {
                 music_state.desired_track = MusicTrack::Combat;
-                music_state.volume = BACKGROUND_VOLUME;
                 music_events.send(MusicTransitionEvent {
                     track: MusicTrack::Combat,
                     fade_time: 1.5,
                 });
             }
-        } else {
-            if MusicTrack::Base != music_state.desired_track {
-                music_state.desired_track = MusicTrack::Base;
-                music_state.volume = BACKGROUND_VOLUME;
-                music_events.send(MusicTransitionEvent {
-                    track: MusicTrack::Base,
-                    fade_time: 1.5,
-                });
-            }
+        } else if MusicTrack::Base != music_state.desired_track {
+            music_state.desired_track = MusicTrack::Base;
+            music_events.send(MusicTransitionEvent {
+                track: MusicTrack::Base,
+                fade_time: 1.5,
+            });
         }
     }
 }
