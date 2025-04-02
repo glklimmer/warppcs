@@ -232,12 +232,18 @@ pub fn set_king_idle(
 }
 
 pub fn set_king_sprite_animation(
-    mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite, &mut KingAnimation)>,
+    mut command: Commands,
+    mut query: Query<(
+        Entity,
+        &mut SpriteSheetAnimation,
+        &mut Sprite,
+        &mut KingAnimation,
+    )>,
     mut animation_changed: EventReader<AnimationTrigger<KingAnimation>>,
     king_sprite_sheet: Res<KingSpriteSheet>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((mut sprite_animation, mut sprite, mut current_animation)) =
+        if let Ok((entity, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
         {
             let animation = king_sprite_sheet
@@ -245,11 +251,18 @@ pub fn set_king_sprite_animation(
                 .animations
                 .get(new_animation.state);
 
+            let sound = king_sprite_sheet
+                .sprite_sheet
+                .animations_sound
+                .get(new_animation.state);
+
             if let Some(atlas) = &mut sprite.texture_atlas {
                 atlas.index = animation.first_sprite_index;
             }
+
             *sprite_animation = animation.clone();
             *current_animation = new_animation.state;
+            command.entity(entity).insert(sound.clone());
         }
     }
 }
