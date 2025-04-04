@@ -5,9 +5,9 @@ use enum_mappable::Mappable;
 use health::HealthPlugin;
 use serde::{Deserialize, Serialize};
 
-use crate::{enum_map::EnumIter, networking::UnitType, unit_collider, BoxCollider};
+use crate::{BoxCollider, enum_map::EnumIter, networking::UnitType, unit_collider};
 
-use super::physics::{movement::Velocity, PushBack};
+use super::physics::{PushBack, movement::Velocity};
 
 pub mod health;
 

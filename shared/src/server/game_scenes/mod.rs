@@ -10,7 +10,7 @@ use super::{
     entities::Unit,
     players::interaction::{Interactable, InteractionTriggeredEvent},
 };
-use crate::{map::Layers, BoxCollider};
+use crate::{BoxCollider, map::Layers};
 
 pub mod start_game;
 

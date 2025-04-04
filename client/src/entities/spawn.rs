@@ -15,6 +15,7 @@ use crate::{
 };
 use bevy_parallax::CameraFollow;
 use shared::{
+    ChestAnimation, LocalClientId, PhysicalPlayer,
     map::buildings::{BuildStatus, Building},
     server::{
         buildings::recruiting::Flag,
@@ -23,7 +24,6 @@ use shared::{
         physics::projectile::ProjectileType,
         players::{chest::Chest, mount::Mount},
     },
-    ChestAnimation, LocalClientId, PhysicalPlayer,
 };
 
 use super::highlight::Highlighted;

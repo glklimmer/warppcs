@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use shared::enum_map::*;
 
-use shared::server::players::chest::Chest;
 use shared::ChestAnimation;
 use shared::ChestAnimationEvent;
+use shared::server::players::chest::Chest;
 
 use crate::animations::AnimationDirection;
 use crate::animations::PlayOnce;

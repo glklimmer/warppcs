@@ -4,22 +4,21 @@ use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    flag_collider,
+    BoxCollider, Faction, Owner, flag_collider,
     map::{
-        buildings::{Building, Cost},
         Layers,
+        buildings::{Building, Cost},
     },
     networking::{Inventory, UnitType},
     server::{
         ai::{
-            attack::{unit_health, unit_swing_timer},
             UnitBehaviour,
+            attack::{unit_health, unit_swing_timer},
         },
-        entities::{health::Health, Unit},
+        entities::{Unit, health::Health},
         physics::attachment::AttachedTo,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
-    BoxCollider, Faction, Owner,
 };
 
 #[derive(Component, Deserialize, Serialize)]

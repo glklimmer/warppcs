@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
 };
 use image::{GenericImage, GenericImageView, Rgba};
-use shared::{server::physics::attachment::AttachedTo, BoxCollider, Highlightable};
+use shared::{BoxCollider, Highlightable, server::physics::attachment::AttachedTo};
 
 use crate::networking::ControlledPlayer;
 

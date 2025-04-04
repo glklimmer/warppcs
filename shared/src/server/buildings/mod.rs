@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 
 use gold_farm::{enable_goldfarm, gold_farm_output};
-use recruiting::{check_recruit, recruit, RecruitEvent};
+use recruiting::{RecruitEvent, check_recruit, recruit};
 
 use crate::{
+    Owner,
     map::buildings::{BuildStatus, Building, RecruitBuilding},
     networking::Inventory,
     server::players::interaction::Interactable,
-    Owner,
 };
 
 use super::players::interaction::{InteractionTriggeredEvent, InteractionType};

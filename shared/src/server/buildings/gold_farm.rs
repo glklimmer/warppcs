@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{map::buildings::Building, networking::Inventory, Faction, Owner};
+use crate::{Faction, Owner, map::buildings::Building, networking::Inventory};
 
 use super::BuildingConstruction;
 

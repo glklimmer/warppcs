@@ -4,8 +4,8 @@ use bevy_replicon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    server::physics::movement::{Speed, Velocity},
     PhysicalPlayer,
+    server::physics::movement::{Speed, Velocity},
 };
 
 pub struct PlayerMovement;

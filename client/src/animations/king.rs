@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use shared::{
-    enum_map::*, networking::Mounted, server::physics::movement::Moving, AnimationChange,
-    AnimationChangeEvent,
+    AnimationChange, AnimationChangeEvent, enum_map::*, networking::Mounted,
+    server::physics::movement::Moving,
 };
 
 use super::{AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};

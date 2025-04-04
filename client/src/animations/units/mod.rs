@@ -3,13 +3,13 @@ use bevy::prelude::*;
 use bandits::bandit::bandit;
 use humans::{archer::archer, pikeman::pikeman, shieldwarrior::shieldwarrior};
 use shared::{
+    AnimationChange, AnimationChangeEvent,
     enum_map::*,
     networking::UnitType,
     server::{
-        entities::{health::Health, Unit, UnitAnimation},
+        entities::{Unit, UnitAnimation, health::Health},
         physics::movement::Moving,
     },
-    AnimationChange, AnimationChangeEvent,
 };
 
 use super::{AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};

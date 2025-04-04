@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use super::enum_map::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{horse_collider, BoxCollider};
+use crate::{BoxCollider, horse_collider};
 
 pub const PROTOCOL_ID: u64 = 7;
 

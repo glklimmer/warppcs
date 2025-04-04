@@ -6,7 +6,7 @@ use gizmos::GizmosPlugin;
 use menu::{MainMenuStates, MenuPlugin};
 use networking::Connected;
 use shared::{
-    networking::NetworkRegistry, server::networking::ServerNetworkPlugin, GameState, SharedPlugin,
+    GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
 use std::env;
 use ui::UiPlugin;

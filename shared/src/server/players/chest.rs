@@ -5,8 +5,8 @@ use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    networking::MountType, server::physics::movement::Velocity, unit_collider, BoxCollider,
-    ChestAnimation, ChestAnimationEvent,
+    BoxCollider, ChestAnimation, ChestAnimationEvent, networking::MountType,
+    server::physics::movement::Velocity, unit_collider,
 };
 
 use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionType};

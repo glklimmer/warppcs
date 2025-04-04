@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use chest::open_chest;
-use flag::{drop_flag, flag_interact, pick_flag, DropFlagEvent, PickFlagEvent};
+use flag::{DropFlagEvent, PickFlagEvent, drop_flag, flag_interact, pick_flag};
 use interaction::InteractionTriggeredEvent;
 use mount::mount;
 
