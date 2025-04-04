@@ -34,7 +34,7 @@ pub struct InteractPlugin;
 
 impl Plugin for InteractPlugin {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<Interact>(ChannelKind::Ordered)
+        app.add_client_trigger::<Interact>(Channel::Ordered)
             .add_observer(interact)
             .add_event::<InteractionTriggeredEvent>()
             .add_systems(PostUpdate, send_interact.before(ClientSet::Send));

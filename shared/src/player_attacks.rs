@@ -9,7 +9,7 @@ pub struct PlayerAttacks;
 
 impl Plugin for PlayerAttacks {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<Attack>(ChannelKind::Ordered)
+        app.add_client_trigger::<Attack>(Channel::Ordered)
             .add_observer(attack)
             .add_systems(Update, attack_input.before(ClientSet::Send));
     }

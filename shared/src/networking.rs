@@ -12,7 +12,7 @@ pub struct NetworkRegistry;
 
 impl Plugin for NetworkRegistry {
     fn build(&self, app: &mut App) {
-        app.add_client_event::<LobbyEvent>(ChannelKind::Ordered);
+        app.add_client_event::<LobbyEvent>(Channel::Ordered);
     }
 }
 

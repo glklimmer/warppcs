@@ -12,7 +12,7 @@ pub struct PlayerMovement;
 
 impl Plugin for PlayerMovement {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<MovePlayer>(ChannelKind::Ordered)
+        app.add_client_trigger::<MovePlayer>(Channel::Ordered)
             .add_observer(apply_movement)
             .add_systems(Update, movement_input.before(ClientSet::Send));
     }

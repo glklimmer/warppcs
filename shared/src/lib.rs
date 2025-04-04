@@ -61,8 +61,8 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Unit, Transform)>()
         .replicate_group::<(Portal, Transform)>()
         .replicate_group::<(Mount, Transform)>()
-        .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
-        .add_mapped_server_event::<ChestAnimationEvent>(ChannelKind::Ordered)
+        .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
+        .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
         .add_observer(spawn_clients);
     }
 }

@@ -57,8 +57,8 @@ pub fn join_netcode_server(mut commands: Commands, channels: Res<RepliconChannel
     use shared::networking::PROTOCOL_ID;
     use std::{net::UdpSocket, time::SystemTime};
 
-    let server_channels_config = channels.get_server_configs();
-    let client_channels_config = channels.get_client_configs();
+    let server_channels_config = channels.server_configs();
+    let client_channels_config = channels.client_configs();
 
     let client = RenetClient::new(ConnectionConfig {
         server_channels_config,

@@ -16,8 +16,8 @@ pub fn create_steam_server(mut commands: Commands, channels: Res<RepliconChannel
     use renet_steam::SteamServerConfig;
     use renet_steam::SteamServerTransport;
 
-    let server_channels_config = channels.get_server_configs();
-    let client_channels_config = channels.get_client_configs();
+    let server_channels_config = channels.server_configs();
+    let client_channels_config = channels.client_configs();
 
     let server = RenetServer::new(ConnectionConfig {
         server_channels_config,
@@ -26,7 +26,7 @@ pub fn create_steam_server(mut commands: Commands, channels: Res<RepliconChannel
     });
 
     commands.insert_resource(server);
-    commands.insert_resource(LocalClientId(ClientId::SERVER));
+    commands.insert_resource(LocalClientId(SERVER));
 
     commands.queue(|world: &mut World| {
         let steam_client = world.get_resource::<SteamworksClient>().unwrap();
@@ -46,8 +46,8 @@ pub fn create_netcode_server(mut commands: Commands, channels: Res<RepliconChann
     use crate::networking::PROTOCOL_ID;
     use std::{net::UdpSocket, time::SystemTime};
 
-    let server_channels_config = channels.get_server_configs();
-    let client_channels_config = channels.get_client_configs();
+    let server_channels_config = channels.server_configs();
+    let client_channels_config = channels.client_configs();
 
     let server = RenetServer::new(ConnectionConfig {
         server_channels_config,
