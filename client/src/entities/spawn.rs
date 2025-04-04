@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_replicon::client::ClientSet;
 
 use crate::{
     animations::{
@@ -15,7 +16,7 @@ use crate::{
 };
 use bevy_parallax::CameraFollow;
 use shared::{
-    ChestAnimation, LocalClientId, PhysicalPlayer,
+    ChestAnimation, Player, SetLocalPlayer,
     map::buildings::{BuildStatus, Building},
     server::{
         buildings::recruiting::Flag,
@@ -33,7 +34,6 @@ pub struct SpawnPlugin;
 impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_player_sprite)
-            .add_observer(init_local_player)
             .add_observer(init_building_sprite)
             .add_observer(init_unit_sprite)
             .add_observer(init_flag_sprite)
@@ -41,32 +41,30 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_horse_sprite)
             .add_observer(init_projectile_sprite)
             .add_observer(init_chest_sprite)
-            .add_systems(Update, update_building_sprite);
+            .add_systems(Update, update_building_sprite)
+            .add_systems(PreUpdate, init_local_player.after(ClientSet::Receive));
     }
 }
 
 fn init_local_player(
-    trigger: Trigger<OnAdd, PhysicalPlayer>,
     mut commands: Commands,
-    players: Query<&PhysicalPlayer>,
-    client_id: Res<LocalClientId>,
+    mut events: EventReader<SetLocalPlayer>,
     camera: Query<Entity, With<Camera>>,
 ) {
-    let entity = trigger.entity();
-    let player = players.get(entity).unwrap();
+    for event in events.read() {
+        let player = **event;
 
-    if **player == **client_id {
-        info!("init controlled player for {:?}", **player);
-        let mut player_commands = commands.entity(entity);
+        info!("init controlled player for {:?}", player);
+        let mut player_commands = commands.entity(player);
         player_commands.insert(ControlledPlayer);
         commands
             .entity(camera.single())
-            .insert(CameraFollow::fixed(entity));
+            .insert(CameraFollow::fixed(player));
     }
 }
 
 fn init_player_sprite(
-    trigger: Trigger<OnAdd, PhysicalPlayer>,
+    trigger: Trigger<OnAdd, Player>,
     mut players: Query<&mut Sprite>,
     mut commands: Commands,
     king_sprite_sheet: Res<KingSpriteSheet>,

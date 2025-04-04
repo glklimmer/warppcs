@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_renet::renet::ClientId;
 use bevy_replicon::prelude::*;
 use enum_map::*;
 
@@ -54,7 +53,7 @@ impl Plugin for SharedPlugin {
         .replicate_mapped::<AttachedTo>()
         .replicate::<BoxCollider>()
         .replicate::<Mounted>()
-        .replicate_group::<(PhysicalPlayer, Transform, Inventory)>()
+        .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
         .replicate_group::<(ProjectileType, Transform)>()
@@ -62,6 +61,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Portal, Transform)>()
         .replicate_group::<(Mount, Transform)>()
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
+        .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
         .add_observer(spawn_clients);
     }
@@ -105,12 +105,30 @@ impl MapEntities for ChestAnimationEvent {
     }
 }
 
-fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
-    info!("spawning player for `{:?}`", trigger.client_id);
+fn spawn_clients(
+    trigger: Trigger<OnAdd, ConnectedClient>,
+    mut commands: Commands,
+    mut set_local_player: EventWriter<ToClients<SetLocalPlayer>>,
+) {
+    info!("spawning player for `{:?}`", trigger.entity());
     commands.spawn((
-        PhysicalPlayer(trigger.client_id),
+        Player(trigger.entity()),
         Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
     ));
+
+    set_local_player.send(ToClients {
+        mode: SendMode::Direct(trigger.entity()),
+        event: SetLocalPlayer(trigger.entity()),
+    });
+}
+
+#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
+pub struct SetLocalPlayer(Entity);
+
+impl MapEntities for SetLocalPlayer {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        **self = entity_mapper.map_entity(**self);
+    }
 }
 
 #[derive(Component, Deserialize, Serialize, Deref)]
@@ -123,17 +141,16 @@ fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
     Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
     Inventory
 )]
-// TODO: Rename to player
-pub struct PhysicalPlayer(bevy_replicon::core::ClientId);
+pub struct Player(Entity);
 
-#[derive(Debug, Resource, Deref)]
-pub struct LocalClientId(bevy_replicon::core::ClientId);
+#[derive(Debug, Resource, Deref, Deserialize, Serialize)]
+pub struct LocalPlayer(Entity);
 
-impl LocalClientId {
-    pub const fn new(value: u64) -> Self {
-        Self(ClientId::new(value))
-    }
-}
+// impl LocalPlayer {
+//     pub const fn new(value: u64) -> Self {
+//         Self(ClientId::new(value))
+//     }
+// }
 
 #[derive(Component)]
 pub struct Highlightable {
