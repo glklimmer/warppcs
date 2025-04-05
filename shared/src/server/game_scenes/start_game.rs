@@ -158,6 +158,18 @@ fn player_base(
         Transform::from_translation(Vec3::ZERO.with_x(-50.) + offset),
     ));
     commands.spawn((
+        Chest::Normal,
+        Transform::from_translation(Vec3::ZERO.with_x(-70.) + offset),
+    ));
+    commands.spawn((
+        Chest::Normal,
+        Transform::from_translation(Vec3::ZERO.with_x(-90.) + offset),
+    ));
+    commands.spawn((
+        Chest::Normal,
+        Transform::from_translation(Vec3::ZERO.with_x(-110.) + offset),
+    ));
+    commands.spawn((
         Building::Archer,
         RecruitBuilding,
         Transform::from_translation(Vec3::ZERO.with_x(135.) + offset),
