@@ -2,7 +2,7 @@ use animation_sound::AnimationSoundPlugin;
 use background_sound::BackgroundSoundPlugin;
 use bevy::app::{App, Plugin};
 
-mod animation_sound;
+pub mod animation_sound;
 mod background_sound;
 
 pub const CRAFTING_SOUND_PATH: &str = "animation_sound/crafting";

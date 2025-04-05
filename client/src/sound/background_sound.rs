@@ -43,7 +43,7 @@ struct MusicTransitionEvent {
     fade_time: f32, // in seconds
 }
 
-const BACKGROUND_VOLUME: f32 = 0.05;
+const BACKGROUND_VOLUME: f32 = 0.00;
 const COMBAT_DISTANCE_THRESHOLD: f32 = 150.0;
 pub struct BackgroundSoundPlugin;
 

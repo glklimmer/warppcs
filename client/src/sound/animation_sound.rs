@@ -12,6 +12,9 @@ use crate::{
     networking::ControlledPlayer,
 };
 
+#[derive(Component)]
+pub struct CancelAnimationSound;
+
 #[derive(Event)]
 struct PlayAnimationSoundEvent {
     entity: Entity,
@@ -38,8 +41,19 @@ impl Plugin for AnimationSoundPlugin {
                 play_sound_on_entity_change,
                 play_animation_on_frame_timer,
                 play_animation_on_enter,
+                stop_sound_cancel,
             ),
         );
+    }
+}
+
+fn stop_sound_cancel(
+    mut commands: Commands,
+    query: Query<(Entity, &SpatialAudioSink), Added<CancelAnimationSound>>,
+) {
+    for (entity, sink) in query.iter() {
+        sink.stop();
+        commands.entity(entity).remove::<AnimationSound>();
     }
 }
 
@@ -51,7 +65,8 @@ fn handle_multiple_animation_sound(
     for event in sound_events.read() {
         if event.sound_files.len() < 1 {
             continue;
-        };
+        }
+
         let random_sound = fastrand::choice(event.sound_files.iter()).unwrap();
         if let Some(mut entity_command) = commands.get_entity(event.entity) {
             entity_command.insert((
