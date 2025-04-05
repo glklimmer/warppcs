@@ -52,11 +52,8 @@ pub fn archer(world: &mut World) -> SpriteSheet<UnitAnimation> {
     });
 
     let animations_sound = EnumMap::new(|c| match c {
-        UnitAnimation::Idle => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnEnter,
-        },
-        UnitAnimation::Walk => AnimationSound {
+        UnitAnimation::Idle => None,
+        UnitAnimation::Walk => Some(AnimationSound {
             sound_files: vec![
                 format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_1.ogg"),
                 format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_2.ogg"),
@@ -66,19 +63,10 @@ pub fn archer(world: &mut World) -> SpriteSheet<UnitAnimation> {
                 format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_6.ogg"),
             ],
             sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-        },
-        UnitAnimation::Attack => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnEnter,
-        },
-        UnitAnimation::Hit => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnEnter,
-        },
-        UnitAnimation::Death => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnEnter,
-        },
+        }),
+        UnitAnimation::Attack => None,
+        UnitAnimation::Hit => None,
+        UnitAnimation::Death => None,
     });
 
     SpriteSheet {

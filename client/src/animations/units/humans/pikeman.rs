@@ -50,11 +50,8 @@ pub fn pikeman(world: &mut World) -> SpriteSheet<UnitAnimation> {
     });
 
     let animations_sound = EnumMap::new(|c| match c {
-        UnitAnimation::Idle => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-        },
-        UnitAnimation::Walk => AnimationSound {
+        UnitAnimation::Idle => None,
+        UnitAnimation::Walk => Some(AnimationSound {
             sound_files: vec![
                 format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_1.ogg"),
                 format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_2.ogg"),
@@ -64,19 +61,10 @@ pub fn pikeman(world: &mut World) -> SpriteSheet<UnitAnimation> {
                 format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_6.ogg"),
             ],
             sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-        },
-        UnitAnimation::Attack => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-        },
-        UnitAnimation::Hit => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-        },
-        UnitAnimation::Death => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-        },
+        }),
+        UnitAnimation::Attack => None,
+        UnitAnimation::Hit => None,
+        UnitAnimation::Death => None,
     });
 
     SpriteSheet {

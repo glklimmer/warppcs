@@ -48,26 +48,14 @@ pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
     });
 
     let animations_sound = EnumMap::new(|c| match c {
-        UnitAnimation::Idle => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnEnter,
-        },
-        UnitAnimation::Walk => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnEnter,
-        },
-        UnitAnimation::Attack => AnimationSound {
+        UnitAnimation::Idle => None,
+        UnitAnimation::Walk => None,
+        UnitAnimation::Attack => Some(AnimationSound {
             sound_files: vec!["animation_sound/shieldwarrior/sword_hit.ogg".to_string()],
             sound_trigger: AnimationSoundTrigger::OnEndFrameTimer,
-        },
-        UnitAnimation::Hit => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnEnter,
-        },
-        UnitAnimation::Death => AnimationSound {
-            sound_files: vec![],
-            sound_trigger: AnimationSoundTrigger::OnEnter,
-        },
+        }),
+        UnitAnimation::Hit => None,
+        UnitAnimation::Death => None,
     });
 
     SpriteSheet {

@@ -2,8 +2,11 @@ use bevy::prelude::*;
 
 use shared::{enum_map::*, AnimationChange, AnimationChangeEvent};
 
-use crate::animations::{
-    AnimationSound, AnimationSoundTrigger, AnimationTrigger, SpriteSheet, SpriteSheetAnimation,
+use crate::{
+    animations::{
+        AnimationSound, AnimationSoundTrigger, AnimationTrigger, SpriteSheet, SpriteSheetAnimation,
+    },
+    sound::animation_sound::CancelAnimationSound,
 };
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
@@ -46,14 +49,11 @@ impl FromWorld for HorseSpriteSheet {
         });
 
         let animations_sound = EnumMap::new(|c| match c {
-            HorseAnimation::Idle => AnimationSound {
+            HorseAnimation::Idle => Some(AnimationSound {
                 sound_files: vec!["animation_sound/horse/horse_sound.ogg".to_string()],
                 sound_trigger: AnimationSoundTrigger::OnEnter,
-            },
-            HorseAnimation::Walk => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnEnter,
-            },
+            }),
+            HorseAnimation::Walk => None,
         });
 
         HorseSpriteSheet {
@@ -115,9 +115,17 @@ pub fn set_horse_sprite_animation(
                 atlas.index = animation.first_sprite_index;
             }
 
+            match sound {
+                Some(sound) => {
+                    command.entity(entity).insert(sound.clone());
+                }
+                None => {
+                    command.entity(entity).insert(CancelAnimationSound);
+                }
+            }
+
             *sprite_animation = animation.clone();
             *current_animation = new_animation.state;
-            command.entity(entity).insert(sound.clone());
         }
     }
 }

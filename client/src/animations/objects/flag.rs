@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{AnimationSound, AnimationSoundTrigger, SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{SpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum FlagAnimation {
@@ -38,10 +38,7 @@ impl FromWorld for FlagSpriteSheet {
         });
 
         let animations_sound = EnumMap::new(|c| match c {
-            FlagAnimation::Wave => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnEnter,
-            },
+            FlagAnimation::Wave => None,
         });
 
         FlagSpriteSheet {

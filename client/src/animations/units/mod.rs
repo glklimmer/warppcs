@@ -12,6 +12,8 @@ use shared::{
     AnimationChange, AnimationChangeEvent,
 };
 
+use crate::sound::animation_sound::CancelAnimationSound;
+
 use super::{AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};
 
 pub mod bandits;
@@ -149,9 +151,17 @@ pub fn set_unit_sprite_animation(
                 atlas.index = animation.first_sprite_index;
             }
 
+            match sound {
+                Some(sound) => {
+                    command.entity(entity).insert(sound.clone());
+                }
+                None => {
+                    command.entity(entity).insert(CancelAnimationSound);
+                }
+            }
+
             *sprite_animation = animation.clone();
             *current_animation = new_animation.state;
-            command.entity(entity).insert(sound.clone());
         }
     }
 }

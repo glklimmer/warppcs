@@ -5,6 +5,8 @@ use shared::{
     AnimationChangeEvent,
 };
 
+use crate::sound::animation_sound::CancelAnimationSound;
+
 use super::{
     AnimationSound, AnimationSoundTrigger, AnimationTrigger, PlayOnce, SpriteSheet,
     SpriteSheetAnimation,
@@ -92,42 +94,24 @@ impl FromWorld for KingSpriteSheet {
         });
 
         let animations_sound = EnumMap::new(|c| match c {
-            KingAnimation::Idle => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-            },
-            KingAnimation::Drink => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-            },
-            KingAnimation::Walk => AnimationSound {
+            KingAnimation::Idle => None,
+            KingAnimation::Drink => None,
+            KingAnimation::Walk => Some(AnimationSound {
                 sound_files: vec!["animation_sound/king/walk.ogg".to_string()],
                 sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-            },
-            KingAnimation::Attack => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-            },
-            KingAnimation::Hit => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-            },
-            KingAnimation::Death => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-            },
-            KingAnimation::Mount => AnimationSound {
+            }),
+            KingAnimation::Attack => None,
+            KingAnimation::Hit => None,
+            KingAnimation::Death => None,
+            KingAnimation::Mount => Some(AnimationSound {
                 sound_files: vec!["animation_sound/horse/horse_sound.ogg".to_string()],
                 sound_trigger: AnimationSoundTrigger::OnEnter,
-            },
-            KingAnimation::HorseIdle => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-            },
-            KingAnimation::HorseWalk => AnimationSound {
+            }),
+            KingAnimation::HorseIdle => None,
+            KingAnimation::HorseWalk => Some(AnimationSound {
                 sound_files: vec!["animation_sound/horse/horse_gallop.ogg".to_string()],
                 sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
-            },
+            }),
         });
 
         KingSpriteSheet {
@@ -260,9 +244,17 @@ pub fn set_king_sprite_animation(
                 atlas.index = animation.first_sprite_index;
             }
 
+            match sound {
+                Some(sound) => {
+                    command.entity(entity).insert(sound.clone());
+                }
+                None => {
+                    command.entity(entity).insert(CancelAnimationSound);
+                }
+            }
+
             *sprite_animation = animation.clone();
             *current_animation = new_animation.state;
-            command.entity(entity).insert(sound.clone());
         }
     }
 }

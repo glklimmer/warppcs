@@ -29,7 +29,7 @@ pub struct SpriteSheet<E: EnumIter> {
     pub texture: Handle<Image>,
     pub layout: Handle<TextureAtlasLayout>,
     pub animations: EnumMap<E, SpriteSheetAnimation>,
-    pub animations_sound: EnumMap<E, AnimationSound>,
+    pub animations_sound: EnumMap<E, Option<AnimationSound>>,
 }
 
 #[derive(Clone)]

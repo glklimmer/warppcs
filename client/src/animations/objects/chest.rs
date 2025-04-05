@@ -6,7 +6,7 @@ use shared::ChestAnimation;
 use shared::ChestAnimationEvent;
 
 use crate::animations::PlayOnce;
-use crate::animations::{AnimationDirection, AnimationSound, AnimationSoundTrigger};
+use crate::animations::AnimationDirection;
 
 use super::super::{SpriteSheet, SpriteSheetAnimation};
 
@@ -44,14 +44,8 @@ impl FromWorld for ChestSpriteSheet {
         });
 
         let animations_sound = EnumMap::new(|c| match c {
-            ChestAnimation::Open => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnEnter,
-            },
-            ChestAnimation::Close => AnimationSound {
-                sound_files: vec![],
-                sound_trigger: AnimationSoundTrigger::OnEnter,
-            },
+            ChestAnimation::Open => None,
+            ChestAnimation::Close => None,
         });
 
         ChestSpriteSheet {
