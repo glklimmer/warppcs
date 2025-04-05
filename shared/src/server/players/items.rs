@@ -3,14 +3,13 @@ use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
-use std::ops::RangeInclusive;
 
 use crate::enum_map::*;
 use crate::{networking::UnitType, server::physics::movement::Velocity, BoxCollider};
 
 use super::interaction::{Interactable, InteractionType};
 
-#[derive(Component, Clone, Serialize, Deserialize)]
+#[derive(Component, Clone, Serialize, Deserialize, Debug)]
 #[require(
     Replicated,
     Transform,
@@ -43,15 +42,16 @@ impl Item {
         let item_type = fastrand::choice(&item_types).unwrap();
         let mut modifiers = item_type.base();
 
+        let amplitude = *fastrand::choice(ModifierAmplitude::all_variants()).unwrap();
         let multipliers = match rarity {
             Rarity::Common => vec![
-                item_type.multiplier(ModifierSign::Positive),
-                item_type.multiplier(ModifierSign::Positive),
-                item_type.multiplier(ModifierSign::Negative),
+                item_type.multiplier(amplitude, ModifierSign::Positive),
+                item_type.multiplier(amplitude, ModifierSign::Negative),
+                item_type.multiplier(amplitude, ModifierSign::Negative),
             ],
             Rarity::Uncommon => vec![
-                item_type.multiplier(ModifierSign::Positive),
-                item_type.multiplier(ModifierSign::Negative),
+                item_type.multiplier(amplitude, ModifierSign::Positive),
+                item_type.multiplier(amplitude, ModifierSign::Negative),
             ],
         };
 
@@ -64,25 +64,32 @@ impl Item {
     }
 }
 
+#[derive(Clone, Copy, Mappable)]
+enum ModifierAmplitude {
+    Low,
+    Middle,
+    High,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub enum Rarity {
     Common,
     Uncommon,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Modifier {
     effect: ModifierEffect,
     modifier_type: ModifierType,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 enum ModifierType {
     Amount(i32),
-    Multiplier(f32),
+    Multiplier(i32),
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy)]
+#[derive(Clone, Serialize, Deserialize, Copy, Debug)]
 enum ModifierEffect {
     Damage,
     Health,
@@ -93,8 +100,8 @@ enum ModifierEffect {
 }
 
 impl ModifierEffect {
-    fn base(&self) -> RangeInclusive<i32> {
-        match self {
+    fn base(&self) -> Modifier {
+        let range = match self {
             ModifierEffect::Damage => 6..=18,
             ModifierEffect::Health => 60..=120,
             ModifierEffect::Range(weapon) => match weapon {
@@ -104,11 +111,38 @@ impl ModifierEffect {
             ModifierEffect::AttackSpeed => 1..=4,
             ModifierEffect::MovementSpeed => 25..=45,
             ModifierEffect::UnitAmount => 3..=5,
+        };
+        let amount = fastrand::i32(range);
+        Modifier {
+            effect: *self,
+            modifier_type: ModifierType::Amount(amount),
+        }
+    }
+
+    fn multiplier(&self, amplitude: ModifierAmplitude, sign: ModifierSign) -> Modifier {
+        let (min, max) = match amplitude {
+            ModifierAmplitude::Low => (5, 20),
+            ModifierAmplitude::Middle => (20, 50),
+            ModifierAmplitude::High => (50, 100),
+        };
+
+        let step_size = 5;
+        let steps = (max - min) / step_size;
+
+        let mut amount = min + fastrand::i32(0..=steps) * step_size;
+
+        if let ModifierSign::Negative = sign {
+            amount = -amount;
+        }
+
+        Modifier {
+            effect: *self,
+            modifier_type: ModifierType::Multiplier(amount),
         }
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy)]
+#[derive(Clone, Serialize, Deserialize, Copy, Debug)]
 pub enum ItemType {
     Weapon(WeaponType),
     Chest,
@@ -134,37 +168,39 @@ impl ItemType {
             ItemType::Head => vec![ModifierEffect::UnitAmount],
         };
 
-        effects
-            .iter()
-            .map(|effect| {
-                let amount = fastrand::i32(effect.base());
-                Modifier {
-                    effect: *effect,
-                    modifier_type: ModifierType::Amount(amount),
-                }
-            })
-            .collect()
+        effects.iter().map(|effect| effect.base()).collect()
     }
 
-    fn multiplier(&self, sign: ModifierSign) -> Modifier {
-        // TODO: add this
-        todo!()
+    fn multiplier(&self, amplitude: ModifierAmplitude, sign: ModifierSign) -> Modifier {
+        let mut effects = vec![
+            ModifierEffect::Damage,
+            ModifierEffect::AttackSpeed,
+            ModifierEffect::Health,
+            ModifierEffect::MovementSpeed,
+        ];
+
+        if let ItemType::Weapon(weapon_type) = self {
+            effects.push(ModifierEffect::Range(*weapon_type));
+        }
+
+        let effect = fastrand::choice(effects).unwrap();
+        effect.multiplier(amplitude, sign)
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy)]
+#[derive(Clone, Serialize, Deserialize, Copy, Debug)]
 pub enum WeaponType {
     Use(UseWeapon),
     Projectile(ProjectileWeapon),
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy, Mappable)]
+#[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug)]
 pub enum UseWeapon {
     SwordAndShield,
     Pike,
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy, Mappable)]
+#[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug)]
 pub enum ProjectileWeapon {
     Bow,
 }

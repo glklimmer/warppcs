@@ -66,11 +66,9 @@ pub fn open_chest(
         commands.entity(event.interactable).remove::<Interactable>();
         let chest_transform = query.get(event.interactable).unwrap();
 
-        commands.spawn((
-            Item::random(Rarity::Common),
-            *chest_transform,
-            Velocity(Vec2::new(20., 20.)),
-        ));
+        let item = Item::random(Rarity::Common);
+        info!("Spawning item: {:?}", item);
+        commands.spawn((item, *chest_transform, Velocity(Vec2::new(20., 20.))));
 
         animation.send(ToClients {
             mode: SendMode::Broadcast,
