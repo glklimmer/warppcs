@@ -10,8 +10,10 @@ use crate::{
             portal::{PortalAnimation, PortalSpriteSheet},
         },
         units::UnitSpriteSheets,
+        AnimationSound, AnimationSoundTrigger,
     },
     networking::ControlledPlayer,
+    sound::CRAFTING_SOUND_PATH,
 };
 use bevy_parallax::CameraFollow;
 use shared::{
@@ -23,7 +25,7 @@ use shared::{
         physics::projectile::ProjectileType,
         players::{chest::Chest, mount::Mount},
     },
-    ChestAnimation, LocalClientId, PhysicalPlayer,
+    ChestAnimation, Faction, LocalClientId, Owner, PhysicalPlayer,
 };
 
 use super::highlight::Highlighted;
@@ -58,7 +60,11 @@ fn init_local_player(
     if **player == **client_id {
         info!("init controlled player for {:?}", **player);
         let mut player_commands = commands.entity(entity);
-        player_commands.insert(ControlledPlayer);
+        player_commands.insert((
+            ControlledPlayer,
+            SpatialListener::new(50.0),
+            Owner(Faction::Player(entity)),
+        ));
         commands
             .entity(camera.single())
             .insert(CameraFollow::fixed(entity));
@@ -75,6 +81,7 @@ fn init_player_sprite(
         return;
     };
     let sprite_sheet = &king_sprite_sheet.sprite_sheet;
+
     sprite.image = sprite_sheet.texture.clone();
     let animation = sprite_sheet.animations.get(KingAnimation::Idle);
     sprite.texture_atlas = Some(TextureAtlas {
@@ -100,6 +107,7 @@ fn init_building_sprite(
 fn update_building_sprite(
     mut buildings: Query<
         (
+            Entity,
             &mut Sprite,
             &Building,
             &BuildStatus,
@@ -108,12 +116,28 @@ fn update_building_sprite(
         Changed<BuildStatus>,
     >,
     asset_server: Res<AssetServer>,
+    mut commands: Commands,
 ) {
-    for (mut sprite, building, status, maybe_highlight) in buildings.iter_mut() {
+    for (entity, mut sprite, building, status, maybe_highlight) in buildings.iter_mut() {
         sprite.image = asset_server.load(building.texture(*status));
 
         if let Some(mut highlight) = maybe_highlight {
             highlight.original_handle = asset_server.load(building.texture(*status));
+        }
+        if status.eq(&BuildStatus::Built) {
+            commands.entity(entity).insert(AnimationSound {
+                sound_files: vec![
+                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_1.ogg",),
+                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_2.ogg",),
+                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_1.ogg",),
+                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_2.ogg",),
+                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_3.ogg",),
+                    format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammering_&_chiseling_stone_1.ogg",
+                    ),
+                ],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            });
         }
     }
 }

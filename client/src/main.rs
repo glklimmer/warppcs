@@ -1,4 +1,8 @@
-use bevy::prelude::*;
+use bevy::{
+    audio::{AudioPlugin, SpatialScale},
+    prelude::*,
+};
+use std::env;
 
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
@@ -8,13 +12,13 @@ use networking::Connected;
 use shared::{
     networking::NetworkRegistry, server::networking::ServerNetworkPlugin, GameState, SharedPlugin,
 };
-use std::env;
 use ui::UiPlugin;
 
 use animations::AnimationPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
+use sound::SoundPlugin;
 
 #[cfg(feature = "steam")]
 use bevy_renet::steam::{SteamClientPlugin, SteamTransportError};
@@ -37,8 +41,14 @@ pub mod gizmos;
 pub mod input;
 pub mod menu;
 pub mod networking;
+pub mod sound;
 pub mod ui;
 pub mod ui_widgets;
+
+/// Spatial audio uses the distance to attenuate the sound volume. In 2D with the default camera,
+/// 1 pixel is 1 unit of distance, so we use a scale so that 100 pixels is 1 unit of distance for
+/// audio.
+const AUDIO_SCALE: f32 = 1. / 200.0;
 
 fn main() {
     let mut client = App::new();
@@ -49,17 +59,26 @@ fn main() {
         client.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
     }
 
-    client.add_plugins((DefaultPlugins
-        .set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "WARPPCS".to_string(),
-                resolution: (1280.0, 720.0).into(),
-                resizable: false,
+    let primary_window = Window {
+        title: "WARPPCS".to_string(),
+        resolution: (1280.0, 720.0).into(),
+        resizable: false,
+        ..default()
+    };
+
+    client.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(primary_window),
+                ..default()
+            })
+            .set(ImagePlugin::default_nearest())
+            .set(AudioPlugin {
+                global_volume: GlobalVolume::new(0.4),
+                default_spatial_scale: SpatialScale::new_2d(AUDIO_SCALE),
                 ..default()
             }),
-            ..default()
-        })
-        .set(ImagePlugin::default_nearest()),));
+    );
 
     client.add_plugins(SharedPlugin);
 
@@ -74,6 +93,7 @@ fn main() {
             MenuPlugin,
             EntitiesPlugin,
             UiPlugin,
+            SoundPlugin,
             GizmosPlugin,
         ));
 
