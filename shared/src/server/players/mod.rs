@@ -8,6 +8,7 @@ use mount::mount;
 pub mod chest;
 pub mod flag;
 pub mod interaction;
+pub mod items;
 pub mod mount;
 
 pub struct PlayerPlugin;
