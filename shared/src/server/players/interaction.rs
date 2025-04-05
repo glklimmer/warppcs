@@ -14,6 +14,7 @@ pub enum InteractionType {
     Mount,
     Travel,
     Chest,
+    Item,
 }
 
 #[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]

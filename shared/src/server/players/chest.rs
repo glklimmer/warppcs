@@ -9,7 +9,10 @@ use crate::{
     server::physics::movement::Velocity, unit_collider,
 };
 
-use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
+use super::{
+    interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
+    items::{Item, Rarity},
+};
 
 #[derive(Component, Clone, Serialize, Deserialize)]
 #[require(
@@ -53,6 +56,7 @@ pub fn open_chest(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut commands: Commands,
     mut animation: EventWriter<ToClients<ChestAnimationEvent>>,
+    query: Query<&Transform>,
 ) {
     for event in interactions.read() {
         let InteractionType::Chest = &event.interaction else {
@@ -60,6 +64,13 @@ pub fn open_chest(
         };
 
         commands.entity(event.interactable).remove::<Interactable>();
+        let chest_transform = query.get(event.interactable).unwrap();
+
+        commands.spawn((
+            Item::random(Rarity::Common),
+            *chest_transform,
+            Velocity(Vec2::new(20., 20.)),
+        ));
 
         animation.send(ToClients {
             mode: SendMode::Broadcast,
