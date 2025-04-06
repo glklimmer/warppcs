@@ -122,7 +122,7 @@ fn play_sound_on_entity_change(
         sound_events.send(PlayAnimationSoundEvent {
             entity: event.entity,
             sound_files: vec![sound.to_string()],
-            speed: 1.5,
+            speed: 1.0,
             volume: Volume::new(ANIMATION_VOLUME),
         });
     }
@@ -208,7 +208,7 @@ fn play_animation_on_frame_timer(
             sound_events.send(PlayAnimationSoundEvent {
                 entity,
                 sound_files: sound.sound_files.clone(),
-                speed: 2.0,
+                speed: 1.0,
                 volume: Volume::new(ANIMATION_VOLUME),
             });
         }
@@ -233,7 +233,7 @@ fn play_animation_on_enter(
         sound_events.send(PlayAnimationSoundEvent {
             entity,
             sound_files: sound.sound_files.clone(),
-            speed: 1.5,
+            speed: 1.0,
             volume: Volume::new(ANIMATION_VOLUME),
         });
 
