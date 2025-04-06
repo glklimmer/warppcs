@@ -46,10 +46,6 @@ impl FadeUnit {
     pub fn new(value: f32) -> Self {
         Self(value.clamp(0.0, 1.0))
     }
-
-    pub fn get(self) -> f32 {
-        self.0
-    }
 }
 
 impl From<f32> for FadeUnit {
