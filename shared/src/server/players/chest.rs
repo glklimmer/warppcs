@@ -5,8 +5,8 @@ use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, ChestAnimation, ChestAnimationEvent, map::Layers, networking::MountType,
-    server::physics::movement::Velocity, unit_collider,
+    BoxCollider, ChestAnimation, ChestAnimationEvent, Vec3LayerExt, map::Layers,
+    networking::MountType, server::physics::movement::Velocity, unit_collider,
 };
 
 use super::{
@@ -65,18 +65,14 @@ pub fn open_chest(
 
         commands.entity(event.interactable).remove::<Interactable>();
         let chest_transform = query.get(event.interactable).unwrap();
+        let chest_translation = chest_transform.translation;
 
         let item = Item::random(Rarity::Common);
         info!("Spawning item: {:?}", item);
         commands.spawn((
             item.collider(),
             item,
-            Transform::from_translation(
-                chest_transform
-                    .translation
-                    .with_y(12.5)
-                    .with_z(Layers::Item.as_f32()),
-            ),
+            chest_translation.with_y(12.5).with_layer(Layers::Item),
             Velocity(Vec2::new((fastrand::f32() - 0.5) * 50., 50.)),
         ));
 
