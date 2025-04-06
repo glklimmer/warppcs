@@ -15,7 +15,7 @@ use crate::{
 #[derive(Event)]
 struct PlayAnimationSoundEvent {
     entity: Entity,
-    sound_files: Vec<String>,
+    sound_handles: Vec<Handle<AudioSource>>,
     speed: f32,
     volume: Volume,
 }
@@ -59,18 +59,16 @@ fn stop_animation_sound_on_remove(
 fn handle_multiple_animation_sound(
     mut commands: Commands,
     mut sound_events: EventReader<PlayAnimationSoundEvent>,
-    asset_server: ResMut<AssetServer>,
 ) {
     for event in sound_events.read() {
-        if event.sound_files.len() < 1 {
+        if event.sound_handles.len() < 1 {
             continue;
         }
 
-        let random_sound = fastrand::choice(event.sound_files.iter()).unwrap();
-        info!("playing sound: {}", random_sound);
+        let random_sound = fastrand::choice(event.sound_handles.iter()).unwrap();
         if let Some(mut entity_command) = commands.get_entity(event.entity) {
             entity_command.insert((
-                AudioPlayer::<AudioSource>(asset_server.load(random_sound)),
+                AudioPlayer::<AudioSource>(random_sound.clone_weak()),
                 PlaybackSettings {
                     mode: PlaybackMode::Remove,
                     speed: event.speed,
@@ -85,17 +83,16 @@ fn handle_multiple_animation_sound(
 
 fn handle_single_animation_sound(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut sound_events: EventReader<PlayAnimationSoundEvent>,
 ) {
     for event in sound_events.read() {
-        if event.sound_files.len() != 1 {
+        if event.sound_handles.len() != 1 {
             continue;
         };
 
         if let Some(mut entity_command) = commands.get_entity(event.entity) {
             entity_command.insert((
-                AudioPlayer::<AudioSource>(asset_server.load(&event.sound_files[0])),
+                AudioPlayer::<AudioSource>(event.sound_handles[0].clone_weak()),
                 PlaybackSettings {
                     mode: PlaybackMode::Remove,
                     speed: event.speed,
@@ -111,6 +108,7 @@ fn handle_single_animation_sound(
 fn play_sound_on_entity_change(
     mut sound_events: EventWriter<PlayAnimationSoundEvent>,
     mut entity_change_events: EventReader<AnimationChangeEvent>,
+    asset_server: Res<AssetServer>,
 ) {
     for event in entity_change_events.read() {
         let sound = match event.change {
@@ -118,12 +116,17 @@ fn play_sound_on_entity_change(
                 Hitby::Arrow => "animation_sound/arrow/arrow_hits_flesh.ogg",
                 Hitby::Melee => "animation_sound/arrow/arrow_hits_flesh.ogg",
             },
+            AnimationChange::Mount => "animation_sound/horse/horse_sound.ogg",
             _ => continue,
         };
 
         sound_events.send(PlayAnimationSoundEvent {
             entity: event.entity,
-            sound_files: vec![sound.to_string()],
+            sound_handles: if sound.is_empty() {
+                Vec::new()
+            } else {
+                vec![asset_server.load(sound)]
+            },
             speed: 1.0,
             volume: Volume::new(ANIMATION_VOLUME),
         });
@@ -134,18 +137,19 @@ fn play_animation_on_projectile_spawn(
     trigger: Trigger<OnAdd, ProjectileType>,
     mut projectile: Query<&ProjectileType>,
     mut sound_events: EventWriter<PlayAnimationSoundEvent>,
+    asset_server: Res<AssetServer>,
 ) {
     let Ok(projectile_type) = projectile.get_mut(trigger.entity()) else {
         return;
     };
 
-    let sound_files = match projectile_type {
-        ProjectileType::Arrow => vec!["animation_sound/arrow/arrow_flying.ogg".to_string()],
+    let sound_handles = match projectile_type {
+        ProjectileType::Arrow => vec![asset_server.load("animation_sound/arrow/arrow_flying.ogg")],
     };
 
     sound_events.send(PlayAnimationSoundEvent {
         entity: trigger.entity(),
-        sound_files,
+        sound_handles,
         speed: 1.5,
         volume: Volume::new(ANIMATION_VOLUME),
     });
@@ -172,7 +176,7 @@ fn play_recruite_unit_call(
 
     commands.spawn((
         AudioPlayer::<AudioSource>(
-            asset_server.load("animation_sound/recruitment/recruite_call.ogg".to_string()),
+            asset_server.load("animation_sound/recruitment/recruite_call.ogg"),
         ),
         PlaybackSettings {
             mode: PlaybackMode::Remove,
@@ -206,7 +210,7 @@ fn play_animation_on_frame_timer(
         {
             sound_events.send(PlayAnimationSoundEvent {
                 entity,
-                sound_files: sound.sound_files.clone(),
+                sound_handles: sound.sound_handles.clone(),
                 speed: 1.0,
                 volume: Volume::new(ANIMATION_VOLUME),
             });
@@ -230,7 +234,7 @@ fn play_animation_on_enter(
 
         sound_events.send(PlayAnimationSoundEvent {
             entity,
-            sound_files: sound.sound_files.clone(),
+            sound_handles: sound.sound_handles.clone(),
             speed: 1.0,
             volume: Volume::new(ANIMATION_VOLUME),
         });

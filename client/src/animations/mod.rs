@@ -49,7 +49,7 @@ pub enum AnimationSoundTrigger {
 #[derive(Component, Clone)]
 #[require(AnimationSoundTrigger)]
 pub struct AnimationSound {
-    pub sound_files: Vec<String>,
+    pub sound_handles: Vec<Handle<AudioSource>>,
     pub sound_trigger: AnimationSoundTrigger,
 }
 

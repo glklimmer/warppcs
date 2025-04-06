@@ -4,7 +4,7 @@ use shared::enum_map::*;
 
 use crate::{
     animations::{AnimationSound, AnimationSoundTrigger, SpriteSheet, SpriteSheetAnimation},
-    sound::GRASS_FOOTSTEPS_SOUND_PATH,
+    sound::DIRT_FOOTSTEPS_SOUND_PATH,
 };
 
 use super::super::UnitAnimation;
@@ -12,6 +12,14 @@ use super::super::UnitAnimation;
 pub fn bandit(world: &mut World) -> SpriteSheet<UnitAnimation> {
     let asset_server = world.resource::<AssetServer>();
     let texture: Handle<Image> = asset_server.load("sprites/bandits/MiniBandit.png");
+
+    let footstep1 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_1.ogg"));
+    let footstep2 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_2.ogg"));
+    let footstep3 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_3.ogg"));
+    let footstep4 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_4.ogg"));
+    let footstep5 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_5.ogg"));
+    let footstep6 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_6.ogg"));
+
     let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
     let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
@@ -53,13 +61,13 @@ pub fn bandit(world: &mut World) -> SpriteSheet<UnitAnimation> {
     let animations_sound = EnumMap::new(|c| match c {
         UnitAnimation::Idle => None,
         UnitAnimation::Walk => Some(AnimationSound {
-            sound_files: vec![
-                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_1.ogg"),
-                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_2.ogg"),
-                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_3.ogg"),
-                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_4.ogg"),
-                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_5.ogg"),
-                format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_6.ogg"),
+            sound_handles: vec![
+                footstep1.clone(),
+                footstep2.clone(),
+                footstep3.clone(),
+                footstep4.clone(),
+                footstep5.clone(),
+                footstep6.clone(),
             ],
             sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
         }),

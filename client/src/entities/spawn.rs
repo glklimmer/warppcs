@@ -126,15 +126,13 @@ fn update_building_sprite(
         }
         if status.eq(&BuildStatus::Built) {
             commands.entity(entity).insert(AnimationSound {
-                sound_files: vec![
-                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_1.ogg",),
-                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_2.ogg",),
-                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_1.ogg",),
-                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_2.ogg",),
-                    format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_3.ogg",),
-                    format!(
-                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammering_&_chiseling_stone_1.ogg",
-                    ),
+                sound_handles: vec![
+                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_1.ogg")),
+                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_2.ogg")),
+                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_1.ogg")),
+                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_2.ogg")),
+                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_3.ogg")),
+                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammering_&_chiseling_stone_1.ogg")),
                 ],
                 sound_trigger: AnimationSoundTrigger::OnEnter,
             });

@@ -2,9 +2,7 @@ use bevy::prelude::*;
 
 use shared::{enum_map::*, AnimationChange, AnimationChangeEvent};
 
-use crate::animations::{
-    AnimationSound, AnimationSoundTrigger, AnimationTrigger, SpriteSheet, SpriteSheetAnimation,
-};
+use crate::animations::{AnimationSound, AnimationTrigger, SpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum HorseAnimation {
@@ -46,10 +44,7 @@ impl FromWorld for HorseSpriteSheet {
         });
 
         let animations_sound = EnumMap::new(|c| match c {
-            HorseAnimation::Idle => Some(AnimationSound {
-                sound_files: vec!["animation_sound/horse/horse_sound.ogg".to_string()],
-                sound_trigger: AnimationSoundTrigger::OnEnter,
-            }),
+            HorseAnimation::Idle => None,
             HorseAnimation::Walk => None,
         });
 

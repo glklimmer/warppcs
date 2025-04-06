@@ -12,8 +12,15 @@ use super::super::UnitAnimation;
 pub fn pikeman(world: &mut World) -> SpriteSheet<UnitAnimation> {
     let asset_server = world.resource::<AssetServer>();
     let texture: Handle<Image> = asset_server.load("sprites/humans/MiniSpearMan.png");
-    let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
+    let footstep1 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_1.ogg"));
+    let footstep2 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_2.ogg"));
+    let footstep3 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_3.ogg"));
+    let footstep4 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_4.ogg"));
+    let footstep5 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_5.ogg"));
+    let footstep6 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_6.ogg"));
+
+    let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
     let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
         UVec2::splat(32),
         7,
@@ -48,17 +55,16 @@ pub fn pikeman(world: &mut World) -> SpriteSheet<UnitAnimation> {
             ..default()
         },
     });
-
-    let animations_sound = EnumMap::new(|c| match c {
+    let animations_sound = EnumMap::new(move |c| match c {
         UnitAnimation::Idle => None,
         UnitAnimation::Walk => Some(AnimationSound {
-            sound_files: vec![
-                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_1.ogg"),
-                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_2.ogg"),
-                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_3.ogg"),
-                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_4.ogg"),
-                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_5.ogg"),
-                format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_6.ogg"),
+            sound_handles: vec![
+                footstep1.clone(),
+                footstep2.clone(),
+                footstep3.clone(),
+                footstep4.clone(),
+                footstep5.clone(),
+                footstep6.clone(),
             ],
             sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
         }),
@@ -66,7 +72,6 @@ pub fn pikeman(world: &mut World) -> SpriteSheet<UnitAnimation> {
         UnitAnimation::Hit => None,
         UnitAnimation::Death => None,
     });
-
     SpriteSheet {
         texture,
         layout,
