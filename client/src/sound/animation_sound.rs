@@ -20,7 +20,7 @@ struct PlayAnimationSoundEvent {
     entity: Entity,
     sound_files: Vec<String>,
     speed: f32,
-    volume: f32,
+    volume: Volume,
 }
 
 const ANIMATION_VOLUME: f32 = 0.25;
@@ -74,7 +74,7 @@ fn handle_multiple_animation_sound(
                 PlaybackSettings {
                     mode: PlaybackMode::Remove,
                     speed: event.speed,
-                    volume: Volume::new(event.volume),
+                    volume: event.volume,
                     spatial: true,
                     ..default()
                 },
@@ -99,7 +99,7 @@ fn handle_single_animation_sound(
                 PlaybackSettings {
                     mode: PlaybackMode::Remove,
                     speed: event.speed,
-                    volume: Volume::new(event.volume),
+                    volume: event.volume,
                     spatial: true,
                     ..default()
                 },
@@ -124,7 +124,7 @@ fn play_sound_on_entity_change(
             entity: event.entity,
             sound_files: vec![sound.to_string()],
             speed: 1.5,
-            volume: ANIMATION_VOLUME,
+            volume: Volume::new(ANIMATION_VOLUME),
         });
     }
 }
@@ -146,7 +146,7 @@ fn play_animation_on_projectile_spawn(
         entity: trigger.entity(),
         sound_files,
         speed: 1.5,
-        volume: ANIMATION_VOLUME,
+        volume: Volume::new(ANIMATION_VOLUME),
     });
 }
 
@@ -210,7 +210,7 @@ fn play_animation_on_frame_timer(
                 entity,
                 sound_files: sound.sound_files.clone(),
                 speed: 2.0,
-                volume: ANIMATION_VOLUME,
+                volume: Volume::new(ANIMATION_VOLUME),
             });
         }
     }
@@ -235,7 +235,7 @@ fn play_animation_on_enter(
             entity,
             sound_files: sound.sound_files.clone(),
             speed: 1.5,
-            volume: ANIMATION_VOLUME,
+            volume: Volume::new(ANIMATION_VOLUME),
         });
 
         commands.entity(entity).remove::<AnimationSound>();

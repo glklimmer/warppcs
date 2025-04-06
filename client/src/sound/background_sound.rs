@@ -1,3 +1,5 @@
+use std::ops::Mul;
+
 use bevy::{
     audio::{PlaybackMode, Volume},
     prelude::*,
@@ -32,15 +34,61 @@ impl Default for MusicState {
 #[derive(Component)]
 struct MusicPlayer {
     track: MusicTrack,
-    volume: f32,
-    target_volume: f32,
-    fade_speed: f32,
+    volume: Volume,
+    target_volume: Volume,
+    fade_speed: FadeUnit,
+}
+
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
+struct FadeUnit(f32);
+
+impl FadeUnit {
+    pub fn new(value: f32) -> Self {
+        Self(value.clamp(0.0, 1.0))
+    }
+
+    pub fn get(self) -> f32 {
+        self.0
+    }
+}
+
+impl From<f32> for FadeUnit {
+    fn from(value: f32) -> Self {
+        Self::new(value)
+    }
+}
+
+impl Mul<f32> for FadeUnit {
+    type Output = f32;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        self.0 * rhs
+    }
+}
+
+trait VolumeDiff {
+    fn diff(&self, other: &Volume) -> f32;
+}
+
+impl VolumeDiff for Volume {
+    fn diff(&self, other: &Volume) -> f32 {
+        (**self - **other).abs()
+    }
 }
 
 #[derive(Event)]
 struct MusicTransitionEvent {
     track: MusicTrack,
-    fade_time: f32, // in seconds
+    fade_time: Seconds,
+}
+
+#[derive(Deref, PartialEq, PartialOrd)]
+struct Seconds(f32);
+
+impl From<f32> for Seconds {
+    fn from(val: f32) -> Self {
+        Seconds(val)
+    }
 }
 
 const BACKGROUND_VOLUME: f32 = 0.00;
@@ -85,9 +133,9 @@ fn setup_music(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             MusicPlayer {
                 track,
-                volume: BACKGROUND_VOLUME,
-                target_volume: 0.0,
-                fade_speed: 1.0,
+                volume: Volume::new(BACKGROUND_VOLUME),
+                target_volume: Volume::new(0.0),
+                fade_speed: 1.0.into(),
             },
         )
     }));
@@ -104,25 +152,25 @@ fn handle_music_transitions(
         // Set target volumes and fade speeds for all players
         for (mut music_player, sink) in music_players.iter_mut() {
             if music_player.track == event.track {
-                music_player.target_volume = BACKGROUND_VOLUME;
+                music_player.target_volume = Volume::new(BACKGROUND_VOLUME);
                 sink.play();
             } else {
-                music_player.target_volume = 0.0;
+                music_player.target_volume = Volume::new(0.0);
                 sink.pause();
             }
 
             // Calculate fade speed based on desired fade time
-            let volume_diff = (music_player.target_volume - music_player.volume).abs();
-            if volume_diff > 0.01 && event.fade_time > 0.0 {
-                music_player.fade_speed = volume_diff / event.fade_time;
+            let volume_diff = music_player.target_volume.diff(&music_player.volume);
+            if volume_diff > 0.01 && event.fade_time > 0.0.into() {
+                music_player.fade_speed = (volume_diff / *event.fade_time).into();
             } else {
-                music_player.fade_speed = 1.0; // Default fade speed
+                music_player.fade_speed = 1.0.into(); // Default fade speed
             }
         }
     }
 }
 
-// System to update music volume for smooth transitions
+/// System to update music volume for smooth transitions
 fn update_music_volume(
     time: Res<Time>,
     mut music_state: ResMut<MusicState>,
@@ -136,18 +184,19 @@ fn update_music_volume(
     let mut all_faded = true;
 
     for (mut player, sink) in music_players.iter_mut() {
-        if (player.volume - player.target_volume).abs() > 0.01 {
-            player.volume = if player.volume < player.target_volume {
-                (player.volume + player.fade_speed * dt).min(player.target_volume)
+        if player.volume.diff(&player.target_volume) > 0.01 {
+            let volume = if *player.volume < *player.target_volume {
+                (*player.volume + player.fade_speed * dt).min(*player.target_volume)
             } else {
-                (player.volume - player.fade_speed * dt).max(player.target_volume)
+                (*player.volume - player.fade_speed * dt).max(*player.target_volume)
             };
+            player.volume = Volume::new(volume);
 
-            sink.set_volume(player.volume);
+            sink.set_volume(*player.volume);
             all_faded = false;
         }
 
-        if player.volume >= 0.99 && player.track != music_state.current_track {
+        if *player.volume >= 0.99 && player.track != music_state.current_track {
             music_state.current_track = player.track;
         }
     }
@@ -185,14 +234,14 @@ fn play_fight_music(
                 music_state.desired_track = MusicTrack::Combat;
                 music_events.send(MusicTransitionEvent {
                     track: MusicTrack::Combat,
-                    fade_time: 1.5,
+                    fade_time: 1.5.into(),
                 });
             }
         } else if MusicTrack::Base != music_state.desired_track {
             music_state.desired_track = MusicTrack::Base;
             music_events.send(MusicTransitionEvent {
                 track: MusicTrack::Base,
-                fade_time: 1.5,
+                fade_time: 1.5.into(),
             });
         }
     }
