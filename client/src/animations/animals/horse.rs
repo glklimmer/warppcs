@@ -2,11 +2,8 @@ use bevy::prelude::*;
 
 use shared::{enum_map::*, AnimationChange, AnimationChangeEvent};
 
-use crate::{
-    animations::{
-        AnimationSound, AnimationSoundTrigger, AnimationTrigger, SpriteSheet, SpriteSheetAnimation,
-    },
-    sound::animation_sound::CancelAnimationSound,
+use crate::animations::{
+    AnimationSound, AnimationSoundTrigger, AnimationTrigger, SpriteSheet, SpriteSheetAnimation,
 };
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
@@ -120,7 +117,7 @@ pub fn set_horse_sprite_animation(
                     command.entity(entity).insert(sound.clone());
                 }
                 None => {
-                    command.entity(entity).insert(CancelAnimationSound);
+                    command.entity(entity).remove::<AnimationSound>();
                 }
             }
 

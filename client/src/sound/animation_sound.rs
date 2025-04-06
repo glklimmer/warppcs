@@ -12,9 +12,6 @@ use crate::{
     networking::ControlledPlayer,
 };
 
-#[derive(Component)]
-pub struct CancelAnimationSound;
-
 #[derive(Event)]
 struct PlayAnimationSoundEvent {
     entity: Entity,
@@ -32,6 +29,7 @@ impl Plugin for AnimationSoundPlugin {
         app.add_event::<PlayAnimationSoundEvent>();
         app.add_observer(play_animation_on_projectile_spawn);
         app.add_observer(play_recruite_unit_call);
+        app.add_observer(stop_animation_sound_on_remove);
 
         app.add_systems(
             Update,
@@ -41,27 +39,20 @@ impl Plugin for AnimationSoundPlugin {
                 play_sound_on_entity_change,
                 play_animation_on_frame_timer,
                 play_animation_on_enter,
-                stop_sound_cancel,
             ),
         );
     }
 }
 
-fn stop_sound_cancel(
+fn stop_animation_sound_on_remove(
+    trigger: Trigger<OnRemove, AnimationSound>,
+    query: Query<&SpatialAudioSink>,
     mut commands: Commands,
-    query: Query<(Entity, &SpatialAudioSink, Option<&CancelAnimationSound>)>,
 ) {
-    for (entity, sink, cancel) in query.iter() {
-        match cancel {
-            Some(_) => {
-                sink.stop();
-                sink.pause();
-                commands.entity(entity).remove::<AnimationSound>();
-                commands.entity(entity).remove::<CancelAnimationSound>();
-                commands.entity(entity).remove::<AudioPlayer>();
-            }
-            None => return,
-        }
+    if let Ok(sink) = query.get(trigger.entity()) {
+        sink.stop();
+        sink.pause();
+        commands.entity(trigger.entity()).remove::<AudioPlayer>();
     }
 }
 

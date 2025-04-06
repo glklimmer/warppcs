@@ -5,8 +5,6 @@ use shared::{
     AnimationChangeEvent,
 };
 
-use crate::sound::animation_sound::CancelAnimationSound;
-
 use super::{
     AnimationSound, AnimationSoundTrigger, AnimationTrigger, PlayOnce, SpriteSheet,
     SpriteSheetAnimation,
@@ -249,7 +247,7 @@ pub fn set_king_sprite_animation(
                     command.entity(entity).insert(sound.clone());
                 }
                 None => {
-                    command.entity(entity).insert(CancelAnimationSound);
+                    command.entity(entity).remove::<AnimationSound>();
                 }
             }
 
