@@ -67,6 +67,7 @@ fn handle_multiple_animation_sound(
         }
 
         let random_sound = fastrand::choice(event.sound_files.iter()).unwrap();
+        info!("playing sound: {}", random_sound);
         if let Some(mut entity_command) = commands.get_entity(event.entity) {
             entity_command.insert((
                 AudioPlayer::<AudioSource>(asset_server.load(random_sound)),
@@ -117,8 +118,9 @@ fn play_sound_on_entity_change(
                 Hitby::Arrow => "animation_sound/arrow/arrow_hits_flesh.ogg",
                 Hitby::Melee => "animation_sound/arrow/arrow_hits_flesh.ogg",
             },
-            _ => "",
+            _ => continue,
         };
+
         sound_events.send(PlayAnimationSoundEvent {
             entity: event.entity,
             sound_files: vec![sound.to_string()],
@@ -191,16 +193,13 @@ fn play_animation_on_frame_timer(
     )>,
 ) {
     for (entity, sprite_animation, animation, sprite) in query.iter() {
-        let sound = match &animation {
-            Some(sound) => sound,
-            None => continue,
-        };
-        if sound
-            .sound_trigger
-            .ne(&AnimationSoundTrigger::OnStartFrameTimer)
-        {
+        let Some(sound) = &animation else {
             continue;
-        }
+        };
+        let AnimationSoundTrigger::OnStartFrameTimer = sound.sound_trigger else {
+            continue;
+        };
+
         let atlas = sprite.texture_atlas.as_ref().unwrap();
         if sprite_animation.frame_timer.just_finished()
             && atlas.index == sprite_animation.first_sprite_index
@@ -221,14 +220,13 @@ fn play_animation_on_enter(
     mut commands: Commands,
 ) {
     for (entity, animation) in query.iter_mut() {
-        let sound = match &animation {
-            Some(sound) => sound,
-            None => continue,
+        let Some(sound) = &animation else {
+            continue;
         };
 
-        if sound.sound_trigger.ne(&AnimationSoundTrigger::OnEnter) {
+        let AnimationSoundTrigger::OnEnter = sound.sound_trigger else {
             continue;
-        }
+        };
 
         sound_events.send(PlayAnimationSoundEvent {
             entity,
