@@ -3,7 +3,7 @@ use bevy_replicon::prelude::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AnimationChange, AnimationChangeEvent};
+use crate::{AnimationChange, AnimationChangeEvent, ClientPlayerMap};
 
 pub struct PlayerAttacks;
 
@@ -27,11 +27,14 @@ fn attack_input(mut commands: Commands, keyboard_input: Res<ButtonInput<KeyCode>
 fn attack(
     trigger: Trigger<FromClient<Attack>>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    client_player_map: Res<ClientPlayerMap>,
 ) {
+    let player = client_player_map.get(&trigger.client_entity).unwrap();
+
     animation.send(ToClients {
         mode: SendMode::Broadcast,
         event: AnimationChangeEvent {
-            entity: trigger.entity(),
+            entity: *player,
             change: AnimationChange::Attack,
         },
     });

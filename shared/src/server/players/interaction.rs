@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, Faction, Highlightable, Owner, Player};
+use crate::{BoxCollider, ClientPlayerMap, Faction, Highlightable, Owner};
 
 #[derive(Clone, Copy, Debug)]
 pub enum InteractionType {
@@ -53,13 +53,12 @@ fn send_interact(mut commands: Commands, keyboard_input: Res<ButtonInput<KeyCode
 fn interact(
     trigger: Trigger<FromClient<Interact>>,
     mut triggered_events: EventWriter<InteractionTriggeredEvent>,
-    players: Query<(&Player, &Transform, &BoxCollider)>,
+    players: Query<(&Transform, &BoxCollider)>,
     interactables: Query<(Entity, &Transform, &BoxCollider, &Interactable)>,
+    client_player_map: Res<ClientPlayerMap>,
 ) {
-    let (_, player_transform, player_collider) = players
-        .iter()
-        .find(|&(player, _, _)| **player == trigger.entity())
-        .unwrap_or_else(|| panic!("`{}` should be connected", trigger.client_entity));
+    let player = *client_player_map.get(&trigger.client_entity).unwrap();
+    let (player_transform, player_collider) = players.get(player).unwrap();
 
     let player_bounds = player_collider.at(player_transform);
 
@@ -68,7 +67,7 @@ fn interact(
         .filter(|(.., transform, collider, _)| player_bounds.intersects(&collider.at(transform)))
         .filter(|(.., interactable)| match interactable.restricted_to {
             Some(owner) => match *owner {
-                Faction::Player(item_owner) => item_owner.eq(&trigger.entity()),
+                Faction::Player(item_owner) => item_owner.eq(&player),
                 Faction::Bandits => false,
             },
             None => true,
@@ -93,7 +92,7 @@ fn interact(
 
     if let Some((interactable, _, _, interaction)) = priority_interaction {
         triggered_events.send(InteractionTriggeredEvent {
-            player: trigger.entity(),
+            player,
             interactable,
             interaction: interaction.kind,
         });

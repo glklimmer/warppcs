@@ -41,6 +41,12 @@ pub mod ui;
 pub mod ui_widgets;
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let user = if args.contains(&String::from("server")) {
+        "server"
+    } else {
+        "client"
+    };
     let mut client = App::new();
 
     #[cfg(feature = "steam")]
@@ -52,7 +58,7 @@ fn main() {
     client.add_plugins((DefaultPlugins
         .set(WindowPlugin {
             primary_window: Some(Window {
-                title: "WARPPCS".to_string(),
+                title: format!("WARPPC {}", user),
                 resolution: (1280.0, 720.0).into(),
                 resizable: false,
                 ..default()
@@ -109,7 +115,6 @@ fn main() {
 
         client.add_systems(Update, panic_on_error_system.run_if(client_connected));
 
-        let args: Vec<String> = env::args().collect();
         if args.contains(&String::from("server")) {
             client
                 .add_plugins(ServerNetworkPlugin)

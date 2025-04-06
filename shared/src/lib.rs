@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use bevy_replicon::prelude::*;
 use enum_map::*;
 
@@ -48,6 +48,7 @@ impl Plugin for SharedPlugin {
             PlayerAttacks,
             InteractPlugin,
         ))
+        .init_resource::<ClientPlayerMap>()
         .replicate::<Moving>()
         .replicate::<Grounded>()
         .replicate_mapped::<AttachedTo>()
@@ -66,6 +67,11 @@ impl Plugin for SharedPlugin {
         .add_observer(spawn_clients);
     }
 }
+
+/// Key is NetworkEntity
+/// Value is PlayerEntity
+#[derive(Resource, DerefMut, Deref, Default)]
+pub struct ClientPlayerMap(HashMap<Entity, Entity>);
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum AnimationChange {
@@ -109,19 +115,24 @@ fn spawn_clients(
     trigger: Trigger<OnAdd, ConnectedClient>,
     mut commands: Commands,
     mut set_local_player: EventWriter<ToClients<SetLocalPlayer>>,
+    mut client_player_map: ResMut<ClientPlayerMap>,
 ) {
     info!("spawning player for `{:?}`", trigger.entity());
-    let client_unity_id = commands
-        .spawn((
-            Player(trigger.entity()),
+
+    let player = commands
+        .entity(trigger.entity())
+        .insert((
+            Player,
             Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
         ))
         .id();
 
     set_local_player.send(ToClients {
         mode: SendMode::Direct(trigger.entity()),
-        event: SetLocalPlayer(client_unity_id),
+        event: SetLocalPlayer(player),
     });
+
+    client_player_map.insert(trigger.entity(), player);
 }
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
@@ -133,7 +144,7 @@ impl MapEntities for SetLocalPlayer {
     }
 }
 
-#[derive(Component, Deserialize, Serialize, Deref)]
+#[derive(Component, Deserialize, Serialize)]
 #[require(
     Replicated,
     Transform(|| Transform::from_xyz(0., 0., Layers::Player.as_f32())),
@@ -143,16 +154,7 @@ impl MapEntities for SetLocalPlayer {
     Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
     Inventory
 )]
-pub struct Player(Entity);
-
-#[derive(Debug, Resource, Deref, Deserialize, Serialize)]
-pub struct LocalPlayer(Entity);
-
-// impl LocalPlayer {
-//     pub const fn new(value: u64) -> Self {
-//         Self(ClientId::new(value))
-//     }
-// }
+pub struct Player;
 
 #[derive(Component)]
 pub struct Highlightable {

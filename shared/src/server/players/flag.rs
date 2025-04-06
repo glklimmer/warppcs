@@ -23,25 +23,26 @@ pub fn flag_interact(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut drop_flag: EventWriter<DropFlagEvent>,
     mut pick_flag: EventWriter<PickFlagEvent>,
-    player: Query<Option<&FlagHolder>>,
+    flag_holder: Query<Option<&FlagHolder>>,
 ) {
     for event in interactions.read() {
         let InteractionType::Flag = &event.interaction else {
             continue;
         };
+        let player = event.player;
 
-        let has_flag = player.get(event.player).unwrap();
+        let has_flag = flag_holder.get(player).unwrap();
 
         match has_flag {
             Some(_) => {
                 drop_flag.send(DropFlagEvent {
-                    player: event.player,
+                    player,
                     flag: event.interactable,
                 });
             }
             None => {
                 pick_flag.send(PickFlagEvent {
-                    player: event.player,
+                    player,
                     flag: event.interactable,
                 });
             }

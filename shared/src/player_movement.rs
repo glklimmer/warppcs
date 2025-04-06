@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Player,
+    ClientPlayerMap,
     server::physics::movement::{Speed, Velocity},
 };
 
@@ -37,12 +37,14 @@ fn movement_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
 
 fn apply_movement(
     trigger: Trigger<FromClient<MovePlayer>>,
-    mut players: Query<(&Player, &mut Velocity, &mut Transform, &Speed)>,
+    mut players: Query<(&mut Velocity, &mut Transform, &Speed)>,
+    client_player_map: Res<ClientPlayerMap>,
 ) {
-    let (_, mut velocity, mut transform, speed) = players
-        .iter_mut()
-        .find(|&(player, _, _, _)| **player == trigger.entity())
-        .unwrap_or_else(|| panic!("`{}` should be connected", trigger.client_entity));
+    let Ok((mut velocity, mut transform, speed)) =
+        players.get_mut(*client_player_map.get(&trigger.client_entity).unwrap())
+    else {
+        return;
+    };
 
     let direction = Vec2::new(trigger.event.x, 0.).normalize_or_zero();
     velocity.0 = direction * speed.0;

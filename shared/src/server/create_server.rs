@@ -8,7 +8,7 @@ use bevy_renet::{
 use bevy_replicon::prelude::RepliconChannels;
 use bevy_replicon_renet::RenetChannelsExt;
 
-use crate::{Player, SetLocalPlayer};
+use crate::{ClientPlayerMap, Player, SetLocalPlayer};
 
 pub fn create_steam_server(mut commands: Commands, channels: Res<RepliconChannels>) {
     use crate::steamworks::SteamworksClient;
@@ -45,6 +45,7 @@ pub fn create_netcode_server(
     mut commands: Commands,
     channels: Res<RepliconChannels>,
     mut set_local_player: EventWriter<ToClients<SetLocalPlayer>>,
+    mut client_player_map: ResMut<ClientPlayerMap>,
 ) {
     use crate::networking::PROTOCOL_ID;
     use std::{net::UdpSocket, time::SystemTime};
@@ -75,7 +76,8 @@ pub fn create_netcode_server(
     commands.insert_resource(server);
     commands.insert_resource(transport);
 
-    let player = commands.spawn(Player(SERVER)).id();
+    let player = commands.spawn(Player).id();
+    client_player_map.insert(SERVER, player);
 
     set_local_player.send(ToClients {
         mode: SendMode::Broadcast,
