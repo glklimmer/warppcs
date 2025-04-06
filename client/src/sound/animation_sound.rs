@@ -49,11 +49,19 @@ impl Plugin for AnimationSoundPlugin {
 
 fn stop_sound_cancel(
     mut commands: Commands,
-    query: Query<(Entity, &SpatialAudioSink), Added<CancelAnimationSound>>,
+    query: Query<(Entity, &SpatialAudioSink, Option<&CancelAnimationSound>)>,
 ) {
-    for (entity, sink) in query.iter() {
-        sink.stop();
-        commands.entity(entity).remove::<AnimationSound>();
+    for (entity, sink, cancel) in query.iter() {
+        match cancel {
+            Some(_) => {
+                sink.stop();
+                sink.pause();
+                commands.entity(entity).remove::<AnimationSound>();
+                commands.entity(entity).remove::<CancelAnimationSound>();
+                commands.entity(entity).remove::<AudioPlayer>();
+            }
+            None => return,
+        }
     }
 }
 
