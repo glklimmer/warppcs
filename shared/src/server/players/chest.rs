@@ -79,9 +79,10 @@ pub fn open_chest(
         });
     }
 }
+
 fn chest_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(16., 10.),
-        offset: Some(Vec2::new(0., -5.)),
+        offset: Some(Vec2::new(0., 5.)),
     }
 }

@@ -8,6 +8,7 @@ use crate::{
         objects::{
             chest::ChestSpriteSheet,
             flag::{FlagAnimation, FlagSpriteSheet},
+            items::weapons::{Weapons, WeaponsSpriteSheet},
             portal::{PortalAnimation, PortalSpriteSheet},
         },
         units::UnitSpriteSheets,
@@ -23,7 +24,11 @@ use shared::{
         entities::{Unit, UnitAnimation},
         game_scenes::Portal,
         physics::projectile::ProjectileType,
-        players::{chest::Chest, mount::Mount},
+        players::{
+            chest::Chest,
+            items::{Item, ItemType, ProjectileWeapon, UseWeapon, WeaponType},
+            mount::Mount,
+        },
     },
 };
 
@@ -41,6 +46,7 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_horse_sprite)
             .add_observer(init_projectile_sprite)
             .add_observer(init_chest_sprite)
+            .add_observer(init_weapon_sprite)
             .add_systems(Update, update_building_sprite)
             .add_systems(PreUpdate, init_local_player.after(ClientSet::Receive));
     }
@@ -227,6 +233,38 @@ fn init_chest_sprite(
     let sprite_sheet = &sprite_sheets.sprite_sheet;
     sprite.image = sprite_sheet.texture.clone();
     let animation = sprite_sheet.animations.get(ChestAnimation::Open);
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+}
+
+fn init_weapon_sprite(
+    trigger: Trigger<OnAdd, Item>,
+    mut weapons: Query<(&mut Sprite, &Item)>,
+    sprite_sheets: Res<WeaponsSpriteSheet>,
+) {
+    let Ok((mut sprite, item)) = weapons.get_mut(trigger.entity()) else {
+        return;
+    };
+    let ItemType::Weapon(weapon) = item.item_type else {
+        return;
+    };
+
+    let sprite_sheet = &sprite_sheets.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+
+    let weapon = match weapon {
+        WeaponType::Use(use_weapon) => match use_weapon {
+            UseWeapon::SwordAndShield => Weapons::SwordAndShield,
+            UseWeapon::Pike => Weapons::Pike,
+        },
+        WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
+            ProjectileWeapon::Bow => Weapons::Bow,
+        },
+    };
+
+    let animation = sprite_sheet.animations.get(weapon);
     sprite.texture_atlas = Some(TextureAtlas {
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
