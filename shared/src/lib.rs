@@ -111,14 +111,16 @@ fn spawn_clients(
     mut set_local_player: EventWriter<ToClients<SetLocalPlayer>>,
 ) {
     info!("spawning player for `{:?}`", trigger.entity());
-    commands.spawn((
-        Player(trigger.entity()),
-        Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
-    ));
+    let client_unity_id = commands
+        .spawn((
+            Player(trigger.entity()),
+            Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
+        ))
+        .id();
 
     set_local_player.send(ToClients {
         mode: SendMode::Direct(trigger.entity()),
-        event: SetLocalPlayer(trigger.entity()),
+        event: SetLocalPlayer(client_unity_id),
     });
 }
 
