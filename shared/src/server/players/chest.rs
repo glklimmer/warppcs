@@ -27,7 +27,7 @@ pub struct Mount {
     pub mount_type: MountType,
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Serialize, Deserialize)]
 #[require(
     Replicated,
     Transform,

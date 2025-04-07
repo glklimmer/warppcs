@@ -21,7 +21,7 @@ use server::{
         movement::{Grounded, Moving, Speed, Velocity},
         projectile::ProjectileType,
     },
-    players::{interaction::InteractPlugin, mount::Mount},
+    players::{chest::Chest, interaction::InteractPlugin, mount::Mount},
 };
 
 pub mod enum_map;
@@ -61,8 +61,9 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Unit, Transform)>()
         .replicate_group::<(Portal, Transform)>()
         .replicate_group::<(Mount, Transform)>()
-        .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
+        .replicate_group::<(Chest, Transform)>()
         .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
+        .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
         .add_observer(spawn_clients);
     }
