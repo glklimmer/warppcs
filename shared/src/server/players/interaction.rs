@@ -8,12 +8,12 @@ use crate::{BoxCollider, Faction, Highlightable, Owner, PhysicalPlayer};
 
 #[derive(Clone, Copy, Debug)]
 pub enum InteractionType {
-    Chest,
-    Mount,
-    Travel,
-    Building,
     Recruit,
     Flag,
+    Building,
+    Mount,
+    Travel,
+    Chest,
 }
 
 #[derive(Component, Clone, Copy, Debug)]
@@ -43,19 +43,6 @@ impl Plugin for InteractPlugin {
 
 #[derive(Event, Serialize, Deserialize, Debug)]
 struct Interact;
-
-impl InteractionType {
-    pub fn priority(&self) -> i32 {
-        match self {
-            Self::Chest => 140,
-            Self::Travel => 130,
-            Self::Mount => 125,
-            Self::Building => 122,
-            Self::Flag => 120,
-            Self::Recruit => 96,
-        }
-    }
-}
 
 fn send_interact(mut commands: Commands, keyboard_input: Res<ButtonInput<KeyCode>>) {
     if keyboard_input.just_pressed(KeyCode::KeyF) {
@@ -90,8 +77,8 @@ fn interact(
             })
             .max_by(
                 |(.., transform_a, _, interactable_a), (.., transform_b, _, interactable_b)| {
-                    let priority_a = interactable_a.kind.priority();
-                    let priority_b = interactable_b.kind.priority();
+                    let priority_a = interactable_a.kind as i32;
+                    let priority_b = interactable_b.kind as i32;
                     if priority_a == priority_b {
                         let distance_a = player_transform
                             .translation
