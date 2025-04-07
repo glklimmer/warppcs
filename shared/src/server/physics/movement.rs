@@ -32,6 +32,15 @@ impl Default for Speed {
     }
 }
 
+#[derive(Component)]
+pub struct RandomVelocityMul(f32);
+
+impl Default for RandomVelocityMul {
+    fn default() -> Self {
+        Self(fastrand::choice([0.9, 0.95, 1.0, 1.1, 1.15]).unwrap())
+    }
+}
+
 pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
@@ -172,12 +181,13 @@ fn set_unit_velocity(
             &UnitBehaviour,
             &Unit,
             &PushBack,
+            &RandomVelocityMul,
         ),
         With<Health>,
     >,
     transform_query: Query<&Transform, Without<Unit>>,
 ) {
-    for (mut velocity, mut transform, behaviour, unit, push_back) in &mut query {
+    for (mut velocity, mut transform, behaviour, unit, push_back, rand_velocity_mul) in &mut query {
         match behaviour {
             UnitBehaviour::Idle => {}
             UnitBehaviour::AttackTarget(_) => {
@@ -196,7 +206,7 @@ fn set_unit_velocity(
                     continue;
                 }
 
-                velocity.0.x = direction * unit_speed(&unit.unit_type);
+                velocity.0.x = direction * unit_speed(&unit.unit_type) * rand_velocity_mul.0;
                 transform.scale.x = direction;
             }
         }

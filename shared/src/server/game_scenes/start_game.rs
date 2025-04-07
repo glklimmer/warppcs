@@ -44,6 +44,7 @@ fn start_game(
         event,
     } in lobby_events.read()
     {
+        #[allow(irrefutable_let_patterns)]
         if let LobbyEvent::StartGame = &event {
             let mut map = VecDeque::new();
 

@@ -37,11 +37,16 @@ impl FromWorld for PortalSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            PortalAnimation::Swirle => None,
+        });
+
         PortalSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }
