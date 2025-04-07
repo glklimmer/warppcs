@@ -3,7 +3,13 @@ use bevy_replicon::prelude::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, server::entities::health::Health};
+use crate::{
+    server::{
+        entities::health::Health,
+        players::interaction::{Interactable, InteractionType},
+    },
+    BoxCollider,
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MainBuildingLevels {
@@ -33,6 +39,10 @@ pub struct Cost {
     BoxCollider(marker_collider),
     Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
     BuildStatus(|| BuildStatus::Marker),
+    Interactable(|| Interactable {
+        kind: InteractionType::Building,
+        restricted_to: None,
+    }),
 )]
 pub enum Building {
     MainBuilding { level: MainBuildingLevels },
