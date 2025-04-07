@@ -5,7 +5,10 @@ use bevy::{
     prelude::*,
 };
 use image::{GenericImage, GenericImageView, Rgba};
-use shared::{server::physics::attachment::AttachedTo, BoxCollider, Highlightable};
+use shared::{
+    BoxCollider, Faction,
+    server::{physics::attachment::AttachedTo, players::interaction::Interactable},
+};
 
 use crate::networking::ControlledPlayer;
 
@@ -69,25 +72,26 @@ fn highlight_entity(
 #[allow(clippy::type_complexity)]
 fn check_highlight(
     mut commands: Commands,
-    mut outline: Query<
-        (
-            Entity,
-            &Transform,
-            &BoxCollider,
-            &Sprite,
-            Option<&mut Highlighted>,
-            Option<&AttachedTo>,
-        ),
-        With<Highlightable>,
-    >,
-    player: Query<(&Transform, &BoxCollider), With<ControlledPlayer>>,
+    mut outline: Query<(
+        Entity,
+        &Transform,
+        &BoxCollider,
+        &Sprite,
+        &Interactable,
+        Option<&mut Highlighted>,
+        Option<&AttachedTo>,
+    )>,
+    player: Query<(Entity, &Transform, &BoxCollider), With<ControlledPlayer>>,
 ) {
-    let Ok((player_transform, player_collider)) = player.get_single() else {
+    let Ok((player_entity, player_transform, player_collider)) = player.get_single() else {
         return;
     };
+
     let player_bounds = player_collider.at(player_transform);
 
-    for (entity, transform, box_collider, sprite, highlighted, attached_to) in outline.iter_mut() {
+    for (entity, transform, box_collider, sprite, interactable, highlighted, attached_to) in
+        outline.iter_mut()
+    {
         let bounds = box_collider.at(transform);
         let intersected = bounds.intersects(&player_bounds);
         match highlighted {
@@ -98,6 +102,16 @@ fn check_highlight(
             }
             None => {
                 if intersected && attached_to.is_none() {
+                    if let Some(owner) = interactable.restricted_to {
+                        match owner.0 {
+                            Faction::Player(entity) => {
+                                if entity != player_entity {
+                                    continue;
+                                }
+                            }
+                            Faction::Bandits => return,
+                        }
+                    }
                     commands.entity(entity).insert(Highlighted {
                         original_handle: sprite.image.clone(),
                     });

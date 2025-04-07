@@ -3,9 +3,9 @@ use bevy::prelude::*;
 use bevy::app::ScheduleRunnerPlugin;
 use bevy_renet::steam::SteamServerPlugin;
 use shared::{
+    SharedPlugin,
     server::{create_server::create_steam_server, networking::ServerNetworkPlugin},
     steamworks::SteamworksPlugin,
-    SharedPlugin,
 };
 
 use std::time::Duration;

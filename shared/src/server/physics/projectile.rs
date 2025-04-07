@@ -6,13 +6,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::Hitby;
 use crate::{
+    BoxCollider, DelayedDespawn, Owner,
     networking::Facing,
     projectile_collider,
     server::{
         ai::attack::projectile_damage,
         entities::health::{Health, TakeDamage},
     },
-    BoxCollider, DelayedDespawn, Owner,
 };
 
 use super::movement::Velocity;

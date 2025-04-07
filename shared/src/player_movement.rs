@@ -4,15 +4,15 @@ use bevy_replicon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    ClientPlayerMap,
     server::physics::movement::{Speed, Velocity},
-    PhysicalPlayer,
 };
 
 pub struct PlayerMovement;
 
 impl Plugin for PlayerMovement {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<MovePlayer>(ChannelKind::Ordered)
+        app.add_client_trigger::<MovePlayer>(Channel::Ordered)
             .add_observer(apply_movement)
             .add_systems(Update, movement_input.before(ClientSet::Send));
     }
@@ -37,13 +37,16 @@ fn movement_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
 
 fn apply_movement(
     trigger: Trigger<FromClient<MovePlayer>>,
-    mut players: Query<(&PhysicalPlayer, &mut Velocity, &mut Transform, &Speed)>,
+    mut players: Query<(&mut Velocity, &mut Transform, &Speed)>,
+    client_player_map: Res<ClientPlayerMap>,
 ) {
-    for (player, mut velocity, mut transform, speed) in &mut players {
-        if trigger.client_id == **player {
-            let direction = Vec2::new(trigger.event.x, 0.).normalize_or_zero();
-            velocity.0 = direction * speed.0;
-            transform.scale.x = direction.x.signum();
-        }
-    }
+    let Ok((mut velocity, mut transform, speed)) =
+        players.get_mut(*client_player_map.get(&trigger.client_entity).unwrap())
+    else {
+        return;
+    };
+
+    let direction = Vec2::new(trigger.event.x, 0.).normalize_or_zero();
+    velocity.0 = direction * speed.0;
+    transform.scale.x = direction.x.signum();
 }

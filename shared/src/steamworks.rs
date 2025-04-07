@@ -69,10 +69,9 @@ use bevy::ecs::{
 use bevy::utils::{synccell::SyncCell, syncunsafecell::SyncUnsafeCell};
 // Reexport everything from steamworks except for the clients
 pub use steamworks::{
-    networking_messages, networking_sockets, networking_utils, restart_app_if_necessary, AccountId,
-    AppIDs, AppId, Apps, AuthSessionError, AuthSessionTicketResponse, AuthSessionValidateError,
-    AuthTicket, Callback, CallbackHandle, ChatMemberStateChange, ComparisonFilter,
-    CreateQueryError, DistanceFilter, DownloadItemResult, FileType,
+    AccountId, AppIDs, AppId, Apps, AuthSessionError, AuthSessionTicketResponse,
+    AuthSessionValidateError, AuthTicket, Callback, CallbackHandle, ChatMemberStateChange,
+    ComparisonFilter, CreateQueryError, DistanceFilter, DownloadItemResult, FileType,
     FloatingGamepadTextInputDismissed, FloatingGamepadTextInputMode, Friend, FriendFlags,
     FriendGame, FriendState, Friends, GameId, GameLobbyJoinRequested, GameOverlayActivated,
     GamepadTextInputDismissed, GamepadTextInputLineMode, GamepadTextInputMode, Input, InstallInfo,
@@ -82,15 +81,16 @@ pub use steamworks::{
     Matchmaking, MicroTxnAuthorizationResponse, NearFilter, NearFilters, Networking,
     NotificationPosition, NumberFilter, NumberFilters, OverlayToStoreFlag, P2PSessionConnectFail,
     P2PSessionRequest, PersonaChange, PersonaStateChange, PublishedFileId, PublishedFileVisibility,
-    QueryHandle, QueryResult, QueryResults, RemotePlay, RemotePlayConnected,
+    QueryHandle, QueryResult, QueryResults, RESULTS_PER_PAGE, RemotePlay, RemotePlayConnected,
     RemotePlayDisconnected, RemotePlaySession, RemotePlaySessionId, RemoteStorage, SIResult,
     SResult, SendType, Server, ServerManager, ServerMode, SteamAPIInitError, SteamDeviceFormFactor,
     SteamError, SteamFile, SteamFileInfo, SteamFileReader, SteamFileWriter, SteamId,
     SteamServerConnectFailure, SteamServersConnected, SteamServersDisconnected, StringFilter,
-    StringFilterKind, StringFilters, TicketForWebApiResponse, UGCContentDescriptorID, UGCQueryType,
-    UGCStatisticType, UGCType, UpdateHandle, UpdateStatus, UpdateWatchHandle, UploadScoreMethod,
-    User, UserAchievementStored, UserList, UserListOrder, UserRestriction, UserStats,
-    UserStatsReceived, UserStatsStored, Utils, ValidateAuthTicketResponse, RESULTS_PER_PAGE, UGC,
+    StringFilterKind, StringFilters, TicketForWebApiResponse, UGC, UGCContentDescriptorID,
+    UGCQueryType, UGCStatisticType, UGCType, UpdateHandle, UpdateStatus, UpdateWatchHandle,
+    UploadScoreMethod, User, UserAchievementStored, UserList, UserListOrder, UserRestriction,
+    UserStats, UserStatsReceived, UserStatsStored, Utils, ValidateAuthTicketResponse,
+    networking_messages, networking_sockets, networking_utils, restart_app_if_necessary,
 };
 
 #[derive(Resource)]

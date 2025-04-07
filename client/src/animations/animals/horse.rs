@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use shared::{enum_map::*, AnimationChange, AnimationChangeEvent};
+use shared::{AnimationChange, AnimationChangeEvent, enum_map::*};
 
 use crate::animations::{AnimationSound, AnimationTrigger, SpriteSheet, SpriteSheetAnimation};
 

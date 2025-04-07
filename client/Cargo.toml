@@ -1,7 +1,7 @@
 [package]
 name = "client"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [features]
 default = ["netcode"]
@@ -46,14 +46,14 @@ bevy = { version = "0.15.3", default-features = false, features = [
     "wayland",
 ] }
 bevy_renet = { version = "1.0.0", features = ["steam"] }
-bevy_replicon = "0.30.1"
-bevy_replicon_renet = { version = "0.7.0" }
+bevy_replicon = "0.32.0"
+bevy_replicon_renet = { version = "0.9.0" }
 renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }
-bincode = "1.3.3"
+bincode = "2.0.1"
 fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
 steamworks = { version = "0.11", optional = true }
 shared = { path = "../shared", features = ["client"] }
-arboard = "3.4.1"
+arboard = "3.5.0"
 bevy-parallax = { git = "https://github.com/Corrosive-Games/bevy-parallax" }
-image = { version = "0.25.5", features = ["png"] }
+image = { version = "0.25.6", features = ["png"] }

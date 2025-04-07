@@ -5,9 +5,10 @@ use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    AnimationChange, AnimationChangeEvent, BoxCollider,
     networking::{MountType, Mounted},
     server::physics::movement::{Speed, Velocity},
-    unit_collider, AnimationChange, AnimationChangeEvent, BoxCollider,
+    unit_collider,
 };
 
 use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
@@ -40,21 +41,23 @@ pub fn mount(
             continue;
         };
 
-        let mut speed = player_query.get_mut(event.player).unwrap();
+        let player = event.player;
+        let mut speed = player_query.get_mut(player).unwrap();
+
         let mount = mount_query.get(event.interactable).unwrap();
 
         let new_speed = mount_speed(&mount.mount_type);
         speed.0 = new_speed;
 
         commands.entity(event.interactable).despawn_recursive();
-        commands.entity(event.player).insert(Mounted {
+        commands.entity(player).insert(Mounted {
             mount_type: mount.mount_type,
         });
 
         animation.send(ToClients {
             mode: SendMode::Broadcast,
             event: AnimationChangeEvent {
-                entity: event.player,
+                entity: player,
                 change: AnimationChange::Mount,
             },
         });

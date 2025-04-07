@@ -4,22 +4,21 @@ use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    flag_collider,
+    BoxCollider, Faction, Owner, flag_collider,
     map::{
-        buildings::{Building, Cost},
         Layers,
+        buildings::{Building, Cost},
     },
     networking::{Inventory, UnitType},
     server::{
         ai::{
-            attack::{unit_health, unit_swing_timer},
             UnitBehaviour,
+            attack::{unit_health, unit_swing_timer},
         },
-        entities::{health::Health, Unit},
+        entities::{Unit, health::Health},
         physics::attachment::AttachedTo,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
-    BoxCollider, Faction, Owner,
 };
 
 #[derive(Component, Deserialize, Serialize)]
@@ -49,7 +48,8 @@ pub fn recruit(
     mut player_query: Query<(&Transform, &mut Inventory)>,
 ) {
     for event in recruit.read() {
-        let (player_transform, mut inventory) = player_query.get_mut(event.player).unwrap();
+        let player = event.player;
+        let (player_transform, mut inventory) = player_query.get_mut(player).unwrap();
         let player_translation = player_transform.translation;
         let flag_translation = Vec3::new(
             player_translation.x,
@@ -63,12 +63,12 @@ pub fn recruit(
             continue;
         }
 
-        let owner = Owner(Faction::Player(event.player));
+        let owner = Owner(Faction::Player(player));
         // TODO: Refactor with Bevy 0.16 Parent API
         let flag_entity = commands
             .spawn((
                 Flag,
-                AttachedTo(event.player),
+                AttachedTo(player),
                 Interactable {
                     kind: InteractionType::Flag,
                     restricted_to: Some(owner),
@@ -77,9 +77,7 @@ pub fn recruit(
             ))
             .id();
 
-        commands
-            .entity(event.player)
-            .insert(FlagHolder(flag_entity));
+        commands.entity(player).insert(FlagHolder(flag_entity));
 
         let unit_type = match event.building_type {
             Building::Archer => UnitType::Archer,
@@ -123,7 +121,6 @@ pub fn check_recruit(
         let InteractionType::Recruit = &event.interaction else {
             continue;
         };
-
         let inventory = player.get(event.player).unwrap();
         let building = building.get(event.interactable).unwrap();
 

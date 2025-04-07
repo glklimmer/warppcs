@@ -1,31 +1,37 @@
 use bevy::prelude::*;
+use bevy_replicon::client::ClientSet;
 
 use crate::{
     animations::{
+        AnimationSound, AnimationSoundTrigger,
         animals::horse::{HorseAnimation, HorseSpriteSheet},
         king::{KingAnimation, KingSpriteSheet},
         objects::{
             chest::ChestSpriteSheet,
             flag::{FlagAnimation, FlagSpriteSheet},
+            items::weapons::{Weapons, WeaponsSpriteSheet},
             portal::{PortalAnimation, PortalSpriteSheet},
         },
         units::UnitSpriteSheets,
-        AnimationSound, AnimationSoundTrigger,
     },
     networking::ControlledPlayer,
     sound::CRAFTING_SOUND_PATH,
 };
 use bevy_parallax::CameraFollow;
 use shared::{
+    ChestAnimation, Player, SetLocalPlayer,
     map::buildings::{BuildStatus, Building},
     server::{
         buildings::recruiting::Flag,
         entities::{Unit, UnitAnimation},
         game_scenes::Portal,
         physics::projectile::ProjectileType,
-        players::{chest::Chest, mount::Mount},
+        players::{
+            chest::Chest,
+            items::{Item, ItemType, MeleeWeapon, ProjectileWeapon, WeaponType},
+            mount::Mount,
+        },
     },
-    ChestAnimation, Faction, LocalClientId, Owner, PhysicalPlayer,
 };
 
 use super::highlight::Highlighted;
@@ -35,7 +41,6 @@ pub struct SpawnPlugin;
 impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_player_sprite)
-            .add_observer(init_local_player)
             .add_observer(init_building_sprite)
             .add_observer(init_unit_sprite)
             .add_observer(init_flag_sprite)
@@ -43,36 +48,31 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_horse_sprite)
             .add_observer(init_projectile_sprite)
             .add_observer(init_chest_sprite)
-            .add_systems(Update, update_building_sprite);
+            .add_observer(init_weapon_sprite)
+            .add_systems(Update, update_building_sprite)
+            .add_systems(PreUpdate, init_local_player.after(ClientSet::Receive));
     }
 }
 
 fn init_local_player(
-    trigger: Trigger<OnAdd, PhysicalPlayer>,
     mut commands: Commands,
-    players: Query<&PhysicalPlayer>,
-    client_id: Res<LocalClientId>,
+    mut events: EventReader<SetLocalPlayer>,
     camera: Query<Entity, With<Camera>>,
 ) {
-    let entity = trigger.entity();
-    let player = players.get(entity).unwrap();
+    for event in events.read() {
+        let player = **event;
 
-    if **player == **client_id {
-        info!("init controlled player for {:?}", **player);
-        let mut player_commands = commands.entity(entity);
-        player_commands.insert((
-            ControlledPlayer,
-            SpatialListener::new(50.0),
-            Owner(Faction::Player(entity)),
-        ));
+        info!("init controlled player for {:?}", player);
+        let mut player_commands = commands.entity(player);
+        player_commands.insert((ControlledPlayer, SpatialListener::new(50.0)));
         commands
             .entity(camera.single())
-            .insert(CameraFollow::fixed(entity));
+            .insert(CameraFollow::fixed(player));
     }
 }
 
 fn init_player_sprite(
-    trigger: Trigger<OnAdd, PhysicalPlayer>,
+    trigger: Trigger<OnAdd, Player>,
     mut players: Query<&mut Sprite>,
     mut commands: Commands,
     king_sprite_sheet: Res<KingSpriteSheet>,
@@ -127,12 +127,24 @@ fn update_building_sprite(
         if status.eq(&BuildStatus::Built) {
             commands.entity(entity).insert(AnimationSound {
                 sound_handles: vec![
-                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_1.ogg")),
-                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_2.ogg")),
-                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_1.ogg")),
-                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_2.ogg")),
-                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_3.ogg")),
-                    asset_server.load(format!("{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammering_&_chiseling_stone_1.ogg")),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_1.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_2.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_1.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_2.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_3.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammering_&_chiseling_stone_1.ogg"
+                    )),
                 ],
                 sound_trigger: AnimationSoundTrigger::OnEnter,
             });
@@ -251,6 +263,38 @@ fn init_chest_sprite(
     let sprite_sheet = &sprite_sheets.sprite_sheet;
     sprite.image = sprite_sheet.texture.clone();
     let animation = sprite_sheet.animations.get(ChestAnimation::Open);
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+}
+
+fn init_weapon_sprite(
+    trigger: Trigger<OnAdd, Item>,
+    mut weapons: Query<(&mut Sprite, &Item)>,
+    sprite_sheets: Res<WeaponsSpriteSheet>,
+) {
+    let Ok((mut sprite, item)) = weapons.get_mut(trigger.entity()) else {
+        return;
+    };
+    let ItemType::Weapon(weapon) = item.item_type else {
+        return;
+    };
+
+    let sprite_sheet = &sprite_sheets.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+
+    let weapon = match weapon {
+        WeaponType::Melee(use_weapon) => match use_weapon {
+            MeleeWeapon::SwordAndShield => Weapons::SwordAndShield,
+            MeleeWeapon::Pike => Weapons::Pike,
+        },
+        WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
+            ProjectileWeapon::Bow => Weapons::Bow,
+        },
+    };
+
+    let animation = sprite_sheet.animations.get(weapon);
     sprite.texture_atlas = Some(TextureAtlas {
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,

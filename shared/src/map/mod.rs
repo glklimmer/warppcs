@@ -10,9 +10,11 @@ pub enum Layers {
     Background,
     Building,
     Chest,
+    Mount,
     Unit,
     Projectile,
     Flag,
+    Item,
     Player,
     Wall,
 }

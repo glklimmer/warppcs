@@ -6,7 +6,7 @@ use super::{
     ai::AIPlugin,
     buildings::BuildingsPlugins,
     entities::EntityPlugin,
-    game_scenes::{start_game::StartGamePlugin, GameScenesPlugin},
+    game_scenes::{GameScenesPlugin, start_game::StartGamePlugin},
     physics::PhysicsPlugin,
     players::PlayerPlugin,
 };
