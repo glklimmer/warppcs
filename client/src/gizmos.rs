@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
 };
 
-use shared::{server::ai::SIGHT_RANGE, BoxCollider};
+use shared::{BoxCollider, server::ai::SIGHT_RANGE};
 
 pub struct GizmosPlugin;
 

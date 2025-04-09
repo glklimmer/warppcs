@@ -1,12 +1,12 @@
-use bevy::prelude::*;
+use bevy::{ecs::observer::TriggerTargets, prelude::*, utils::HashMap};
 use bevy_replicon::prelude::*;
 use enum_map::*;
 
 use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d, sprite::Anchor};
 use bevy_replicon_renet::RepliconRenetPlugins;
 use map::{
-    buildings::{BuildStatus, Building},
     Layers,
+    buildings::{BuildStatus, Building},
 };
 use networking::{Inventory, Mounted};
 use player_attacks::PlayerAttacks;
@@ -21,7 +21,11 @@ use server::{
         movement::{Grounded, Moving, Speed, Velocity},
         projectile::ProjectileType,
     },
-    players::{interaction::InteractPlugin, mount::Mount},
+    players::{
+        chest::Chest,
+        interaction::{InteractPlugin, Interactable},
+        mount::Mount,
+    },
 };
 
 pub mod enum_map;
@@ -48,23 +52,33 @@ impl Plugin for SharedPlugin {
             PlayerAttacks,
             InteractPlugin,
         ))
+        .init_resource::<ClientPlayerMap>()
         .replicate::<Moving>()
         .replicate::<Grounded>()
+        .replicate_mapped::<Owner>()
         .replicate_mapped::<AttachedTo>()
         .replicate::<BoxCollider>()
         .replicate::<Mounted>()
-        .replicate_group::<(PhysicalPlayer, Transform, Inventory)>()
+        .replicate::<Interactable>()
+        .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
         .replicate_group::<(ProjectileType, Transform)>()
         .replicate_group::<(Unit, Transform)>()
         .replicate_group::<(Portal, Transform)>()
         .replicate_group::<(Mount, Transform)>()
-        .add_mapped_server_event::<AnimationChangeEvent>(ChannelKind::Ordered)
-        .add_mapped_server_event::<ChestAnimationEvent>(ChannelKind::Ordered)
+        .replicate_group::<(Chest, Transform)>()
+        .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
+        .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
+        .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
         .add_observer(spawn_clients);
     }
 }
+
+/// Key is NetworkEntity
+/// Value is PlayerEntity
+#[derive(Resource, DerefMut, Deref, Default)]
+pub struct ClientPlayerMap(HashMap<Entity, Entity>);
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum AnimationChange {
@@ -104,15 +118,40 @@ impl MapEntities for ChestAnimationEvent {
     }
 }
 
-fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
-    info!("spawning player for `{:?}`", trigger.client_id);
-    commands.spawn((
-        PhysicalPlayer(trigger.client_id),
-        Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
-    ));
+fn spawn_clients(
+    trigger: Trigger<OnAdd, ConnectedClient>,
+    mut commands: Commands,
+    mut set_local_player: EventWriter<ToClients<SetLocalPlayer>>,
+    mut client_player_map: ResMut<ClientPlayerMap>,
+) {
+    info!("spawning player for `{:?}`", trigger.entity());
+
+    let player = commands
+        .entity(trigger.entity())
+        .insert((
+            Player,
+            Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
+        ))
+        .id();
+
+    set_local_player.send(ToClients {
+        mode: SendMode::Direct(trigger.entity()),
+        event: SetLocalPlayer(player),
+    });
+
+    client_player_map.insert(trigger.entity(), player);
 }
 
-#[derive(Component, Deserialize, Serialize, Deref)]
+#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
+pub struct SetLocalPlayer(Entity);
+
+impl MapEntities for SetLocalPlayer {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        **self = entity_mapper.map_entity(**self);
+    }
+}
+
+#[derive(Component, Deserialize, Serialize)]
 #[require(
     Replicated,
     Transform(|| Transform::from_xyz(0., 0., Layers::Player.as_f32())),
@@ -122,17 +161,7 @@ fn spawn_clients(trigger: Trigger<ClientConnected>, mut commands: Commands) {
     Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
     Inventory
 )]
-// TODO: Rename to player
-pub struct PhysicalPlayer(bevy_replicon::core::ClientId);
-
-#[derive(Debug, Resource, Deref)]
-pub struct LocalClientId(bevy_replicon::core::ClientId);
-
-impl LocalClientId {
-    pub const fn new(value: u64) -> Self {
-        Self(ClientId::new(value))
-    }
-}
+pub struct Player;
 
 #[derive(Component)]
 pub struct Highlightable {
@@ -211,8 +240,20 @@ pub enum Faction {
     Bandits,
 }
 
-#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref)]
-pub struct Owner(Faction);
+#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref, DerefMut)]
+#[require(Replicated)]
+pub struct Owner(pub Faction);
+
+impl MapEntities for Owner {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        match **self {
+            Faction::Player(entity) => {
+                **self = Faction::Player(entity_mapper.map_entity(entity));
+            }
+            Faction::Bandits => return,
+        }
+    }
+}
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);

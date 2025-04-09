@@ -2,20 +2,20 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
 use crate::{
+    Faction, Owner, Player,
     map::{
-        buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
         Layers,
+        buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
     },
     networking::{LobbyEvent, MountType, UnitType},
     server::{
-        entities::{health::Health, Unit},
+        entities::{Unit, health::Health},
         players::{
             chest::Chest,
             interaction::{Interactable, InteractionType},
             mount::Mount,
         },
     },
-    Faction, Owner, PhysicalPlayer,
 };
 use std::collections::VecDeque;
 
@@ -36,14 +36,15 @@ impl Plugin for StartGamePlugin {
 
 fn start_game(
     mut lobby_events: EventReader<FromClient<LobbyEvent>>,
-    mut players: Query<(Entity, &mut Transform), With<PhysicalPlayer>>,
+    mut players: Query<(Entity, &mut Transform), With<Player>>,
     mut commands: Commands,
 ) {
     for FromClient {
-        client_id: _,
+        client_entity: _,
         event,
     } in lobby_events.read()
     {
+        #[allow(irrefutable_let_patterns)]
         if let LobbyEvent::StartGame = &event {
             let mut map = VecDeque::new();
 
@@ -107,7 +108,7 @@ fn connect_portals(mut commands: Commands, left: Entity, right: Entity) {
 fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_right_portal: Entity) {
     for i in 1..10 {
         commands.spawn((
-            Owner(Faction::Player(Entity::PLACEHOLDER)),
+            Owner(Faction::Bandits),
             Unit {
                 unit_type: UnitType::Bandit,
                 swing_timer: Timer::default(),
@@ -134,7 +135,7 @@ fn player_base(
     right_portal: Entity,
 ) {
     let owner = Owner(Faction::Player(player));
-
+    println!("onwer {:?}", player);
     commands.spawn((
         Building::MainBuilding {
             level: MainBuildingLevels::Tent,

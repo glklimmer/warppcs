@@ -1,7 +1,7 @@
 [package]
 name = "server"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [features]
 default = ["steam"]
@@ -45,9 +45,9 @@ bevy = { version = "0.15.3", default-features = false, features = [
     # "x11",
 ] }
 bevy_renet = { version = "1.0.0", features = ["steam"] }
-bevy_replicon = "0.30.1"
-bevy_replicon_renet = { version = "0.7.0" }
-bincode = "1.3.3"
+bevy_replicon = "0.32.0"
+bevy_replicon_renet = { version = "0.9.0" }
+bincode = "2.0.1"
 fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
 renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }

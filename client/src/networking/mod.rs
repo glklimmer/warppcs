@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_renet::renet::ClientId;
-use shared::{player_collider, BoxCollider};
+use shared::{BoxCollider, player_collider};
 
 use crate::animations::king::KingAnimation;
 

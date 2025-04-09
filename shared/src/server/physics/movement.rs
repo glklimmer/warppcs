@@ -3,16 +3,16 @@ use bevy_replicon::prelude::server_or_singleplayer;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    BoxCollider, GRAVITY_G, Owner,
     map::buildings::{BuildStatus, Building},
     server::{
-        ai::{attack::unit_speed, UnitBehaviour},
-        entities::{health::Health, Unit},
+        ai::{UnitBehaviour, attack::unit_speed},
+        entities::{Unit, health::Health},
     },
-    BoxCollider, Owner, GRAVITY_G,
 };
 use bevy::math::bounding::IntersectsVolume;
 
-use super::{projectile::ProjectileType, PushBack};
+use super::{PushBack, projectile::ProjectileType};
 
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);

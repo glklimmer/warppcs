@@ -1,22 +1,22 @@
 use bevy::prelude::*;
 
 use animals::horse::{
-    next_horse_animation, set_horse_sprite_animation, HorseAnimation, HorseSpriteSheet,
+    HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
 use bevy_replicon::client::ClientSet;
 use king::{
-    set_king_after_play_once, set_king_idle, set_king_sprite_animation, set_king_walking,
-    trigger_king_animation, KingAnimation, KingSpriteSheet,
+    KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
+    set_king_sprite_animation, set_king_walking, trigger_king_animation,
 };
 use objects::{
-    chest::{play_chest_animation, set_chest_after_play_once, ChestSpriteSheet},
+    chest::{ChestSpriteSheet, play_chest_animation, set_chest_after_play_once},
     flag::FlagSpriteSheet,
     portal::PortalSpriteSheet,
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
 use units::{
-    set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation, set_unit_walking,
-    trigger_unit_animation, UnitSpriteSheets,
+    UnitSpriteSheets, set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation,
+    set_unit_walking, trigger_unit_animation,
 };
 
 pub mod animals;

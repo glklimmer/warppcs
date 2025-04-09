@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 
-use attack::{unit_range, AttackPlugin};
+use attack::{AttackPlugin, unit_range};
 
 use crate::Owner;
 
 use super::{
     buildings::recruiting::FlagAssignment,
-    entities::{health::Health, Unit},
+    entities::{Unit, health::Health},
 };
 
 pub mod attack;

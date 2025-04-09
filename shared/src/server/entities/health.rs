@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
-    map::buildings::Building, networking::Facing, AnimationChange, AnimationChangeEvent,
-    DelayedDespawn, Owner,
+    AnimationChange, AnimationChangeEvent, DelayedDespawn, Owner, map::buildings::Building,
+    networking::Facing,
 };
 
 use super::Unit;
