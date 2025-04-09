@@ -89,7 +89,7 @@ fn check_highlight(
 
     let player_bounds = player_collider.at(player_transform);
 
-    for (entity, transform, box_collider, sprite, owner, highlighted, attached_to) in
+    for (entity, transform, box_collider, sprite, interactable, highlighted, attached_to) in
         outline.iter_mut()
     {
         let bounds = box_collider.at(transform);
@@ -102,8 +102,8 @@ fn check_highlight(
             }
             None => {
                 if intersected && attached_to.is_none() {
-                    if let Some(interactable_owner) = owner.restricted_to {
-                        match interactable_owner.0 {
+                    if let Some(owner) = interactable.restricted_to {
+                        match owner.0 {
                             Faction::Player(entity) => {
                                 if entity != player_entity {
                                     continue;
