@@ -31,8 +31,8 @@ impl Item {
         let mut item_types = vec![ItemType::Chest, ItemType::Feet, ItemType::Head];
 
         let weapon = if fastrand::bool() {
-            let use_weapon = fastrand::choice(UseWeapon::all_variants()).unwrap();
-            WeaponType::Use(*use_weapon)
+            let use_weapon = fastrand::choice(MeleeWeapon::all_variants()).unwrap();
+            WeaponType::Melee(*use_weapon)
         } else {
             let proj_weapon = fastrand::choice(ProjectileWeapon::all_variants()).unwrap();
             WeaponType::Projectile(*proj_weapon)
@@ -105,7 +105,7 @@ impl ModifierEffect {
             ModifierEffect::Damage => 6..=18,
             ModifierEffect::Health => 60..=120,
             ModifierEffect::Range(weapon) => match weapon {
-                WeaponType::Use(_) => 20..=30,
+                WeaponType::Melee(_) => 20..=30,
                 WeaponType::Projectile(_) => 160..=220,
             },
             ModifierEffect::AttackSpeed => 1..=4,
@@ -190,12 +190,12 @@ impl ItemType {
 
 #[derive(Clone, Serialize, Deserialize, Copy, Debug)]
 pub enum WeaponType {
-    Use(UseWeapon),
+    Melee(MeleeWeapon),
     Projectile(ProjectileWeapon),
 }
 
 #[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug)]
-pub enum UseWeapon {
+pub enum MeleeWeapon {
     SwordAndShield,
     Pike,
 }
@@ -208,9 +208,9 @@ pub enum ProjectileWeapon {
 impl WeaponType {
     fn unit_type(&self) -> UnitType {
         match self {
-            WeaponType::Use(use_weapon) => match use_weapon {
-                UseWeapon::SwordAndShield => UnitType::Shieldwarrior,
-                UseWeapon::Pike => UnitType::Pikeman,
+            WeaponType::Melee(use_weapon) => match use_weapon {
+                MeleeWeapon::SwordAndShield => UnitType::Shieldwarrior,
+                MeleeWeapon::Pike => UnitType::Pikeman,
             },
             WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
                 ProjectileWeapon::Bow => UnitType::Archer,
