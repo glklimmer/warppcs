@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::entity::MapEntities, prelude::*};
 use bevy_replicon::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{BoxCollider, ClientPlayerMap, Faction, Highlightable, Owner};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {
     Recruit,
     Flag,
@@ -16,8 +16,8 @@ pub enum InteractionType {
     Chest,
 }
 
-#[derive(Component, Clone, Copy, Debug)]
-#[require(Highlightable)]
+#[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
+#[require(Replicated, Highlightable)]
 pub struct Interactable {
     pub kind: InteractionType,
     pub restricted_to: Option<Owner>,

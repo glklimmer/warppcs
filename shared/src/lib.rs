@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{ecs::observer::TriggerTargets, prelude::*, utils::HashMap};
 use bevy_replicon::prelude::*;
 use enum_map::*;
 
@@ -21,7 +21,11 @@ use server::{
         movement::{Grounded, Moving, Speed, Velocity},
         projectile::ProjectileType,
     },
-    players::{chest::Chest, interaction::InteractPlugin, mount::Mount},
+    players::{
+        chest::Chest,
+        interaction::{InteractPlugin, Interactable},
+        mount::Mount,
+    },
 };
 
 pub mod enum_map;
@@ -51,9 +55,11 @@ impl Plugin for SharedPlugin {
         .init_resource::<ClientPlayerMap>()
         .replicate::<Moving>()
         .replicate::<Grounded>()
+        .replicate_mapped::<Owner>()
         .replicate_mapped::<AttachedTo>()
         .replicate::<BoxCollider>()
         .replicate::<Mounted>()
+        .replicate::<Interactable>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
@@ -125,6 +131,7 @@ fn spawn_clients(
         .insert((
             Player,
             Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
+            Owner(Faction::Player(trigger.entity())),
         ))
         .id();
 
@@ -234,8 +241,20 @@ pub enum Faction {
     Bandits,
 }
 
-#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref)]
-pub struct Owner(Faction);
+#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref, DerefMut)]
+#[require(Replicated)]
+pub struct Owner(pub Faction);
+
+impl MapEntities for Owner {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        match **self {
+            Faction::Player(entity) => {
+                **self = Faction::Player(entity_mapper.map_entity(entity));
+            }
+            Faction::Bandits => return,
+        }
+    }
+}
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);

@@ -135,7 +135,7 @@ fn player_base(
     right_portal: Entity,
 ) {
     let owner = Owner(Faction::Player(player));
-
+    println!("onwer {:?}", player);
     commands.spawn((
         Building::MainBuilding {
             level: MainBuildingLevels::Tent,
