@@ -5,7 +5,7 @@ use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, ChestAnimation, ChestAnimationEvent, networking::MountType,
+    BoxCollider, ChestAnimation, ChestAnimationEvent, map::Layers, networking::MountType,
     server::physics::movement::Velocity, unit_collider,
 };
 
@@ -68,7 +68,17 @@ pub fn open_chest(
 
         let item = Item::random(Rarity::Common);
         info!("Spawning item: {:?}", item);
-        commands.spawn((item, *chest_transform, Velocity(Vec2::new(20., 20.))));
+        commands.spawn((
+            item.collider(),
+            item,
+            Transform::from_translation(
+                chest_transform
+                    .translation
+                    .with_y(12.5)
+                    .with_z(Layers::Item.as_f32()),
+            ),
+            Velocity(Vec2::new((fastrand::f32() - 0.5) * 50., 50.)),
+        ));
 
         animation.send(ToClients {
             mode: SendMode::Broadcast,
@@ -79,9 +89,10 @@ pub fn open_chest(
         });
     }
 }
+
 fn chest_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(16., 10.),
-        offset: Some(Vec2::new(0., -5.)),
+        offset: Some(Vec2::new(0., 5.)),
     }
 }

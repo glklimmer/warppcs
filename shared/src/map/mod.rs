@@ -13,6 +13,7 @@ pub enum Layers {
     Unit,
     Projectile,
     Flag,
+    Item,
     Player,
     Wall,
 }

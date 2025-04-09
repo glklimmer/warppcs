@@ -1,11 +1,10 @@
 use bevy::prelude::*;
 
-use bevy::sprite::Anchor;
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
 use crate::enum_map::*;
-use crate::{networking::UnitType, server::physics::movement::Velocity, BoxCollider};
+use crate::{BoxCollider, networking::UnitType, server::physics::movement::Velocity};
 
 use super::interaction::{Interactable, InteractionType};
 
@@ -15,7 +14,7 @@ use super::interaction::{Interactable, InteractionType};
     Transform,
     BoxCollider,
     Velocity,
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
+    Sprite,
     Interactable(|| Interactable {
         kind: InteractionType::Item,
         restricted_to: None,
@@ -29,6 +28,7 @@ pub struct Item {
 impl Item {
     pub fn random(rarity: Rarity) -> Self {
         let mut item_types = vec![ItemType::Chest, ItemType::Feet, ItemType::Head];
+        let mut item_types = vec![];
 
         let weapon = if fastrand::bool() {
             let use_weapon = fastrand::choice(MeleeWeapon::all_variants()).unwrap();
@@ -60,6 +60,32 @@ impl Item {
         Self {
             item_type: *item_type,
             modifiers,
+        }
+    }
+
+    pub fn collider(&self) -> BoxCollider {
+        match self.item_type {
+            ItemType::Weapon(weapon_type) => match weapon_type {
+                WeaponType::Melee(melee_weapon) => match melee_weapon {
+                    MeleeWeapon::SwordAndShield => BoxCollider {
+                        dimension: Vec2::new(12., 14.),
+                        offset: None,
+                    },
+                    MeleeWeapon::Pike => BoxCollider {
+                        dimension: Vec2::new(5., 15.),
+                        offset: None,
+                    },
+                },
+                WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
+                    ProjectileWeapon::Bow => BoxCollider {
+                        dimension: Vec2::new(5., 12.),
+                        offset: None,
+                    },
+                },
+            },
+            ItemType::Chest => todo!(),
+            ItemType::Feet => todo!(),
+            ItemType::Head => todo!(),
         }
     }
 }
