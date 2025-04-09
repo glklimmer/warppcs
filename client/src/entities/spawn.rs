@@ -26,7 +26,7 @@ use shared::{
         physics::projectile::ProjectileType,
         players::{
             chest::Chest,
-            items::{Item, ItemType, ProjectileWeapon, UseWeapon, WeaponType},
+            items::{Item, ItemType, MeleeWeapon, ProjectileWeapon, WeaponType},
             mount::Mount,
         },
     },
@@ -255,9 +255,9 @@ fn init_weapon_sprite(
     sprite.image = sprite_sheet.texture.clone();
 
     let weapon = match weapon {
-        WeaponType::Use(use_weapon) => match use_weapon {
-            UseWeapon::SwordAndShield => Weapons::SwordAndShield,
-            UseWeapon::Pike => Weapons::Pike,
+        WeaponType::Melee(use_weapon) => match use_weapon {
+            MeleeWeapon::SwordAndShield => Weapons::SwordAndShield,
+            MeleeWeapon::Pike => Weapons::Pike,
         },
         WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
             ProjectileWeapon::Bow => Weapons::Bow,
