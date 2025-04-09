@@ -264,3 +264,24 @@ pub enum GameState {
     MainMenu,
     GameSession,
 }
+
+trait Vec3LayerExt {
+    fn offset_x(self, x: f32) -> Vec3;
+    fn offset_z(self, z: f32) -> Vec3;
+
+    fn with_layer(self, layer: Layers) -> Transform;
+}
+
+impl Vec3LayerExt for Vec3 {
+    fn offset_x(self, x: f32) -> Vec3 {
+        self + Vec3::X * x
+    }
+
+    fn offset_z(self, z: f32) -> Vec3 {
+        self + Vec3::Z * z
+    }
+
+    fn with_layer(self, layer: Layers) -> Transform {
+        Transform::from_translation(self.offset_z(layer.as_f32()))
+    }
+}

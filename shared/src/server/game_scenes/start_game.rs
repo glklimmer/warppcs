@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
 use crate::{
-    Faction, Owner, Player,
+    Faction, Owner, Player, Vec3LayerExt,
     map::{
         Layers,
         buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
@@ -71,7 +71,7 @@ fn start_game(
 
                 player_base(
                     commands.reborrow(),
-                    base_offset.with_z(Layers::Building.as_f32()),
+                    base_offset,
                     player,
                     base_left_portal,
                     base_right_portal,
@@ -114,17 +114,17 @@ fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_rig
                 swing_timer: Timer::default(),
             },
             Health { hitpoints: 20. },
-            Transform::from_translation(Vec3::ZERO.with_x(50. - 10. * i as f32) + offset),
+            offset
+                .offset_x(50. - 10. * i as f32)
+                .with_layer(Layers::Unit),
         ));
     }
-    commands.entity(camp_left_portal).insert((
-        Portal,
-        Transform::from_translation(Vec3::ZERO.with_x(-150.) + offset),
-    ));
-    commands.entity(camp_right_portal).insert((
-        Portal,
-        Transform::from_translation(Vec3::ZERO.with_x(150.) + offset),
-    ));
+    commands
+        .entity(camp_left_portal)
+        .insert((Portal, offset.offset_x(-150.).with_layer(Layers::Building)));
+    commands
+        .entity(camp_right_portal)
+        .insert((Portal, offset.offset_x(150.).with_layer(Layers::Building)));
 }
 
 fn player_base(
@@ -145,23 +145,23 @@ fn player_base(
         }
         .collider(),
         BuildStatus::Built,
-        Transform::from_translation(offset),
+        offset.with_layer(Layers::Building),
         owner,
     ));
     commands.spawn((
         Mount {
             mount_type: MountType::Horse,
         },
-        Transform::from_translation(Vec3::ZERO.with_x(50.) + offset),
+        offset.offset_x(50.).with_layer(Layers::Mount),
     ));
     commands.spawn((
         Chest::Normal,
-        Transform::from_translation(Vec3::ZERO.with_x(-50.) + offset),
+        offset.offset_x(-50.).with_layer(Layers::Chest),
     ));
     commands.spawn((
         Building::Archer,
         RecruitBuilding,
-        Transform::from_translation(Vec3::ZERO.with_x(135.) + offset),
+        offset.offset_x(135.).with_layer(Layers::Building),
         owner,
         Interactable {
             kind: InteractionType::Building,
@@ -171,7 +171,7 @@ fn player_base(
     commands.spawn((
         Building::Warrior,
         RecruitBuilding,
-        Transform::from_translation(Vec3::ZERO.with_x(-135.) + offset),
+        offset.offset_x(-135.).with_layer(Layers::Building),
         owner,
         Interactable {
             kind: InteractionType::Building,
@@ -181,7 +181,7 @@ fn player_base(
     commands.spawn((
         Building::Pikeman,
         RecruitBuilding,
-        Transform::from_translation(Vec3::ZERO.with_x(235.) + offset),
+        offset.offset_x(235.).with_layer(Layers::Building),
         owner,
         Interactable {
             kind: InteractionType::Building,
@@ -192,7 +192,7 @@ fn player_base(
         Building::Wall {
             level: WallLevels::Basic,
         },
-        Transform::from_translation(Vec3::ZERO.with_x(390.) + offset),
+        offset.offset_x(390.).with_layer(Layers::Wall),
         owner,
         Interactable {
             kind: InteractionType::Building,
@@ -203,7 +203,7 @@ fn player_base(
         Building::Wall {
             level: WallLevels::Basic,
         },
-        Transform::from_translation(Vec3::ZERO.with_x(-345.) + offset),
+        offset.offset_x(-345.).with_layer(Layers::Wall),
         owner,
         Interactable {
             kind: InteractionType::Building,
@@ -212,7 +212,7 @@ fn player_base(
     ));
     commands.spawn((
         Building::GoldFarm,
-        Transform::from_translation(Vec3::ZERO.with_x(320.) + offset),
+        offset.offset_x(320.).with_layer(Layers::Building),
         owner,
         Interactable {
             kind: InteractionType::Building,
@@ -221,7 +221,7 @@ fn player_base(
     ));
     commands.spawn((
         Building::GoldFarm,
-        Transform::from_translation(Vec3::ZERO.with_x(-265.) + offset),
+        offset.offset_x(-265.).with_layer(Layers::Building),
         owner,
         Interactable {
             kind: InteractionType::Building,
@@ -229,12 +229,10 @@ fn player_base(
         },
     ));
 
-    commands.entity(left_portal).insert((
-        Portal,
-        Transform::from_translation(Vec3::ZERO.with_x(-450.) + offset),
-    ));
-    commands.entity(right_portal).insert((
-        Portal,
-        Transform::from_translation(Vec3::ZERO.with_x(450.) + offset),
-    ));
+    commands
+        .entity(left_portal)
+        .insert((Portal, offset.offset_x(-450.).with_layer(Layers::Building)));
+    commands
+        .entity(right_portal)
+        .insert((Portal, offset.offset_x(450.).with_layer(Layers::Building)));
 }

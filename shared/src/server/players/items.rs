@@ -3,8 +3,7 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
-use crate::enum_map::*;
-use crate::{BoxCollider, networking::UnitType, server::physics::movement::Velocity};
+use crate::{BoxCollider, enum_map::*, networking::UnitType, server::physics::movement::Velocity};
 
 use super::interaction::{Interactable, InteractionType};
 
