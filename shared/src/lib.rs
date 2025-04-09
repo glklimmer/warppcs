@@ -131,7 +131,6 @@ fn spawn_clients(
         .insert((
             Player,
             Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
-            Owner(Faction::Player(trigger.entity())),
         ))
         .id();
 
