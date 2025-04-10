@@ -24,6 +24,7 @@ use server::{
     players::{
         chest::Chest,
         interaction::{InteractPlugin, Interactable},
+        items::Item,
         mount::Mount,
     },
 };
@@ -68,6 +69,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Portal, Transform)>()
         .replicate_group::<(Mount, Transform)>()
         .replicate_group::<(Chest, Transform)>()
+        .replicate_group::<(Item, Transform)>()
         .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
