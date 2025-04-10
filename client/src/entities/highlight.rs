@@ -6,7 +6,7 @@ use bevy::{
 };
 use image::{GenericImage, GenericImageView, Rgba};
 use shared::{
-    BoxCollider, Faction, Highlightable, Owner,
+    BoxCollider, Faction,
     server::{physics::attachment::AttachedTo, players::interaction::Interactable},
 };
 
