@@ -1,4 +1,4 @@
-use bevy::{ecs::observer::TriggerTargets, prelude::*, utils::HashMap};
+use bevy::{prelude::*, utils::HashMap};
 use bevy_replicon::prelude::*;
 use enum_map::*;
 
@@ -252,7 +252,7 @@ impl MapEntities for Owner {
             Faction::Player(entity) => {
                 **self = Faction::Player(entity_mapper.map_entity(entity));
             }
-            Faction::Bandits => return,
+            Faction::Bandits => (),
         }
     }
 }
