@@ -1,21 +1,7 @@
 use bevy::prelude::*;
-use bevy_replicon::client::ClientSet;
 
-use crate::{
-    animations::{
-        animals::horse::{HorseAnimation, HorseSpriteSheet},
-        king::{KingAnimation, KingSpriteSheet},
-        objects::{
-            chest::ChestSpriteSheet,
-            flag::{FlagAnimation, FlagSpriteSheet},
-            items::weapons::{Weapons, WeaponsSpriteSheet},
-            portal::{PortalAnimation, PortalSpriteSheet},
-        },
-        units::UnitSpriteSheets,
-    },
-    networking::ControlledPlayer,
-};
 use bevy_parallax::CameraFollow;
+use bevy_replicon::client::ClientSet;
 use shared::{
     ChestAnimation, Player, SetLocalPlayer,
     map::buildings::{BuildStatus, Building},
@@ -30,6 +16,21 @@ use shared::{
             mount::Mount,
         },
     },
+};
+
+use crate::{
+    animations::{
+        animals::horse::{HorseAnimation, HorseSpriteSheet},
+        king::{KingAnimation, KingSpriteSheet},
+        objects::{
+            chest::ChestSpriteSheet,
+            flag::{FlagAnimation, FlagSpriteSheet},
+            items::weapons::{Weapons, WeaponsSpriteSheet},
+            portal::{PortalAnimation, PortalSpriteSheet},
+        },
+        units::UnitSpriteSheets,
+    },
+    networking::ControlledPlayer,
 };
 
 use super::highlight::Highlighted;
