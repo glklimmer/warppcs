@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-use crate::server::buildings::recruiting::Flag;
-
 use super::{
     super::{buildings::recruiting::FlagHolder, physics::attachment::AttachedTo},
     interaction::{InteractionTriggeredEvent, InteractionType},
@@ -29,8 +27,8 @@ pub fn flag_interact(
         let InteractionType::Flag = &event.interaction else {
             continue;
         };
-        let player = event.player;
 
+        let player = event.player;
         let has_flag = flag_holder.get(player).unwrap();
 
         match has_flag {
@@ -53,17 +51,14 @@ pub fn flag_interact(
 pub fn pick_flag(
     mut commands: Commands,
     mut pick_flag: EventReader<PickFlagEvent>,
-    mut flag_query: Query<&mut Transform, With<Flag>>,
+    mut flag_query: Query<&mut Transform>,
 ) {
     for event in pick_flag.read() {
-        match flag_query.get_mut(event.flag) {
-            Ok(mut transform) => {
-                transform.translation.y = 10.;
-                commands.entity(event.flag).insert(AttachedTo(event.player));
-            }
-            Err(_) => todo!(),
-        }
+        let mut transform = flag_query.get_mut(event.flag).unwrap();
 
+        transform.translation.y = 10.;
+
+        commands.entity(event.flag).insert(AttachedTo(event.player));
         commands.entity(event.player).insert(FlagHolder(event.flag));
     }
 }
@@ -71,19 +66,14 @@ pub fn pick_flag(
 pub fn drop_flag(
     mut drop_flag: EventReader<DropFlagEvent>,
     mut commands: Commands,
-    mut flag_query: Query<(Entity, &mut Transform, Option<&AttachedTo>)>,
+    mut flag_query: Query<&mut Transform>,
 ) {
     for event in drop_flag.read() {
-        let (flag_entity, mut transform, maybe_attachted) = flag_query.get_mut(event.flag).unwrap();
+        let mut transform = flag_query.get_mut(event.flag).unwrap();
 
-        if maybe_attachted
-            .as_ref()
-            .map_or(true, |attached| attached.0 != event.player)
-        {
-            continue;
-        }
-        commands.entity(event.player).remove::<FlagHolder>();
-        commands.entity(flag_entity).remove::<AttachedTo>();
         transform.translation.y = 0.;
+
+        commands.entity(event.flag).remove::<AttachedTo>();
+        commands.entity(event.player).remove::<FlagHolder>();
     }
 }
