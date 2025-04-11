@@ -1,5 +1,22 @@
 use bevy::prelude::*;
+
+use bevy_parallax::CameraFollow;
 use bevy_replicon::client::ClientSet;
+use shared::{
+    ChestAnimation, Player, SetLocalPlayer,
+    map::buildings::{BuildStatus, Building},
+    server::{
+        buildings::recruiting::Flag,
+        entities::{Unit, UnitAnimation},
+        game_scenes::Portal,
+        physics::projectile::ProjectileType,
+        players::{
+            chest::Chest,
+            items::{Item, ItemType, MeleeWeapon, ProjectileWeapon, WeaponType},
+            mount::Mount,
+        },
+    },
+};
 
 use crate::{
     animations::{
@@ -16,22 +33,6 @@ use crate::{
     },
     networking::ControlledPlayer,
     sound::CRAFTING_SOUND_PATH,
-};
-use bevy_parallax::CameraFollow;
-use shared::{
-    ChestAnimation, Player, SetLocalPlayer,
-    map::buildings::{BuildStatus, Building},
-    server::{
-        buildings::recruiting::Flag,
-        entities::{Unit, UnitAnimation},
-        game_scenes::Portal,
-        physics::projectile::ProjectileType,
-        players::{
-            chest::Chest,
-            items::{Item, ItemType, MeleeWeapon, ProjectileWeapon, WeaponType},
-            mount::Mount,
-        },
-    },
 };
 
 use super::highlight::Highlighted;
