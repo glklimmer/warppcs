@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::entity::MapEntities, prelude::*};
 use bevy_replicon::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
@@ -22,6 +22,21 @@ pub enum InteractionType {
 pub struct Interactable {
     pub kind: InteractionType,
     pub restricted_to: Option<Owner>,
+}
+
+impl MapEntities for Interactable {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        match self.restricted_to {
+            Some(owner) => match *owner {
+                Faction::Player(entity) => {
+                    self.restricted_to =
+                        Some(Owner(Faction::Player(entity_mapper.map_entity(entity))));
+                }
+                Faction::Bandits => (),
+            },
+            None => (),
+        }
+    }
 }
 
 #[derive(Event)]

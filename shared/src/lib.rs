@@ -56,11 +56,10 @@ impl Plugin for SharedPlugin {
         .init_resource::<ClientPlayerMap>()
         .replicate::<Moving>()
         .replicate::<Grounded>()
-        .replicate_mapped::<Owner>()
         .replicate_mapped::<AttachedTo>()
         .replicate::<BoxCollider>()
         .replicate::<Mounted>()
-        .replicate::<Interactable>()
+        .replicate_mapped::<Interactable>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
@@ -242,20 +241,8 @@ pub enum Faction {
     Bandits,
 }
 
-#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref, DerefMut)]
-#[require(Replicated)]
+#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref)]
 pub struct Owner(pub Faction);
-
-impl MapEntities for Owner {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        match **self {
-            Faction::Player(entity) => {
-                **self = Faction::Player(entity_mapper.map_entity(entity));
-            }
-            Faction::Bandits => (),
-        }
-    }
-}
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);
