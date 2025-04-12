@@ -1,14 +1,15 @@
+use bevy::prelude::*;
+
 use bevy::{
     asset::RenderAssetUsages,
     ecs::{component::ComponentId, world::DeferredWorld},
     math::bounding::IntersectsVolume,
-    prelude::*,
 };
 use image::{GenericImage, GenericImageView, Rgba};
-use shared::{
-    BoxCollider, Faction,
-    server::{physics::attachment::AttachedTo, players::interaction::Interactable},
-};
+use shared::Faction;
+use shared::server::physics::attachment::AttachedTo;
+use shared::{BoxCollider, server::players::interaction::Interactable};
+use std::cmp::Ordering;
 
 use crate::networking::ControlledPlayer;
 
@@ -25,6 +26,19 @@ fn on_remove_highlighted(mut world: DeferredWorld, entity: Entity, _id: Componen
 }
 
 #[derive(Component)]
+struct Highlightable {
+    pub outline_color: Color,
+}
+
+impl Default for Highlightable {
+    fn default() -> Self {
+        Self {
+            outline_color: Color::WHITE,
+        }
+    }
+}
+
+#[derive(Component)]
 #[component(on_remove = on_remove_highlighted)]
 pub struct Highlighted {
     pub original_handle: Handle<Image>,
@@ -34,7 +48,11 @@ pub struct HighlightPlugin;
 
 impl Plugin for HighlightPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, (highlight_entity, check_highlight));
+        app.add_observer(remove_highlightable_on_attached)
+            .add_observer(add_highlightable_on_attached)
+            .add_observer(init_highlightable)
+            .add_observer(remove_highlightable)
+            .add_systems(PostUpdate, (highlight_entity, check_highlight));
     }
 }
 
@@ -72,51 +90,124 @@ fn highlight_entity(
 #[allow(clippy::type_complexity)]
 fn check_highlight(
     mut commands: Commands,
-    mut outline: Query<(
-        Entity,
-        &Transform,
-        &BoxCollider,
-        &Sprite,
-        &Interactable,
-        Option<&mut Highlighted>,
-        Option<&AttachedTo>,
-    )>,
-    player: Query<(Entity, &Transform, &BoxCollider), With<ControlledPlayer>>,
+    mut outline: Query<
+        (
+            Entity,
+            &Transform,
+            &BoxCollider,
+            &Sprite,
+            Option<&mut Highlighted>,
+            Option<&Interactable>,
+        ),
+        With<Highlightable>,
+    >,
+    player: Query<(&Transform, &BoxCollider), With<ControlledPlayer>>,
 ) {
-    let Ok((player_entity, player_transform, player_collider)) = player.get_single() else {
+    let Ok((player_transform, player_collider)) = player.get_single() else {
         return;
     };
 
     let player_bounds = player_collider.at(player_transform);
 
-    for (entity, transform, box_collider, sprite, interactable, highlighted, attached_to) in
-        outline.iter_mut()
-    {
-        let bounds = box_collider.at(transform);
-        let intersected = bounds.intersects(&player_bounds);
-        match highlighted {
-            Some(_) => {
-                if !intersected || attached_to.is_some() {
-                    commands.entity(entity).remove::<Highlighted>();
-                }
-            }
-            None => {
-                if intersected && attached_to.is_none() {
-                    if let Some(owner) = interactable.restricted_to {
-                        match owner.0 {
-                            Faction::Player(entity) => {
-                                if entity != player_entity {
-                                    continue;
-                                }
-                            }
-                            Faction::Bandits => return,
-                        }
+    let candidate_entity = outline
+        .iter()
+        .filter(|(_, transform, collider, ..)| collider.at(transform).intersects(&player_bounds))
+        .max_by(
+            |(_, a_transform, .., interactable_a), (_, b_transform, .., interactable_b)| match (
+                interactable_a,
+                interactable_b,
+            ) {
+                (Some(a), Some(b)) => {
+                    let priority_a = a.kind as i32;
+                    let priority_b = b.kind as i32;
+
+                    if priority_a != priority_b {
+                        return priority_a.cmp(&priority_b);
                     }
-                    commands.entity(entity).insert(Highlighted {
-                        original_handle: sprite.image.clone(),
-                    });
+
+                    let distance_a = player_transform
+                        .translation
+                        .distance(a_transform.translation);
+                    let distance_b = player_transform
+                        .translation
+                        .distance(b_transform.translation);
+                    distance_b.total_cmp(&distance_a)
                 }
+                (None, None) => {
+                    let distance_a = player_transform
+                        .translation
+                        .distance(a_transform.translation);
+                    let distance_b = player_transform
+                        .translation
+                        .distance(b_transform.translation);
+                    distance_b.total_cmp(&distance_a)
+                }
+                (None, Some(_)) => Ordering::Less,
+                (Some(_), None) => Ordering::Greater,
+            },
+        )
+        .map(|(entity, ..)| entity);
+
+    for (entity, _, _, sprite, maybe_highlight, _) in outline.iter_mut() {
+        if Some(entity) == candidate_entity {
+            if maybe_highlight.is_none() {
+                commands.entity(entity).insert(Highlighted {
+                    original_handle: sprite.image.clone(),
+                });
             }
+        } else if maybe_highlight.is_some() {
+            commands.entity(entity).remove::<Highlighted>();
         }
     }
+}
+
+fn init_highlightable(
+    trigger: Trigger<OnAdd, Interactable>,
+    mut commands: Commands,
+    controlled_player: Query<Entity, With<ControlledPlayer>>,
+    interactable: Query<(&Interactable, Option<&AttachedTo>)>,
+) {
+    let Ok((interactable, maybe_attached)) = interactable.get(trigger.entity()) else {
+        return;
+    };
+
+    if let Some(_) = maybe_attached {
+        return;
+    }
+
+    let controller_player = controlled_player.single();
+
+    if let Some(owner) = interactable.restricted_to {
+        match *owner {
+            Faction::Player(player) => {
+                if player != controller_player {
+                    return;
+                }
+            }
+            Faction::Bandits => return,
+        }
+    }
+    commands
+        .entity(trigger.entity())
+        .insert(Highlightable::default());
+}
+
+fn remove_highlightable(trigger: Trigger<OnRemove, Interactable>, mut commands: Commands) {
+    commands
+        .entity(trigger.entity())
+        .remove::<Highlightable>()
+        .remove::<Highlighted>();
+}
+
+fn remove_highlightable_on_attached(trigger: Trigger<OnAdd, AttachedTo>, mut commands: Commands) {
+    commands
+        .entity(trigger.entity())
+        .remove::<Highlightable>()
+        .remove::<Highlighted>();
+}
+
+fn add_highlightable_on_attached(trigger: Trigger<OnRemove, AttachedTo>, mut commands: Commands) {
+    commands
+        .entity(trigger.entity())
+        .insert(Highlightable::default());
 }

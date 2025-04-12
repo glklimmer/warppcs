@@ -177,19 +177,6 @@ impl MapEntities for SetLocalPlayer {
 )]
 pub struct Player;
 
-#[derive(Component)]
-pub struct Highlightable {
-    pub outline_color: Color,
-}
-
-impl Default for Highlightable {
-    fn default() -> Self {
-        Self {
-            outline_color: Color::WHITE,
-        }
-    }
-}
-
 #[derive(Component, Copy, Clone, Default, Deserialize, Serialize)]
 pub struct BoxCollider {
     pub dimension: Vec2,
@@ -255,7 +242,7 @@ pub enum Faction {
 }
 
 #[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref)]
-pub struct Owner(pub Faction);
+pub struct Owner(Faction);
 
 impl Owner {
     pub fn is_different_faction(&self, other: &Self) -> bool {

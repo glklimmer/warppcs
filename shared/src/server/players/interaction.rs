@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, ClientPlayerMap, Faction, Highlightable, Owner};
+use crate::{BoxCollider, ClientPlayerMap, Faction, Owner};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {
@@ -18,7 +18,7 @@ pub enum InteractionType {
 }
 
 #[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
-#[require(Replicated, Highlightable)]
+#[require(Replicated)]
 pub struct Interactable {
     pub kind: InteractionType,
     pub restricted_to: Option<Owner>,
@@ -31,16 +31,15 @@ pub struct InteractableSound {
 
 impl MapEntities for Interactable {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        match self.restricted_to {
-            Some(owner) => match *owner {
-                Faction::Player(entity) => {
-                    self.restricted_to =
-                        Some(Owner(Faction::Player(entity_mapper.map_entity(entity))));
-                }
-                Faction::Bandits => (),
-            },
-            None => (),
-        }
+        let Some(owner) = self.restricted_to else {
+            return;
+        };
+
+        let Faction::Player(entity) = *owner else {
+            return;
+        };
+
+        self.restricted_to = Some(Owner(Faction::Player(entity_mapper.map_entity(entity))));
     }
 }
 
@@ -97,17 +96,18 @@ fn interact(
             |(.., transform_a, _, interactable_a), (.., transform_b, _, interactable_b)| {
                 let priority_a = interactable_a.kind as i32;
                 let priority_b = interactable_b.kind as i32;
-                if priority_a == priority_b {
-                    let distance_a = player_transform
-                        .translation
-                        .distance(transform_a.translation);
-                    let distance_b = player_transform
-                        .translation
-                        .distance(transform_b.translation);
-                    distance_b.total_cmp(&distance_a)
-                } else {
-                    priority_a.cmp(&priority_b)
+
+                if priority_a != priority_b {
+                    return priority_a.cmp(&priority_b);
                 }
+
+                let distance_a = player_transform
+                    .translation
+                    .distance(transform_a.translation);
+                let distance_b = player_transform
+                    .translation
+                    .distance(transform_b.translation);
+                distance_b.total_cmp(&distance_a)
             },
         );
 
