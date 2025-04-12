@@ -176,7 +176,7 @@ fn play_on_interactable(
         PlaybackSettings {
             mode: PlaybackMode::Remove,
             volume: Volume::new(ANIMATION_VOLUME * 0.5),
-            spatial: false,
+            spatial: true,
             ..default()
         },
     ));
