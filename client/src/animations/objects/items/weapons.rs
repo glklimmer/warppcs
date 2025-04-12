@@ -45,11 +45,18 @@ impl FromWorld for WeaponsSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            Weapons::SwordAndShield => None,
+            Weapons::Pike => None,
+            Weapons::Bow => None,
+        });
+
         WeaponsSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }
