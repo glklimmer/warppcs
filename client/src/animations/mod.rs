@@ -30,12 +30,28 @@ pub struct SpriteSheet<E: EnumIter> {
     pub texture: Handle<Image>,
     pub layout: Handle<TextureAtlasLayout>,
     pub animations: EnumMap<E, SpriteSheetAnimation>,
+    pub animations_sound: EnumMap<E, Option<AnimationSound>>,
 }
 
 #[derive(Clone)]
 pub enum AnimationDirection {
     Forward,
     Backward,
+}
+
+#[derive(Component, Clone, Default, PartialEq, Eq)]
+pub enum AnimationSoundTrigger {
+    #[default]
+    OnEnter,
+    OnStartFrameTimer,
+    OnEndFrameTimer,
+}
+
+#[derive(Component, Clone)]
+#[require(AnimationSoundTrigger)]
+pub struct AnimationSound {
+    pub sound_handles: Vec<Handle<AudioSource>>,
+    pub sound_trigger: AnimationSoundTrigger,
 }
 
 #[derive(Component, Clone)]

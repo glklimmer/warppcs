@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use shared::{AnimationChange, AnimationChangeEvent, enum_map::*};
 
-use crate::animations::{AnimationTrigger, SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{AnimationSound, AnimationTrigger, SpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum HorseAnimation {
@@ -43,11 +43,17 @@ impl FromWorld for HorseSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            HorseAnimation::Idle => None,
+            HorseAnimation::Walk => None,
+        });
+
         HorseSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }
@@ -60,7 +66,7 @@ pub fn next_horse_animation(
     for event in network_events.read() {
         let new_animation = match &event.change {
             AnimationChange::Attack
-            | AnimationChange::Hit
+            | AnimationChange::Hit(_)
             | AnimationChange::Death
             | AnimationChange::Mount => HorseAnimation::Idle,
         };
@@ -73,22 +79,43 @@ pub fn next_horse_animation(
 }
 
 pub fn set_horse_sprite_animation(
-    mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite, &mut HorseAnimation)>,
+    mut command: Commands,
+    mut query: Query<(
+        Entity,
+        &mut SpriteSheetAnimation,
+        &mut Sprite,
+        &mut HorseAnimation,
+    )>,
     mut animation_changed: EventReader<AnimationTrigger<HorseAnimation>>,
-    king_sprite_sheet: Res<HorseSpriteSheet>,
+    horse_sprite_sheet: Res<HorseSpriteSheet>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((mut sprite_animation, mut sprite, mut current_animation)) =
+        if let Ok((entity, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
         {
-            let animation = king_sprite_sheet
+            let animation = horse_sprite_sheet
                 .sprite_sheet
                 .animations
+                .get(new_animation.state);
+
+            let sound = horse_sprite_sheet
+                .sprite_sheet
+                .animations_sound
                 .get(new_animation.state);
 
             if let Some(atlas) = &mut sprite.texture_atlas {
                 atlas.index = animation.first_sprite_index;
             }
+
+            match sound {
+                Some(sound) => {
+                    command.entity(entity).insert(sound.clone());
+                }
+                None => {
+                    command.entity(entity).remove::<AnimationSound>();
+                }
+            }
+
             *sprite_animation = animation.clone();
             *current_animation = new_animation.state;
         }

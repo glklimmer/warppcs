@@ -37,11 +37,16 @@ impl FromWorld for FlagSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            FlagAnimation::Wave => None,
+        });
+
         FlagSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }

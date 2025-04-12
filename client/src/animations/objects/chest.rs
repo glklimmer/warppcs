@@ -5,8 +5,8 @@ use shared::ChestAnimation;
 use shared::ChestAnimationEvent;
 use shared::server::players::chest::Chest;
 
-use crate::animations::AnimationDirection;
 use crate::animations::PlayOnce;
+use crate::animations::AnimationDirection;
 
 use super::super::{SpriteSheet, SpriteSheetAnimation};
 
@@ -43,11 +43,17 @@ impl FromWorld for ChestSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(|c| match c {
+            ChestAnimation::Open => None,
+            ChestAnimation::Close => None,
+        });
+
         ChestSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }

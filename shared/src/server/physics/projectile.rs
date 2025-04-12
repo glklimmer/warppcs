@@ -4,6 +4,7 @@ use bevy::math::bounding::IntersectsVolume;
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
+use crate::Hitby;
 use crate::{
     BoxCollider, DelayedDespawn, Owner,
     networking::Facing,
@@ -73,6 +74,7 @@ fn projectile_collision(
                         true => Facing::Left,
                         false => Facing::Right,
                     },
+                    by: Hitby::Arrow,
                 });
                 commands.entity(entity).despawn();
             }

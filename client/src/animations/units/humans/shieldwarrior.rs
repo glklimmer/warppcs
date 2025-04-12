@@ -1,14 +1,18 @@
 use bevy::prelude::*;
 
-use shared::{enum_map::*, server::entities::UnitAnimation};
+use shared::enum_map::*;
 
-use crate::animations::{SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{AnimationSound, AnimationSoundTrigger, SpriteSheet, SpriteSheetAnimation};
+
+use super::super::UnitAnimation;
 
 pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
     let asset_server = world.resource::<AssetServer>();
     let texture: Handle<Image> = asset_server.load("sprites/humans/MiniShieldMan.png");
-    let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
+    let attack_sound = asset_server.load("animation_sound/shieldwarrior/sword_hit.ogg");
+
+    let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
     let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
         UVec2::splat(32),
         6,
@@ -45,9 +49,21 @@ pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
         },
     });
 
+    let animations_sound = EnumMap::new(|c| match c {
+        UnitAnimation::Idle => None,
+        UnitAnimation::Walk => None,
+        UnitAnimation::Attack => Some(AnimationSound {
+            sound_handles: vec![attack_sound.clone()],
+            sound_trigger: AnimationSoundTrigger::OnEndFrameTimer,
+        }),
+        UnitAnimation::Hit => None,
+        UnitAnimation::Death => None,
+    });
+
     SpriteSheet {
         texture,
         layout,
         animations,
+        animations_sound,
     }
 }

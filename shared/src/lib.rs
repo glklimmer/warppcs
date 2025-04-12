@@ -23,7 +23,7 @@ use server::{
     },
     players::{
         chest::Chest,
-        interaction::{InteractPlugin, Interactable},
+        interaction::{InteractPlugin, Interactable, InteractableSound},
         items::Item,
         mount::Mount,
     },
@@ -69,6 +69,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Mount, Transform)>()
         .replicate_group::<(Chest, Transform)>()
         .replicate_group::<(Item, Transform)>()
+        .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
@@ -76,15 +77,27 @@ impl Plugin for SharedPlugin {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub enum Hitby {
+    Arrow,
+    Melee,
+}
 /// Key is NetworkEntity
 /// Value is PlayerEntity
 #[derive(Resource, DerefMut, Deref, Default)]
 pub struct ClientPlayerMap(HashMap<Entity, Entity>);
 
+impl ClientPlayerMap {
+    pub fn get_network_entity(&self, value: &Entity) -> Option<&Entity> {
+        self.iter()
+            .find_map(|(key, val)| if val == value { Some(key) } else { None })
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum AnimationChange {
     Attack,
-    Hit,
+    Hit(Hitby),
     Death,
     Mount,
 }
@@ -243,6 +256,24 @@ pub enum Faction {
 
 #[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref)]
 pub struct Owner(pub Faction);
+
+impl Owner {
+    pub fn is_different_faction(&self, other: &Self) -> bool {
+        match (self.0, other.0) {
+            // Two players - compare client IDs
+            (Faction::Player { 0: id1 }, Faction::Player { 0: id2 }) => id1 != id2,
+            // Different enum variants means different factions
+            (Faction::Player { .. }, Faction::Bandits)
+            | (Faction::Bandits, Faction::Player { .. }) => true,
+            // Both bandits are the same faction
+            (Faction::Bandits, Faction::Bandits) => false,
+        }
+    }
+
+    pub fn is_same_faction(&self, other: &Self) -> bool {
+        !self.is_different_faction(other)
+    }
+}
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);

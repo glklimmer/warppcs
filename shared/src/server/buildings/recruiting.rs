@@ -1,10 +1,10 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use bevy_replicon::prelude::Replicated;
+use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, Faction, Owner, flag_collider,
+    BoxCollider, ClientPlayerMap, Faction, Owner, flag_collider,
     map::{
         Layers,
         buildings::{Building, Cost},
@@ -17,7 +17,9 @@ use crate::{
         },
         entities::{Unit, health::Health},
         physics::attachment::AttachedTo,
-        players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
+        players::interaction::{
+            Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType,
+        },
     },
 };
 
@@ -36,7 +38,7 @@ pub struct FlagHolder(pub Entity);
 #[derive(Component)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
 
-#[derive(Event)]
+#[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
     player: Entity,
     building_type: Building,
@@ -108,6 +110,13 @@ pub fn recruit(
                 UnitBehaviour::FollowFlag(flag_entity, offset),
             ));
         }
+
+        commands.server_trigger(ToClients {
+            mode: SendMode::Broadcast,
+            event: InteractableSound {
+                kind: InteractionType::Recruit,
+            },
+        });
     }
 }
 

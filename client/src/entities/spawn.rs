@@ -3,6 +3,7 @@ use bevy_replicon::client::ClientSet;
 
 use crate::{
     animations::{
+        AnimationSound, AnimationSoundTrigger,
         animals::horse::{HorseAnimation, HorseSpriteSheet},
         king::{KingAnimation, KingSpriteSheet},
         objects::{
@@ -14,6 +15,7 @@ use crate::{
         units::UnitSpriteSheets,
     },
     networking::ControlledPlayer,
+    sound::CRAFTING_SOUND_PATH,
 };
 use bevy_parallax::CameraFollow;
 use shared::{
@@ -62,7 +64,7 @@ fn init_local_player(
 
         info!("init controlled player for {:?}", player);
         let mut player_commands = commands.entity(player);
-        player_commands.insert(ControlledPlayer);
+        player_commands.insert((ControlledPlayer, SpatialListener::new(50.0)));
         commands
             .entity(camera.single())
             .insert(CameraFollow::fixed(player));
@@ -79,6 +81,7 @@ fn init_player_sprite(
         return;
     };
     let sprite_sheet = &king_sprite_sheet.sprite_sheet;
+
     sprite.image = sprite_sheet.texture.clone();
     let animation = sprite_sheet.animations.get(KingAnimation::Idle);
     sprite.texture_atlas = Some(TextureAtlas {
@@ -104,6 +107,7 @@ fn init_building_sprite(
 fn update_building_sprite(
     mut buildings: Query<
         (
+            Entity,
             &mut Sprite,
             &Building,
             &BuildStatus,
@@ -112,12 +116,38 @@ fn update_building_sprite(
         Changed<BuildStatus>,
     >,
     asset_server: Res<AssetServer>,
+    mut commands: Commands,
 ) {
-    for (mut sprite, building, status, maybe_highlight) in buildings.iter_mut() {
+    for (entity, mut sprite, building, status, maybe_highlight) in buildings.iter_mut() {
         sprite.image = asset_server.load(building.texture(*status));
 
         if let Some(mut highlight) = maybe_highlight {
             highlight.original_handle = asset_server.load(building.texture(*status));
+        }
+        if status.eq(&BuildStatus::Built) {
+            commands.entity(entity).insert(AnimationSound {
+                sound_handles: vec![
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_1.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammer_2.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_1.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_2.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/sawing_wood_3.ogg"
+                    )),
+                    asset_server.load(format!(
+                        "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammering_&_chiseling_stone_1.ogg"
+                    )),
+                ],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            });
         }
     }
 }

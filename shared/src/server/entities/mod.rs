@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{BoxCollider, enum_map::EnumIter, networking::UnitType, unit_collider};
 
-use super::physics::{PushBack, movement::Velocity};
+use super::physics::{
+    movement::{RandomVelocityMul, Velocity},
+    PushBack,
+};
 
 pub mod health;
 
@@ -30,6 +33,7 @@ pub enum UnitAnimation {
     PushBack,
     UnitAnimation,
     Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
+    RandomVelocityMul
 )]
 pub struct Unit {
     pub unit_type: UnitType,

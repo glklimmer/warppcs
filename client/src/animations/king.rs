@@ -5,7 +5,10 @@ use shared::{
     server::physics::movement::Moving,
 };
 
-use super::{AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};
+use super::{
+    AnimationSound, AnimationSoundTrigger, AnimationTrigger, PlayOnce, SpriteSheet,
+    SpriteSheetAnimation,
+};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum KingAnimation {
@@ -30,8 +33,12 @@ impl FromWorld for KingSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
         let texture: Handle<Image> = asset_server.load("sprites/humans/MiniKingMan.png");
-        let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
+        let walk_sound = asset_server.load("animation_sound/king/walk.ogg");
+        let horse_sound = asset_server.load("animation_sound/horse/horse_sound.ogg");
+        let horse_gallop = asset_server.load("animation_sound/horse/horse_gallop.ogg");
+
+        let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::splat(32),
             10,
@@ -88,11 +95,33 @@ impl FromWorld for KingSpriteSheet {
             },
         });
 
+        let animations_sound = EnumMap::new(move |c| match c {
+            KingAnimation::Idle => None,
+            KingAnimation::Drink => None,
+            KingAnimation::Walk => Some(AnimationSound {
+                sound_handles: vec![walk_sound.clone()],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            }),
+            KingAnimation::Attack => None,
+            KingAnimation::Hit => None,
+            KingAnimation::Death => None,
+            KingAnimation::Mount => Some(AnimationSound {
+                sound_handles: vec![horse_sound.clone()],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            }),
+            KingAnimation::HorseIdle => None,
+            KingAnimation::HorseWalk => Some(AnimationSound {
+                sound_handles: vec![horse_gallop.clone()],
+                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            }),
+        });
+
         KingSpriteSheet {
             sprite_sheet: SpriteSheet {
                 texture,
                 layout,
                 animations,
+                animations_sound,
             },
         }
     }
@@ -109,13 +138,13 @@ pub fn trigger_king_animation(
             let new_animation = match maybe_mounted {
                 Some(_) => match &event.change {
                     AnimationChange::Attack => todo!(),
-                    AnimationChange::Hit => todo!(),
+                    AnimationChange::Hit(_) => todo!(),
                     AnimationChange::Death => todo!(),
                     AnimationChange::Mount => KingAnimation::Mount,
                 },
                 None => match &event.change {
                     AnimationChange::Attack => KingAnimation::Attack,
-                    AnimationChange::Hit => KingAnimation::Hit,
+                    AnimationChange::Hit(_) => KingAnimation::Hit,
                     AnimationChange::Death => KingAnimation::Death,
                     AnimationChange::Mount => KingAnimation::Mount,
                 },
@@ -189,12 +218,18 @@ pub fn set_king_idle(
 }
 
 pub fn set_king_sprite_animation(
-    mut query: Query<(&mut SpriteSheetAnimation, &mut Sprite, &mut KingAnimation)>,
+    mut command: Commands,
+    mut query: Query<(
+        Entity,
+        &mut SpriteSheetAnimation,
+        &mut Sprite,
+        &mut KingAnimation,
+    )>,
     mut animation_changed: EventReader<AnimationTrigger<KingAnimation>>,
     king_sprite_sheet: Res<KingSpriteSheet>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((mut sprite_animation, mut sprite, mut current_animation)) =
+        if let Ok((entity, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
         {
             let animation = king_sprite_sheet
@@ -202,9 +237,24 @@ pub fn set_king_sprite_animation(
                 .animations
                 .get(new_animation.state);
 
+            let sound = king_sprite_sheet
+                .sprite_sheet
+                .animations_sound
+                .get(new_animation.state);
+
             if let Some(atlas) = &mut sprite.texture_atlas {
                 atlas.index = animation.first_sprite_index;
             }
+
+            match sound {
+                Some(sound) => {
+                    command.entity(entity).insert(sound.clone());
+                }
+                None => {
+                    command.entity(entity).remove::<AnimationSound>();
+                }
+            }
+
             *sprite_animation = animation.clone();
             *current_animation = new_animation.state;
         }

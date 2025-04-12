@@ -5,7 +5,7 @@ use bevy_replicon::prelude::{SendMode, ToClients};
 
 use super::UnitBehaviour;
 use crate::{
-    AnimationChange, AnimationChangeEvent, GRAVITY_G, Owner,
+    AnimationChange, AnimationChangeEvent, GRAVITY_G, Hitby, Owner,
     map::Layers,
     networking::{Facing, UnitType},
     server::{
@@ -102,6 +102,7 @@ fn process_attacks(
                                 true => Facing::Left,
                                 false => Facing::Right,
                             },
+                            by: Hitby::Melee,
                         });
                         animation.send(ToClients {
                             mode: SendMode::Broadcast,

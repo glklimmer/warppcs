@@ -12,7 +12,7 @@ use shared::{
     },
 };
 
-use super::{AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};
+use super::{AnimationSound, AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};
 
 pub mod bandits;
 pub mod humans;
@@ -48,7 +48,7 @@ pub fn trigger_unit_animation(
     for event in network_events.read() {
         let new_animation = match &event.change {
             AnimationChange::Attack => UnitAnimation::Attack,
-            AnimationChange::Hit => UnitAnimation::Hit,
+            AnimationChange::Hit(_) => UnitAnimation::Hit,
             AnimationChange::Death => UnitAnimation::Death,
             AnimationChange::Mount => UnitAnimation::Idle,
         };
@@ -118,7 +118,9 @@ pub fn set_unit_idle(
 }
 
 pub fn set_unit_sprite_animation(
+    mut command: Commands,
     mut query: Query<(
+        Entity,
         &Unit,
         &mut SpriteSheetAnimation,
         &mut Sprite,
@@ -128,7 +130,7 @@ pub fn set_unit_sprite_animation(
     sprite_sheets: Res<UnitSpriteSheets>,
 ) {
     for new_animation in animation_changed.read() {
-        if let Ok((unit, mut sprite_animation, mut sprite, mut current_animation)) =
+        if let Ok((entity, unit, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
         {
             let animation = sprite_sheets
@@ -137,8 +139,23 @@ pub fn set_unit_sprite_animation(
                 .animations
                 .get(new_animation.state);
 
+            let sound = sprite_sheets
+                .sprite_sheets
+                .get(unit.unit_type)
+                .animations_sound
+                .get(new_animation.state);
+
             if let Some(atlas) = &mut sprite.texture_atlas {
                 atlas.index = animation.first_sprite_index;
+            }
+
+            match sound {
+                Some(sound) => {
+                    command.entity(entity).insert(sound.clone());
+                }
+                None => {
+                    command.entity(entity).remove::<AnimationSound>();
+                }
             }
 
             *sprite_animation = animation.clone();
