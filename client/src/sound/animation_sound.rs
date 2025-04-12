@@ -3,14 +3,14 @@ use bevy::{
     prelude::*,
 };
 use shared::{
-    server::{entities::Unit, physics::projectile::ProjectileType},
-    AnimationChange, AnimationChangeEvent, Hitby, Owner,
+    AnimationChange, AnimationChangeEvent, Hitby,
+    server::{
+        physics::projectile::ProjectileType,
+        players::interaction::{InteractableSound, InteractionType},
+    },
 };
 
-use crate::{
-    animations::{AnimationSound, AnimationSoundTrigger, SpriteSheetAnimation},
-    networking::ControlledPlayer,
-};
+use crate::animations::{AnimationSound, AnimationSoundTrigger, SpriteSheetAnimation};
 
 #[derive(Event)]
 struct PlayAnimationSoundEvent {
@@ -28,7 +28,7 @@ impl Plugin for AnimationSoundPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlayAnimationSoundEvent>();
         app.add_observer(play_animation_on_projectile_spawn);
-        app.add_observer(play_recruite_unit_call);
+        app.add_observer(play_on_interactable);
         app.add_observer(stop_animation_sound_on_remove);
 
         app.add_systems(
@@ -155,29 +155,24 @@ fn play_animation_on_projectile_spawn(
     });
 }
 
-fn play_recruite_unit_call(
-    trigger: Trigger<OnAdd, Unit>,
-    units: Query<&Owner, With<Unit>>,
-    player: Query<&Owner, With<ControlledPlayer>>,
+fn play_on_interactable(
+    trigger: Trigger<InteractableSound>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    let Ok(player_owner) = player.get_single() else {
-        return;
+    let audio_file = match trigger.kind {
+        InteractionType::Recruit => {
+            asset_server.load("animation_sound/recruitment/recruite_call.ogg")
+        }
+        InteractionType::Flag => todo!(),
+        InteractionType::Building => todo!(),
+        InteractionType::Mount => todo!(),
+        InteractionType::Travel => todo!(),
+        InteractionType::Chest => todo!(),
+        InteractionType::Item => todo!(),
     };
-
-    let Ok(units_owner) = units.get(trigger.entity()) else {
-        return;
-    };
-
-    if units_owner.is_different_faction(player_owner) {
-        return;
-    }
-
     commands.spawn((
-        AudioPlayer::<AudioSource>(
-            asset_server.load("animation_sound/recruitment/recruite_call.ogg"),
-        ),
+        AudioPlayer::<AudioSource>(audio_file),
         PlaybackSettings {
             mode: PlaybackMode::Remove,
             volume: Volume::new(ANIMATION_VOLUME * 0.5),

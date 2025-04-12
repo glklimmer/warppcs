@@ -23,7 +23,7 @@ use server::{
     },
     players::{
         chest::Chest,
-        interaction::{InteractPlugin, Interactable},
+        interaction::{InteractPlugin, Interactable, InteractableSound},
         items::Item,
         mount::Mount,
     },
@@ -69,6 +69,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Mount, Transform)>()
         .replicate_group::<(Chest, Transform)>()
         .replicate_group::<(Item, Transform)>()
+        .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
@@ -85,6 +86,13 @@ pub enum Hitby {
 /// Value is PlayerEntity
 #[derive(Resource, DerefMut, Deref, Default)]
 pub struct ClientPlayerMap(HashMap<Entity, Entity>);
+
+impl ClientPlayerMap {
+    pub fn get_network_entity(&self, value: &Entity) -> Option<&Entity> {
+        self.iter()
+            .find_map(|(key, val)| if val == value { Some(key) } else { None })
+    }
+}
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum AnimationChange {

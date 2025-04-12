@@ -24,6 +24,11 @@ pub struct Interactable {
     pub restricted_to: Option<Owner>,
 }
 
+#[derive(Event, Clone, Copy, Serialize, Deserialize)]
+pub struct InteractableSound {
+    pub kind: InteractionType,
+}
+
 impl MapEntities for Interactable {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         match self.restricted_to {
