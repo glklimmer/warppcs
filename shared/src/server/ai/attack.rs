@@ -5,14 +5,13 @@ use bevy_replicon::prelude::{SendMode, ToClients};
 
 use super::UnitBehaviour;
 use crate::{
-    AnimationChange, AnimationChangeEvent, GRAVITY_G, Owner,
+    AnimationChange, AnimationChangeEvent, GRAVITY_G, Hitby, Owner,
     map::Layers,
     networking::{Facing, UnitType},
     server::{
         entities::{Unit, health::TakeDamage},
         physics::{movement::Velocity, projectile::ProjectileType},
     },
-    AnimationChange, AnimationChangeEvent, Hitby, Owner, GRAVITY_G,
 };
 
 pub struct AttackPlugin;
