@@ -3,9 +3,14 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, enum_map::*, networking::UnitType, server::physics::movement::Velocity};
+use crate::{
+    BoxCollider,
+    enum_map::*,
+    networking::{Inventory, UnitType},
+    server::physics::movement::Velocity,
+};
 
-use super::interaction::{Interactable, InteractionType};
+use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
 
 #[derive(Component, Clone, Serialize, Deserialize, Debug)]
 #[require(
@@ -241,5 +246,26 @@ impl WeaponType {
                 ProjectileWeapon::Bow => UnitType::Archer,
             },
         }
+    }
+}
+
+pub fn pickup_item(
+    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut commands: Commands,
+    mut player: Query<&mut Inventory>,
+    item: Query<&Item>,
+) {
+    for event in interactions.read() {
+        let InteractionType::Item = &event.interaction else {
+            continue;
+        };
+
+        let item = item.get(event.interactable).unwrap();
+        let mut inventory = player.get_mut(event.player).unwrap();
+        inventory.items.push(item.clone());
+
+        commands.entity(event.interactable).despawn_recursive();
+
+        info!("Inventory: {:?}", inventory);
     }
 }
