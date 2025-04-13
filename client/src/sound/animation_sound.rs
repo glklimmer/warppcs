@@ -171,6 +171,7 @@ fn play_on_interactable(
         InteractionType::Chest => todo!(),
         InteractionType::Item => todo!(),
     };
+
     commands.spawn((
         AudioPlayer::<AudioSource>(audio_file),
         PlaybackSettings {
@@ -179,6 +180,7 @@ fn play_on_interactable(
             spatial: true,
             ..default()
         },
+        Transform::from_translation(trigger.spatial_position),
     ));
 }
 

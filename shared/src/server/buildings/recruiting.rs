@@ -115,6 +115,7 @@ pub fn recruit(
             mode: SendMode::Broadcast,
             event: InteractableSound {
                 kind: InteractionType::Recruit,
+                spatial_position: player_transform.translation,
             },
         });
     }
