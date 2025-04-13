@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use crate::{
     BoxCollider,
@@ -26,6 +27,7 @@ use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionTyp
 )]
 pub struct Item {
     pub item_type: ItemType,
+    pub rarity: Rarity,
     pub modifiers: Vec<Modifier>,
 }
 
@@ -63,6 +65,7 @@ impl Item {
 
         Self {
             item_type: *item_type,
+            rarity,
             modifiers,
         }
     }
@@ -101,26 +104,44 @@ enum ModifierAmplitude {
     High,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Rarity {
     Common,
     Uncommon,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Modifier {
-    effect: ModifierEffect,
-    modifier_type: ModifierType,
+impl Rarity {
+    pub fn color(&self) -> Color {
+        match self {
+            Rarity::Common => Color::srgb(0.62, 0.62, 0.62),
+            Rarity::Uncommon => Color::srgb(0.12, 1.0, 0.0),
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-enum ModifierType {
-    Amount(i32),
+pub struct Modifier {
+    pub effect: ModifierEffect,
+    pub amount: ModifierAmount,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum ModifierAmount {
+    Base(i32),
     Multiplier(i32),
 }
 
+impl fmt::Display for ModifierAmount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ModifierAmount::Base(amount) => write!(f, "{}", amount),
+            ModifierAmount::Multiplier(multiplier) => write!(f, "{}%", multiplier),
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize, Copy, Debug)]
-enum ModifierEffect {
+pub enum ModifierEffect {
     Damage,
     Health,
     Range(WeaponType),
@@ -145,7 +166,7 @@ impl ModifierEffect {
         let amount = fastrand::i32(range);
         Modifier {
             effect: *self,
-            modifier_type: ModifierType::Amount(amount),
+            amount: ModifierAmount::Base(amount),
         }
     }
 
@@ -167,8 +188,22 @@ impl ModifierEffect {
 
         Modifier {
             effect: *self,
-            modifier_type: ModifierType::Multiplier(amount),
+            amount: ModifierAmount::Multiplier(amount),
         }
+    }
+}
+
+impl fmt::Display for ModifierEffect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            ModifierEffect::Damage => "Damage",
+            ModifierEffect::Health => "Health",
+            ModifierEffect::Range(_) => "Range",
+            ModifierEffect::AttackSpeed => "AttackSpeed",
+            ModifierEffect::MovementSpeed => "MovementSpeed",
+            ModifierEffect::UnitAmount => "UnitAmount",
+        };
+        write!(f, "{}", s)
     }
 }
 

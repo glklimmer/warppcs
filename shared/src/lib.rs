@@ -272,8 +272,9 @@ pub enum GameState {
     GameSession,
 }
 
-trait Vec3LayerExt {
+pub trait Vec3LayerExt {
     fn offset_x(self, x: f32) -> Vec3;
+    fn offset_y(self, y: f32) -> Vec3;
     fn offset_z(self, z: f32) -> Vec3;
 
     fn with_layer(self, layer: Layers) -> Transform;
@@ -282,6 +283,10 @@ trait Vec3LayerExt {
 impl Vec3LayerExt for Vec3 {
     fn offset_x(self, x: f32) -> Vec3 {
         self + Vec3::X * x
+    }
+
+    fn offset_y(self, y: f32) -> Vec3 {
+        self + Vec3::Y * y
     }
 
     fn offset_z(self, z: f32) -> Vec3 {
