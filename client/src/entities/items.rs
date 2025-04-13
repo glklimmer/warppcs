@@ -18,7 +18,7 @@ pub struct ItemsPlugin;
 
 impl Plugin for ItemsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(init_weapon_sprite)
+        app.add_observer(init_item_sprite)
             .add_systems(Update, show_item_info);
     }
 }
@@ -26,7 +26,7 @@ impl Plugin for ItemsPlugin {
 #[derive(Component, Deref)]
 struct ItemInfo(Entity);
 
-fn init_weapon_sprite(
+fn init_item_sprite(
     trigger: Trigger<OnAdd, Item>,
     mut commands: Commands,
     mut weapons: Query<(&mut Sprite, &Item, &Transform)>,
