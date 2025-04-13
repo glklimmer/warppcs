@@ -147,6 +147,10 @@ fn player_base(
         BuildStatus::Built,
         offset.with_layer(Layers::Building),
         owner,
+        Interactable {
+            kind: InteractionType::Recruit,
+            restricted_to: Some(owner),
+        },
     ));
     commands.spawn((
         Mount {

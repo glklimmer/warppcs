@@ -27,6 +27,7 @@ pub enum UnitType {
     Pikeman,
     Archer,
     Bandit,
+    Commander,
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
