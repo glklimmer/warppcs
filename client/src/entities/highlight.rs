@@ -27,7 +27,7 @@ fn on_remove_highlighted(mut world: DeferredWorld, entity: Entity, _id: Componen
 
 #[derive(Component)]
 struct Highlightable {
-    pub outline_color: Color,
+    outline_color: Color,
 }
 
 impl Default for Highlightable {
