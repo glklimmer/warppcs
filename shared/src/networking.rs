@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use super::enum_map::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, horse_collider};
+use crate::{BoxCollider, horse_collider, server::players::items::Item};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -55,11 +55,15 @@ pub enum ServerChannel {
 #[require(Replicated)]
 pub struct Inventory {
     pub gold: u16,
+    pub items: Vec<Item>,
 }
 
 impl Default for Inventory {
     fn default() -> Self {
-        Self { gold: 600 }
+        Self {
+            gold: 600,
+            items: Vec::new(),
+        }
     }
 }
 
