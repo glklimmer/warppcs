@@ -15,7 +15,10 @@ use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
 use server::{
     buildings::recruiting::Flag,
-    entities::Unit,
+    entities::{
+        Unit,
+        commander::{CommanderInteraction, SlotSelection, SlotsAssignments},
+    },
     game_scenes::Portal,
     physics::{
         attachment::AttachedTo,
@@ -60,6 +63,7 @@ impl Plugin for SharedPlugin {
         .replicate::<Moving>()
         .replicate::<Grounded>()
         .replicate_mapped::<AttachedTo>()
+        .replicate_mapped::<SlotsAssignments>()
         .replicate::<BoxCollider>()
         .replicate::<Mounted>()
         .replicate_mapped::<Interactable>()
@@ -72,7 +76,9 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Mount, Transform)>()
         .replicate_group::<(Chest, Transform)>()
         .replicate_group::<(Item, Transform)>()
+        .add_client_trigger::<SlotSelection>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
+        .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)

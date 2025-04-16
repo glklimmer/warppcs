@@ -1,6 +1,7 @@
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{ecs::entity::MapEntities, prelude::*, sprite::Anchor};
 
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
+use enum_mappable::Mappable;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -15,7 +16,7 @@ use crate::{
             UnitBehaviour,
             attack::{unit_health, unit_swing_timer},
         },
-        entities::{Unit, health::Health},
+        entities::{Unit, commander::SlotsAssignments, health::Health},
         physics::attachment::AttachedTo,
         players::interaction::{
             Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType,
@@ -32,8 +33,14 @@ use crate::{
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder
-#[derive(Component)]
+#[derive(Component, Clone, Copy, Serialize, Deserialize)]
 pub struct FlagHolder(pub Entity);
+
+impl MapEntities for FlagHolder {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.map_entity(self.0)
+    }
+}
 
 #[derive(Component)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
@@ -81,11 +88,18 @@ pub fn recruit(
 
         commands.entity(player).insert(FlagHolder(flag_entity));
 
-        let (unit_type, unit_amount) = match event.building_type {
-            Building::Archer => (UnitType::Archer, 4),
-            Building::Warrior => (UnitType::Shieldwarrior, 4),
-            Building::Pikeman => (UnitType::Pikeman, 4),
-            Building::MainBuilding { level: _ } => (UnitType::Commander, 1),
+        let (unit_type, unit_amount, interactable) = match event.building_type {
+            Building::Archer => (UnitType::Archer, 4, None),
+            Building::Warrior => (UnitType::Shieldwarrior, 4, None),
+            Building::Pikeman => (UnitType::Pikeman, 4, None),
+            Building::MainBuilding { level: _ } => (
+                UnitType::Commander,
+                1,
+                Some(Interactable {
+                    kind: InteractionType::CommanderInteraction,
+                    restricted_to: Some(owner),
+                }),
+            ),
             Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => continue,
         };
 
@@ -99,14 +113,25 @@ pub fn recruit(
 
         for unit_number in 1..=unit_amount {
             let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
-            commands.spawn((
-                Transform::from_translation(flag_translation),
-                unit.clone(),
-                health.clone(),
-                owner,
-                FlagAssignment(flag_entity, offset),
-                UnitBehaviour::FollowFlag(flag_entity, offset),
-            ));
+            commands
+                .spawn((
+                    Transform::from_translation(flag_translation),
+                    unit.clone(),
+                    health.clone(),
+                    owner,
+                    FlagAssignment(flag_entity, offset),
+                    UnitBehaviour::FollowFlag(flag_entity, offset),
+                ))
+                .insert_if(
+                    Interactable {
+                        kind: InteractionType::CommanderInteraction,
+                        restricted_to: Some(owner),
+                    },
+                    || unit_type.eq(&UnitType::Commander),
+                )
+                .insert_if(SlotsAssignments::default(), || {
+                    unit_type.eq(&UnitType::Commander)
+                });
         }
 
         commands.server_trigger(ToClients {
