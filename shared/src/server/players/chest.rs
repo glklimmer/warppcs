@@ -11,7 +11,7 @@ use crate::{
 
 use super::{
     interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
-    items::{Item, Rarity},
+    items::Item,
 };
 
 #[derive(Component, Clone, Serialize, Deserialize)]
@@ -67,7 +67,7 @@ pub fn open_chest(
         let chest_transform = query.get(event.interactable).unwrap();
         let chest_translation = chest_transform.translation;
 
-        let item = Item::random(Rarity::Common);
+        let item = Item::random();
         info!("Spawning item: {:?}", item);
         commands.spawn((
             item.collider(),

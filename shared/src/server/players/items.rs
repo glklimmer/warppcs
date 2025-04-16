@@ -31,23 +31,48 @@ pub struct Item {
     pub modifiers: Vec<Modifier>,
 }
 
+#[derive(Default)]
+pub struct ItemBuilder {
+    rarity: Option<Rarity>,
+    item_type: Option<ItemType>,
+}
+
+impl ItemBuilder {
+    pub fn with_rarity(mut self, rarity: Rarity) -> Self {
+        self.rarity = Some(rarity);
+        self
+    }
+
+    pub fn with_type(mut self, item_type: ItemType) -> Self {
+        self.item_type = Some(item_type);
+        self
+    }
+
+    pub fn with_types(mut self, item_types: Vec<ItemType>) -> Self {
+        self.item_type = fastrand::choice(&item_types).copied();
+        self
+    }
+
+    pub fn build(self) -> Item {
+        let rarity = self.rarity.unwrap_or_else(Rarity::random);
+
+        let item_type = self.item_type.unwrap_or_else(ItemType::random);
+
+        Item::generate(rarity, item_type)
+    }
+}
+
 impl Item {
-    pub fn random(rarity: Rarity) -> Self {
-        let mut item_types = vec![ItemType::Chest, ItemType::Feet, ItemType::Head];
-        let mut item_types = vec![];
+    pub fn builder() -> ItemBuilder {
+        ItemBuilder::default()
+    }
 
-        let weapon = if fastrand::bool() {
-            let use_weapon = fastrand::choice(MeleeWeapon::all_variants()).unwrap();
-            WeaponType::Melee(*use_weapon)
-        } else {
-            let proj_weapon = fastrand::choice(ProjectileWeapon::all_variants()).unwrap();
-            WeaponType::Projectile(*proj_weapon)
-        };
-        item_types.push(ItemType::Weapon(weapon));
+    pub fn random() -> Item {
+        Self::generate(Rarity::random(), ItemType::random())
+    }
 
-        let item_type = fastrand::choice(&item_types).unwrap();
+    fn generate(rarity: Rarity, item_type: ItemType) -> Self {
         let mut modifiers = item_type.base();
-
         let amplitude = *fastrand::choice(ModifierAmplitude::all_variants()).unwrap();
         let multipliers = match rarity {
             Rarity::Common => vec![
@@ -60,11 +85,9 @@ impl Item {
                 item_type.multiplier(amplitude, ModifierSign::Negative),
             ],
         };
-
         modifiers.extend(multipliers);
-
         Self {
-            item_type: *item_type,
+            item_type,
             rarity,
             modifiers,
         }
@@ -90,9 +113,18 @@ impl Item {
                     },
                 },
             },
-            ItemType::Chest => todo!(),
-            ItemType::Feet => todo!(),
-            ItemType::Head => todo!(),
+            ItemType::Chest => BoxCollider {
+                dimension: Vec2::new(19., 11.),
+                offset: None,
+            },
+            ItemType::Feet => BoxCollider {
+                dimension: Vec2::new(19., 16.),
+                offset: None,
+            },
+            ItemType::Head => BoxCollider {
+                dimension: Vec2::new(13., 12.),
+                offset: None,
+            },
         }
     }
 }
@@ -104,7 +136,7 @@ enum ModifierAmplitude {
     High,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Mappable)]
 pub enum Rarity {
     Common,
     Uncommon,
@@ -116,6 +148,10 @@ impl Rarity {
             Rarity::Common => Color::srgb(0.62, 0.62, 0.62),
             Rarity::Uncommon => Color::srgb(0.12, 1.0, 0.0),
         }
+    }
+
+    fn random() -> Rarity {
+        *fastrand::choice(Rarity::all_variants()).unwrap()
     }
 }
 
@@ -251,6 +287,24 @@ impl ItemType {
         let effect = fastrand::choice(effects).unwrap();
         effect.multiplier(amplitude, sign)
     }
+
+    pub fn all_variants() -> Vec<Self> {
+        let mut item_types = vec![ItemType::Chest, ItemType::Feet, ItemType::Head];
+
+        let weapon = if fastrand::bool() {
+            let use_weapon = fastrand::choice(MeleeWeapon::all_variants()).unwrap();
+            WeaponType::Melee(*use_weapon)
+        } else {
+            let proj_weapon = fastrand::choice(ProjectileWeapon::all_variants()).unwrap();
+            WeaponType::Projectile(*proj_weapon)
+        };
+        item_types.push(Self::Weapon(weapon));
+        item_types
+    }
+
+    fn random() -> Self {
+        fastrand::choice(Self::all_variants()).unwrap()
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Copy, Debug)]
@@ -301,6 +355,14 @@ pub fn pickup_item(
 
         commands.entity(event.interactable).despawn_recursive();
 
-        info!("Inventory: {:?}", inventory);
+        info!(
+            "Inventory items: {:?}",
+            inventory
+                .items
+                .iter()
+                .map(|item| format!("{:?}", item.item_type))
+                .collect::<Vec<String>>()
+                .join(", ")
+        );
     }
 }
