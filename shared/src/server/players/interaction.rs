@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, ClientPlayerMap, Faction, Owner, player_movement::PlayerState};
+use crate::{BoxCollider, ClientPlayerMap, Faction, Owner, PlayerState};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {

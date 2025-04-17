@@ -1,8 +1,4 @@
-use bevy::{
-    ecs::entity::MapEntities,
-    prelude::*,
-    utils::{HashMap, info},
-};
+use bevy::{ecs::entity::MapEntities, prelude::*, utils::HashMap};
 use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
@@ -18,10 +14,9 @@ use crate::{
 #[derive(Resource, Default, DerefMut, Deref)]
 struct ActiveCommander(HashMap<Entity, Entity>);
 
-#[derive(Event, Serialize, Deserialize, Debug, Clone, Copy)]
-pub enum CommanderInteraction {
-    Options(Entity),
-    Map,
+#[derive(Event, Serialize, Deserialize)]
+pub struct CommanderInteraction {
+    pub commander: Entity,
 }
 
 #[derive(Event)]
@@ -66,18 +61,23 @@ impl Default for SlotsAssignments {
 
 impl MapEntities for SlotsAssignments {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.back = Some(entity_mapper.map_entity(self.back.unwrap()));
-        self.middle = Some(entity_mapper.map_entity(self.middle.unwrap()));
-        self.front = Some(entity_mapper.map_entity(self.front.unwrap()));
+        if let Some(back) = self.back.take() {
+            self.back = Some(entity_mapper.map_entity(back));
+        }
+
+        if let Some(middle) = self.middle.take() {
+            self.middle = Some(entity_mapper.map_entity(middle));
+        }
+
+        if let Some(front) = self.front.take() {
+            self.front = Some(entity_mapper.map_entity(front));
+        }
     }
 }
 
 impl MapEntities for CommanderInteraction {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        let CommanderInteraction::Options(entity) = *self else {
-            return;
-        };
-        *self = CommanderInteraction::Options(entity_mapper.map_entity(entity));
+        self.commander = entity_mapper.map_entity(self.commander);
     }
 }
 
@@ -88,21 +88,21 @@ impl Plugin for CommanderPlugin {
         app.init_resource::<ActiveCommander>();
         app.add_event::<SlotInteraction>();
 
-        app.add_observer(check_slot_occupancy);
+        app.add_observer(handle_slot_selection);
         app.add_observer(assign_flag_to_slot);
         app.add_observer(remove_flag_from_slot);
         app.add_observer(swap_flag_from_slot);
 
         app.add_systems(
             FixedUpdate,
-            test.run_if(on_event::<InteractionTriggeredEvent>),
+            commander_interaction.run_if(on_event::<InteractionTriggeredEvent>),
         );
     }
 }
 
-fn test(
-    mut commands: Commands,
+fn commander_interaction(
     mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut commands: Commands,
     client_player_map: Res<ClientPlayerMap>,
     mut active: ResMut<ActiveCommander>,
 ) {
@@ -114,15 +114,14 @@ fn test(
         let commander = event.interactable;
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client_player_map.get_network_entity(&event.player).unwrap()),
-            event: CommanderInteraction::Options(commander),
+            event: CommanderInteraction { commander },
         });
 
         active.insert(event.player, commander);
-        println!("Got Commander")
     }
 }
 
-fn check_slot_occupancy(
+fn handle_slot_selection(
     trigger: Trigger<FromClient<SlotSelection>>,
     active: Res<ActiveCommander>,
     slots: Query<&SlotsAssignments>,
@@ -134,7 +133,7 @@ fn check_slot_occupancy(
     let commander = active.0.get(player).unwrap();
     let slot_assignments = slots.get(*commander).unwrap();
 
-    let selected_slot = trigger.event().event;
+    let selected_slot = trigger.event;
 
     let is_slot_occupied = match selected_slot {
         SlotSelection::Front => slot_assignments.front.is_some(),
@@ -142,15 +141,15 @@ fn check_slot_occupancy(
         SlotSelection::Back => slot_assignments.back.is_some(),
     };
 
-    let has_flag = flag.get(*player).is_ok();
+    let player_flag = flag.get(*player).map(|f| f.0).ok();
 
-    match (is_slot_occupied, has_flag) {
+    match (is_slot_occupied, player_flag.is_some()) {
         (true, true) => {
             commands.trigger(SlotInteraction {
                 command: SlotCommand::Swap,
                 player: player.clone(),
                 commander: commander.clone(),
-                flag: Some(flag.get(*player).unwrap().0),
+                flag: player_flag,
                 selected_slot,
             });
         }
@@ -168,7 +167,7 @@ fn check_slot_occupancy(
                 command: SlotCommand::Assign,
                 player: player.clone(),
                 commander: commander.clone(),
-                flag: Some(flag.get(*player).unwrap().0),
+                flag: player_flag,
                 selected_slot,
             });
         }
@@ -181,9 +180,9 @@ fn assign_flag_to_slot(
     mut commands: Commands,
     mut slots: Query<&mut SlotsAssignments>,
 ) {
-    if trigger.command != SlotCommand::Assign {
+    let SlotCommand::Assign = trigger.command else {
         return;
-    }
+    };
 
     let mut slot_assignments = slots.get_mut(trigger.commander).unwrap();
     let flag = trigger.flag.unwrap();
@@ -203,9 +202,9 @@ fn remove_flag_from_slot(
     mut commands: Commands,
     mut slots: Query<&mut SlotsAssignments>,
 ) {
-    if trigger.command != SlotCommand::Remove {
+    let SlotCommand::Remove = trigger.command else {
         return;
-    }
+    };
 
     let mut slot_assignments = slots.get_mut(trigger.commander).unwrap();
 
@@ -236,9 +235,9 @@ fn swap_flag_from_slot(
     mut commands: Commands,
     mut slots: Query<&mut SlotsAssignments>,
 ) {
-    if trigger.command != SlotCommand::Swap {
+    let SlotCommand::Swap = trigger.command else {
         return;
-    }
+    };
 
     let mut slot_assignments = slots.get_mut(trigger.commander).unwrap();
     let flag = trigger.flag.unwrap();

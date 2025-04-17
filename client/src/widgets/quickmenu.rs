@@ -5,9 +5,8 @@ use bevy::{
 };
 use bevy_replicon::{client::ClientSet, prelude::ClientTriggerExt};
 use shared::{
-    Vec3LayerExt,
+    PlayerState, Vec3LayerExt,
     map::Layers,
-    player_movement::PlayerState,
     server::entities::commander::{CommanderInteraction, SlotSelection, SlotsAssignments},
 };
 
@@ -62,37 +61,35 @@ fn on_remove_seleted(mut world: DeferredWorld, entity: Entity, _id: ComponentId)
 impl Plugin for QuickMenuPlugin {
     fn build(&self, app: &mut App) {
         app.insert_state(PlayerState::World);
-        app.add_observer(draw_options);
+        app.add_observer(draw_commander_interaction);
         app.add_systems(
             Update,
             (
                 cycle_commands,
                 branch_into_command,
-                return_to_main_commands,
+                return_to_main_menu,
                 send_selected.before(ClientSet::Send),
             )
-                .run_if(in_state(PlayerState::Dialog)),
+                .run_if(in_state(PlayerState::Interaction)),
         );
     }
 }
 
-fn draw_options(
+fn draw_commander_interaction(
     trigger: Trigger<CommanderInteraction>,
     mut commands: Commands,
     transform: Query<(&SlotsAssignments, &Transform)>,
     asset_server: Res<AssetServer>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) {
-    let CommanderInteraction::Options(unit) = trigger.event() else {
-        return;
-    };
+    let commander = trigger.commander;
 
     let empty_slot: Handle<Image> = asset_server.load("ui/commander/slot_empty.png");
     let full_slot: Handle<Image> = asset_server.load("ui/commander/slot_full.png");
 
-    let (slot_assignments, unit_position) = transform.get(*unit).unwrap();
+    let (slot_assignments, unit_position) = transform.get(commander).unwrap();
 
-    next_state.set(PlayerState::Dialog);
+    next_state.set(PlayerState::Interaction);
 
     commands.spawn((
         Sprite {
@@ -268,19 +265,19 @@ fn branch_into_command(
     }
 }
 
-fn return_to_main_commands(
+fn return_to_main_menu(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
-    main_commands: Query<(Entity, &MainMenuEntries, &Branches)>,
-    assign_slots: Query<(Entity, &Slot, &Next)>,
+    main_menu_entries: Query<(Entity, &MainMenuEntries, &Branches)>,
+    slots: Query<(Entity, &Slot, &Next)>,
     selected_query: Query<(Entity, Option<&MainMenuEntries>), With<Selected>>,
     all: Query<Entity, With<Next>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyS) {
-        let (entity, main_command) = selected_query.single();
+        let (entity, main_menu) = selected_query.single();
 
-        if main_command.is_some() {
+        if main_menu.is_some() {
             for entity in all.iter() {
                 commands.entity(entity).despawn_recursive();
                 next_state.set(PlayerState::World);
@@ -288,13 +285,19 @@ fn return_to_main_commands(
         } else {
             commands.entity(entity).remove::<Selected>();
 
-            assign_slots.iter().for_each(|(e, _, _)| {
+            slots.iter().for_each(|(e, _, _)| {
                 commands.entity(e).insert(Visibility::Hidden);
             });
 
-            main_commands
+            main_menu_entries
                 .iter()
-                .find(|(_, _, b)| b.0.eq(&MenuEntries::Slot(Slot::Front)))
+                .find(|(_, _, branch)| {
+                    if let MenuEntries::Slot(_) = branch.0 {
+                        true
+                    } else {
+                        false
+                    }
+                })
                 .map(|(e, _, _)| {
                     commands.entity(e).insert(Selected);
                 });

@@ -1,7 +1,6 @@
 use bevy::{ecs::entity::MapEntities, prelude::*, sprite::Anchor};
 
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
-use enum_mappable::Mappable;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -33,14 +32,8 @@ use crate::{
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder
-#[derive(Component, Clone, Copy, Serialize, Deserialize)]
+#[derive(Component, Clone, Copy)]
 pub struct FlagHolder(pub Entity);
-
-impl MapEntities for FlagHolder {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.map_entity(self.0)
-    }
-}
 
 #[derive(Component)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
@@ -88,18 +81,11 @@ pub fn recruit(
 
         commands.entity(player).insert(FlagHolder(flag_entity));
 
-        let (unit_type, unit_amount, interactable) = match event.building_type {
-            Building::Archer => (UnitType::Archer, 4, None),
-            Building::Warrior => (UnitType::Shieldwarrior, 4, None),
-            Building::Pikeman => (UnitType::Pikeman, 4, None),
-            Building::MainBuilding { level: _ } => (
-                UnitType::Commander,
-                1,
-                Some(Interactable {
-                    kind: InteractionType::CommanderInteraction,
-                    restricted_to: Some(owner),
-                }),
-            ),
+        let (unit_type, unit_amount) = match event.building_type {
+            Building::Archer => (UnitType::Archer, 4),
+            Building::Warrior => (UnitType::Shieldwarrior, 4),
+            Building::Pikeman => (UnitType::Pikeman, 4),
+            Building::MainBuilding { level: _ } => (UnitType::Commander, 1),
             Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => continue,
         };
 

@@ -281,6 +281,12 @@ pub enum GameState {
     GameSession,
 }
 
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum PlayerState {
+    World,
+    Interaction,
+}
+
 pub trait Vec3LayerExt {
     fn offset_x(self, x: f32) -> Vec3;
     fn offset_y(self, y: f32) -> Vec3;

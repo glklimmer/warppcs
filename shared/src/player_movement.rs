@@ -4,15 +4,9 @@ use bevy_replicon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ClientPlayerMap,
+    ClientPlayerMap, PlayerState,
     server::physics::movement::{Speed, Velocity},
 };
-
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PlayerState {
-    World,
-    Dialog,
-}
 
 pub struct PlayerMovement;
 
