@@ -108,7 +108,7 @@ fn update_building_sprite(
             &BuildStatus,
             Option<&mut Highlighted>,
         ),
-        Changed<BuildStatus>,
+        Or<(Changed<Building>, Changed<BuildStatus>)>,
     >,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
