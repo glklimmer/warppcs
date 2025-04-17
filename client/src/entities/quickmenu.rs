@@ -221,7 +221,7 @@ fn cycle_commands(
     slots: Query<(Entity, &AssignSlot, &Next)>,
     selected_query: Query<(Entity, &Next), With<Selected>>,
 ) {
-    if keyboard.just_pressed(KeyCode::KeyR) {
+    if keyboard.just_pressed(KeyCode::KeyD) {
         let (entity, next) = selected_query.single();
         commands.entity(entity).remove::<Selected>();
 
