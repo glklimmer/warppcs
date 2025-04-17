@@ -81,14 +81,12 @@ pub fn recruit(
 
         commands.entity(player).insert(FlagHolder(flag_entity));
 
-        let unit_type = match event.building_type {
-            Building::Archer => UnitType::Archer,
-            Building::Warrior => UnitType::Shieldwarrior,
-            Building::Pikeman => UnitType::Pikeman,
-            Building::Wall { level: _ }
-            | Building::Tower
-            | Building::GoldFarm
-            | Building::MainBuilding { level: _ } => continue,
+        let (unit_type, unit_amount) = match event.building_type {
+            Building::Archer => (UnitType::Archer, 4),
+            Building::Warrior => (UnitType::Shieldwarrior, 4),
+            Building::Pikeman => (UnitType::Pikeman, 4),
+            Building::MainBuilding { level: _ } => (UnitType::Commander, 1),
+            Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => continue,
         };
 
         let unit = Unit {
@@ -99,7 +97,7 @@ pub fn recruit(
             hitpoints: unit_health(&unit_type),
         };
 
-        for unit_number in 1..=4 {
+        for unit_number in 1..=unit_amount {
             let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
             commands.spawn((
                 Transform::from_translation(flag_translation),
@@ -151,13 +149,11 @@ pub fn check_recruit(
 
 fn recruitment_cost(building_type: &Building) -> Option<Cost> {
     let gold = match building_type {
-        Building::MainBuilding { level: _ }
-        | Building::Wall { level: _ }
-        | Building::Tower
-        | Building::GoldFarm => return None,
+        Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => return None,
         Building::Archer => 50,
         Building::Warrior => 50,
         Building::Pikeman => 50,
+        Building::MainBuilding { level: _ } => 100,
     };
     Some(Cost { gold })
 }
