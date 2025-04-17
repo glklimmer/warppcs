@@ -21,7 +21,7 @@ pub enum LobbyEvent {
     StartGame,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Mappable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Mappable, PartialEq, Eq)]
 pub enum UnitType {
     Shieldwarrior,
     Pikeman,

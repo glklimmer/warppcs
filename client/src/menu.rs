@@ -11,8 +11,8 @@ use shared::steamworks::SteamworksClient;
 use steamworks::{LobbyId, SteamId};
 
 #[cfg(feature = "steam")]
-use crate::ui_widgets::text_input::TextInputValue;
-use crate::ui_widgets::text_input::{
+use crate::widgets::text_input::TextInputValue;
+use crate::widgets::text_input::{
     TextInput, TextInputPlugin, TextInputTextColor, TextInputTextFont,
 };
 

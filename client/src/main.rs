@@ -3,6 +3,7 @@ use bevy::{
     prelude::*,
 };
 use std::env;
+use widgets::WidgetsPlugin;
 
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
@@ -43,7 +44,7 @@ pub mod menu;
 pub mod networking;
 pub mod sound;
 pub mod ui;
-pub mod ui_widgets;
+pub mod widgets;
 
 /// Spatial audio uses the distance to attenuate the sound volume. In 2D with the default camera,
 /// 1 pixel is 1 unit of distance, so we use a scale so that 100 pixels is 1 unit of distance for
@@ -98,6 +99,7 @@ fn main() {
             AnimationPlugin,
             MenuPlugin,
             EntitiesPlugin,
+            WidgetsPlugin,
             UiPlugin,
             SoundPlugin,
             GizmosPlugin,

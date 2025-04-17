@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, ClientPlayerMap, Faction, Owner};
+use crate::{BoxCollider, ClientPlayerMap, Faction, Owner, PlayerState};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {
@@ -15,6 +15,7 @@ pub enum InteractionType {
     Travel,
     Chest,
     Item,
+    CommanderInteraction,
 }
 
 #[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
@@ -58,7 +59,12 @@ impl Plugin for InteractPlugin {
         app.add_client_trigger::<Interact>(Channel::Ordered)
             .add_observer(interact)
             .add_event::<InteractionTriggeredEvent>()
-            .add_systems(PostUpdate, send_interact.before(ClientSet::Send));
+            .add_systems(
+                PostUpdate,
+                send_interact
+                    .before(ClientSet::Send)
+                    .run_if(in_state(PlayerState::World)),
+            );
     }
 }
 
@@ -113,6 +119,7 @@ fn interact(
         );
 
     if let Some((interactable, _, _, interaction)) = priority_interaction {
+        info!("Sending {:?}", interaction.kind);
         triggered_events.send(InteractionTriggeredEvent {
             player,
             interactable,

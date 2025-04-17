@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ClientPlayerMap,
+    ClientPlayerMap, PlayerState,
     server::physics::movement::{Speed, Velocity},
 };
 
@@ -14,7 +14,12 @@ impl Plugin for PlayerMovement {
     fn build(&self, app: &mut App) {
         app.add_client_trigger::<MovePlayer>(Channel::Ordered)
             .add_observer(apply_movement)
-            .add_systems(Update, movement_input.before(ClientSet::Send));
+            .add_systems(
+                Update,
+                movement_input
+                    .before(ClientSet::Send)
+                    .run_if(in_state(PlayerState::World)),
+            );
     }
 }
 

@@ -1,4 +1,4 @@
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{ecs::entity::MapEntities, prelude::*, sprite::Anchor};
 
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,7 @@ use crate::{
             UnitBehaviour,
             attack::{unit_health, unit_swing_timer},
         },
-        entities::{Unit, health::Health},
+        entities::{Unit, commander::SlotsAssignments, health::Health},
         physics::attachment::AttachedTo,
         players::interaction::{
             Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType,
@@ -32,7 +32,7 @@ use crate::{
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub struct FlagHolder(pub Entity);
 
 #[derive(Component)]
@@ -99,14 +99,25 @@ pub fn recruit(
 
         for unit_number in 1..=unit_amount {
             let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
-            commands.spawn((
-                Transform::from_translation(flag_translation),
-                unit.clone(),
-                health.clone(),
-                owner,
-                FlagAssignment(flag_entity, offset),
-                UnitBehaviour::FollowFlag(flag_entity, offset),
-            ));
+            commands
+                .spawn((
+                    Transform::from_translation(flag_translation),
+                    unit.clone(),
+                    health.clone(),
+                    owner,
+                    FlagAssignment(flag_entity, offset),
+                    UnitBehaviour::FollowFlag(flag_entity, offset),
+                ))
+                .insert_if(
+                    Interactable {
+                        kind: InteractionType::CommanderInteraction,
+                        restricted_to: Some(owner),
+                    },
+                    || unit_type.eq(&UnitType::Commander),
+                )
+                .insert_if(SlotsAssignments::default(), || {
+                    unit_type.eq(&UnitType::Commander)
+                });
         }
 
         commands.server_trigger(ToClients {
