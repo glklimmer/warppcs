@@ -14,30 +14,30 @@ use shared::{
 pub struct QuickMenuPlugin;
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
-enum MainCommands {
+enum MainMenuEntries {
     Map,
     Slots,
     Test,
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
-enum AssignSlot {
+enum Slot {
     Front,
     Middle,
     Back,
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
-enum MenuCommands {
-    Main(MainCommands),
-    Slot(AssignSlot),
+enum MenuEntries {
+    Main(MainMenuEntries),
+    Slot(Slot),
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
-struct Next(MenuCommands);
+struct Next(MenuEntries);
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
-struct Branches(MenuCommands);
+struct Branches(MenuEntries);
 
 #[derive(Component, Clone, Copy)]
 struct Active;
@@ -106,8 +106,8 @@ fn draw_options(
             .offset_x(-5.5)
             .offset_y(25.)
             .with_layer(Layers::Item),
-        MainCommands::Map,
-        Next(MenuCommands::Main(MainCommands::Slots)),
+        MainMenuEntries::Map,
+        Next(MenuEntries::Main(MainMenuEntries::Slots)),
         Selected,
     ));
 
@@ -123,9 +123,9 @@ fn draw_options(
             .offset_x(5.5)
             .offset_y(25.)
             .with_layer(Layers::Item),
-        MainCommands::Slots,
-        Next(MenuCommands::Main(MainCommands::Test)),
-        Branches(MenuCommands::Slot(AssignSlot::Front)),
+        MainMenuEntries::Slots,
+        Next(MenuEntries::Main(MainMenuEntries::Test)),
+        Branches(MenuEntries::Slot(Slot::Front)),
     ));
 
     commands.spawn((
@@ -140,8 +140,8 @@ fn draw_options(
             .offset_x(15.5)
             .offset_y(25.)
             .with_layer(Layers::Item),
-        MainCommands::Test,
-        Next(MenuCommands::Main(MainCommands::Map)),
+        MainMenuEntries::Test,
+        Next(MenuEntries::Main(MainMenuEntries::Map)),
     ));
 
     let front = match slot_assignments.front {
@@ -161,8 +161,8 @@ fn draw_options(
                 .offset_x(15.5)
                 .offset_y(35.)
                 .with_layer(Layers::Item),
-            AssignSlot::Front,
-            Next(MenuCommands::Slot(AssignSlot::Middle)),
+            Slot::Front,
+            Next(MenuEntries::Slot(Slot::Middle)),
             Visibility::Hidden,
         ))
         .insert_if(Active, || slot_assignments.front.is_some());
@@ -184,8 +184,8 @@ fn draw_options(
                 .offset_x(25.5)
                 .offset_y(35.)
                 .with_layer(Layers::Item),
-            AssignSlot::Middle,
-            Next(MenuCommands::Slot(AssignSlot::Back)),
+            Slot::Middle,
+            Next(MenuEntries::Slot(Slot::Back)),
             Visibility::Hidden,
         ))
         .insert_if(Active, || slot_assignments.middle.is_some());
@@ -207,8 +207,8 @@ fn draw_options(
                 .offset_x(40.5)
                 .offset_y(35.)
                 .with_layer(Layers::Item),
-            AssignSlot::Back,
-            Next(MenuCommands::Slot(AssignSlot::Front)),
+            Slot::Back,
+            Next(MenuEntries::Slot(Slot::Front)),
             Visibility::Hidden,
         ))
         .insert_if(Active, || slot_assignments.back.is_some());
@@ -217,22 +217,22 @@ fn draw_options(
 fn cycle_commands(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
-    main: Query<(Entity, &MainCommands, &Next)>,
-    slots: Query<(Entity, &AssignSlot, &Next)>,
+    main: Query<(Entity, &MainMenuEntries, &Next)>,
+    slots: Query<(Entity, &Slot, &Next)>,
     selected_query: Query<(Entity, &Next), With<Selected>>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyD) {
         let (entity, next) = selected_query.single();
         commands.entity(entity).remove::<Selected>();
 
-        let nexton = match next.0 {
-            MenuCommands::Main(main_options) => {
+        let next_menu_entry = match next.0 {
+            MenuEntries::Main(main_options) => {
                 main.iter()
                     .find(|(_, m, _)| m.eq(&&main_options))
                     .unwrap()
                     .0
             }
-            MenuCommands::Slot(slot_options) => {
+            MenuEntries::Slot(slot_options) => {
                 slots
                     .iter()
                     .find(|(_, m, _)| m.eq(&&slot_options))
@@ -240,30 +240,26 @@ fn cycle_commands(
                     .0
             }
         };
-        commands.entity(nexton).insert(Selected);
+        commands.entity(next_menu_entry).insert(Selected);
     }
 }
 
 fn branch_into_command(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
-    slots: Query<(Entity, &AssignSlot, &Next)>,
+    slots: Query<(Entity, &Slot)>,
     selected_query: Query<(Entity, Option<&Branches>), With<Selected>>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyW) {
-        let (entity, next) = selected_query.single();
+        let (entity, branch) = selected_query.single();
 
-        if next.is_none() {
-            return;
-        }
-
-        let MenuCommands::Slot(variant) = next.unwrap().0 else {
+        let MenuEntries::Slot(variant) = branch.unwrap().0 else {
             return;
         };
 
         commands.entity(entity).remove::<Selected>();
 
-        slots.iter().for_each(|(e, s, _)| {
+        slots.iter().for_each(|(e, s)| {
             commands
                 .entity(e)
                 .insert(Visibility::Visible)
@@ -275,9 +271,9 @@ fn branch_into_command(
 fn return_to_main_commands(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
-    main_commands: Query<(Entity, &MainCommands, &Branches)>,
-    assign_slots: Query<(Entity, &AssignSlot, &Next)>,
-    selected_query: Query<(Entity, Option<&MainCommands>), With<Selected>>,
+    main_commands: Query<(Entity, &MainMenuEntries, &Branches)>,
+    assign_slots: Query<(Entity, &Slot, &Next)>,
+    selected_query: Query<(Entity, Option<&MainMenuEntries>), With<Selected>>,
     all: Query<Entity, With<Next>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) {
@@ -298,7 +294,7 @@ fn return_to_main_commands(
 
             main_commands
                 .iter()
-                .find(|(_, _, b)| b.0.eq(&MenuCommands::Slot(AssignSlot::Front)))
+                .find(|(_, _, b)| b.0.eq(&MenuEntries::Slot(Slot::Front)))
                 .map(|(e, _, _)| {
                     commands.entity(e).insert(Selected);
                 });
@@ -309,7 +305,7 @@ fn return_to_main_commands(
 fn send_selected(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
-    mut selected_query: Query<(&mut Sprite, Option<&AssignSlot>, Option<&Active>), With<Selected>>,
+    mut selected_query: Query<(&mut Sprite, Option<&Slot>, Option<&Active>), With<Selected>>,
     asset_server: Res<AssetServer>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyF) {
@@ -319,9 +315,9 @@ fn send_selected(
         let full_slot: Handle<Image> = asset_server.load("ui/commander/slot_full.png");
 
         match slot.unwrap() {
-            AssignSlot::Front => commands.client_trigger(SlotSelection::Front),
-            AssignSlot::Middle => commands.client_trigger(SlotSelection::Middle),
-            AssignSlot::Back => commands.client_trigger(SlotSelection::Back),
+            Slot::Front => commands.client_trigger(SlotSelection::Front),
+            Slot::Middle => commands.client_trigger(SlotSelection::Middle),
+            Slot::Back => commands.client_trigger(SlotSelection::Back),
         };
 
         let image = match active {
