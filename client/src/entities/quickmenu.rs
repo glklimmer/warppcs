@@ -11,7 +11,7 @@ use shared::{
     server::entities::commander::{CommanderInteraction, SlotSelection, SlotsAssignments},
 };
 
-pub struct OptionsPlugin;
+pub struct QuickMenuPlugin;
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
 enum MainCommands {
@@ -59,7 +59,7 @@ fn on_remove_seleted(mut world: DeferredWorld, entity: Entity, _id: ComponentId)
     sprite.color = Color::Srgba(GREY);
 }
 
-impl Plugin for OptionsPlugin {
+impl Plugin for QuickMenuPlugin {
     fn build(&self, app: &mut App) {
         app.insert_state(PlayerState::World);
         app.add_observer(draw_options);

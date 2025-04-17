@@ -2,11 +2,11 @@ use bevy::prelude::*;
 
 use highlight::HighlightPlugin;
 use items::ItemsPlugin;
-use options::OptionsPlugin;
+use quickmenu::QuickMenuPlugin;
 use spawn::SpawnPlugin;
 
 mod items;
-mod options;
+mod quickmenu;
 mod spawn;
 
 pub mod highlight;
@@ -18,6 +18,6 @@ impl Plugin for EntitiesPlugin {
         app.add_plugins(SpawnPlugin)
             .add_plugins(HighlightPlugin)
             .add_plugins(ItemsPlugin)
-            .add_plugins(OptionsPlugin);
+            .add_plugins(QuickMenuPlugin);
     }
 }
