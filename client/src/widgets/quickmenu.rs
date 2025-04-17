@@ -71,7 +71,7 @@ impl Plugin for QuickMenuPlugin {
                 return_to_main_commands,
                 send_selected.before(ClientSet::Send),
             )
-                .run_if(in_state(PlayerState::Commands)),
+                .run_if(in_state(PlayerState::Dialog)),
         );
     }
 }
@@ -92,7 +92,7 @@ fn draw_options(
 
     let (slot_assignments, unit_position) = transform.get(*unit).unwrap();
 
-    next_state.set(PlayerState::Commands);
+    next_state.set(PlayerState::Dialog);
 
     commands.spawn((
         Sprite {

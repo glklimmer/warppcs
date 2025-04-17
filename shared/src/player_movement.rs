@@ -11,7 +11,7 @@ use crate::{
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PlayerState {
     World,
-    Commands,
+    Dialog,
 }
 
 pub struct PlayerMovement;
