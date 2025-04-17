@@ -11,7 +11,10 @@ use king::{
 use objects::{
     chest::{ChestSpriteSheet, play_chest_animation, set_chest_after_play_once},
     flag::FlagSpriteSheet,
-    items::weapons::WeaponsSpriteSheet,
+    items::{
+        chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
+        weapons::WeaponsSpriteSheet,
+    },
     portal::PortalSpriteSheet,
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
@@ -100,6 +103,9 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<ChestSpriteSheet>();
         app.init_resource::<PortalSpriteSheet>();
         app.init_resource::<WeaponsSpriteSheet>();
+        app.init_resource::<ChestsSpriteSheet>();
+        app.init_resource::<HeadsSpriteSheet>();
+        app.init_resource::<FeetSpriteSheet>();
 
         app.init_resource::<HorseSpriteSheet>();
         app.add_event::<AnimationTrigger<HorseAnimation>>();

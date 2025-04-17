@@ -10,7 +10,12 @@ use shared::{
 };
 
 use crate::{
-    animations::objects::items::weapons::{Weapons, WeaponsSpriteSheet},
+    animations::objects::items::{
+        chests::{Chests, ChestsSpriteSheet},
+        feet::{Feet, FeetSpriteSheet},
+        heads::{Heads, HeadsSpriteSheet},
+        weapons::{Weapons, WeaponsSpriteSheet},
+    },
     networking::ControlledPlayer,
 };
 
@@ -18,7 +23,10 @@ pub struct ItemsPlugin;
 
 impl Plugin for ItemsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(init_item_sprite)
+        app.add_observer(init_weapon_sprite)
+            .add_observer(init_chest_sprite)
+            .add_observer(init_head_sprite)
+            .add_observer(init_feet_sprite)
             .add_systems(Update, show_item_info);
     }
 }
@@ -26,7 +34,7 @@ impl Plugin for ItemsPlugin {
 #[derive(Component, Deref)]
 struct ItemInfo(Entity);
 
-fn init_item_sprite(
+fn init_weapon_sprite(
     trigger: Trigger<OnAdd, Item>,
     mut commands: Commands,
     mut weapons: Query<(&mut Sprite, &Item, &Transform)>,
@@ -58,6 +66,115 @@ fn init_item_sprite(
         index: animation.first_sprite_index,
     });
 
+    item_info(trigger.entity(), commands.reborrow(), item, transform);
+}
+
+fn init_chest_sprite(
+    trigger: Trigger<OnAdd, Item>,
+    mut commands: Commands,
+    mut weapons: Query<(&mut Sprite, &Item, &Transform)>,
+    sprite_sheets: Res<ChestsSpriteSheet>,
+) {
+    let Ok((mut sprite, item, transform)) = weapons.get_mut(trigger.entity()) else {
+        return;
+    };
+    let ItemType::Chest = item.item_type else {
+        return;
+    };
+
+    let sprite_sheet = &sprite_sheets.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+
+    let chest = fastrand::choice(vec![
+        Chests::Brown,
+        Chests::Blue,
+        Chests::Red,
+        Chests::Violet,
+        Chests::Green,
+        Chests::Beige,
+    ])
+    .unwrap();
+
+    let animation = sprite_sheet.animations.get(chest);
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+
+    item_info(trigger.entity(), commands.reborrow(), item, transform);
+}
+
+fn init_head_sprite(
+    trigger: Trigger<OnAdd, Item>,
+    mut commands: Commands,
+    mut weapons: Query<(&mut Sprite, &Item, &Transform)>,
+    sprite_sheets: Res<HeadsSpriteSheet>,
+) {
+    let Ok((mut sprite, item, transform)) = weapons.get_mut(trigger.entity()) else {
+        return;
+    };
+    let ItemType::Head = item.item_type else {
+        return;
+    };
+
+    let sprite_sheet = &sprite_sheets.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+
+    let head = fastrand::choice(vec![
+        Heads::Brown,
+        Heads::Blue,
+        Heads::Red,
+        Heads::Violet,
+        Heads::Green,
+        Heads::Beige,
+    ])
+    .unwrap();
+
+    let animation = sprite_sheet.animations.get(head);
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+
+    item_info(trigger.entity(), commands.reborrow(), item, transform);
+}
+
+fn init_feet_sprite(
+    trigger: Trigger<OnAdd, Item>,
+    mut commands: Commands,
+    mut weapons: Query<(&mut Sprite, &Item, &Transform)>,
+    sprite_sheets: Res<FeetSpriteSheet>,
+) {
+    let Ok((mut sprite, item, transform)) = weapons.get_mut(trigger.entity()) else {
+        return;
+    };
+    let ItemType::Feet = item.item_type else {
+        return;
+    };
+
+    let sprite_sheet = &sprite_sheets.sprite_sheet;
+    sprite.image = sprite_sheet.texture.clone();
+
+    let feet = fastrand::choice(vec![
+        Feet::Brown,
+        Feet::Blue,
+        Feet::Red,
+        Feet::Violet,
+        Feet::Green,
+        Feet::Beige,
+    ])
+    .unwrap();
+
+    let animation = sprite_sheet.animations.get(feet);
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+
+    item_info(trigger.entity(), commands.reborrow(), item, transform);
+}
+
+fn item_info(entity: Entity, mut commands: Commands, item: &Item, transform: &Transform) {
     let info = commands
         .spawn((
             Sprite {
@@ -138,7 +255,7 @@ fn init_item_sprite(
         })
         .id();
 
-    let mut item_entity = commands.entity(trigger.entity());
+    let mut item_entity = commands.entity(entity);
     item_entity.add_child(info);
     item_entity.insert(ItemInfo(info));
 }

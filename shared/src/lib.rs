@@ -10,6 +10,7 @@ use map::{
 };
 use networking::{Inventory, Mounted};
 use player_attacks::PlayerAttacks;
+use player_loadout::PlayerLoadout;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
 use server::{
@@ -33,6 +34,7 @@ pub mod enum_map;
 pub mod map;
 pub mod networking;
 pub mod player_attacks;
+pub mod player_loadout;
 pub mod player_movement;
 pub mod server;
 pub mod steamworks;
@@ -51,6 +53,7 @@ impl Plugin for SharedPlugin {
             RepliconRenetPlugins,
             PlayerMovement,
             PlayerAttacks,
+            PlayerLoadout,
             InteractPlugin,
         ))
         .init_resource::<ClientPlayerMap>()
