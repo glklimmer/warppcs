@@ -3,7 +3,7 @@ use bevy_replicon::prelude::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, server::entities::health::Health};
+use crate::{BoxCollider, networking::UnitType, server::entities::health::Health};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MainBuildingLevels {
@@ -19,14 +19,11 @@ pub enum BuildStatus {
     Destroyed,
 }
 
-#[derive(Component, Debug, Copy, Clone)]
-pub struct RecruitBuilding;
-
 pub struct Cost {
     pub gold: u16,
 }
 
-#[derive(Component, Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Component, Debug, Copy, Clone, Serialize, Deserialize)]
 #[require(
     Replicated,
     Transform,
@@ -34,11 +31,18 @@ pub struct Cost {
     Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
     BuildStatus(|| BuildStatus::Marker),
 )]
+pub struct RecruitBuilding;
+
+#[derive(Component, Debug, Copy, Clone, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    BoxCollider(marker_collider),
+    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
+    BuildStatus(|| BuildStatus::Marker),
+)]
 pub enum Building {
     MainBuilding { level: MainBuildingLevels },
-    Archer,
-    Warrior,
-    Pikeman,
+    Unit { weapon: UnitType },
     Wall { level: WallLevels },
     Tower,
     GoldFarm,
@@ -78,9 +82,7 @@ impl Building {
                 .next_level()
                 .map(|level| (Building::MainBuilding { level })),
             Building::Wall { level } => level.next_level().map(|level| (Building::Wall { level })),
-            Building::Archer => None,
-            Building::Warrior => None,
-            Building::Pikeman => None,
+            Building::Unit { weapon: _ } => None,
             Building::Tower => None,
             Building::GoldFarm => None,
         }
@@ -106,17 +108,21 @@ impl Building {
                     offset: Some(Vec2::new(0., 24.)),
                 },
             },
-            Building::Archer => BoxCollider {
-                dimension: Vec2::new(100., 50.),
-                offset: Some(Vec2::new(0., 25.)),
-            },
-            Building::Warrior => BoxCollider {
-                dimension: Vec2::new(80., 40.),
-                offset: Some(Vec2::new(0., 20.)),
-            },
-            Building::Pikeman => BoxCollider {
-                dimension: Vec2::new(80., 40.),
-                offset: Some(Vec2::new(0., 20.)),
+            Building::Unit { weapon } => match weapon {
+                UnitType::Shieldwarrior => BoxCollider {
+                    dimension: Vec2::new(80., 40.),
+                    offset: Some(Vec2::new(0., 20.)),
+                },
+                UnitType::Pikeman => BoxCollider {
+                    dimension: Vec2::new(80., 40.),
+                    offset: Some(Vec2::new(0., 20.)),
+                },
+                UnitType::Archer => BoxCollider {
+                    dimension: Vec2::new(100., 50.),
+                    offset: Some(Vec2::new(0., 25.)),
+                },
+                UnitType::Bandit => todo!(),
+                UnitType::Commander => todo!(),
             },
             Building::Wall { level } => match level {
                 WallLevels::Basic => BoxCollider {
@@ -143,13 +149,15 @@ impl Building {
         }
     }
 
+    pub fn marker_texture() -> &'static str {
+        "sprites/buildings/sign.png"
+    }
+
     pub fn texture(&self, status: BuildStatus) -> &'static str {
         match status {
             BuildStatus::Marker => match self {
                 Building::MainBuilding { level: _ } => "sprites/buildings/main_house_blue.png",
-                Building::Archer => "sprites/buildings/sign.png",
-                Building::Warrior => "sprites/buildings/sign.png",
-                Building::Pikeman => "sprites/buildings/sign.png",
+                Building::Unit { weapon: _ } => "sprites/buildings/sign.png",
                 Building::Wall { level: _ } => "sprites/buildings/sign.png",
                 Building::Tower => "",
                 Building::GoldFarm => "sprites/buildings/sign.png",
@@ -160,9 +168,13 @@ impl Building {
                     MainBuildingLevels::Hall => "sprites/buildings/main_hall.png",
                     MainBuildingLevels::Castle => "sprites/buildings/main_castle.png",
                 },
-                Building::Archer => "sprites/buildings/archer_house.png",
-                Building::Warrior => "sprites/buildings/warrior_house.png",
-                Building::Pikeman => "sprites/buildings/pike_man_house.png",
+                Building::Unit { weapon } => match weapon {
+                    UnitType::Archer => "sprites/buildings/archer_house.png",
+                    UnitType::Shieldwarrior => "sprites/buildings/warrior_house.png",
+                    UnitType::Pikeman => "sprites/buildings/pike_man_house.png",
+                    UnitType::Bandit => todo!(),
+                    UnitType::Commander => todo!(),
+                },
                 Building::Wall { level } => match level {
                     WallLevels::Basic => "sprites/buildings/wall_1.png",
                     WallLevels::Wood => "sprites/buildings/wall_2.png",
@@ -182,9 +194,7 @@ impl Building {
                 MainBuildingLevels::Hall => 3600.,
                 MainBuildingLevels::Castle => 6400.,
             },
-            Building::Archer => 800.,
-            Building::Warrior => 800.,
-            Building::Pikeman => 800.,
+            Building::Unit { weapon: _ } => 800.,
             Building::Wall { level } => match level {
                 WallLevels::Basic => 600.,
                 WallLevels::Wood => 1200.,
@@ -203,9 +213,7 @@ impl Building {
                 MainBuildingLevels::Hall => 1000,
                 MainBuildingLevels::Castle => 4000,
             },
-            Building::Archer => 200,
-            Building::Warrior => 200,
-            Building::Pikeman => 200,
+            Building::Unit { weapon: _ } => 200,
             Building::Wall { level } => match level {
                 WallLevels::Basic => 100,
                 WallLevels::Wood => 300,
@@ -215,6 +223,16 @@ impl Building {
             Building::GoldFarm => 200,
         };
         Cost { gold }
+    }
+
+    pub fn is_recruit_building(&self) -> bool {
+        match self {
+            Building::MainBuilding { level: _ } => true,
+            Building::Unit { weapon: _ } => true,
+            Building::Wall { level: _ } => false,
+            Building::Tower => false,
+            Building::GoldFarm => false,
+        }
     }
 }
 

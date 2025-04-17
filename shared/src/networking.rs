@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use super::enum_map::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, horse_collider, server::players::items::Item};
+use crate::{BoxCollider, horse_collider, map::buildings::Cost, server::players::items::Item};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -28,6 +28,18 @@ pub enum UnitType {
     Archer,
     Bandit,
     Commander,
+}
+impl UnitType {
+    pub fn recruitment_cost(&self) -> Cost {
+        let gold = match self {
+            UnitType::Shieldwarrior => 50,
+            UnitType::Pikeman => 50,
+            UnitType::Archer => 50,
+            UnitType::Bandit => todo!(),
+            UnitType::Commander => 100,
+        };
+        Cost { gold }
+    }
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]

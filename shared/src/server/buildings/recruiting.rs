@@ -7,7 +7,7 @@ use crate::{
     BoxCollider, Faction, Owner, flag_collider,
     map::{
         Layers,
-        buildings::{Building, Cost},
+        buildings::{Building, RecruitBuilding},
     },
     networking::{Inventory, UnitType},
     server::{
@@ -41,7 +41,7 @@ pub struct FlagAssignment(pub Entity, pub Vec2);
 #[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
     player: Entity,
-    building_type: Building,
+    unit_type: UnitType,
 }
 
 pub fn recruit(
@@ -59,11 +59,8 @@ pub fn recruit(
             Layers::Flag.as_f32(),
         );
 
-        if let Some(cost) = recruitment_cost(&event.building_type) {
-            inventory.gold -= cost.gold;
-        } else {
-            continue;
-        }
+        let cost = &event.unit_type.recruitment_cost();
+        inventory.gold -= cost.gold;
 
         let owner = Owner(Faction::Player(player));
         // TODO: Refactor with Bevy 0.16 Parent API
@@ -81,12 +78,12 @@ pub fn recruit(
 
         commands.entity(player).insert(FlagHolder(flag_entity));
 
-        let (unit_type, unit_amount) = match event.building_type {
-            Building::Archer => (UnitType::Archer, 4),
-            Building::Warrior => (UnitType::Shieldwarrior, 4),
-            Building::Pikeman => (UnitType::Pikeman, 4),
-            Building::MainBuilding { level: _ } => (UnitType::Commander, 1),
-            Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => continue,
+        let (unit_type, unit_amount) = match event.unit_type {
+            UnitType::Shieldwarrior => (UnitType::Shieldwarrior, 4),
+            UnitType::Pikeman => (UnitType::Pikeman, 4),
+            UnitType::Archer => (UnitType::Archer, 4),
+            UnitType::Bandit => todo!(),
+            UnitType::Commander => (UnitType::Commander, 1),
         };
 
         let unit = Unit {
@@ -134,7 +131,7 @@ pub fn check_recruit(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut recruit: EventWriter<RecruitEvent>,
     player: Query<&Inventory>,
-    building: Query<&Building>,
+    building: Query<&Building, With<RecruitBuilding>>,
 ) {
     for event in interactions.read() {
         let InteractionType::Recruit = &event.interaction else {
@@ -142,30 +139,19 @@ pub fn check_recruit(
         };
         let inventory = player.get(event.player).unwrap();
         let building = building.get(event.interactable).unwrap();
+        let Building::Unit { weapon: unit_type } = *building else {
+            continue;
+        };
 
-        if let Some(cost) = recruitment_cost(building) {
-            if !inventory.gold.ge(&cost.gold) {
-                println!("Not enough gold for recruitment");
-                continue;
-            }
-        } else {
+        let cost = unit_type.recruitment_cost();
+        if !inventory.gold.ge(&cost.gold) {
+            println!("Not enough gold for recruitment");
             continue;
         }
 
         recruit.send(RecruitEvent {
             player: event.player,
-            building_type: *building,
+            unit_type,
         });
     }
-}
-
-fn recruitment_cost(building_type: &Building) -> Option<Cost> {
-    let gold = match building_type {
-        Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => return None,
-        Building::Archer => 50,
-        Building::Warrior => 50,
-        Building::Pikeman => 50,
-        Building::MainBuilding { level: _ } => 100,
-    };
-    Some(Cost { gold })
 }
