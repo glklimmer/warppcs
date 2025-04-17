@@ -5,7 +5,7 @@ use recruiting::{RecruitEvent, check_recruit, recruit};
 
 use crate::{
     Owner,
-    map::buildings::{BuildStatus, Building, RecruitBuilding},
+    map::buildings::{BuildStatus, Building},
     networking::Inventory,
     server::players::interaction::Interactable,
 };
@@ -106,7 +106,7 @@ fn check_building_interaction(
 fn construct_building(
     mut commands: Commands,
     mut builds: EventReader<BuildingConstruction>,
-    building_query: Query<(&Owner, Option<&RecruitBuilding>)>,
+    building_query: Query<(&Owner, &Building)>,
     mut inventory: Query<&mut Inventory>,
 ) {
     for build in builds.read() {
@@ -121,9 +121,9 @@ fn construct_building(
             building_entity.remove::<Interactable>();
         }
 
-        let (owner, maybe_recruit) = building_query.get(build.0.entity).unwrap();
+        let (owner, building) = building_query.get(build.0.entity).unwrap();
 
-        if maybe_recruit.is_some() {
+        if building.is_recruit_building() {
             building_entity.insert(Interactable {
                 kind: InteractionType::Recruit,
                 restricted_to: Some(*owner),

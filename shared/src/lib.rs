@@ -6,7 +6,7 @@ use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d, sprite::Anchor};
 use bevy_replicon_renet::RepliconRenetPlugins;
 use map::{
     Layers,
-    buildings::{BuildStatus, Building},
+    buildings::{BuildStatus, Building, RecruitBuilding},
 };
 use networking::{Inventory, Mounted};
 use player_attacks::PlayerAttacks;
@@ -68,6 +68,7 @@ impl Plugin for SharedPlugin {
         .replicate::<Mounted>()
         .replicate_mapped::<Interactable>()
         .replicate_group::<(Player, Transform, Inventory)>()
+        .replicate_group::<(RecruitBuilding, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
         .replicate_group::<(ProjectileType, Transform)>()
