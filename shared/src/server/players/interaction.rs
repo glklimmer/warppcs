@@ -27,6 +27,7 @@ pub struct Interactable {
 #[derive(Event, Clone, Copy, Serialize, Deserialize)]
 pub struct InteractableSound {
     pub kind: InteractionType,
+    pub spatial_position: Vec3,
 }
 
 impl MapEntities for Interactable {
