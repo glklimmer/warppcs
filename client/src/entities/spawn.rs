@@ -4,7 +4,7 @@ use bevy_parallax::CameraFollow;
 use bevy_replicon::client::ClientSet;
 use shared::{
     ChestAnimation, Player, SetLocalPlayer,
-    map::buildings::{BuildStatus, Building},
+    map::buildings::{BuildStatus, Building, RecruitBuilding},
     server::{
         buildings::recruiting::Flag,
         entities::{Unit, UnitAnimation},
@@ -37,6 +37,7 @@ pub struct SpawnPlugin;
 impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_player_sprite)
+            .add_observer(init_recruit_building_sprite)
             .add_observer(init_building_sprite)
             .add_observer(init_unit_sprite)
             .add_observer(init_flag_sprite)
@@ -85,6 +86,22 @@ fn init_player_sprite(
     });
     let mut commands = commands.entity(trigger.entity());
     commands.insert((animation.clone(), KingAnimation::default()));
+}
+
+fn init_recruit_building_sprite(
+    trigger: Trigger<OnAdd, RecruitBuilding>,
+    mut slots: Query<(&mut Sprite, &BuildStatus, Option<&Building>)>,
+    asset_server: Res<AssetServer>,
+) {
+    let Ok((mut sprite, status, maybe_building)) = slots.get_mut(trigger.entity()) else {
+        return;
+    };
+
+    if let Some(building) = maybe_building {
+        sprite.image = asset_server.load::<Image>(building.texture(*status));
+    } else {
+        sprite.image = asset_server.load::<Image>(Building::marker_texture());
+    }
 }
 
 fn init_building_sprite(

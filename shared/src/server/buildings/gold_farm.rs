@@ -22,9 +22,9 @@ impl Default for GoldFarmTimer {
 
 pub fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingConstruction>) {
     for build in builds.read() {
-        if build.0.building_type.ne(&Building::GoldFarm) {
+        let Building::GoldFarm = build.0.building_type else {
             continue;
-        }
+        };
 
         println!("Bought Gold Farm");
 
