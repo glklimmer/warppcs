@@ -32,7 +32,10 @@ enum MenuEntries {
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
-struct Next(MenuEntries);
+struct LeftEntry(MenuEntries);
+
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+struct RightEntry(MenuEntries);
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
 struct Branches(MenuEntries);
@@ -64,7 +67,8 @@ impl Plugin for QuickMenuPlugin {
         app.add_systems(
             Update,
             (
-                cycle_commands,
+                cycle_right_commands,
+                cycle_left_commands,
                 branch_into_command,
                 return_to_main_menu,
                 send_selected.before(ClientSet::Send),
@@ -103,7 +107,9 @@ fn draw_commander_interaction(
             .offset_y(25.)
             .with_layer(Layers::Item),
         MainMenuEntries::Map,
-        Next(MenuEntries::Main(MainMenuEntries::Slots)),
+        LeftEntry(MenuEntries::Main(MainMenuEntries::Slots)),
+        RightEntry(MenuEntries::Main(MainMenuEntries::Slots)),
+        Branches(MenuEntries::Main(MainMenuEntries::Map)),
         Selected,
     ));
 
@@ -120,7 +126,8 @@ fn draw_commander_interaction(
             .offset_y(25.)
             .with_layer(Layers::Item),
         MainMenuEntries::Slots,
-        Next(MenuEntries::Main(MainMenuEntries::Test)),
+        LeftEntry(MenuEntries::Main(MainMenuEntries::Map)),
+        RightEntry(MenuEntries::Main(MainMenuEntries::Map)),
         Branches(MenuEntries::Slot(Slot::Front)),
     ));
 
@@ -142,7 +149,8 @@ fn draw_commander_interaction(
                 .offset_y(35.)
                 .with_layer(Layers::Item),
             Slot::Front,
-            Next(MenuEntries::Slot(Slot::Middle)),
+            LeftEntry(MenuEntries::Slot(Slot::Back)),
+            RightEntry(MenuEntries::Slot(Slot::Middle)),
             Visibility::Hidden,
         ))
         .insert_if(Active, || slot_assignments.front.is_some());
@@ -165,7 +173,8 @@ fn draw_commander_interaction(
                 .offset_y(35.)
                 .with_layer(Layers::Item),
             Slot::Middle,
-            Next(MenuEntries::Slot(Slot::Back)),
+            LeftEntry(MenuEntries::Slot(Slot::Front)),
+            RightEntry(MenuEntries::Slot(Slot::Back)),
             Visibility::Hidden,
         ))
         .insert_if(Active, || slot_assignments.middle.is_some());
@@ -188,24 +197,25 @@ fn draw_commander_interaction(
                 .offset_y(35.)
                 .with_layer(Layers::Item),
             Slot::Back,
-            Next(MenuEntries::Slot(Slot::Front)),
+            LeftEntry(MenuEntries::Slot(Slot::Middle)),
+            RightEntry(MenuEntries::Slot(Slot::Front)),
             Visibility::Hidden,
         ))
         .insert_if(Active, || slot_assignments.back.is_some());
 }
 
-fn cycle_commands(
+fn cycle_right_commands(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
-    main: Query<(Entity, &MainMenuEntries, &Next)>,
-    slots: Query<(Entity, &Slot, &Next)>,
-    selected_query: Query<(Entity, &Next), With<Selected>>,
+    main: Query<(Entity, &MainMenuEntries, &RightEntry)>,
+    slots: Query<(Entity, &Slot, &RightEntry)>,
+    selected_query: Query<(Entity, &RightEntry), With<Selected>>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyD) {
-        let (entity, next) = selected_query.single();
+        let (entity, right) = selected_query.single();
         commands.entity(entity).remove::<Selected>();
 
-        let next_menu_entry = match next.0 {
+        let right_menu_entry = match right.0 {
             MenuEntries::Main(main_options) => {
                 main.iter()
                     .find(|(_, m, _)| m.eq(&&main_options))
@@ -220,7 +230,37 @@ fn cycle_commands(
                     .0
             }
         };
-        commands.entity(next_menu_entry).insert(Selected);
+        commands.entity(right_menu_entry).insert(Selected);
+    }
+}
+
+fn cycle_left_commands(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut commands: Commands,
+    main: Query<(Entity, &MainMenuEntries, &LeftEntry)>,
+    slots: Query<(Entity, &Slot, &LeftEntry)>,
+    selected_query: Query<(Entity, &LeftEntry), With<Selected>>,
+) {
+    if keyboard.just_pressed(KeyCode::KeyA) {
+        let (entity, left) = selected_query.single();
+        commands.entity(entity).remove::<Selected>();
+
+        let left_menu_entry = match left.0 {
+            MenuEntries::Main(main_options) => {
+                main.iter()
+                    .find(|(_, m, _)| m.eq(&&main_options))
+                    .unwrap()
+                    .0
+            }
+            MenuEntries::Slot(slot_options) => {
+                slots
+                    .iter()
+                    .find(|(_, m, _)| m.eq(&&slot_options))
+                    .unwrap()
+                    .0
+            }
+        };
+        commands.entity(left_menu_entry).insert(Selected);
     }
 }
 
@@ -232,6 +272,10 @@ fn branch_into_command(
 ) {
     if keyboard.just_pressed(KeyCode::KeyW) {
         let (entity, branch) = selected_query.single();
+
+        if branch.is_none() {
+            return;
+        }
 
         let MenuEntries::Slot(variant) = branch.unwrap().0 else {
             return;
@@ -252,9 +296,9 @@ fn return_to_main_menu(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     main_menu_entries: Query<(Entity, &MainMenuEntries, &Branches)>,
-    slots: Query<(Entity, &Slot, &Next)>,
+    slots: Query<(Entity, &Slot, &RightEntry)>,
     selected_query: Query<(Entity, Option<&MainMenuEntries>), With<Selected>>,
-    all: Query<Entity, With<Next>>,
+    all: Query<Entity, With<RightEntry>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyS) {
@@ -296,6 +340,10 @@ fn send_selected(
 ) {
     if keyboard.just_pressed(KeyCode::KeyF) {
         let (mut sprite, slot, active) = selected_query.single_mut();
+
+        if slot.is_none() {
+            return;
+        }
 
         let empty_slot: Handle<Image> = asset_server.load("ui/commander/slot_empty.png");
         let full_slot: Handle<Image> = asset_server.load("ui/commander/slot_full.png");
