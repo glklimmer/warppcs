@@ -16,7 +16,6 @@ pub struct QuickMenuPlugin;
 enum MainMenuEntries {
     Map,
     Slots,
-    Test,
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
@@ -123,22 +122,6 @@ fn draw_commander_interaction(
         MainMenuEntries::Slots,
         Next(MenuEntries::Main(MainMenuEntries::Test)),
         Branches(MenuEntries::Slot(Slot::Front)),
-    ));
-
-    commands.spawn((
-        Sprite {
-            image: asset_server.load("ui/commander/map.png"),
-            custom_size: Some(Vec2::new(10., 10.)),
-            color: Color::Srgba(GREY),
-            ..default()
-        },
-        unit_position
-            .translation
-            .offset_x(15.5)
-            .offset_y(25.)
-            .with_layer(Layers::Item),
-        MainMenuEntries::Test,
-        Next(MenuEntries::Main(MainMenuEntries::Map)),
     ));
 
     let front = match slot_assignments.front {
