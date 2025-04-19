@@ -1,18 +1,30 @@
-use bevy::{prelude::*, utils::HashMap};
-use bevy_replicon::prelude::{SendMode, ServerTriggerExt, ToClients};
+use bevy::{ecs::entity::MapEntities, prelude::*};
+
+use bevy::utils::HashMap;
+use bevy_replicon::prelude::{
+    AppRuleExt, Channel, SendMode, ServerTriggerAppExt, ServerTriggerExt, ToClients,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ClientPlayerMap, Vec3LayerExt,
+    ClientPlayerMap,
     enum_map::*,
-    map::Layers,
     server::players::{
         interaction::{InteractionTriggeredEvent, InteractionType},
-        items::{Item, ItemType},
+        items::Item,
     },
 };
 
-#[derive(Copy, Clone, Debug, Mappable)]
+pub struct ItemAssignmentPlugins;
+
+impl Plugin for ItemAssignmentPlugins {
+    fn build(&self, app: &mut App) {
+        app.replicate::<ItemAssignment>()
+            .add_mapped_server_trigger::<OpenItemAssignment>(Channel::Ordered);
+    }
+}
+
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, Mappable)]
 pub enum Slot {
     Weapon,
     Chest,
@@ -20,9 +32,9 @@ pub enum Slot {
     Feet,
 }
 
-#[derive(Component)]
+#[derive(Component, Serialize, Deserialize)]
 pub struct ItemAssignment {
-    items: EnumMap<Slot, Option<Item>>,
+    pub items: EnumMap<Slot, Option<Item>>,
 }
 
 impl Default for ItemAssignment {
@@ -39,7 +51,15 @@ impl Default for ItemAssignment {
 }
 
 #[derive(Event, Deserialize, Serialize)]
-pub struct OpenItemAssignment;
+pub struct OpenItemAssignment {
+    pub building: Entity,
+}
+
+impl MapEntities for OpenItemAssignment {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.building = entity_mapper.map_entity(self.building);
+    }
+}
 
 #[derive(Resource, Deref, DerefMut)]
 pub struct ActiveBuilding(HashMap<Entity, Entity>);
@@ -57,7 +77,9 @@ pub fn open_assignment_dialog(
 
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client_player_map.get_network_entity(&event.player).unwrap()),
-            event: OpenItemAssignment,
+            event: OpenItemAssignment {
+                building: event.interactable,
+            },
         });
 
         active.insert(event.player, event.interactable);

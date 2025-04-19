@@ -1,5 +1,17 @@
 use bevy::prelude::*;
-use shared::{Vec3LayerExt, server::buildings::item_assignment::ItemAssignment};
+use shared::{
+    Vec3LayerExt,
+    map::Layers,
+    server::{
+        buildings::item_assignment::{ItemAssignment, OpenItemAssignment},
+        players::items::ItemType,
+    },
+};
+
+use crate::animations::objects::items::{
+    chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
+    weapons::WeaponsSpriteSheet,
+};
 
 pub struct ItemAssignmentPlugin;
 
@@ -10,11 +22,16 @@ impl Plugin for ItemAssignmentPlugin {
 }
 
 fn open_assignment_dialog(
+    trigger: Trigger<OpenItemAssignment>,
     mut commands: Commands,
     building: Query<(&Transform, &ItemAssignment)>,
     asset_server: Res<AssetServer>,
+    weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
+    chests_sprite_sheet: Res<ChestsSpriteSheet>,
+    heads_sprite_sheet: Res<HeadsSpriteSheet>,
+    feet_sprite_sheet: Res<FeetSpriteSheet>,
 ) {
-    let (transform, assignment) = building.get(event.interactable).unwrap();
+    let (transform, assignment) = building.get(trigger.building).unwrap();
     let translation = transform.translation;
 
     for maybe_slot in assignment.items.iter() {
@@ -30,16 +47,23 @@ fn open_assignment_dialog(
             continue;
         };
 
-        match item.item_type {
-            ItemType::Weapon(_) => todo!(),
+        // TODO: trait for sprite sheets?
+        let sprite_sheet = match item.item_type {
+            ItemType::Weapon(_) => weapons_sprite_sheet,
             ItemType::Chest => todo!(),
             ItemType::Feet => todo!(),
             ItemType::Head => todo!(),
-        }
+        };
+
+        let animation = sprite_sheet.animations.get(item.item_type);
+        sprite.texture_atlas = Some(TextureAtlas {
+            layout: sprite_sheet.layout.clone(),
+            index: animation.first_sprite_index,
+        });
 
         commands.spawn(
             (Sprite {
-                image: todo!(),
+                image,
                 ..Default::default()
             }),
         );
