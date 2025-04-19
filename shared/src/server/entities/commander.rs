@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     ClientPlayerMap,
     server::{
-        buildings::recruiting::FlagHolder,
+        buildings::recruiting::{FlagAssignment, FlagHolder},
         physics::attachment::AttachedTo,
         players::interaction::{InteractionTriggeredEvent, InteractionType},
     },
@@ -178,14 +178,19 @@ fn handle_slot_selection(
 fn assign_flag_to_slot(
     trigger: Trigger<SlotInteraction>,
     mut commands: Commands,
-    mut slots: Query<&mut SlotsAssignments>,
+    mut slots: Query<(&mut SlotsAssignments, &FlagAssignment)>,
 ) {
     let SlotCommand::Assign = trigger.command else {
         return;
     };
 
-    let mut slot_assignments = slots.get_mut(trigger.commander).unwrap();
+    let (mut slot_assignments, flag_assignment) = slots.get_mut(trigger.commander).unwrap();
     let flag = trigger.flag.unwrap();
+
+    // Prevent assigning own flag
+    if flag_assignment.0 == flag {
+        return;
+    }
 
     match trigger.selected_slot {
         SlotSelection::Front => slot_assignments.front = Some(flag),
