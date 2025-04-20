@@ -7,7 +7,7 @@ use crate::server::players::interaction::InteractionType;
 
 use super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
-    entities::Unit,
+    entities::{Unit, commander::SlotsAssignments},
     players::interaction::{Interactable, InteractionTriggeredEvent},
 };
 use crate::{BoxCollider, map::Layers};
@@ -49,6 +49,7 @@ fn travel(
     mut commands: Commands,
     mut traveling: EventReader<InteractionTriggeredEvent>,
     flag_holders: Query<&FlagHolder>,
+    commanders: Query<(&FlagAssignment, &SlotsAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
     destination: Query<&TravelDestination>,
     transform: Query<&Transform>,
@@ -61,17 +62,35 @@ fn travel(
         let player_entity = event.player;
         let destination = destination.get(event.interactable).unwrap();
         let target_position = transform.get(**destination).unwrap().translation;
+        let flag_holder = flag_holders.get(player_entity);
+
         info!("Travel happening to target position: {:?}", target_position);
 
-        let group = match flag_holders.get(player_entity) {
-            Ok(flag_holder) => Some(FlagGroup {
-                flag: flag_holder.0,
-                units: units_on_flag
+        let mut travel_entities = Vec::new();
+
+        if let Ok(flag_holder) = flag_holder {
+            units_on_flag
+                .iter()
+                .filter(|(_, assignment, _)| assignment.0 == flag_holder.0)
+                .for_each(|(entity, _, _)| travel_entities.push(entity));
+
+            let commander = commanders
+                .iter()
+                .find(|(assignment, _)| assignment.0.eq(&flag_holder.0));
+
+            if let Some((_, slots_assignments)) = commander {
+                units_on_flag
                     .iter()
-                    .filter(|(_, assignment, _)| assignment.0.eq(&flag_holder.0))
-                    .collect(),
-            }),
-            Err(_) => None,
+                    .filter(|(_, assignment, _)| {
+                        let possible_positions = vec![
+                            slots_assignments.front,
+                            slots_assignments.middle,
+                            slots_assignments.back,
+                        ];
+                        possible_positions.contains(&Some(assignment.0))
+                    })
+                    .for_each(|(entity, _, _)| travel_entities.push(entity));
+            };
         };
 
         commands
@@ -79,12 +98,11 @@ fn travel(
             .insert(Transform::from_translation(
                 target_position.with_z(Layers::Player.as_f32()),
             ));
-        if let Some(group) = &group {
-            for (unit, _, _) in &group.units {
-                commands.entity(*unit).insert(Transform::from_translation(
-                    target_position.with_z(Layers::Flag.as_f32()),
-                ));
-            }
+
+        for group in travel_entities {
+            commands.entity(group).insert(Transform::from_translation(
+                target_position.with_z(Layers::Flag.as_f32()),
+            ));
         }
     }
 }
