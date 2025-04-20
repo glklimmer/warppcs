@@ -80,10 +80,6 @@ fn travel(
                 target_position.with_z(Layers::Player.as_f32()),
             ));
         if let Some(group) = &group {
-            commands.entity(group.flag).insert(
-                Transform::from_translation(target_position.with_z(Layers::Unit.as_f32()))
-                    .with_scale(Vec3::splat(1. / 3.)),
-            );
             for (unit, _, _) in &group.units {
                 commands.entity(*unit).insert(Transform::from_translation(
                     target_position.with_z(Layers::Flag.as_f32()),
