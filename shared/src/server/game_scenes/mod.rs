@@ -45,11 +45,6 @@ impl Plugin for GameScenesPlugin {
     }
 }
 
-struct FlagGroup<'a> {
-    flag: Entity,
-    units: Vec<(Entity, &'a FlagAssignment, &'a Unit)>,
-}
-
 fn travel(
     mut commands: Commands,
     mut traveling: EventReader<InteractionTriggeredEvent>,
