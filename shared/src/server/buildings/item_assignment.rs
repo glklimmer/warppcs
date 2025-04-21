@@ -1,18 +1,32 @@
-use bevy::{prelude::*, utils::HashMap};
-use bevy_replicon::prelude::{SendMode, ServerTriggerExt, ToClients};
+use std::fmt;
+
+use bevy::prelude::*;
+
+use bevy::{ecs::entity::MapEntities, utils::HashMap};
+use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ClientPlayerMap, Vec3LayerExt,
+    ClientPlayerMap,
     enum_map::*,
-    map::Layers,
     server::players::{
         interaction::{InteractionTriggeredEvent, InteractionType},
-        items::{Item, ItemType},
+        items::Item,
     },
 };
 
-#[derive(Copy, Clone, Debug, Mappable)]
+pub struct ItemAssignmentPlugins;
+
+impl Plugin for ItemAssignmentPlugins {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<ActiveBuilding>().add_systems(
+            Update,
+            start_assignment_dialog.run_if(on_event::<InteractionTriggeredEvent>),
+        );
+    }
+}
+
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, Mappable)]
 pub enum Slot {
     Weapon,
     Chest,
@@ -20,9 +34,10 @@ pub enum Slot {
     Feet,
 }
 
-#[derive(Component)]
+#[derive(Component, Serialize, Deserialize)]
+#[require(Replicated)]
 pub struct ItemAssignment {
-    items: EnumMap<Slot, Option<Item>>,
+    pub items: EnumMap<Slot, Option<Item>>,
 }
 
 impl Default for ItemAssignment {
@@ -39,12 +54,20 @@ impl Default for ItemAssignment {
 }
 
 #[derive(Event, Deserialize, Serialize)]
-pub struct OpenItemAssignment;
+pub struct OpenItemAssignment {
+    pub building: Entity,
+}
 
-#[derive(Resource, Deref, DerefMut)]
+impl MapEntities for OpenItemAssignment {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.building = entity_mapper.map_entity(self.building);
+    }
+}
+
+#[derive(Resource, Default, Deref, DerefMut)]
 pub struct ActiveBuilding(HashMap<Entity, Entity>);
 
-pub fn open_assignment_dialog(
+pub fn start_assignment_dialog(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut commands: Commands,
     mut active: ResMut<ActiveBuilding>,
@@ -57,7 +80,9 @@ pub fn open_assignment_dialog(
 
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client_player_map.get_network_entity(&event.player).unwrap()),
-            event: OpenItemAssignment,
+            event: OpenItemAssignment {
+                building: event.interactable,
+            },
         });
 
         active.insert(event.player, event.interactable);

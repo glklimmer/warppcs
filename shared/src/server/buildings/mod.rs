@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use gold_farm::{enable_goldfarm, gold_farm_output};
+use item_assignment::ItemAssignmentPlugins;
 use recruiting::{RecruitEvent, check_recruit, recruit};
 
 use crate::{
@@ -14,6 +15,7 @@ use super::players::interaction::{InteractionTriggeredEvent, InteractionType};
 
 mod gold_farm;
 
+pub mod item_assignment;
 pub mod recruiting;
 
 pub struct CommonBuildingInfo {
@@ -32,25 +34,28 @@ pub struct BuildingsPlugins;
 
 impl Plugin for BuildingsPlugins {
     fn build(&self, app: &mut App) {
-        app.add_event::<RecruitEvent>();
-        app.add_event::<BuildingConstruction>();
-        app.add_event::<BuildingUpgrade>();
+        app.add_plugins(ItemAssignmentPlugins)
+            .add_event::<RecruitEvent>()
+            .add_event::<BuildingConstruction>()
+            .add_event::<BuildingUpgrade>();
 
         app.add_systems(
             FixedUpdate,
             (
-                (check_recruit, check_building_interaction)
-                    .run_if(on_event::<InteractionTriggeredEvent>),
+                gold_farm_output,
                 (
-                    (construct_building, enable_goldfarm).run_if(on_event::<BuildingConstruction>),
-                    (upgrade_building,).run_if(on_event::<BuildingUpgrade>),
-                    recruit.run_if(on_event::<RecruitEvent>),
-                ),
-            )
-                .chain(),
+                    (check_recruit, check_building_interaction)
+                        .run_if(on_event::<InteractionTriggeredEvent>),
+                    (
+                        (construct_building, enable_goldfarm)
+                            .run_if(on_event::<BuildingConstruction>),
+                        (upgrade_building,).run_if(on_event::<BuildingUpgrade>),
+                        recruit.run_if(on_event::<RecruitEvent>),
+                    ),
+                )
+                    .chain(),
+            ),
         );
-
-        app.add_systems(FixedUpdate, gold_farm_output);
     }
 }
 

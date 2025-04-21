@@ -14,7 +14,10 @@ use player_loadout::PlayerLoadout;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
 use server::{
-    buildings::recruiting::Flag,
+    buildings::{
+        item_assignment::{ItemAssignment, OpenItemAssignment},
+        recruiting::Flag,
+    },
     entities::{
         Unit,
         commander::{CommanderInteraction, SlotSelection, SlotsAssignments},
@@ -62,11 +65,12 @@ impl Plugin for SharedPlugin {
         .init_resource::<ClientPlayerMap>()
         .replicate::<Moving>()
         .replicate::<Grounded>()
-        .replicate_mapped::<AttachedTo>()
-        .replicate_mapped::<SlotsAssignments>()
         .replicate::<BoxCollider>()
         .replicate::<Mounted>()
+        .replicate::<ItemAssignment>()
         .replicate_mapped::<Interactable>()
+        .replicate_mapped::<AttachedTo>()
+        .replicate_mapped::<SlotsAssignments>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
@@ -80,6 +84,7 @@ impl Plugin for SharedPlugin {
         .add_client_trigger::<SlotSelection>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
+        .add_mapped_server_trigger::<OpenItemAssignment>(Channel::Ordered)
         .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)

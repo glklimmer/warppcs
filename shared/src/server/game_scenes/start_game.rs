@@ -9,6 +9,7 @@ use crate::{
     },
     networking::{LobbyEvent, MountType, UnitType},
     server::{
+        buildings::item_assignment::ItemAssignment,
         entities::{Unit, health::Health},
         players::{
             chest::Chest,
@@ -165,6 +166,7 @@ fn player_base(
     ));
     commands.spawn((
         RecruitBuilding,
+        ItemAssignment::default(),
         offset.offset_x(135.).with_layer(Layers::Building),
         owner,
         Interactable {
@@ -174,6 +176,7 @@ fn player_base(
     ));
     commands.spawn((
         RecruitBuilding,
+        ItemAssignment::default(),
         offset.offset_x(-135.).with_layer(Layers::Building),
         owner,
         Interactable {
@@ -183,6 +186,7 @@ fn player_base(
     ));
     commands.spawn((
         RecruitBuilding,
+        ItemAssignment::default(),
         offset.offset_x(235.).with_layer(Layers::Building),
         owner,
         Interactable {
