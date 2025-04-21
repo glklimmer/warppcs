@@ -17,4 +17,5 @@ pub enum Layers {
     Item,
     Player,
     Wall,
+    UI,
 }
