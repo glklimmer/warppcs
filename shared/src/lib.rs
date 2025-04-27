@@ -15,7 +15,9 @@ use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
 use server::{
     buildings::{
-        item_assignment::{ItemAssignment, OpenItemAssignment},
+        item_assignment::{
+            AssignItem, CloseBuildingDialog, ItemAssignment, OpenBuildingDialog, StartBuild,
+        },
         recruiting::Flag,
     },
     entities::{
@@ -82,9 +84,12 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Chest, Transform)>()
         .replicate_group::<(Item, Transform)>()
         .add_client_trigger::<SlotSelection>(Channel::Ordered)
+        .add_client_trigger::<AssignItem>(Channel::Ordered)
+        .add_client_trigger::<StartBuild>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
+        .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
-        .add_mapped_server_trigger::<OpenItemAssignment>(Channel::Ordered)
+        .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
         .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
@@ -315,6 +320,6 @@ impl Vec3LayerExt for Vec3 {
     }
 
     fn with_layer(self, layer: Layers) -> Transform {
-        Transform::from_translation(self.offset_z(layer.as_f32()))
+        Transform::from_translation(Vec3::new(self.x, self.y, layer.as_f32()))
     }
 }
