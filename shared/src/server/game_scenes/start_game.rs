@@ -147,6 +147,7 @@ fn player_base(
         BuildStatus::Built,
         offset.with_layer(Layers::Building),
         owner,
+        RecruitBuilding,
         Interactable {
             kind: InteractionType::Recruit,
             restricted_to: Some(owner),
@@ -163,32 +164,29 @@ fn player_base(
         offset.offset_x(-50.).with_layer(Layers::Chest),
     ));
     commands.spawn((
-        Building::Archer,
         RecruitBuilding,
         offset.offset_x(135.).with_layer(Layers::Building),
         owner,
         Interactable {
-            kind: InteractionType::Building,
+            kind: InteractionType::ItemAssignment,
             restricted_to: Some(owner),
         },
     ));
     commands.spawn((
-        Building::Warrior,
         RecruitBuilding,
         offset.offset_x(-135.).with_layer(Layers::Building),
         owner,
         Interactable {
-            kind: InteractionType::Building,
+            kind: InteractionType::ItemAssignment,
             restricted_to: Some(owner),
         },
     ));
     commands.spawn((
-        Building::Pikeman,
         RecruitBuilding,
         offset.offset_x(235.).with_layer(Layers::Building),
         owner,
         Interactable {
-            kind: InteractionType::Building,
+            kind: InteractionType::ItemAssignment,
             restricted_to: Some(owner),
         },
     ));

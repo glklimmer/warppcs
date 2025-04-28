@@ -10,6 +10,7 @@ use crate::{BoxCollider, ClientPlayerMap, Faction, Owner, PlayerState};
 pub enum InteractionType {
     Recruit,
     Flag,
+    ItemAssignment,
     Building,
     Mount,
     Travel,
