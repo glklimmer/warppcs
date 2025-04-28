@@ -18,6 +18,7 @@ use objects::{
     portal::PortalSpriteSheet,
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
+use ui::item_info::ItemInfoSpriteSheet;
 use units::{
     UnitSpriteSheets, set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation,
     set_unit_walking, trigger_unit_animation,
@@ -26,6 +27,7 @@ use units::{
 pub mod animals;
 pub mod king;
 pub mod objects;
+pub mod ui;
 pub mod units;
 
 #[derive(Clone)]
@@ -109,6 +111,8 @@ impl Plugin for AnimationPlugin {
 
         app.init_resource::<HorseSpriteSheet>();
         app.add_event::<AnimationTrigger<HorseAnimation>>();
+
+        app.init_resource::<ItemInfoSpriteSheet>();
 
         app.add_systems(
             PreUpdate,

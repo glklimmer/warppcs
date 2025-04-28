@@ -1,8 +1,7 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor, text::TextBounds};
 
-use bevy::math::bounding::IntersectsVolume;
 use shared::{
-    BoxCollider, Vec3LayerExt,
+    Vec3LayerExt,
     enum_map::EnumIter,
     map::Layers,
     server::players::items::{
@@ -10,25 +9,27 @@ use shared::{
     },
 };
 
-use crate::{
-    animations::{
-        SpriteSheet,
-        objects::items::{
-            chests::{Chests, ChestsSpriteSheet},
-            feet::{Feet, FeetSpriteSheet},
-            heads::{Heads, HeadsSpriteSheet},
-            weapons::{Weapons, WeaponsSpriteSheet},
-        },
+use crate::animations::{
+    SpriteSheet,
+    objects::items::{
+        chests::{Chests, ChestsSpriteSheet},
+        feet::{Feet, FeetSpriteSheet},
+        heads::{Heads, HeadsSpriteSheet},
+        weapons::{Weapons, WeaponsSpriteSheet},
     },
-    networking::ControlledPlayer,
+    ui::item_info::ItemInfoSpriteSheet,
 };
+
+use super::highlight::Highlighted;
 
 pub struct ItemsPlugin;
 
 impl Plugin for ItemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_item_sprite)
-            .add_systems(Update, show_item_info);
+            .add_observer(init_item_info)
+            .add_observer(show_item_info)
+            .add_observer(hide_item_info);
     }
 }
 
@@ -146,13 +147,13 @@ impl ItemSprite for Item {
 fn init_item_sprite(
     trigger: Trigger<OnAdd, Item>,
     mut commands: Commands,
-    mut weapons: Query<(&Item, &Transform)>,
+    mut item: Query<&Item>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     chests_sprite_sheet: Res<ChestsSpriteSheet>,
     feet_sprite_sheet: Res<FeetSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
 ) {
-    let Ok((item, transform)) = weapons.get_mut(trigger.entity()) else {
+    let Ok(item) = item.get_mut(trigger.entity()) else {
         return;
     };
 
@@ -163,35 +164,73 @@ fn init_item_sprite(
         &heads_sprite_sheet,
     );
 
-    commands.entity(trigger.entity()).insert(sprite);
-
-    item_info(trigger.entity(), commands.reborrow(), item, transform);
+    commands.entity(trigger.entity()).insert(sprite.clone());
 }
 
-fn item_info(entity: Entity, mut commands: Commands, item: &Item, transform: &Transform) {
+fn init_item_info(
+    trigger: Trigger<OnAdd, Item>,
+    mut commands: Commands,
+    mut item: Query<(&Item, &Transform)>,
+    info: Res<ItemInfoSpriteSheet>,
+    weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
+    chests_sprite_sheet: Res<ChestsSpriteSheet>,
+    feet_sprite_sheet: Res<FeetSpriteSheet>,
+    heads_sprite_sheet: Res<HeadsSpriteSheet>,
+) {
+    let Ok((item, transform)) = item.get_mut(trigger.entity()) else {
+        return;
+    };
+
+    let text_color = Color::srgb_u8(143, 86, 59);
+
     let info = commands
         .spawn((
             Sprite {
-                color: Color::srgb(0.106, 0.118, 0.122),
-                custom_size: Some(Vec2::new(47.0, 33.0)),
+                texture_atlas: Some(TextureAtlas {
+                    layout: info.layout.clone(),
+                    index: 0,
+                }),
+                image: info.texture.clone(),
                 ..Default::default()
             },
             transform
                 .translation
                 .offset_x(48.)
                 .offset_y(20.)
-                .with_layer(Layers::Item),
+                .with_layer(Layers::Item)
+                .with_scale(Vec3 {
+                    x: 1. / 2.,
+                    y: 1. / 2.,
+                    z: 1.,
+                }),
             Visibility::Hidden,
         ))
         .with_children(|parent| {
-            // Border
+            // Background for text
             parent.spawn((
                 Sprite {
-                    color: item.rarity.color(),
-                    custom_size: Some(Vec2::new(50.0, 36.0)),
+                    custom_size: Some(Vec2 {
+                        x: 100.,
+                        y: 12. + item.modifiers.len() as f32 * 11.,
+                    }),
+                    anchor: Anchor::TopCenter,
+                    image: info.texture.clone(),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: info.layout.clone(),
+                        index: 1,
+                    }),
+                    image_mode: SpriteImageMode::Sliced(TextureSlicer {
+                        border: BorderRect {
+                            left: 2.,
+                            right: 2.,
+                            top: 0.,
+                            bottom: 2.,
+                        },
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 },
-                Transform::from_xyz(0., 0., -1.),
+                Transform::from_xyz(0., -58. / 2., 0.),
             ));
 
             // Text
@@ -202,13 +241,15 @@ fn item_info(entity: Entity, mut commands: Commands, item: &Item, transform: &Tr
                         font_size: 124.0,
                         ..default()
                     },
-                    TextLayout::new_with_justify(JustifyText::Left),
-                    TextColor(Color::WHITE),
+                    TextLayout::new_with_justify(JustifyText::Left).with_no_wrap(),
+                    TextColor(text_color),
+                    TextBounds::new_horizontal(92.),
+                    Anchor::TopCenter,
                     Transform {
-                        translation: Vec3::new(0.5, 0.0, 1.0),
+                        translation: Vec3::new(0.5, -58. / 2. - 5., 1.0),
                         scale: Vec3 {
-                            x: 0.2,
-                            y: 0.2,
+                            x: 0.4,
+                            y: 0.4,
                             z: 1.0,
                         },
                         ..Default::default()
@@ -221,23 +262,21 @@ fn item_info(entity: Entity, mut commands: Commands, item: &Item, transform: &Tr
                         let amount_str = &modifier;
 
                         let amount_color = match modifier {
-                            ModifierAmount::Base(_) => Color::WHITE,
+                            ModifierAmount::Base(_) => Color::BLACK,
                             ModifierAmount::Multiplier(amount) => {
                                 if *amount > 0 {
                                     Color::srgb(0., 1., 0.)
                                 } else if *amount < 0 {
                                     Color::srgb(1., 0., 0.)
                                 } else {
-                                    Color::WHITE
+                                    text_color
                                 }
                             }
                         };
 
                         // Effect label
-                        text_parent.spawn((
-                            TextSpan::new(format!("{effect}: ")),
-                            TextColor(Color::WHITE),
-                        ));
+                        text_parent
+                            .spawn((TextSpan::new(format!("{effect}: ")), TextColor(text_color)));
 
                         // Amount with color
                         text_parent.spawn((
@@ -249,29 +288,54 @@ fn item_info(entity: Entity, mut commands: Commands, item: &Item, transform: &Tr
         })
         .id();
 
-    let mut item_entity = commands.entity(entity);
+    let mut item_entity = commands.entity(trigger.entity());
     item_entity.add_child(info);
     item_entity.insert(ItemInfo(info));
+
+    let item_sprite = commands
+        .spawn((
+            item.sprite(
+                &weapons_sprite_sheet,
+                &chests_sprite_sheet,
+                &feet_sprite_sheet,
+                &heads_sprite_sheet,
+            ),
+            Transform::from_xyz(0., 0., 2.).with_scale(Vec3 {
+                x: 2.,
+                y: 2.,
+                z: 1.,
+            }),
+        ))
+        .id();
+
+    let mut info = commands.entity(info);
+    info.add_child(item_sprite);
 }
 
 fn show_item_info(
+    trigger: Trigger<OnAdd, Highlighted>,
     mut commands: Commands,
-    player: Query<(&Transform, &BoxCollider), With<ControlledPlayer>>,
-    items: Query<(&ItemInfo, &Transform, &BoxCollider)>,
+    items: Query<&ItemInfo>,
 ) {
-    let Ok((player_transform, player_collider)) = player.get_single() else {
+    let Ok(info) = items.get(trigger.entity()) else {
         return;
     };
+    let Some(mut entity) = commands.get_entity(**info) else {
+        return;
+    };
+    entity.try_insert(Visibility::Visible);
+}
 
-    let player_bounds = player_collider.at(player_transform);
-
-    for (info, transform, collider) in items.iter() {
-        let mut entity = commands.entity(**info);
-
-        if player_bounds.intersects(&collider.at(transform)) {
-            entity.insert(Visibility::Visible);
-        } else {
-            entity.insert(Visibility::Hidden);
-        }
-    }
+fn hide_item_info(
+    trigger: Trigger<OnRemove, Highlighted>,
+    mut commands: Commands,
+    items: Query<&ItemInfo>,
+) {
+    let Ok(info) = items.get(trigger.entity()) else {
+        return;
+    };
+    let Some(mut entity) = commands.get_entity(**info) else {
+        return;
+    };
+    entity.try_insert(Visibility::Hidden);
 }
