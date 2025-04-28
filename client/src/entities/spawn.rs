@@ -62,7 +62,7 @@ fn init_local_player(
         player_commands.insert((ControlledPlayer, SpatialListener::new(50.0)));
         commands
             .entity(camera.single())
-            .insert(CameraFollow::fixed(player));
+            .insert(CameraFollow::fixed(player).with_offset(Vec2 { x: 0., y: 50. }));
     }
 }
 
