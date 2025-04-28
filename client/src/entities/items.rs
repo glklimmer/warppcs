@@ -3,18 +3,22 @@ use bevy::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 use shared::{
     BoxCollider, Vec3LayerExt,
+    enum_map::EnumIter,
     map::Layers,
     server::players::items::{
-        Item, ItemType, MeleeWeapon, ModifierAmount, ProjectileWeapon, WeaponType,
+        Item, ItemColor, ItemType, MeleeWeapon, ModifierAmount, ProjectileWeapon, WeaponType,
     },
 };
 
 use crate::{
-    animations::objects::items::{
-        chests::{Chests, ChestsSpriteSheet},
-        feet::{Feet, FeetSpriteSheet},
-        heads::{Heads, HeadsSpriteSheet},
-        weapons::{Weapons, WeaponsSpriteSheet},
+    animations::{
+        SpriteSheet,
+        objects::items::{
+            chests::{Chests, ChestsSpriteSheet},
+            feet::{Feet, FeetSpriteSheet},
+            heads::{Heads, HeadsSpriteSheet},
+            weapons::{Weapons, WeaponsSpriteSheet},
+        },
     },
     networking::ControlledPlayer,
 };
@@ -23,10 +27,7 @@ pub struct ItemsPlugin;
 
 impl Plugin for ItemsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(init_weapon_sprite)
-            .add_observer(init_chest_sprite)
-            .add_observer(init_head_sprite)
-            .add_observer(init_feet_sprite)
+        app.add_observer(init_item_sprite)
             .add_systems(Update, show_item_info);
     }
 }
@@ -34,142 +35,135 @@ impl Plugin for ItemsPlugin {
 #[derive(Component, Deref)]
 struct ItemInfo(Entity);
 
-fn init_weapon_sprite(
-    trigger: Trigger<OnAdd, Item>,
-    mut commands: Commands,
-    mut weapons: Query<(&mut Sprite, &Item, &Transform)>,
-    sprite_sheets: Res<WeaponsSpriteSheet>,
-) {
-    let Ok((mut sprite, item, transform)) = weapons.get_mut(trigger.entity()) else {
-        return;
-    };
-    let ItemType::Weapon(weapon) = item.item_type else {
-        return;
-    };
-
-    let sprite_sheet = &sprite_sheets.sprite_sheet;
-    sprite.image = sprite_sheet.texture.clone();
-
-    let weapon = match weapon {
-        WeaponType::Melee(use_weapon) => match use_weapon {
-            MeleeWeapon::SwordAndShield => Weapons::SwordAndShield,
-            MeleeWeapon::Pike => Weapons::Pike,
-        },
-        WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
-            ProjectileWeapon::Bow => Weapons::Bow,
-        },
-    };
-
-    let animation = sprite_sheet.animations.get(weapon);
-    sprite.texture_atlas = Some(TextureAtlas {
-        layout: sprite_sheet.layout.clone(),
-        index: animation.first_sprite_index,
-    });
-
-    item_info(trigger.entity(), commands.reborrow(), item, transform);
+pub trait BuildSprite<K> {
+    fn sprite_for<T: Into<K>>(&self, kind: T) -> Sprite;
 }
 
-fn init_chest_sprite(
-    trigger: Trigger<OnAdd, Item>,
-    mut commands: Commands,
-    mut weapons: Query<(&mut Sprite, &Item, &Transform)>,
-    sprite_sheets: Res<ChestsSpriteSheet>,
-) {
-    let Ok((mut sprite, item, transform)) = weapons.get_mut(trigger.entity()) else {
-        return;
-    };
-    let ItemType::Chest = item.item_type else {
-        return;
-    };
-
-    let sprite_sheet = &sprite_sheets.sprite_sheet;
-    sprite.image = sprite_sheet.texture.clone();
-
-    let chest = fastrand::choice(vec![
-        Chests::Brown,
-        Chests::Blue,
-        Chests::Red,
-        Chests::Violet,
-        Chests::Green,
-        Chests::Beige,
-    ])
-    .unwrap();
-
-    let animation = sprite_sheet.animations.get(chest);
-    sprite.texture_atlas = Some(TextureAtlas {
-        layout: sprite_sheet.layout.clone(),
-        index: animation.first_sprite_index,
-    });
-
-    item_info(trigger.entity(), commands.reborrow(), item, transform);
+impl<K> BuildSprite<K> for SpriteSheet<K>
+where
+    K: EnumIter,
+{
+    fn sprite_for<T: Into<K>>(&self, kind: T) -> Sprite {
+        let animation = kind.into();
+        let sprite_animation = self.animations.get(animation);
+        Sprite {
+            image: self.texture.clone(),
+            texture_atlas: Some(TextureAtlas {
+                layout: self.layout.clone(),
+                index: sprite_animation.first_sprite_index,
+            }),
+            ..Default::default()
+        }
+    }
 }
 
-fn init_head_sprite(
-    trigger: Trigger<OnAdd, Item>,
-    mut commands: Commands,
-    mut weapons: Query<(&mut Sprite, &Item, &Transform)>,
-    sprite_sheets: Res<HeadsSpriteSheet>,
-) {
-    let Ok((mut sprite, item, transform)) = weapons.get_mut(trigger.entity()) else {
-        return;
-    };
-    let ItemType::Head = item.item_type else {
-        return;
-    };
-
-    let sprite_sheet = &sprite_sheets.sprite_sheet;
-    sprite.image = sprite_sheet.texture.clone();
-
-    let head = fastrand::choice(vec![
-        Heads::Brown,
-        Heads::Blue,
-        Heads::Red,
-        Heads::Violet,
-        Heads::Green,
-        Heads::Beige,
-    ])
-    .unwrap();
-
-    let animation = sprite_sheet.animations.get(head);
-    sprite.texture_atlas = Some(TextureAtlas {
-        layout: sprite_sheet.layout.clone(),
-        index: animation.first_sprite_index,
-    });
-
-    item_info(trigger.entity(), commands.reborrow(), item, transform);
+impl From<WeaponType> for Weapons {
+    fn from(wt: WeaponType) -> Self {
+        match wt {
+            WeaponType::Melee(m) => match m {
+                MeleeWeapon::SwordAndShield => Weapons::SwordAndShield,
+                MeleeWeapon::Pike => Weapons::Pike,
+            },
+            WeaponType::Projectile(p) => match p {
+                ProjectileWeapon::Bow => Weapons::Bow,
+            },
+        }
+    }
 }
 
-fn init_feet_sprite(
+impl From<ItemColor> for Chests {
+    fn from(c: ItemColor) -> Self {
+        match c {
+            ItemColor::Brown => Chests::Brown,
+            ItemColor::Blue => Chests::Blue,
+            ItemColor::Red => Chests::Red,
+            ItemColor::Violet => Chests::Violet,
+            ItemColor::Green => Chests::Green,
+            ItemColor::Beige => Chests::Beige,
+        }
+    }
+}
+
+impl From<ItemColor> for Heads {
+    fn from(c: ItemColor) -> Self {
+        match c {
+            ItemColor::Brown => Heads::Brown,
+            ItemColor::Blue => Heads::Blue,
+            ItemColor::Red => Heads::Red,
+            ItemColor::Violet => Heads::Violet,
+            ItemColor::Green => Heads::Green,
+            ItemColor::Beige => Heads::Beige,
+        }
+    }
+}
+
+impl From<ItemColor> for Feet {
+    fn from(c: ItemColor) -> Self {
+        match c {
+            ItemColor::Brown => Feet::Brown,
+            ItemColor::Blue => Feet::Blue,
+            ItemColor::Red => Feet::Red,
+            ItemColor::Violet => Feet::Violet,
+            ItemColor::Green => Feet::Green,
+            ItemColor::Beige => Feet::Beige,
+        }
+    }
+}
+
+pub trait ItemSprite {
+    fn sprite(
+        &self,
+        weapons_sprite_sheet: &Res<WeaponsSpriteSheet>,
+        chests_sprite_sheet: &Res<ChestsSpriteSheet>,
+        feet_sprite_sheet: &Res<FeetSpriteSheet>,
+        heads_sprite_sheet: &Res<HeadsSpriteSheet>,
+    ) -> Sprite;
+}
+
+impl ItemSprite for Item {
+    fn sprite(
+        &self,
+        weapons_sprite_sheet: &Res<WeaponsSpriteSheet>,
+        chests_sprite_sheet: &Res<ChestsSpriteSheet>,
+        feet_sprite_sheet: &Res<FeetSpriteSheet>,
+        heads_sprite_sheet: &Res<HeadsSpriteSheet>,
+    ) -> Sprite {
+        match self.item_type {
+            ItemType::Weapon(w) => weapons_sprite_sheet.sprite_sheet.sprite_for(w),
+            ItemType::Chest => chests_sprite_sheet
+                .sprite_sheet
+                .sprite_for(self.color.unwrap()),
+            ItemType::Head => heads_sprite_sheet
+                .sprite_sheet
+                .sprite_for(self.color.unwrap()),
+            ItemType::Feet => feet_sprite_sheet
+                .sprite_sheet
+                .sprite_for(self.color.unwrap()),
+        }
+    }
+}
+
+fn init_item_sprite(
     trigger: Trigger<OnAdd, Item>,
     mut commands: Commands,
-    mut weapons: Query<(&mut Sprite, &Item, &Transform)>,
-    sprite_sheets: Res<FeetSpriteSheet>,
+    mut weapons: Query<(&Item, &Transform)>,
+    weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
+    chests_sprite_sheet: Res<ChestsSpriteSheet>,
+    feet_sprite_sheet: Res<FeetSpriteSheet>,
+    heads_sprite_sheet: Res<HeadsSpriteSheet>,
 ) {
-    let Ok((mut sprite, item, transform)) = weapons.get_mut(trigger.entity()) else {
-        return;
-    };
-    let ItemType::Feet = item.item_type else {
+    let Ok((item, transform)) = weapons.get_mut(trigger.entity()) else {
         return;
     };
 
-    let sprite_sheet = &sprite_sheets.sprite_sheet;
-    sprite.image = sprite_sheet.texture.clone();
+    let sprite = item.sprite(
+        &weapons_sprite_sheet,
+        &chests_sprite_sheet,
+        &feet_sprite_sheet,
+        &heads_sprite_sheet,
+    );
 
-    let feet = fastrand::choice(vec![
-        Feet::Brown,
-        Feet::Blue,
-        Feet::Red,
-        Feet::Violet,
-        Feet::Green,
-        Feet::Beige,
-    ])
-    .unwrap();
-
-    let animation = sprite_sheet.animations.get(feet);
-    sprite.texture_atlas = Some(TextureAtlas {
-        layout: sprite_sheet.layout.clone(),
-        index: animation.first_sprite_index,
-    });
+    commands.entity(trigger.entity()).insert(sprite);
 
     item_info(trigger.entity(), commands.reborrow(), item, transform);
 }

@@ -6,10 +6,10 @@ use items::ItemsPlugin;
 use spawn::SpawnPlugin;
 
 mod item_assignment;
-mod items;
 mod spawn;
 
 pub mod highlight;
+pub mod items;
 
 pub struct EntitiesPlugin;
 

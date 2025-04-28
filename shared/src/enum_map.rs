@@ -1,3 +1,5 @@
+use std::mem::replace;
+
 pub use enum_mappable::Mappable;
 use serde::{Deserialize, Serialize};
 
@@ -31,6 +33,12 @@ where
     /// Retrieve a reference to the value stored for variant `e`.
     pub fn get(&self, e: E) -> &T {
         &self.data[e.as_index()]
+    }
+
+    /// Replace the value for variant `e`, returning the old value.
+    pub fn set(&mut self, e: E, value: T) -> T {
+        let idx = e.as_index();
+        replace(&mut self.data[idx], value)
     }
 }
 

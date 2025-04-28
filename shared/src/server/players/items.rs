@@ -8,12 +8,12 @@ use crate::{
     BoxCollider,
     enum_map::*,
     networking::{Inventory, UnitType},
-    server::physics::movement::Velocity,
+    server::{buildings::item_assignment::ItemSlot, physics::movement::Velocity},
 };
 
 use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
 
-#[derive(Component, Clone, Serialize, Deserialize, Debug)]
+#[derive(Component, Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[require(
     Replicated,
     Transform,
@@ -29,6 +29,7 @@ pub struct Item {
     pub item_type: ItemType,
     pub rarity: Rarity,
     pub modifiers: Vec<Modifier>,
+    pub color: Option<ItemColor>,
 }
 
 #[derive(Default)]
@@ -90,6 +91,7 @@ impl Item {
             item_type,
             rarity,
             modifiers,
+            color: item_type.random_color(),
         }
     }
 
@@ -127,6 +129,15 @@ impl Item {
             },
         }
     }
+
+    pub fn slot(&self) -> ItemSlot {
+        match self.item_type {
+            ItemType::Weapon(_) => ItemSlot::Weapon,
+            ItemType::Chest => ItemSlot::Chest,
+            ItemType::Feet => ItemSlot::Feet,
+            ItemType::Head => ItemSlot::Head,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Mappable)]
@@ -136,7 +147,7 @@ enum ModifierAmplitude {
     High,
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize, Debug, Mappable)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Mappable, Eq, PartialEq)]
 pub enum Rarity {
     Common,
     Uncommon,
@@ -155,13 +166,13 @@ impl Rarity {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Modifier {
     pub effect: ModifierEffect,
     pub amount: ModifierAmount,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum ModifierAmount {
     Base(i32),
     Multiplier(i32),
@@ -176,7 +187,7 @@ impl fmt::Display for ModifierAmount {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy, Debug)]
+#[derive(Clone, Serialize, Deserialize, Copy, Debug, Eq, PartialEq)]
 pub enum ModifierEffect {
     Damage,
     Health,
@@ -243,12 +254,31 @@ impl fmt::Display for ModifierEffect {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy, Debug)]
+#[derive(Clone, Serialize, Deserialize, Copy, Debug, Eq, PartialEq)]
 pub enum ItemType {
     Weapon(WeaponType),
     Chest,
     Feet,
     Head,
+}
+
+#[derive(Clone, Serialize, Deserialize, Copy, Debug, Mappable, Eq, PartialEq)]
+pub enum ItemColor {
+    Brown,
+    Blue,
+    Red,
+    Violet,
+    Green,
+    Beige,
+}
+
+impl ItemType {
+    fn random_color(&self) -> Option<ItemColor> {
+        if let ItemType::Weapon(_) = self {
+            return None;
+        }
+        Some(*fastrand::choice(ItemColor::all_variants()).unwrap())
+    }
 }
 
 enum ModifierSign {
@@ -307,25 +337,25 @@ impl ItemType {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy, Debug)]
+#[derive(Clone, Serialize, Deserialize, Copy, Debug, Eq, PartialEq)]
 pub enum WeaponType {
     Melee(MeleeWeapon),
     Projectile(ProjectileWeapon),
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug)]
+#[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug, Eq, PartialEq)]
 pub enum MeleeWeapon {
     SwordAndShield,
     Pike,
 }
 
-#[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug)]
+#[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug, Eq, PartialEq)]
 pub enum ProjectileWeapon {
     Bow,
 }
 
 impl WeaponType {
-    fn unit_type(&self) -> UnitType {
+    pub fn unit_type(&self) -> UnitType {
         match self {
             WeaponType::Melee(use_weapon) => match use_weapon {
                 MeleeWeapon::SwordAndShield => UnitType::Shieldwarrior,
