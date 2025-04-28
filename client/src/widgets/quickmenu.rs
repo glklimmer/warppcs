@@ -62,7 +62,6 @@ fn on_remove_seleted(mut world: DeferredWorld, entity: Entity, _id: ComponentId)
 
 impl Plugin for QuickMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_state(PlayerState::World);
         app.add_observer(draw_commander_interaction);
         app.add_systems(
             Update,
