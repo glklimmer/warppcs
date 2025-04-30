@@ -161,15 +161,23 @@ pub fn check_recruit(
         };
         let inventory = player.get(event.player).unwrap();
         let (building, item_assignment) = building.get(event.interactable).unwrap();
-        let Building::Unit { weapon: unit_type } = *building else {
-            continue;
+
+        let unit_type = match *building {
+            Building::MainBuilding { level } => Some(UnitType::Commander),
+            Building::Unit { weapon: unit_type } => {
+                let cost = unit_type.recruitment_cost();
+                if !inventory.gold.ge(&cost.gold) {
+                    println!("Not enough gold for recruitment");
+                    continue;
+                }
+                Some(unit_type)
+            }
+            Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => None,
         };
 
-        let cost = unit_type.recruitment_cost();
-        if !inventory.gold.ge(&cost.gold) {
-            println!("Not enough gold for recruitment");
+        let Some(unit_type) = unit_type else {
             continue;
-        }
+        };
 
         recruit.send(RecruitEvent {
             player: event.player,
