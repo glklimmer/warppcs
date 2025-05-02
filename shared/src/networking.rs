@@ -48,22 +48,6 @@ pub enum MountType {
     Horse,
 }
 
-#[derive(Debug, Serialize, Deserialize, Event)]
-pub enum PlayerCommand {
-    StartGame,
-    Interact,
-    MeleeAttack,
-}
-
-pub enum ClientChannel {
-    Input,
-    Command,
-}
-pub enum ServerChannel {
-    ServerMessages,
-    NetworkedEntities,
-}
-
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
 #[require(Replicated)]
 pub struct Inventory {
@@ -90,22 +74,4 @@ pub enum Facing {
     #[default]
     Left,
     Right,
-}
-
-impl From<ClientChannel> for u8 {
-    fn from(channel_id: ClientChannel) -> Self {
-        match channel_id {
-            ClientChannel::Command => 0,
-            ClientChannel::Input => 1,
-        }
-    }
-}
-
-impl From<ServerChannel> for u8 {
-    fn from(channel_id: ServerChannel) -> Self {
-        match channel_id {
-            ServerChannel::NetworkedEntities => 0,
-            ServerChannel::ServerMessages => 1,
-        }
-    }
 }
