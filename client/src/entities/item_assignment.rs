@@ -31,7 +31,7 @@ use crate::{
     },
 };
 
-use super::items::BuildSprite;
+use super::items::{BuildSprite, ItemInfo};
 
 pub struct ItemAssignmentPlugin;
 
@@ -44,6 +44,8 @@ impl Plugin for ItemAssignmentPlugin {
             .add_observer(slot_selected)
             .add_observer(item_selected)
             .add_observer(start_build)
+            .add_observer(show_item_info)
+            .add_observer(hide_item_info)
             .add_plugins((
                 MenuPlugin::<BuildingDialog>::default(),
                 MenuPlugin::<ItemSlot>::default(),
@@ -123,7 +125,7 @@ fn build_node(item: &Item, sheets: &SpriteSheets) -> MenuNode<Item> {
         ItemType::Feet => sheets.feet.sprite_for(item.color.unwrap()),
     };
 
-    MenuNode::bundle(item.clone(), sprite)
+    MenuNode::bundle(item.clone(), (sprite.clone(), ItemInfo::new(item.clone())))
 }
 
 fn open_building_dialog(
@@ -170,9 +172,36 @@ fn start_build(trigger: Trigger<SelectionEvent<BuildingDialog>>, mut commands: C
     commands.client_trigger(StartBuild);
 }
 
-fn close_assignment_dialog(trigger: Trigger<CloseBuildingDialog>, mut commands: Commands) {
-    trigger;
+fn close_assignment_dialog(_: Trigger<CloseBuildingDialog>, mut commands: Commands) {
     commands.send_event(CloseEvent);
+}
+
+fn show_item_info(
+    trigger: Trigger<OnAdd, Selected>,
+    mut commands: Commands,
+    items: Query<&ItemInfo>,
+) {
+    let Ok(info) = items.get(trigger.entity()) else {
+        return;
+    };
+    let Some(mut entity) = commands.get_entity(info.tooltip) else {
+        return;
+    };
+    entity.try_insert(Visibility::Visible);
+}
+
+fn hide_item_info(
+    trigger: Trigger<OnRemove, Selected>,
+    mut commands: Commands,
+    items: Query<&ItemInfo>,
+) {
+    let Ok(info) = items.get(trigger.entity()) else {
+        return;
+    };
+    let Some(mut entity) = commands.get_entity(info.tooltip) else {
+        return;
+    };
+    entity.try_insert(Visibility::Hidden);
 }
 
 fn update_assignment(
@@ -252,20 +281,28 @@ fn open_assignment_dialog(
             let slot_image = asset_server.load::<Image>(str);
 
             let item_sprite = maybe_item.as_ref().map(|item| {
-                item.sprite(
-                    &weapons_sprite_sheet,
-                    &chests_sprite_sheet,
-                    &feet_sprite_sheet,
-                    &heads_sprite_sheet,
+                (
+                    item.sprite(
+                        &weapons_sprite_sheet,
+                        &chests_sprite_sheet,
+                        &feet_sprite_sheet,
+                        &heads_sprite_sheet,
+                    ),
+                    item.clone(),
                 )
             });
 
             MenuNode::with_fn(slot, move |commands, entry| {
-                let maybe_item_entity: Option<Entity> = item_sprite.as_ref().map(|sprite| {
-                    commands
-                        .spawn((sprite.clone(), Transform::from_xyz(0., 0., 1.)))
-                        .id()
-                });
+                let maybe_item_entity: Option<Entity> =
+                    item_sprite.as_ref().map(|(sprite, item)| {
+                        commands
+                            .spawn((
+                                sprite.clone(),
+                                Transform::from_xyz(0., 0., 1.),
+                                ItemInfo::new((*item).clone()),
+                            ))
+                            .id()
+                    });
 
                 let mut entry = commands.entity(entry);
                 entry.insert(Sprite {

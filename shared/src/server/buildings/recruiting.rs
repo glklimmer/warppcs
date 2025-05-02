@@ -1,4 +1,4 @@
-use bevy::{ecs::entity::MapEntities, prelude::*, sprite::Anchor};
+use bevy::{prelude::*, sprite::Anchor};
 
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
