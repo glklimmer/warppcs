@@ -82,7 +82,7 @@ fn travel(
                 units_on_flag
                     .iter()
                     .filter(|(_, assignment, _)| {
-                        let possible_positions = vec![
+                        let possible_positions = [
                             slots_assignments.front,
                             slots_assignments.middle,
                             slots_assignments.back,
