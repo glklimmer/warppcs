@@ -97,7 +97,7 @@ fn main() {
             CameraPlugin,
             InputPlugin,
             AnimationPlugin,
-            MenuPlugin,
+            // MenuPlugin,
             EntitiesPlugin,
             WidgetsPlugin,
             UiPlugin,
