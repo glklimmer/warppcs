@@ -9,7 +9,7 @@ use crate::{
     map::Layers,
     networking::{Facing, UnitType},
     server::{
-        entities::{Unit, health::TakeDamage},
+        entities::{Damage, Unit, health::TakeDamage},
         physics::{movement::Velocity, projectile::ProjectileType},
     },
 };
@@ -22,72 +22,22 @@ impl Plugin for AttackPlugin {
     }
 }
 
-pub fn unit_range(unit_type: &UnitType) -> f32 {
-    match unit_type {
-        UnitType::Shieldwarrior => 20.,
-        UnitType::Pikeman => 30.,
-        UnitType::Archer => 200.,
-        UnitType::Bandit => 20.,
-        UnitType::Commander => 100.,
-    }
-}
-
-pub fn unit_damage(unit_type: &UnitType) -> f32 {
-    match unit_type {
-        UnitType::Shieldwarrior => 12.,
-        UnitType::Pikeman => 18.,
-        UnitType::Archer => 6.,
-        UnitType::Bandit => 14.,
-        UnitType::Commander => 20.,
-    }
-}
-
-pub fn unit_health(unit_type: &UnitType) -> f32 {
-    match unit_type {
-        UnitType::Shieldwarrior => 120.,
-        UnitType::Pikeman => 90.,
-        UnitType::Archer => 60.,
-        UnitType::Bandit => 100.,
-        UnitType::Commander => 200.,
-    }
-}
-
-pub fn unit_swing_timer(unit_type: &UnitType) -> Timer {
-    let time = match unit_type {
-        UnitType::Shieldwarrior => 1.,
-        UnitType::Pikeman => 2.,
-        UnitType::Archer => 4.,
-        UnitType::Bandit => 3.,
-        UnitType::Commander => 5.,
-    };
-    Timer::from_seconds(time, TimerMode::Repeating)
-}
-
-pub fn unit_speed(unit_type: &UnitType) -> f32 {
-    match unit_type {
-        UnitType::Shieldwarrior => 25.,
-        UnitType::Pikeman => 33.,
-        UnitType::Archer => 45.,
-        UnitType::Bandit => 33.,
-        UnitType::Commander => 50.,
-    }
-}
-
-pub fn projectile_damage(projectile_type: &ProjectileType) -> f32 {
-    match projectile_type {
-        ProjectileType::Arrow => 15.,
-    }
-}
-
 fn process_attacks(
     mut commands: Commands,
-    mut query: Query<(Entity, &UnitBehaviour, &mut Unit, &Owner, &Transform)>,
+    mut query: Query<(
+        Entity,
+        &UnitBehaviour,
+        &mut Unit,
+        &Owner,
+        &Transform,
+        &Damage,
+    )>,
     mut attack_events: EventWriter<TakeDamage>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
     time: Res<Time>,
 ) {
-    for (entity, behaviour, mut unit, owner, transform) in query.iter_mut() {
+    for (entity, behaviour, mut unit, owner, transform, damage) in query.iter_mut() {
         if let UnitBehaviour::AttackTarget(target_entity) = behaviour {
             unit.swing_timer.tick(time.delta());
             if unit.swing_timer.finished() {
@@ -105,7 +55,7 @@ fn process_attacks(
                     | UnitType::Commander => {
                         attack_events.send(TakeDamage {
                             target_entity: *target_entity,
-                            damage: unit_damage(&unit.unit_type),
+                            damage: **damage,
                             direction: match delta_x > 0. {
                                 true => Facing::Left,
                                 false => Facing::Right,
@@ -161,7 +111,13 @@ fn process_attacks(
                             rotation: Quat::from_rotation_z(theta),
                         };
 
-                        commands.spawn((arrow_transform, *owner, projectile_type, velocity));
+                        commands.spawn((
+                            arrow_transform,
+                            *owner,
+                            projectile_type,
+                            velocity,
+                            Damage(**damage),
+                        ));
 
                         animation.send(ToClients {
                             mode: SendMode::Broadcast,

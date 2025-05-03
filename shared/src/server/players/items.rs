@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
-use std::{cmp::Ordering, fmt};
+use std::{cmp::Ordering, fmt, ops::MulAssign};
 
 use crate::{
     BoxCollider,
@@ -182,19 +182,17 @@ pub struct Modifier {
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum ModifierAmount {
     Amount(i32),
-    Multiplier(i32),
+    Multiplier(Multiplier),
 }
 
 impl ModifierAmount {
     pub fn sign(&self) -> ModifierSign {
-        let amount = match self {
-            ModifierAmount::Amount(amount) => amount,
-            ModifierAmount::Multiplier(amount) => amount,
-        };
-
-        match 0.cmp(amount) {
-            Ordering::Less | Ordering::Equal => ModifierSign::Positive,
-            Ordering::Greater => ModifierSign::Negative,
+        match self {
+            ModifierAmount::Amount(amount) => match 0.cmp(amount) {
+                Ordering::Less | Ordering::Equal => ModifierSign::Positive,
+                Ordering::Greater => ModifierSign::Negative,
+            },
+            ModifierAmount::Multiplier(multiplier) => multiplier.sign,
         }
     }
 }
@@ -203,7 +201,44 @@ impl fmt::Display for ModifierAmount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ModifierAmount::Amount(amount) => write!(f, "{}", amount),
-            ModifierAmount::Multiplier(multiplier) => write!(f, "{}%", multiplier),
+            ModifierAmount::Multiplier(multiplier) => write!(f, "{}", multiplier),
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct Multiplier {
+    percentage_points: i32,
+    sign: ModifierSign,
+}
+
+impl Multiplier {
+    fn new(percentage_points: i32, sign: ModifierSign) -> Self {
+        Self {
+            percentage_points,
+            sign,
+        }
+    }
+
+    fn factor(&self) -> f32 {
+        match self.sign {
+            ModifierSign::Positive => 1. + self.percentage_points as f32 / 100.,
+            ModifierSign::Negative => 1. - self.percentage_points as f32 / 100.,
+        }
+    }
+}
+
+impl MulAssign<Multiplier> for f32 {
+    fn mul_assign(&mut self, rhs: Multiplier) {
+        *self *= rhs.factor();
+    }
+}
+
+impl fmt::Display for Multiplier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.sign {
+            ModifierSign::Positive => write!(f, "{}%", self.percentage_points),
+            ModifierSign::Negative => write!(f, "-{}%", self.percentage_points),
         }
     }
 }
@@ -248,15 +283,11 @@ impl Effect {
         let step_size = 5;
         let steps = (max - min) / step_size;
 
-        let mut amount = min + fastrand::i32(0..=steps) * step_size;
-
-        if let ModifierSign::Negative = sign {
-            amount = -amount;
-        }
+        let amount = min + fastrand::i32(0..=steps) * step_size;
 
         Modifier {
             effect: *self,
-            amount: ModifierAmount::Multiplier(amount),
+            amount: ModifierAmount::Multiplier(Multiplier::new(amount, sign)),
         }
     }
 }
@@ -302,6 +333,7 @@ impl ItemType {
     }
 }
 
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum ModifierSign {
     Positive,
     Negative,
@@ -413,5 +445,67 @@ pub fn pickup_item(
                 .collect::<Vec<String>>()
                 .join(", ")
         );
+    }
+}
+
+pub trait EffectSelector {
+    fn select(&self, item: &Item) -> Option<Effect>;
+}
+
+impl<F> EffectSelector for F
+where
+    F: Fn(&Item) -> Option<Effect>,
+{
+    fn select(&self, item: &Item) -> Option<Effect> {
+        (self)(item)
+    }
+}
+
+impl EffectSelector for Effect {
+    fn select(&self, _item: &Item) -> Option<Effect> {
+        Some(*self)
+    }
+}
+
+pub trait CalculatedStats {
+    fn calculated<S>(&self, selector: S) -> f32
+    where
+        S: EffectSelector;
+}
+
+impl CalculatedStats for [Item] {
+    fn calculated<S>(&self, selector: S) -> f32
+    where
+        S: EffectSelector,
+    {
+        let mut base_sum = 0;
+        let mut modifier_amount = 0;
+        let mut modifier_factor = 1.;
+
+        for item in self {
+            let effect = match selector.select(item) {
+                Some(e) => e,
+                None => continue,
+            };
+
+            base_sum += item
+                .base
+                .iter()
+                .filter(|b| b.effect == effect)
+                .map(|b| b.amount)
+                .sum::<i32>();
+
+            for modifier in &item.modifiers {
+                if modifier.effect != effect {
+                    continue;
+                }
+                match &modifier.amount {
+                    ModifierAmount::Amount(amount) => modifier_amount += *amount,
+                    ModifierAmount::Multiplier(multiplier) => modifier_factor *= multiplier.clone(),
+                }
+            }
+        }
+
+        (base_sum + modifier_amount) as f32 * modifier_factor
     }
 }
