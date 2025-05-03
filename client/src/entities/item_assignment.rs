@@ -16,7 +16,7 @@ use shared::{
 
 use crate::{
     animations::{
-        SpriteSheet,
+        AnimationSpriteSheet,
         objects::items::{
             chests::{Chests, ChestsSpriteSheet},
             feet::{Feet, FeetSpriteSheet},
@@ -109,10 +109,10 @@ fn slot_selected(
 }
 
 struct SpriteSheets<'a> {
-    weapons: &'a SpriteSheet<Weapons>,
-    chests: &'a SpriteSheet<Chests>,
-    heads: &'a SpriteSheet<Heads>,
-    feet: &'a SpriteSheet<Feet>,
+    weapons: &'a AnimationSpriteSheet<Weapons>,
+    chests: &'a AnimationSpriteSheet<Chests>,
+    heads: &'a AnimationSpriteSheet<Heads>,
+    feet: &'a AnimationSpriteSheet<Feet>,
 }
 
 fn build_node(item: &Item, sheets: &SpriteSheets) -> MenuNode<Item> {

@@ -14,14 +14,16 @@ use shared::{
     },
 };
 
-use super::{AnimationSound, AnimationTrigger, PlayOnce, SpriteSheet, SpriteSheetAnimation};
+use super::{
+    AnimationSound, AnimationSpriteSheet, AnimationTrigger, PlayOnce, SpriteSheetAnimation,
+};
 
 pub mod bandits;
 pub mod humans;
 
 #[derive(Resource)]
 pub struct UnitSpriteSheets {
-    pub sprite_sheets: EnumMap<UnitType, SpriteSheet<UnitAnimation>>,
+    pub sprite_sheets: EnumMap<UnitType, AnimationSpriteSheet<UnitAnimation>>,
 }
 
 impl FromWorld for UnitSpriteSheets {

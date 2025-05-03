@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{AnimationSpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum PortalAnimation {
@@ -12,7 +12,7 @@ pub enum PortalAnimation {
 
 #[derive(Resource)]
 pub struct PortalSpriteSheet {
-    pub sprite_sheet: SpriteSheet<PortalAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<PortalAnimation>,
 }
 
 impl FromWorld for PortalSpriteSheet {
@@ -42,7 +42,7 @@ impl FromWorld for PortalSpriteSheet {
         });
 
         PortalSpriteSheet {
-            sprite_sheet: SpriteSheet {
+            sprite_sheet: AnimationSpriteSheet {
                 texture,
                 layout,
                 animations,

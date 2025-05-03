@@ -31,11 +31,27 @@ pub mod ui;
 pub mod units;
 
 #[derive(Clone)]
-pub struct SpriteSheet<E: EnumIter> {
+pub struct AnimationSpriteSheet<E: EnumIter> {
     pub texture: Handle<Image>,
     pub layout: Handle<TextureAtlasLayout>,
     pub animations: EnumMap<E, SpriteSheetAnimation>,
     pub animations_sound: EnumMap<E, Option<AnimationSound>>,
+}
+
+#[derive(Clone)]
+pub struct StaticSpriteSheet<E: EnumIter> {
+    pub texture: Handle<Image>,
+    pub layout: Handle<TextureAtlasLayout>,
+    pub parts: EnumMap<E, usize>,
+}
+
+impl<E: EnumIter> StaticSpriteSheet<E> {
+    pub fn texture_atlas(&self, part: E) -> Option<TextureAtlas> {
+        Some(TextureAtlas {
+            layout: self.layout.clone(),
+            index: *self.parts.get(part),
+        })
+    }
 }
 
 #[derive(Clone)]
