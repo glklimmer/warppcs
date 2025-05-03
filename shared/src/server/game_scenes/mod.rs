@@ -3,7 +3,7 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
-use crate::server::players::interaction::InteractionType;
+use crate::{PlayerState, server::players::interaction::InteractionType};
 
 use super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
@@ -41,11 +41,38 @@ pub struct GameScenesPlugin;
 
 impl Plugin for GameScenesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, travel);
+        app.add_systems(Update, travel_timer)
+            .add_systems(FixedUpdate, (start_travel, end_travel));
     }
 }
 
-fn travel(
+#[derive(Component)]
+struct Traveling {
+    destination: TravelDestination,
+    time_left: Timer,
+}
+
+impl Traveling {
+    fn to(destination: TravelDestination) -> Self {
+        Self {
+            destination,
+            time_left: Timer::from_seconds(10., TimerMode::Once),
+        }
+    }
+}
+
+fn travel_timer(mut query: Query<&mut Traveling>, time: Res<Time>) {
+    for mut traveling in &mut query {
+        info!(
+            "Travel happening, time left: {:?}",
+            traveling.time_left.elapsed_secs()
+        );
+        traveling.time_left.tick(time.delta());
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn start_travel(
     mut commands: Commands,
     mut traveling: EventReader<InteractionTriggeredEvent>,
     flag_holders: Query<&FlagHolder>,
@@ -53,6 +80,7 @@ fn travel(
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
     destination: Query<&TravelDestination>,
     transform: Query<&Transform>,
+    mut next_state: ResMut<NextState<PlayerState>>,
 ) {
     for event in traveling.read() {
         let InteractionType::Travel = &event.interaction else {
@@ -64,7 +92,7 @@ fn travel(
         let target_position = transform.get(**destination).unwrap().translation;
         let flag_holder = flag_holders.get(player_entity);
 
-        info!("Travel happening to target position: {:?}", target_position);
+        info!("Travel starting to target position: {:?}", target_position);
 
         let mut travel_entities = Vec::new();
 
@@ -88,16 +116,44 @@ fn travel(
             };
         };
 
+        next_state.set(PlayerState::Traveling);
+
         commands
             .entity(player_entity)
+            .insert(Traveling::to(destination.clone()));
+
+        for group in travel_entities {
+            commands
+                .entity(group)
+                .insert(Traveling::to(destination.clone()));
+        }
+    }
+}
+
+fn end_travel(
+    mut commands: Commands,
+    query: Query<(Entity, &Traveling)>,
+    transform: Query<&Transform>,
+    mut next_state: ResMut<NextState<PlayerState>>,
+) {
+    for (entity, travel) in query.iter() {
+        if !travel.time_left.finished() {
+            continue;
+        }
+
+        let destination = &travel.destination;
+        let travel_destination = transform.get(**destination).unwrap();
+        let target_position = travel_destination.translation;
+
+        info!("Travel finished to target position: {:?}", target_position);
+
+        next_state.set(PlayerState::World);
+
+        commands
+            .entity(entity)
+            .remove::<Traveling>()
             .insert(Transform::from_translation(
                 target_position.with_z(Layers::Player.as_f32()),
             ));
-
-        for group in travel_entities {
-            commands.entity(group).insert(Transform::from_translation(
-                target_position.with_z(Layers::Flag.as_f32()),
-            ));
-        }
     }
 }

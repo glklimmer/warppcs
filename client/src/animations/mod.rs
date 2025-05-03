@@ -18,7 +18,7 @@ use objects::{
     portal::PortalSpriteSheet,
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
-use ui::item_info::ItemInfoSpriteSheet;
+use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
 use units::{
     UnitSpriteSheets, set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation,
     set_unit_walking, trigger_unit_animation,
@@ -129,6 +129,7 @@ impl Plugin for AnimationPlugin {
         app.add_event::<AnimationTrigger<HorseAnimation>>();
 
         app.init_resource::<ItemInfoSpriteSheet>();
+        app.init_resource::<MapIconSpriteSheet>();
 
         app.add_systems(
             PreUpdate,

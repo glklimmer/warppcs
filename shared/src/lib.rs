@@ -298,6 +298,7 @@ pub enum GameState {
 pub enum PlayerState {
     World,
     Interaction,
+    Traveling,
 }
 
 pub trait Vec3LayerExt {
