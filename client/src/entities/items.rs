@@ -33,8 +33,20 @@ impl Plugin for ItemsPlugin {
     }
 }
 
-#[derive(Component, Deref)]
-struct ItemInfo(Entity);
+#[derive(Component, Clone)]
+pub struct ItemInfo {
+    item: Item,
+    pub tooltip: Entity,
+}
+
+impl ItemInfo {
+    pub fn new(item: Item) -> Self {
+        Self {
+            item,
+            tooltip: Entity::PLACEHOLDER,
+        }
+    }
+}
 
 pub trait BuildSprite<K> {
     fn sprite_for<T: Into<K>>(&self, kind: T) -> Sprite;
@@ -164,22 +176,30 @@ fn init_item_sprite(
         &heads_sprite_sheet,
     );
 
-    commands.entity(trigger.entity()).insert(sprite.clone());
+    commands.entity(trigger.entity()).insert((
+        sprite.clone(),
+        ItemInfo {
+            item: item.clone(),
+            tooltip: trigger.entity(),
+        },
+    ));
 }
 
 fn init_item_info(
-    trigger: Trigger<OnAdd, Item>,
+    trigger: Trigger<OnAdd, ItemInfo>,
     mut commands: Commands,
-    mut item: Query<(&Item, &Transform)>,
+    mut item: Query<(&ItemInfo, &Transform)>,
     info: Res<ItemInfoSpriteSheet>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     chests_sprite_sheet: Res<ChestsSpriteSheet>,
     feet_sprite_sheet: Res<FeetSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
 ) {
-    let Ok((item, transform)) = item.get_mut(trigger.entity()) else {
+    let Ok((ItemInfo { item, tooltip: _ }, transform)) = item.get_mut(trigger.entity()) else {
         return;
     };
+
+    info!("adding info");
 
     let text_color = Color::srgb_u8(143, 86, 59);
 
@@ -290,7 +310,10 @@ fn init_item_info(
 
     let mut item_entity = commands.entity(trigger.entity());
     item_entity.add_child(info);
-    item_entity.insert(ItemInfo(info));
+    item_entity.insert(ItemInfo {
+        item: item.clone(),
+        tooltip: info,
+    });
 
     let item_sprite = commands
         .spawn((
@@ -320,7 +343,7 @@ fn show_item_info(
     let Ok(info) = items.get(trigger.entity()) else {
         return;
     };
-    let Some(mut entity) = commands.get_entity(**info) else {
+    let Some(mut entity) = commands.get_entity(info.tooltip) else {
         return;
     };
     entity.try_insert(Visibility::Visible);
@@ -334,7 +357,7 @@ fn hide_item_info(
     let Ok(info) = items.get(trigger.entity()) else {
         return;
     };
-    let Some(mut entity) = commands.get_entity(**info) else {
+    let Some(mut entity) = commands.get_entity(info.tooltip) else {
         return;
     };
     entity.try_insert(Visibility::Hidden);

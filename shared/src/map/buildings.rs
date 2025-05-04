@@ -3,11 +3,7 @@ use bevy_replicon::prelude::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    BoxCollider,
-    networking::UnitType,
-    server::{buildings::item_assignment::ItemAssignment, entities::health::Health},
-};
+use crate::{BoxCollider, networking::UnitType, server::entities::health::Health};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MainBuildingLevels {
