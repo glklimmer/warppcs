@@ -46,11 +46,11 @@ pub struct StaticSpriteSheet<E: EnumIter> {
 }
 
 impl<E: EnumIter> StaticSpriteSheet<E> {
-    pub fn texture_atlas(&self, part: E) -> Option<TextureAtlas> {
-        Some(TextureAtlas {
+    pub fn texture_atlas(&self, part: E) -> TextureAtlas {
+        TextureAtlas {
             layout: self.layout.clone(),
             index: *self.parts.get(part),
-        })
+        }
     }
 }
 

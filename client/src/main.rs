@@ -1,19 +1,18 @@
-use bevy::{
-    audio::{AudioPlugin, SpatialScale},
-    prelude::*,
-};
-use std::env;
-use widgets::WidgetsPlugin;
+use bevy::prelude::*;
 
+use bevy::audio::{AudioPlugin, SpatialScale};
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
 use gizmos::GizmosPlugin;
-use menu::MainMenuStates;
+use map::MapPlugin;
+use menu::{MainMenuStates, MenuPlugin};
 use networking::Connected;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
+use std::env;
 use ui::UiPlugin;
+use widgets::WidgetsPlugin;
 
 use animations::AnimationPlugin;
 use camera::CameraPlugin;
@@ -40,6 +39,7 @@ pub mod camera;
 pub mod entities;
 pub mod gizmos;
 pub mod input;
+pub mod map;
 pub mod menu;
 pub mod networking;
 pub mod sound;
@@ -101,6 +101,7 @@ fn main() {
             EntitiesPlugin,
             WidgetsPlugin,
             UiPlugin,
+            MapPlugin,
             SoundPlugin,
             GizmosPlugin,
         ));
