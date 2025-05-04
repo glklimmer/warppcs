@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{cmp::Ordering, fmt};
 
 use crate::{
     BoxCollider,
@@ -28,6 +28,7 @@ use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionTyp
 pub struct Item {
     pub item_type: ItemType,
     pub rarity: Rarity,
+    pub base: Vec<BaseEffect>,
     pub modifiers: Vec<Modifier>,
     pub color: Option<ItemColor>,
 }
@@ -73,7 +74,7 @@ impl Item {
     }
 
     fn generate(rarity: Rarity, item_type: ItemType) -> Self {
-        let mut modifiers = item_type.base();
+        let base = item_type.base();
         let amplitude = *fastrand::choice(ModifierAmplitude::all_variants()).unwrap();
         let multipliers = match rarity {
             Rarity::Common => vec![
@@ -86,11 +87,11 @@ impl Item {
                 item_type.multiplier(amplitude, ModifierSign::Negative),
             ],
         };
-        modifiers.extend(multipliers);
         Self {
             item_type,
             rarity,
-            modifiers,
+            base,
+            modifiers: multipliers,
             color: item_type.random_color(),
         }
     }
@@ -167,28 +168,48 @@ impl Rarity {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct BaseEffect {
+    pub effect: Effect,
+    pub amount: i32,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Modifier {
-    pub effect: ModifierEffect,
+    pub effect: Effect,
     pub amount: ModifierAmount,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum ModifierAmount {
-    Base(i32),
+    Amount(i32),
     Multiplier(i32),
+}
+
+impl ModifierAmount {
+    pub fn sign(&self) -> ModifierSign {
+        let amount = match self {
+            ModifierAmount::Amount(amount) => amount,
+            ModifierAmount::Multiplier(amount) => amount,
+        };
+
+        match 0.cmp(amount) {
+            Ordering::Less | Ordering::Equal => ModifierSign::Positive,
+            Ordering::Greater => ModifierSign::Negative,
+        }
+    }
 }
 
 impl fmt::Display for ModifierAmount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ModifierAmount::Base(amount) => write!(f, "{}", amount),
+            ModifierAmount::Amount(amount) => write!(f, "{}", amount),
             ModifierAmount::Multiplier(multiplier) => write!(f, "{}%", multiplier),
         }
     }
 }
 
 #[derive(Clone, Serialize, Deserialize, Copy, Debug, Eq, PartialEq)]
-pub enum ModifierEffect {
+pub enum Effect {
     Damage,
     Health,
     Range(WeaponType),
@@ -197,23 +218,23 @@ pub enum ModifierEffect {
     UnitAmount,
 }
 
-impl ModifierEffect {
-    fn base(&self) -> Modifier {
+impl Effect {
+    fn base(&self) -> BaseEffect {
         let range = match self {
-            ModifierEffect::Damage => 6..=18,
-            ModifierEffect::Health => 60..=120,
-            ModifierEffect::Range(weapon) => match weapon {
+            Effect::Damage => 6..=18,
+            Effect::Health => 60..=120,
+            Effect::Range(weapon) => match weapon {
                 WeaponType::Melee(_) => 20..=30,
                 WeaponType::Projectile(_) => 160..=220,
             },
-            ModifierEffect::AttackSpeed => 1..=4,
-            ModifierEffect::MovementSpeed => 25..=45,
-            ModifierEffect::UnitAmount => 3..=5,
+            Effect::AttackSpeed => 1..=4,
+            Effect::MovementSpeed => 25..=45,
+            Effect::UnitAmount => 3..=5,
         };
         let amount = fastrand::i32(range);
-        Modifier {
+        BaseEffect {
             effect: *self,
-            amount: ModifierAmount::Base(amount),
+            amount,
         }
     }
 
@@ -240,15 +261,15 @@ impl ModifierEffect {
     }
 }
 
-impl fmt::Display for ModifierEffect {
+impl fmt::Display for Effect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            ModifierEffect::Damage => "Damage",
-            ModifierEffect::Health => "Health",
-            ModifierEffect::Range(_) => "Range",
-            ModifierEffect::AttackSpeed => "AttackSpeed",
-            ModifierEffect::MovementSpeed => "MovementSpeed",
-            ModifierEffect::UnitAmount => "UnitAmount",
+            Effect::Damage => "Damage",
+            Effect::Health => "Health",
+            Effect::Range(_) => "Range",
+            Effect::AttackSpeed => "AttackSpeed",
+            Effect::MovementSpeed => "MovementSpeed",
+            Effect::UnitAmount => "UnitAmount",
         };
         write!(f, "{}", s)
     }
@@ -281,22 +302,20 @@ impl ItemType {
     }
 }
 
-enum ModifierSign {
+pub enum ModifierSign {
     Positive,
     Negative,
 }
 
 impl ItemType {
-    fn base(&self) -> Vec<Modifier> {
+    fn base(&self) -> Vec<BaseEffect> {
         let effects = match self {
-            ItemType::Weapon(weapon) => vec![
-                ModifierEffect::Damage,
-                ModifierEffect::AttackSpeed,
-                ModifierEffect::Range(*weapon),
-            ],
-            ItemType::Chest => vec![ModifierEffect::Health],
-            ItemType::Feet => vec![ModifierEffect::MovementSpeed],
-            ItemType::Head => vec![ModifierEffect::UnitAmount],
+            ItemType::Weapon(weapon) => {
+                vec![Effect::Damage, Effect::AttackSpeed, Effect::Range(*weapon)]
+            }
+            ItemType::Chest => vec![Effect::Health],
+            ItemType::Feet => vec![Effect::MovementSpeed],
+            ItemType::Head => vec![Effect::UnitAmount],
         };
 
         effects.iter().map(|effect| effect.base()).collect()
@@ -304,14 +323,14 @@ impl ItemType {
 
     fn multiplier(&self, amplitude: ModifierAmplitude, sign: ModifierSign) -> Modifier {
         let mut effects = vec![
-            ModifierEffect::Damage,
-            ModifierEffect::AttackSpeed,
-            ModifierEffect::Health,
-            ModifierEffect::MovementSpeed,
+            Effect::Damage,
+            Effect::AttackSpeed,
+            Effect::Health,
+            Effect::MovementSpeed,
         ];
 
         if let ItemType::Weapon(weapon_type) = self {
-            effects.push(ModifierEffect::Range(*weapon_type));
+            effects.push(Effect::Range(*weapon_type));
         }
 
         let effect = fastrand::choice(effects).unwrap();

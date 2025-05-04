@@ -5,7 +5,8 @@ use shared::{
     enum_map::EnumIter,
     map::Layers,
     server::players::items::{
-        Item, ItemColor, ItemType, MeleeWeapon, ModifierAmount, ProjectileWeapon, WeaponType,
+        BaseEffect, Item, ItemColor, ItemType, MeleeWeapon, Modifier, ModifierSign,
+        ProjectileWeapon, WeaponType,
     },
 };
 
@@ -231,7 +232,7 @@ fn init_item_info(
                 Sprite {
                     custom_size: Some(Vec2 {
                         x: 100.,
-                        y: 12. + item.modifiers.len() as f32 * 11.,
+                        y: 12. + item.base.len() as f32 * 11. + item.modifiers.len() as f32 * 11.,
                     }),
                     anchor: Anchor::TopCenter,
                     image: info.texture.clone(),
@@ -276,31 +277,28 @@ fn init_item_info(
                     },
                 ))
                 .with_children(|text_parent| {
-                    for modifier in &item.modifiers {
-                        let effect = &modifier.effect;
-                        let modifier = &modifier.amount;
-                        let amount_str = &modifier;
-
-                        let amount_color = match modifier {
-                            ModifierAmount::Base(_) => Color::BLACK,
-                            ModifierAmount::Multiplier(amount) => {
-                                if *amount > 0 {
-                                    Color::srgb(0., 1., 0.)
-                                } else if *amount < 0 {
-                                    Color::srgb(1., 0., 0.)
-                                } else {
-                                    text_color
-                                }
-                            }
-                        };
-
-                        // Effect label
+                    for BaseEffect { effect, amount } in &item.base {
                         text_parent
                             .spawn((TextSpan::new(format!("{effect}: ")), TextColor(text_color)));
 
-                        // Amount with color
                         text_parent.spawn((
-                            TextSpan::new(format!("{amount_str}\n")),
+                            TextSpan::new(format!("{amount}\n")),
+                            TextColor(Color::BLACK),
+                        ));
+                    }
+
+                    for Modifier { effect, amount } in &item.modifiers {
+                        let amount_text = amount.to_string();
+                        let amount_color = match amount.sign() {
+                            ModifierSign::Positive => Color::srgb(0., 1., 0.),
+                            ModifierSign::Negative => Color::srgb(1., 0., 0.),
+                        };
+
+                        text_parent
+                            .spawn((TextSpan::new(format!("{effect}: ")), TextColor(text_color)));
+
+                        text_parent.spawn((
+                            TextSpan::new(format!("{amount_text}\n")),
                             TextColor(amount_color),
                         ));
                     }
