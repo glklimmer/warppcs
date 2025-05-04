@@ -6,7 +6,7 @@ use crate::{
     BoxCollider, GRAVITY_G, Owner,
     map::buildings::{BuildStatus, Building},
     server::{
-        ai::{UnitBehaviour, attack::unit_speed},
+        ai::UnitBehaviour,
         entities::{Unit, health::Health},
     },
 };
@@ -17,7 +17,7 @@ use super::{PushBack, projectile::ProjectileType};
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);
 
-#[derive(Component, Debug, Copy, Clone)]
+#[derive(Component, Debug, Copy, Clone, Deref)]
 pub struct Speed(pub f32);
 
 #[derive(Component, Clone, Copy, Debug, Deserialize, Serialize)]
@@ -173,21 +173,23 @@ fn wall_collision(
 
 const MOVE_EPSILON: f32 = 1.;
 
+#[allow(clippy::type_complexity)]
 fn set_unit_velocity(
     mut query: Query<
         (
             &mut Velocity,
             &mut Transform,
             &UnitBehaviour,
-            &Unit,
             &PushBack,
             &RandomVelocityMul,
+            &Speed,
         ),
-        With<Health>,
+        (With<Unit>, With<Health>),
     >,
     transform_query: Query<&Transform, Without<Unit>>,
 ) {
-    for (mut velocity, mut transform, behaviour, unit, push_back, rand_velocity_mul) in &mut query {
+    for (mut velocity, mut transform, behaviour, push_back, rand_velocity_mul, speed) in &mut query
+    {
         match behaviour {
             UnitBehaviour::Idle => {}
             UnitBehaviour::AttackTarget(_) => {
@@ -206,7 +208,7 @@ fn set_unit_velocity(
                     continue;
                 }
 
-                velocity.0.x = direction * unit_speed(&unit.unit_type) * rand_velocity_mul.0;
+                velocity.0.x = direction * **speed * rand_velocity_mul.0;
                 transform.scale.x = direction;
             }
         }

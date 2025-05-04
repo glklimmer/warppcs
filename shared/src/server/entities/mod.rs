@@ -41,6 +41,12 @@ pub struct Unit {
     pub swing_timer: Timer,
 }
 
+#[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]
+pub struct Damage(pub f32);
+
+#[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]
+pub struct Range(pub f32);
+
 pub struct EntityPlugin;
 
 impl Plugin for EntityPlugin {

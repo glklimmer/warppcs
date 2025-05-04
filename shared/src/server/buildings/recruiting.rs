@@ -1,27 +1,30 @@
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::prelude::*;
 
+use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, Faction, Owner, flag_collider,
+    BoxCollider, Faction, Owner, Vec3LayerExt, flag_collider,
     map::{
         Layers,
         buildings::{Building, RecruitBuilding},
     },
     networking::{Inventory, UnitType},
     server::{
-        ai::{
-            UnitBehaviour,
-            attack::{unit_health, unit_swing_timer},
-        },
-        entities::{Unit, commander::SlotsAssignments, health::Health},
-        physics::attachment::AttachedTo,
-        players::interaction::{
-            Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType,
+        ai::UnitBehaviour,
+        entities::{Damage, Range, Unit, commander::SlotsAssignments, health::Health},
+        physics::{attachment::AttachedTo, movement::Speed},
+        players::{
+            interaction::{
+                Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType,
+            },
+            items::{CalculatedStats, Effect, Item, ItemType},
         },
     },
 };
+
+use super::item_assignment::ItemAssignment;
 
 #[derive(Component, Deserialize, Serialize)]
 #[require(
@@ -42,6 +45,7 @@ pub struct FlagAssignment(pub Entity, pub Vec2);
 pub struct RecruitEvent {
     player: Entity,
     unit_type: UnitType,
+    items: Vec<Item>,
 }
 
 pub fn recruit(
@@ -49,17 +53,19 @@ pub fn recruit(
     mut recruit: EventReader<RecruitEvent>,
     mut player_query: Query<(&Transform, &mut Inventory)>,
 ) {
-    for event in recruit.read() {
-        let player = event.player;
+    for RecruitEvent {
+        player,
+        unit_type,
+        items,
+    } in recruit.read()
+    {
+        let player = *player;
+        let unit_type = *unit_type;
+
         let (player_transform, mut inventory) = player_query.get_mut(player).unwrap();
         let player_translation = player_transform.translation;
-        let flag_translation = Vec3::new(
-            player_translation.x,
-            player_translation.y,
-            Layers::Flag.as_f32(),
-        );
 
-        let cost = &event.unit_type.recruitment_cost();
+        let cost = &unit_type.recruitment_cost();
         inventory.gold -= cost.gold;
 
         let owner = Owner(Faction::Player(player));
@@ -78,29 +84,45 @@ pub fn recruit(
 
         commands.entity(player).insert(FlagHolder(flag_entity));
 
-        let (unit_type, unit_amount) = match event.unit_type {
-            UnitType::Shieldwarrior => (UnitType::Shieldwarrior, 4),
-            UnitType::Pikeman => (UnitType::Pikeman, 4),
-            UnitType::Archer => (UnitType::Archer, 4),
-            UnitType::Bandit => todo!(),
-            UnitType::Commander => (UnitType::Commander, 1),
+        let unit_amount = if let UnitType::Commander = unit_type {
+            1
+        } else {
+            items.calculated(Effect::UnitAmount) as i32
         };
 
+        let time = items.calculated(Effect::AttackSpeed) / 2.;
         let unit = Unit {
-            swing_timer: unit_swing_timer(&unit_type),
+            swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
             unit_type,
         };
-        let health = Health {
-            hitpoints: unit_health(&unit_type),
-        };
+
+        let hitpoints = items.calculated(Effect::Health);
+        let health = Health { hitpoints };
+
+        let movement_speed = items.calculated(Effect::MovementSpeed);
+        let speed = Speed(movement_speed);
+
+        let damage = items.calculated(Effect::Damage);
+        let damage = Damage(damage);
+
+        let range = items.calculated(|item: &Item| {
+            let ItemType::Weapon(weapon) = item.item_type else {
+                return None;
+            };
+            Some(Effect::Range(weapon))
+        });
+        let range = Range(range);
 
         for unit_number in 1..=unit_amount {
             let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
             commands
                 .spawn((
-                    Transform::from_translation(flag_translation),
+                    player_translation.with_layer(Layers::Flag),
                     unit.clone(),
-                    health.clone(),
+                    health,
+                    speed,
+                    damage,
+                    range,
                     owner,
                     FlagAssignment(flag_entity, offset),
                     UnitBehaviour::FollowFlag(flag_entity, offset),
@@ -131,14 +153,14 @@ pub fn check_recruit(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut recruit: EventWriter<RecruitEvent>,
     player: Query<&Inventory>,
-    building: Query<&Building, With<RecruitBuilding>>,
+    building: Query<(&Building, &ItemAssignment), With<RecruitBuilding>>,
 ) {
     for event in interactions.read() {
         let InteractionType::Recruit = &event.interaction else {
             continue;
         };
         let inventory = player.get(event.player).unwrap();
-        let building = building.get(event.interactable).unwrap();
+        let (building, item_assignment) = building.get(event.interactable).unwrap();
         let Building::Unit { weapon: unit_type } = *building else {
             continue;
         };
@@ -152,6 +174,12 @@ pub fn check_recruit(
         recruit.send(RecruitEvent {
             player: event.player,
             unit_type,
+            items: item_assignment
+                .items
+                .clone()
+                .into_iter()
+                .flatten()
+                .collect(),
         });
     }
 }
