@@ -2,11 +2,13 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{AnimationSound, AnimationSoundTrigger, SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{
+    AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, SpriteSheetAnimation,
+};
 
 use super::super::UnitAnimation;
 
-pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
+pub fn shieldwarrior(world: &mut World) -> AnimationSpriteSheet<UnitAnimation> {
     let asset_server = world.resource::<AssetServer>();
     let texture: Handle<Image> = asset_server.load("sprites/humans/MiniShieldMan.png");
 
@@ -60,7 +62,7 @@ pub fn shieldwarrior(world: &mut World) -> SpriteSheet<UnitAnimation> {
         UnitAnimation::Death => None,
     });
 
-    SpriteSheet {
+    AnimationSpriteSheet {
         texture,
         layout,
         animations,

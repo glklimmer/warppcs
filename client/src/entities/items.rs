@@ -11,14 +11,14 @@ use shared::{
 };
 
 use crate::animations::{
-    SpriteSheet,
+    AnimationSpriteSheet,
     objects::items::{
         chests::{Chests, ChestsSpriteSheet},
         feet::{Feet, FeetSpriteSheet},
         heads::{Heads, HeadsSpriteSheet},
         weapons::{Weapons, WeaponsSpriteSheet},
     },
-    ui::item_info::ItemInfoSpriteSheet,
+    ui::item_info::{ItemInfoParts, ItemInfoSpriteSheet},
 };
 
 use super::highlight::Highlighted;
@@ -53,7 +53,7 @@ pub trait BuildSprite<K> {
     fn sprite_for<T: Into<K>>(&self, kind: T) -> Sprite;
 }
 
-impl<K> BuildSprite<K> for SpriteSheet<K>
+impl<K> BuildSprite<K> for AnimationSpriteSheet<K>
 where
     K: EnumIter,
 {
@@ -207,11 +207,8 @@ fn init_item_info(
     let info = commands
         .spawn((
             Sprite {
-                texture_atlas: Some(TextureAtlas {
-                    layout: info.layout.clone(),
-                    index: 0,
-                }),
-                image: info.texture.clone(),
+                texture_atlas: info.sprite_sheet.texture_atlas(ItemInfoParts::ItemPreview),
+                image: info.sprite_sheet.texture.clone(),
                 ..Default::default()
             },
             transform
@@ -235,11 +232,8 @@ fn init_item_info(
                         y: 12. + item.base.len() as f32 * 11. + item.modifiers.len() as f32 * 11.,
                     }),
                     anchor: Anchor::TopCenter,
-                    image: info.texture.clone(),
-                    texture_atlas: Some(TextureAtlas {
-                        layout: info.layout.clone(),
-                        index: 1,
-                    }),
+                    image: info.sprite_sheet.texture.clone(),
+                    texture_atlas: info.sprite_sheet.texture_atlas(ItemInfoParts::Text),
                     image_mode: SpriteImageMode::Sliced(TextureSlicer {
                         border: BorderRect {
                             left: 2.,

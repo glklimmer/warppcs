@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use shared::{AnimationChange, AnimationChangeEvent, enum_map::*};
 
-use crate::animations::{AnimationSound, AnimationTrigger, SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{
+    AnimationSound, AnimationSpriteSheet, AnimationTrigger, SpriteSheetAnimation,
+};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum HorseAnimation {
@@ -13,7 +15,7 @@ pub enum HorseAnimation {
 
 #[derive(Resource)]
 pub struct HorseSpriteSheet {
-    pub sprite_sheet: SpriteSheet<HorseAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<HorseAnimation>,
 }
 
 impl FromWorld for HorseSpriteSheet {
@@ -49,7 +51,7 @@ impl FromWorld for HorseSpriteSheet {
         });
 
         HorseSpriteSheet {
-            sprite_sheet: SpriteSheet {
+            sprite_sheet: AnimationSpriteSheet {
                 texture,
                 layout,
                 animations,
