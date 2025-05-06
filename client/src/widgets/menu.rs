@@ -95,10 +95,15 @@ impl<T: Clone + 'static> Menu<T> {
             config: MenuConfig::default(),
         }
     }
+
+    pub fn with_gap(mut self, gap: f32) -> Self {
+        self.config.gap = gap;
+        self
+    }
 }
 
-struct MenuConfig {
-    gap: f32,
+pub struct MenuConfig {
+    pub gap: f32,
 }
 
 impl Default for MenuConfig {
