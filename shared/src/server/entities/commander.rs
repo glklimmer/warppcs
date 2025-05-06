@@ -247,12 +247,29 @@ fn swap_flag_from_slot(
     let mut slot_assignments = slots.get_mut(trigger.commander).unwrap();
     let flag = trigger.flag.unwrap();
 
-    match trigger.selected_slot {
-        SlotSelection::Front => slot_assignments.front = Some(flag),
-        SlotSelection::Middle => slot_assignments.middle = Some(flag),
-        SlotSelection::Back => slot_assignments.back = Some(flag),
+    let slot_flag = match trigger.selected_slot {
+        SlotSelection::Front => {
+            let slot_flag = slot_assignments.front.unwrap();
+            slot_assignments.front = Some(flag);
+            slot_flag
+        }
+        SlotSelection::Middle => {
+            let slot_flag = slot_assignments.middle.unwrap();
+            slot_assignments.middle = Some(flag);
+            slot_flag
+        }
+        SlotSelection::Back => {
+            let slot_flag = slot_assignments.back.unwrap();
+            slot_assignments.back = Some(flag);
+            slot_flag
+        }
     };
 
     commands.entity(flag).insert(AttachedTo(trigger.commander));
-    commands.entity(trigger.player).remove::<FlagHolder>();
+    commands
+        .entity(slot_flag)
+        .insert(AttachedTo(trigger.player));
+    commands
+        .entity(trigger.player)
+        .insert(FlagHolder(slot_flag));
 }
