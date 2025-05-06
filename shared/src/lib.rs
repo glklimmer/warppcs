@@ -18,7 +18,7 @@ use server::{
         item_assignment::{
             AssignItem, CloseBuildingDialog, ItemAssignment, OpenBuildingDialog, StartBuild,
         },
-        recruiting::Flag,
+        recruiting::{Flag, FlagHolder},
     },
     entities::{
         Unit,
@@ -73,7 +73,7 @@ impl Plugin for SharedPlugin {
         .replicate_mapped::<Interactable>()
         .replicate_mapped::<AttachedTo>()
         .replicate_mapped::<SlotsAssignments>()
-        .replicate_group::<(Player, Transform, Inventory)>()
+        .replicate_group::<(Player, Transform, Inventory, FlagHolder)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
         .replicate_group::<(Flag, Transform)>()
