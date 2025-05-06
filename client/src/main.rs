@@ -8,7 +8,7 @@ use widgets::WidgetsPlugin;
 use bevy_parallax::ParallaxPlugin;
 use bevy_renet::client_connected;
 use gizmos::GizmosPlugin;
-use menu::{MainMenuStates, MenuPlugin};
+use menu::MainMenuStates;
 use networking::Connected;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
