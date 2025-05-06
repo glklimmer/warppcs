@@ -35,8 +35,14 @@ use super::item_assignment::ItemAssignment;
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Deref, DerefMut, Deserialize, Serialize)]
 pub struct FlagHolder(pub Entity);
+
+impl MapEntities for FlagHolder {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        **self = entity_mapper.map_entity(**self);
+    }
+}
 
 #[derive(Component)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
@@ -161,15 +167,23 @@ pub fn check_recruit(
         };
         let inventory = player.get(event.player).unwrap();
         let (building, item_assignment) = building.get(event.interactable).unwrap();
-        let Building::Unit { weapon: unit_type } = *building else {
-            continue;
+
+        let unit_type = match *building {
+            Building::MainBuilding { level } => Some(UnitType::Commander),
+            Building::Unit { weapon: unit_type } => {
+                let cost = unit_type.recruitment_cost();
+                if !inventory.gold.ge(&cost.gold) {
+                    println!("Not enough gold for recruitment");
+                    continue;
+                }
+                Some(unit_type)
+            }
+            Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => None,
         };
 
-        let cost = unit_type.recruitment_cost();
-        if !inventory.gold.ge(&cost.gold) {
-            println!("Not enough gold for recruitment");
+        let Some(unit_type) = unit_type else {
             continue;
-        }
+        };
 
         recruit.send(RecruitEvent {
             player: event.player,
