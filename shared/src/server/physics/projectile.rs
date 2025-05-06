@@ -5,14 +5,12 @@ use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
 use crate::Hitby;
+use crate::server::entities::Damage;
 use crate::{
     BoxCollider, DelayedDespawn, Owner,
     networking::Facing,
     projectile_collider,
-    server::{
-        ai::attack::projectile_damage,
-        entities::health::{Health, TakeDamage},
-    },
+    server::entities::health::{Health, TakeDamage},
 };
 
 use super::movement::Velocity;
@@ -33,20 +31,24 @@ impl Plugin for ProjectilePlugin {
 
 type TargetComponents<'a> = (Entity, &'a Transform, &'a BoxCollider, &'a Owner);
 
+#[allow(clippy::type_complexity)]
 fn projectile_collision(
     mut commands: Commands,
-    mut projectiles: Query<(
-        Entity,
-        &Transform,
-        &mut Velocity,
-        &BoxCollider,
-        &ProjectileType,
-        &Owner,
-    )>,
+    mut projectiles: Query<
+        (
+            Entity,
+            &Transform,
+            &mut Velocity,
+            &BoxCollider,
+            &Owner,
+            &Damage,
+        ),
+        With<ProjectileType>,
+    >,
     targets: Query<TargetComponents, (With<Health>, Without<ProjectileType>)>,
     mut attack_events: EventWriter<TakeDamage>,
 ) {
-    for (entity, transform, mut velocity, collider, projectile_type, owner) in &mut projectiles {
+    for (entity, transform, mut velocity, collider, owner, damage) in &mut projectiles {
         if transform.translation.y - collider.dimension.y <= 0.0 {
             velocity.0 = Vec2::ZERO;
             commands.entity(entity).remove::<BoxCollider>();
@@ -69,7 +71,7 @@ fn projectile_collision(
 
                 attack_events.send(TakeDamage {
                     target_entity,
-                    damage: projectile_damage(projectile_type),
+                    damage: **damage,
                     direction: match delta_x > 0. {
                         true => Facing::Left,
                         false => Facing::Right,

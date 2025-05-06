@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::ClientId;
-
 use super::{
     ai::AIPlugin,
     buildings::BuildingsPlugins,
@@ -10,13 +8,7 @@ use super::{
     physics::PhysicsPlugin,
     players::PlayerPlugin,
 };
-use crate::networking::{NetworkRegistry, PlayerCommand};
-
-#[derive(Event)]
-pub struct NetworkEvent {
-    pub client_id: ClientId,
-    pub message: PlayerCommand,
-}
+use crate::networking::NetworkRegistry;
 
 pub struct ServerNetworkPlugin;
 

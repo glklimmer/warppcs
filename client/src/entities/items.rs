@@ -5,19 +5,20 @@ use shared::{
     enum_map::EnumIter,
     map::Layers,
     server::players::items::{
-        Item, ItemColor, ItemType, MeleeWeapon, ModifierAmount, ProjectileWeapon, WeaponType,
+        BaseEffect, Item, ItemColor, ItemType, MeleeWeapon, Modifier, ModifierSign,
+        ProjectileWeapon, WeaponType,
     },
 };
 
 use crate::animations::{
-    SpriteSheet,
+    AnimationSpriteSheet,
     objects::items::{
         chests::{Chests, ChestsSpriteSheet},
         feet::{Feet, FeetSpriteSheet},
         heads::{Heads, HeadsSpriteSheet},
         weapons::{Weapons, WeaponsSpriteSheet},
     },
-    ui::item_info::ItemInfoSpriteSheet,
+    ui::item_info::{ItemInfoParts, ItemInfoSpriteSheet},
 };
 
 use super::highlight::Highlighted;
@@ -33,14 +34,26 @@ impl Plugin for ItemsPlugin {
     }
 }
 
-#[derive(Component, Deref)]
-struct ItemInfo(Entity);
+#[derive(Component, Clone)]
+pub struct ItemInfo {
+    item: Item,
+    pub tooltip: Entity,
+}
+
+impl ItemInfo {
+    pub fn new(item: Item) -> Self {
+        Self {
+            item,
+            tooltip: Entity::PLACEHOLDER,
+        }
+    }
+}
 
 pub trait BuildSprite<K> {
     fn sprite_for<T: Into<K>>(&self, kind: T) -> Sprite;
 }
 
-impl<K> BuildSprite<K> for SpriteSheet<K>
+impl<K> BuildSprite<K> for AnimationSpriteSheet<K>
 where
     K: EnumIter,
 {
@@ -164,33 +177,38 @@ fn init_item_sprite(
         &heads_sprite_sheet,
     );
 
-    commands.entity(trigger.entity()).insert(sprite.clone());
+    commands.entity(trigger.entity()).insert((
+        sprite.clone(),
+        ItemInfo {
+            item: item.clone(),
+            tooltip: trigger.entity(),
+        },
+    ));
 }
 
 fn init_item_info(
-    trigger: Trigger<OnAdd, Item>,
+    trigger: Trigger<OnAdd, ItemInfo>,
     mut commands: Commands,
-    mut item: Query<(&Item, &Transform)>,
+    mut item: Query<(&ItemInfo, &Transform)>,
     info: Res<ItemInfoSpriteSheet>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     chests_sprite_sheet: Res<ChestsSpriteSheet>,
     feet_sprite_sheet: Res<FeetSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
 ) {
-    let Ok((item, transform)) = item.get_mut(trigger.entity()) else {
+    let Ok((ItemInfo { item, tooltip: _ }, transform)) = item.get_mut(trigger.entity()) else {
         return;
     };
+
+    info!("adding info");
 
     let text_color = Color::srgb_u8(143, 86, 59);
 
     let info = commands
         .spawn((
             Sprite {
-                texture_atlas: Some(TextureAtlas {
-                    layout: info.layout.clone(),
-                    index: 0,
-                }),
-                image: info.texture.clone(),
+                texture_atlas: info.sprite_sheet.texture_atlas(ItemInfoParts::ItemPreview),
+                image: info.sprite_sheet.texture.clone(),
                 ..Default::default()
             },
             transform
@@ -211,14 +229,11 @@ fn init_item_info(
                 Sprite {
                     custom_size: Some(Vec2 {
                         x: 100.,
-                        y: 12. + item.modifiers.len() as f32 * 11.,
+                        y: 12. + item.base.len() as f32 * 11. + item.modifiers.len() as f32 * 11.,
                     }),
                     anchor: Anchor::TopCenter,
-                    image: info.texture.clone(),
-                    texture_atlas: Some(TextureAtlas {
-                        layout: info.layout.clone(),
-                        index: 1,
-                    }),
+                    image: info.sprite_sheet.texture.clone(),
+                    texture_atlas: info.sprite_sheet.texture_atlas(ItemInfoParts::Text),
                     image_mode: SpriteImageMode::Sliced(TextureSlicer {
                         border: BorderRect {
                             left: 2.,
@@ -256,31 +271,28 @@ fn init_item_info(
                     },
                 ))
                 .with_children(|text_parent| {
-                    for modifier in &item.modifiers {
-                        let effect = &modifier.effect;
-                        let modifier = &modifier.amount;
-                        let amount_str = &modifier;
-
-                        let amount_color = match modifier {
-                            ModifierAmount::Base(_) => Color::BLACK,
-                            ModifierAmount::Multiplier(amount) => {
-                                if *amount > 0 {
-                                    Color::srgb(0., 1., 0.)
-                                } else if *amount < 0 {
-                                    Color::srgb(1., 0., 0.)
-                                } else {
-                                    text_color
-                                }
-                            }
-                        };
-
-                        // Effect label
+                    for BaseEffect { effect, amount } in &item.base {
                         text_parent
                             .spawn((TextSpan::new(format!("{effect}: ")), TextColor(text_color)));
 
-                        // Amount with color
                         text_parent.spawn((
-                            TextSpan::new(format!("{amount_str}\n")),
+                            TextSpan::new(format!("{amount}\n")),
+                            TextColor(Color::BLACK),
+                        ));
+                    }
+
+                    for Modifier { effect, amount } in &item.modifiers {
+                        let amount_text = amount.to_string();
+                        let amount_color = match amount.sign() {
+                            ModifierSign::Positive => Color::srgb(0., 1., 0.),
+                            ModifierSign::Negative => Color::srgb(1., 0., 0.),
+                        };
+
+                        text_parent
+                            .spawn((TextSpan::new(format!("{effect}: ")), TextColor(text_color)));
+
+                        text_parent.spawn((
+                            TextSpan::new(format!("{amount_text}\n")),
                             TextColor(amount_color),
                         ));
                     }
@@ -290,7 +302,10 @@ fn init_item_info(
 
     let mut item_entity = commands.entity(trigger.entity());
     item_entity.add_child(info);
-    item_entity.insert(ItemInfo(info));
+    item_entity.insert(ItemInfo {
+        item: item.clone(),
+        tooltip: info,
+    });
 
     let item_sprite = commands
         .spawn((
@@ -320,7 +335,7 @@ fn show_item_info(
     let Ok(info) = items.get(trigger.entity()) else {
         return;
     };
-    let Some(mut entity) = commands.get_entity(**info) else {
+    let Some(mut entity) = commands.get_entity(info.tooltip) else {
         return;
     };
     entity.try_insert(Visibility::Visible);
@@ -334,7 +349,7 @@ fn hide_item_info(
     let Ok(info) = items.get(trigger.entity()) else {
         return;
     };
-    let Some(mut entity) = commands.get_entity(**info) else {
+    let Some(mut entity) = commands.get_entity(info.tooltip) else {
         return;
     };
     entity.try_insert(Visibility::Hidden);
