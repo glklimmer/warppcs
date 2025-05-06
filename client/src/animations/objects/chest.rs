@@ -5,14 +5,14 @@ use shared::ChestAnimation;
 use shared::ChestAnimationEvent;
 use shared::server::players::chest::Chest;
 
-use crate::animations::PlayOnce;
 use crate::animations::AnimationDirection;
+use crate::animations::PlayOnce;
 
-use super::super::{SpriteSheet, SpriteSheetAnimation};
+use super::super::{AnimationSpriteSheet, SpriteSheetAnimation};
 
 #[derive(Resource)]
 pub struct ChestSpriteSheet {
-    pub sprite_sheet: SpriteSheet<ChestAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<ChestAnimation>,
 }
 
 impl FromWorld for ChestSpriteSheet {
@@ -49,7 +49,7 @@ impl FromWorld for ChestSpriteSheet {
         });
 
         ChestSpriteSheet {
-            sprite_sheet: SpriteSheet {
+            sprite_sheet: AnimationSpriteSheet {
                 texture,
                 layout,
                 animations,

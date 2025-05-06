@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use shared::enum_map::*;
 
-use crate::animations::SpriteSheet;
+use crate::animations::AnimationSpriteSheet;
 use crate::animations::SpriteSheetAnimation;
 
 #[derive(Debug, Clone, Copy, Mappable)]
@@ -16,7 +16,7 @@ pub enum Heads {
 
 #[derive(Resource)]
 pub struct HeadsSpriteSheet {
-    pub sprite_sheet: SpriteSheet<Heads>,
+    pub sprite_sheet: AnimationSpriteSheet<Heads>,
 }
 
 impl FromWorld for HeadsSpriteSheet {
@@ -70,7 +70,7 @@ impl FromWorld for HeadsSpriteSheet {
         });
 
         HeadsSpriteSheet {
-            sprite_sheet: SpriteSheet {
+            sprite_sheet: AnimationSpriteSheet {
                 texture,
                 layout,
                 animations,

@@ -4,13 +4,13 @@ use bevy_replicon::prelude::{SendMode, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    map::buildings::Building, networking::Facing, AnimationChange, AnimationChangeEvent,
-    DelayedDespawn, Hitby, Owner,
+    AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner, map::buildings::Building,
+    networking::Facing,
 };
 
 use super::Unit;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Copy)]
 pub struct Health {
     pub hitpoints: f32,
 }

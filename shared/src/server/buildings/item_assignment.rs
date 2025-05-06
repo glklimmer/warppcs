@@ -38,7 +38,7 @@ pub enum ItemSlot {
     Feet,
 }
 
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Component, Serialize, Deserialize, Clone)]
 #[require(Replicated)]
 pub struct ItemAssignment {
     pub items: EnumMap<ItemSlot, Option<Item>>,

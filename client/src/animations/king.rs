@@ -6,7 +6,7 @@ use shared::{
 };
 
 use super::{
-    AnimationSound, AnimationSoundTrigger, AnimationTrigger, PlayOnce, SpriteSheet,
+    AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, AnimationTrigger, PlayOnce,
     SpriteSheetAnimation,
 };
 
@@ -26,7 +26,7 @@ pub enum KingAnimation {
 
 #[derive(Resource)]
 pub struct KingSpriteSheet {
-    pub sprite_sheet: SpriteSheet<KingAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<KingAnimation>,
 }
 
 impl FromWorld for KingSpriteSheet {
@@ -117,7 +117,7 @@ impl FromWorld for KingSpriteSheet {
         });
 
         KingSpriteSheet {
-            sprite_sheet: SpriteSheet {
+            sprite_sheet: AnimationSpriteSheet {
                 texture,
                 layout,
                 animations,

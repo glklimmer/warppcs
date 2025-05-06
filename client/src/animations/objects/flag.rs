@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{SpriteSheet, SpriteSheetAnimation};
+use crate::animations::{AnimationSpriteSheet, SpriteSheetAnimation};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum FlagAnimation {
@@ -12,7 +12,7 @@ pub enum FlagAnimation {
 
 #[derive(Resource)]
 pub struct FlagSpriteSheet {
-    pub sprite_sheet: SpriteSheet<FlagAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<FlagAnimation>,
 }
 
 impl FromWorld for FlagSpriteSheet {
@@ -42,7 +42,7 @@ impl FromWorld for FlagSpriteSheet {
         });
 
         FlagSpriteSheet {
-            sprite_sheet: SpriteSheet {
+            sprite_sheet: AnimationSpriteSheet {
                 texture,
                 layout,
                 animations,

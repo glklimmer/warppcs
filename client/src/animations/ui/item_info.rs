@@ -1,9 +1,19 @@
 use bevy::prelude::*;
 
+use shared::enum_map::*;
+
+use crate::animations::StaticSpriteSheet;
+
+#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
+pub enum ItemInfoParts {
+    #[default]
+    ItemPreview,
+    Text,
+}
+
 #[derive(Resource)]
 pub struct ItemInfoSpriteSheet {
-    pub texture: Handle<Image>,
-    pub layout: Handle<TextureAtlasLayout>,
+    pub sprite_sheet: StaticSpriteSheet<ItemInfoParts>,
 }
 
 impl FromWorld for ItemInfoSpriteSheet {
@@ -26,6 +36,17 @@ impl FromWorld for ItemInfoSpriteSheet {
             ],
         });
 
-        Self { texture, layout }
+        let parts = EnumMap::new(|c| match c {
+            ItemInfoParts::ItemPreview => 0,
+            ItemInfoParts::Text => 1,
+        });
+
+        Self {
+            sprite_sheet: StaticSpriteSheet {
+                texture,
+                layout,
+                parts,
+            },
+        }
     }
 }

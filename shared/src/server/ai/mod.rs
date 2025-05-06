@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 
-use attack::{AttackPlugin, unit_range};
+use attack::AttackPlugin;
 
 use crate::Owner;
 
 use super::{
     buildings::recruiting::FlagAssignment,
-    entities::{Unit, health::Health},
+    entities::{Range, health::Health},
 };
 
 pub mod attack;
@@ -39,11 +39,11 @@ struct TargetInfo {
 }
 
 fn determine_behaviour(
-    mut query: Query<(Entity, &mut UnitBehaviour, &Transform, &Owner, &Unit)>,
+    mut query: Query<(Entity, &mut UnitBehaviour, &Transform, &Owner, &Range)>,
     others: Query<(Entity, &Transform, &Owner), With<Health>>,
     flag: Query<&FlagAssignment>,
 ) {
-    for (entity, mut behaviour, transform, owner, unit) in &mut query {
+    for (entity, mut behaviour, transform, owner, range) in &mut query {
         let nearest = others
             .iter()
             .filter(|(.., other_owner)| other_owner.ne(&owner))
@@ -54,7 +54,7 @@ fn determine_behaviour(
                     .truncate()
                     .distance(other_transform.translation.truncate()),
             })
-            .filter(|other| other.distance <= unit_range(&unit.unit_type))
+            .filter(|other| other.distance <= **range)
             .min_by(|a, b| a.distance.total_cmp(&b.distance));
         match nearest {
             Some(nearest_enemy) => match *behaviour {
