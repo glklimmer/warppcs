@@ -7,7 +7,10 @@ use crate::{
     server::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         physics::attachment::AttachedTo,
-        players::interaction::{InteractionTriggeredEvent, InteractionType},
+        players::{
+            interaction::{InteractionTriggeredEvent, InteractionType},
+            items::Effect,
+        },
     },
 };
 
@@ -78,6 +81,17 @@ impl MapEntities for SlotsAssignments {
 impl MapEntities for CommanderInteraction {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.commander = entity_mapper.map_entity(self.commander);
+    }
+}
+
+pub fn commander_stats(effect: Effect) -> f32 {
+    match effect {
+        Effect::Damage => 20.,
+        Effect::Health => 100.,
+        Effect::Range(_) => 50.,
+        Effect::AttackSpeed => 1.,
+        Effect::MovementSpeed => 50.,
+        Effect::UnitAmount => 1.,
     }
 }
 
