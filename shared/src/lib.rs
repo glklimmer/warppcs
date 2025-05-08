@@ -24,7 +24,10 @@ use server::{
         Unit,
         commander::{CommanderInteraction, CommanderSlot, SlotsAssignments},
     },
-    game_scenes::{map::LoadMap, travel::Portal},
+    game_scenes::{
+        map::LoadMap,
+        travel::{Portal, Traveling},
+    },
     physics::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},
@@ -70,6 +73,7 @@ impl Plugin for SharedPlugin {
         .replicate::<BoxCollider>()
         .replicate::<Mounted>()
         .replicate::<ItemAssignment>()
+        .replicate::<Traveling>()
         .replicate_mapped::<Interactable>()
         .replicate_mapped::<AttachedTo>()
         .replicate_mapped::<SlotsAssignments>()

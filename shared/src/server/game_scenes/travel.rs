@@ -21,17 +21,17 @@ impl Plugin for TravelPlugin {
     }
 }
 
-#[derive(Component)]
-struct Traveling {
-    destination: TravelDestination,
+#[derive(Component, Serialize, Deserialize)]
+pub struct Traveling {
+    destination: Vec3,
     time_left: Timer,
 }
 
 impl Traveling {
-    fn to(destination: TravelDestination) -> Self {
+    fn to(destination: Vec3) -> Self {
         Self {
             destination,
-            time_left: Timer::from_seconds(1., TimerMode::Once),
+            time_left: Timer::from_seconds(5., TimerMode::Once),
         }
     }
 }
@@ -124,12 +124,12 @@ fn start_travel(
 
         commands
             .entity(player_entity)
-            .insert(Traveling::to(destination.clone()));
+            .insert(Traveling::to(target_position));
 
         for group in travel_entities {
             commands
                 .entity(group)
-                .insert(Traveling::to(destination.clone()));
+                .insert(Traveling::to(target_position));
         }
     }
 }
@@ -137,7 +137,6 @@ fn start_travel(
 fn end_travel(
     mut commands: Commands,
     query: Query<(Entity, &Traveling)>,
-    transform: Query<&Transform>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) {
     for (entity, travel) in query.iter() {
@@ -145,9 +144,7 @@ fn end_travel(
             continue;
         }
 
-        let destination = &travel.destination;
-        let travel_destination = transform.get(**destination).unwrap();
-        let target_position = travel_destination.translation;
+        let target_position = &travel.destination;
 
         info!("Travel finished to target position: {:?}", target_position);
 
