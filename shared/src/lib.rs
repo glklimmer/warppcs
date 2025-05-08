@@ -24,7 +24,7 @@ use server::{
         Unit,
         commander::{CommanderInteraction, CommanderSlot, SlotsAssignments},
     },
-    game_scenes::Portal,
+    game_scenes::travel::Portal,
     physics::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},

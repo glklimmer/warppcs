@@ -20,7 +20,7 @@ use crate::{
 };
 use std::collections::VecDeque;
 
-use super::{Portal, TravelDestination};
+use super::travel::{Portal, TravelDestination};
 
 pub struct StartGamePlugin;
 
@@ -102,8 +102,8 @@ fn start_game(
 }
 
 fn connect_portals(mut commands: Commands, left: Entity, right: Entity) {
-    commands.entity(left).insert(TravelDestination(right));
-    commands.entity(right).insert(TravelDestination(left));
+    commands.entity(left).insert(TravelDestination::new(right));
+    commands.entity(right).insert(TravelDestination::new(left));
 }
 
 fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_right_portal: Entity) {
