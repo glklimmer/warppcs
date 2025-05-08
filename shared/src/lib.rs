@@ -24,7 +24,7 @@ use server::{
         Unit,
         commander::{CommanderInteraction, CommanderSlot, SlotsAssignments},
     },
-    game_scenes::travel::Portal,
+    game_scenes::{map::LoadMap, travel::Portal},
     physics::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},
@@ -90,6 +90,7 @@ impl Plugin for SharedPlugin {
         .add_client_trigger::<StartBuild>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
+        .add_server_trigger::<LoadMap>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
         .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
