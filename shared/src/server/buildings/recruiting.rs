@@ -44,8 +44,14 @@ impl MapEntities for FlagHolder {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Deserialize, Serialize)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
+
+impl MapEntities for FlagAssignment {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.map_entity(self.0);
+    }
+}
 
 #[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
