@@ -12,13 +12,16 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(setup_map).add_systems(
-            Update,
-            (
-                sync_ui_elements,
-                toggle_map.run_if(input_just_pressed(KeyCode::KeyM)),
-            ),
-        );
+        app.add_observer(setup_map)
+            .add_systems(OnEnter(PlayerState::Traveling), show_map)
+            .add_systems(OnExit(PlayerState::Traveling), hide_map)
+            .add_systems(
+                Update,
+                (
+                    sync_ui_elements,
+                    toggle_map.run_if(input_just_pressed(KeyCode::KeyM)),
+                ),
+            );
     }
 }
 
@@ -91,5 +94,17 @@ fn toggle_map(
         next_state.set(PlayerState::World);
     } else {
         next_state.set(PlayerState::Interaction);
+    }
+}
+
+fn show_map(mut map: Query<&mut Visibility, With<Map>>) {
+    if let Ok(mut map) = map.get_single_mut() {
+        *map = Visibility::Visible;
+    }
+}
+
+fn hide_map(mut map: Query<&mut Visibility, With<Map>>) {
+    if let Ok(mut map) = map.get_single_mut() {
+        *map = Visibility::Hidden;
     }
 }
