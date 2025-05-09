@@ -4,6 +4,8 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
+use crate::server::entities::commander::commander_stats;
+use crate::server::players::items::{MeleeWeapon, WeaponType};
 use crate::{
     BoxCollider, Faction, Owner, Vec3LayerExt, flag_collider,
     map::{
@@ -57,7 +59,7 @@ impl MapEntities for FlagAssignment {
 pub struct RecruitEvent {
     player: Entity,
     unit_type: UnitType,
-    items: Vec<Item>,
+    items: Option<Vec<Item>>,
 }
 
 pub fn recruit(
@@ -96,33 +98,56 @@ pub fn recruit(
 
         commands.entity(player).insert(FlagHolder(flag_entity));
 
-        let unit_amount = if let UnitType::Commander = unit_type {
-            1
-        } else {
+        let unit_amount = if let Some(items) = &items {
             items.calculated(Effect::UnitAmount) as i32
+        } else {
+            commander_stats(Effect::UnitAmount) as i32
         };
 
-        let time = items.calculated(Effect::AttackSpeed) / 2.;
+        let time = if let Some(items) = &items {
+            items.calculated(Effect::AttackSpeed) / 2.
+        } else {
+            commander_stats(Effect::AttackSpeed)
+        };
+
         let unit = Unit {
             swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
             unit_type,
         };
 
-        let hitpoints = items.calculated(Effect::Health);
+        let hitpoints = if let Some(items) = &items {
+            items.calculated(Effect::Health)
+        } else {
+            commander_stats(Effect::Health)
+        };
         let health = Health { hitpoints };
 
-        let movement_speed = items.calculated(Effect::MovementSpeed);
+        let movement_speed = if let Some(items) = &items {
+            items.calculated(Effect::MovementSpeed)
+        } else {
+            commander_stats(Effect::MovementSpeed)
+        };
         let speed = Speed(movement_speed);
 
-        let damage = items.calculated(Effect::Damage);
+        let damage = if let Some(items) = &items {
+            items.calculated(Effect::Damage)
+        } else {
+            commander_stats(Effect::Damage)
+        };
         let damage = Damage(damage);
 
-        let range = items.calculated(|item: &Item| {
-            let ItemType::Weapon(weapon) = item.item_type else {
-                return None;
-            };
-            Some(Effect::Range(weapon))
-        });
+        let range = if let Some(items) = &items {
+            items.calculated(|item: &Item| {
+                let ItemType::Weapon(weapon) = item.item_type else {
+                    return None;
+                };
+                Some(Effect::Range(weapon))
+            })
+        } else {
+            commander_stats(Effect::Range(WeaponType::Melee(
+                MeleeWeapon::SwordAndShield,
+            )))
+        };
         let range = Range(range);
 
         for unit_number in 1..=unit_amount {
@@ -165,7 +190,7 @@ pub fn check_recruit(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut recruit: EventWriter<RecruitEvent>,
     player: Query<&Inventory>,
-    building: Query<(&Building, &ItemAssignment), With<RecruitBuilding>>,
+    building: Query<(&Building, Option<&ItemAssignment>), With<RecruitBuilding>>,
 ) {
     for event in interactions.read() {
         let InteractionType::Recruit = &event.interaction else {
@@ -191,15 +216,26 @@ pub fn check_recruit(
             continue;
         };
 
+        let Some(item_assignment) = item_assignment else {
+            recruit.send(RecruitEvent {
+                player: event.player,
+                unit_type,
+                items: None,
+            });
+            continue;
+        };
+
         recruit.send(RecruitEvent {
             player: event.player,
             unit_type,
-            items: item_assignment
-                .items
-                .clone()
-                .into_iter()
-                .flatten()
-                .collect(),
+            items: Some(
+                item_assignment
+                    .items
+                    .clone()
+                    .into_iter()
+                    .flatten()
+                    .collect(),
+            ),
         });
     }
 }
