@@ -263,26 +263,14 @@ pub fn check_recruit(
             println!("Not enough gold for recruitment");
             continue;
         }
-        let Some(item_assignment) = item_assignment else {
-            recruit.send(RecruitEvent {
-                player: event.player,
-                unit_type,
-                items: None,
-            });
-            continue;
-        };
+
+        let items: Option<Vec<_>> = item_assignment
+            .map(|assignment| assignment.items.clone().into_iter().flatten().collect());
 
         recruit.send(RecruitEvent {
             player: event.player,
             unit_type,
-            items: Some(
-                item_assignment
-                    .items
-                    .clone()
-                    .into_iter()
-                    .flatten()
-                    .collect(),
-            ),
+            items,
         });
     }
 }
