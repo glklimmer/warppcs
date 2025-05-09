@@ -79,6 +79,17 @@ where
     }
 }
 
+impl<E, T> EnumMap<E, T>
+where
+    E: EnumIter,
+    T: PartialEq,
+{
+    /// Check whether any of the stored values equals `value`.
+    pub fn contains(&self, value: &T) -> bool {
+        self.data.contains(value)
+    }
+}
+
 // `for value in enum_map` moves out the values
 impl<E, T> IntoIterator for EnumMap<E, T>
 where

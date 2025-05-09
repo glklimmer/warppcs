@@ -8,7 +8,7 @@ use shared::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         entities::{
             Unit,
-            commander::{CommanderInteraction, SlotSelection, SlotsAssignments},
+            commander::{CommanderInteraction, CommanderSlot, SlotsAssignments},
         },
     },
 };
@@ -29,13 +29,6 @@ pub struct CommanderInteractionPlugin;
 enum MainMenuEntries {
     Map,
     Slots,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum Slot {
-    Front,
-    Middle,
-    Back,
 }
 
 #[derive(Event)]
@@ -62,7 +55,7 @@ impl Plugin for CommanderInteractionPlugin {
             )
             .add_plugins((
                 MenuPlugin::<MainMenuEntries>::default(),
-                MenuPlugin::<Slot>::default(),
+                MenuPlugin::<CommanderSlot>::default(),
             ));
     }
 }
@@ -118,7 +111,7 @@ fn open_commander_dialog(
 fn open_slots_dialog(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
     mut commands: Commands,
-    commander: Query<&SlotsAssignments>,
+    slot_assignments: Query<&SlotsAssignments>,
     transform: Query<&GlobalTransform>,
     asset_server: Res<AssetServer>,
     units_on_flag: Query<(&FlagAssignment, &Unit)>,
@@ -130,53 +123,52 @@ fn open_slots_dialog(
     };
 
     let entry_position = transform.get(trigger.entry).unwrap().translation();
-    let slot_assignments = commander.get(active.unwrap()).unwrap();
+    let slot_assignments = slot_assignments.get(active.unwrap()).unwrap();
 
-    let menu_nodes = vec![
-        (Slot::Front, slot_assignments.front),
-        (Slot::Middle, slot_assignments.middle),
-        (Slot::Back, slot_assignments.back),
-    ]
-    .into_iter()
-    .map(|(slot, slot_assignment)| {
-        let empty_slot = asset_server.load::<Image>("ui/commander/slot_empty.png");
-        let mut has_unit_weapon = None;
-        if let Some(slot) = slot_assignment {
-            let unit = units_on_flag
-                .iter()
-                .find(|(assignment, _)| assignment.0 == slot)
-                .unwrap()
-                .1;
+    let menu_nodes = slot_assignments
+        .slots
+        .iter_enums()
+        .map(|(slot, slot_assignment)| {
+            let empty_slot = asset_server.load::<Image>("ui/commander/slot_empty.png");
+            let mut has_unit_weapon = None;
+            if let Some(slot) = slot_assignment {
+                let unit = units_on_flag
+                    .iter()
+                    .find(|(assignment, _)| assignment.0 == *slot)
+                    .unwrap()
+                    .1;
 
-            let weapon_sprite = match unit.unit_type {
-                UnitType::Shieldwarrior => weapons_sprite_sheet
-                    .sprite_sheet
-                    .sprite_for(Weapons::SwordAndShield),
-                UnitType::Pikeman => weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Pike),
-                UnitType::Archer => weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Bow),
-                UnitType::Bandit => todo!(),
-                UnitType::Commander => todo!(),
+                let weapon_sprite = match unit.unit_type {
+                    UnitType::Shieldwarrior => weapons_sprite_sheet
+                        .sprite_sheet
+                        .sprite_for(Weapons::SwordAndShield),
+                    UnitType::Pikeman => {
+                        weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Pike)
+                    }
+                    UnitType::Archer => weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Bow),
+                    UnitType::Bandit => todo!(),
+                    UnitType::Commander => todo!(),
+                };
+                let flag_weapon = commands
+                    .spawn((weapon_sprite, Transform::from_xyz(0., 0., 1.)))
+                    .id();
+                has_unit_weapon = Some(flag_weapon);
             };
-            let flag_weapon = commands
-                .spawn((weapon_sprite, Transform::from_xyz(0., 0., 1.)))
-                .id();
-            has_unit_weapon = Some(flag_weapon);
-        };
 
-        MenuNode::with_fn(slot, move |commands, entry| {
-            let mut entry = commands.entity(entry);
-            entry.insert(Sprite {
-                image: empty_slot.clone(),
-                custom_size: Some(Vec2::splat(10.)),
-                ..Default::default()
-            });
+            MenuNode::with_fn(slot, move |commands, entry| {
+                let mut entry = commands.entity(entry);
+                entry.insert(Sprite {
+                    image: empty_slot.clone(),
+                    custom_size: Some(Vec2::splat(10.)),
+                    ..Default::default()
+                });
 
-            if let Some(flag_weapon) = has_unit_weapon {
-                entry.add_child(flag_weapon);
-            }
+                if let Some(flag_weapon) = has_unit_weapon {
+                    entry.add_child(flag_weapon);
+                }
+            })
         })
-    })
-    .collect();
+        .collect();
 
     commands.spawn((
         Visibility::default(),
@@ -189,7 +181,7 @@ fn open_slots_dialog(
 }
 
 fn send_selected(
-    trigger: Trigger<SelectionEvent<Slot>>,
+    trigger: Trigger<SelectionEvent<CommanderSlot>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
     mut commands: Commands,
 ) {
@@ -199,22 +191,17 @@ fn send_selected(
         entry: _,
     } = *trigger;
 
-    match slot {
-        Slot::Front => commands.client_trigger(SlotSelection::Front),
-        Slot::Middle => commands.client_trigger(SlotSelection::Middle),
-        Slot::Back => commands.client_trigger(SlotSelection::Back),
-    };
+    commands.client_trigger(slot);
     if let Ok(current) = current_hover.get_single() {
         commands.entity(current).despawn_recursive();
     };
 }
 
 fn despawn_hover_weapon(
-    trigger: Trigger<ClosedMenu<Slot>>,
+    _: Trigger<ClosedMenu<CommanderSlot>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
     mut commands: Commands,
 ) {
-    trigger;
     let Ok(current) = current_hover.get_single() else {
         return;
     };
@@ -224,7 +211,7 @@ fn despawn_hover_weapon(
 fn draw_flag(
     trigger: Trigger<DrawHoverFlag>,
     mut current_hover: Query<&mut Transform, With<HoverWeapon>>,
-    menu_entries_add: Query<&GlobalTransform, With<NodePayload<Slot>>>,
+    menu_entries_add: Query<&GlobalTransform, With<NodePayload<CommanderSlot>>>,
     units_on_flag: Query<(&FlagAssignment, &Unit)>,
     player_flag: Query<Option<&FlagHolder>, With<ControlledPlayer>>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
@@ -276,7 +263,7 @@ fn draw_flag(
 }
 
 fn draw_flag_on_selected(
-    menu_entries_add: Query<Entity, (Added<Selected>, With<NodePayload<Slot>>)>,
+    menu_entries_add: Query<Entity, (Added<Selected>, With<NodePayload<CommanderSlot>>)>,
     mut commands: Commands,
 ) {
     let Ok(entry) = menu_entries_add.get_single() else {
@@ -288,7 +275,7 @@ fn draw_flag_on_selected(
 
 fn assign_unit(
     slot_assigments: Query<&SlotsAssignments, Changed<SlotsAssignments>>,
-    menu_entries: Query<(Entity, &NodePayload<Slot>), With<Selected>>,
+    menu_entries: Query<(Entity, &NodePayload<CommanderSlot>), With<Selected>>,
     units_on_flag: Query<(&FlagAssignment, &Unit)>,
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
@@ -306,12 +293,7 @@ fn assign_unit(
         return;
     };
 
-    let maybe_flag_assigned = match **slot {
-        Slot::Front => slots_assigment.front,
-        Slot::Middle => slots_assigment.middle,
-        Slot::Back => slots_assigment.back,
-    };
-
+    let maybe_flag_assigned = slots_assigment.slots.get(**slot);
     let Some(flag_assigned) = maybe_flag_assigned else {
         commands.entity(entry).despawn_descendants();
         commands.trigger(DrawHoverFlag(entry));
@@ -320,7 +302,7 @@ fn assign_unit(
 
     let unit = units_on_flag
         .iter()
-        .find(|(assignment, _)| assignment.0 == flag_assigned)
+        .find(|(assignment, _)| assignment.0 == *flag_assigned)
         .unwrap()
         .1;
 
