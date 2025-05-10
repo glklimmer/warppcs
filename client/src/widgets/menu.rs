@@ -104,8 +104,8 @@ impl<T: Clone + 'static> Menu<T> {
     }
 }
 
-pub struct MenuConfig {
-    pub gap: f32,
+struct MenuConfig {
+    gap: f32,
 }
 
 impl Default for MenuConfig {

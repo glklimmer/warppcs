@@ -249,7 +249,7 @@ pub fn check_recruit(
         let (building, item_assignment) = building.get(event.interactable).unwrap();
 
         let unit_type = match *building {
-            Building::MainBuilding { level } => Some(UnitType::Commander),
+            Building::MainBuilding { level: _ } => Some(UnitType::Commander),
             Building::Unit { weapon: unit_type } => Some(unit_type),
             Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => None,
         };
