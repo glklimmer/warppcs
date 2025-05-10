@@ -3,7 +3,7 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
-use crate::{PlayerState, server::players::interaction::InteractionType};
+use crate::server::players::interaction::InteractionType;
 
 use super::super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
@@ -84,7 +84,6 @@ fn start_travel(
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
     destination: Query<&TravelDestination>,
     transform: Query<&Transform>,
-    mut next_state: ResMut<NextState<PlayerState>>,
 ) {
     for event in traveling.read() {
         let InteractionType::Travel = &event.interaction else {
@@ -120,8 +119,6 @@ fn start_travel(
             };
         };
 
-        next_state.set(PlayerState::Traveling);
-
         commands
             .entity(player_entity)
             .insert(Traveling::to(target_position));
@@ -134,11 +131,7 @@ fn start_travel(
     }
 }
 
-fn end_travel(
-    mut commands: Commands,
-    query: Query<(Entity, &Traveling)>,
-    mut next_state: ResMut<NextState<PlayerState>>,
-) {
+fn end_travel(mut commands: Commands, query: Query<(Entity, &Traveling)>) {
     for (entity, travel) in query.iter() {
         if !travel.time_left.finished() {
             continue;
@@ -147,8 +140,6 @@ fn end_travel(
         let target_position = &travel.destination;
 
         info!("Travel finished to target position: {:?}", target_position);
-
-        next_state.set(PlayerState::World);
 
         commands
             .entity(entity)
