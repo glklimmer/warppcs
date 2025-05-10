@@ -3,7 +3,6 @@ use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
     PlayerState, Vec3LayerExt,
     map::Layers,
-    networking::UnitType,
     server::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         entities::{
@@ -14,14 +13,12 @@ use shared::{
 };
 
 use crate::{
-    animations::objects::items::weapons::{Weapons, WeaponsSpriteSheet},
+    animations::objects::items::weapons::WeaponsSpriteSheet,
     networking::ControlledPlayer,
     widgets::menu::{
         ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
     },
 };
-
-use super::items::BuildSprite;
 
 pub struct CommanderInteractionPlugin;
 
@@ -138,17 +135,7 @@ fn open_slots_dialog(
                     .unwrap()
                     .1;
 
-                let weapon_sprite = match unit.unit_type {
-                    UnitType::Shieldwarrior => weapons_sprite_sheet
-                        .sprite_sheet
-                        .sprite_for(Weapons::SwordAndShield),
-                    UnitType::Pikeman => {
-                        weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Pike)
-                    }
-                    UnitType::Archer => weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Bow),
-                    UnitType::Bandit => todo!(),
-                    UnitType::Commander => todo!(),
-                };
+                let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(unit.unit_type);
                 let flag_weapon = commands
                     .spawn((weapon_sprite, Transform::from_xyz(0., 0., 1.)))
                     .id();
@@ -235,15 +222,7 @@ fn draw_flag(
         .unwrap()
         .1;
 
-    let weapon_sprite = match unit.unit_type {
-        UnitType::Shieldwarrior => weapons_sprite_sheet
-            .sprite_sheet
-            .sprite_for(Weapons::SwordAndShield),
-        UnitType::Pikeman => weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Pike),
-        UnitType::Archer => weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Bow),
-        UnitType::Bandit => todo!(),
-        UnitType::Commander => todo!(),
-    };
+    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(unit.unit_type);
 
     match current_hover.get_single_mut() {
         Ok(mut flag_position) => {
@@ -306,15 +285,7 @@ fn assign_unit(
         .unwrap()
         .1;
 
-    let unit_weapon = match unit.unit_type {
-        UnitType::Shieldwarrior => weapons_sprite_sheet
-            .sprite_sheet
-            .sprite_for(Weapons::SwordAndShield),
-        UnitType::Pikeman => weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Pike),
-        UnitType::Archer => weapons_sprite_sheet.sprite_sheet.sprite_for(Weapons::Bow),
-        UnitType::Bandit => todo!(),
-        UnitType::Commander => todo!(),
-    };
+    let unit_weapon = weapons_sprite_sheet.sprite_for_unit(unit.unit_type);
 
     let flag_weapon_slot = commands
         .spawn((unit_weapon, Transform::from_xyz(0., 0., 1.)))
