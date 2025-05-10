@@ -4,6 +4,7 @@ use bevy_replicon::{
     prelude::{FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer},
     server::ServerSet,
 };
+use petgraph::{Graph, Undirected};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::TAU;
 
@@ -23,107 +24,68 @@ impl Plugin for MapPlugin {
 }
 
 #[derive(Event, Serialize, Deserialize, Deref)]
-pub struct LoadMap(MapGraph);
+pub struct LoadMap(pub MapGraph);
+
+#[derive(Resource, Clone, Serialize, Deserialize, Default, Deref, DerefMut)]
+pub struct MapGraph(pub Graph<Node, (), Undirected>);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum NodeType {
-    Player,
-    Bandit,
+pub enum Scene {
+    Player {
+        player: Entity,
+        left: Entity,
+        right: Entity,
+    },
+    Bandit {
+        left: Entity,
+        right: Entity,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
-    pub id: usize,
-    pub node_type: NodeType,
+    pub scene: Scene,
     pub position: Vec2,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Edge {
-    pub a: usize,
-    pub b: usize,
-}
-
-#[derive(Debug, Clone, Resource, Serialize, Deserialize, Default)]
-pub struct MapGraph {
-    pub nodes: Vec<Node>,
-    pub edges: Vec<Edge>,
-}
-
 impl MapGraph {
-    pub fn circular(num_players: usize, num_bandits: usize, radius: f32) -> Self {
-        let total = num_players + num_bandits;
-        let mut nodes = Vec::with_capacity(total);
-        let mut edges = Vec::with_capacity(total);
+    pub fn circular(mut commands: Commands, players: Vec<Entity>, radius: f32) -> Self {
+        let total = players.len() * 2;
+        let mut graph = Graph::<Node, (), Undirected>::with_capacity(total, total);
+        let mut indices = Vec::with_capacity(total);
 
-        for i in 0..total {
+        for (i, player) in players.iter().enumerate() {
             let angle = (i as f32 / total as f32) * TAU;
             let pos = Vec2::new(radius * angle.cos(), radius * angle.sin());
-            let node_type = if i % 2 == 0 {
-                NodeType::Player
-            } else {
-                NodeType::Bandit
-            };
-            nodes.push(Node {
-                id: i,
-                node_type,
+
+            indices.push(graph.add_node(Node {
+                scene: Scene::Player {
+                    player: *player,
+                    left: commands.spawn_empty().id(),
+                    right: commands.spawn_empty().id(),
+                },
                 position: pos,
-            });
+            }));
+
+            let angle = (i as f32 + 1. / total as f32) * TAU;
+            let pos = Vec2::new(radius * angle.cos(), radius * angle.sin());
+
+            indices.push(graph.add_node(Node {
+                scene: Scene::Bandit {
+                    left: commands.spawn_empty().id(),
+                    right: commands.spawn_empty().id(),
+                },
+                position: pos,
+            }));
         }
-        // connect in a ring
+
         for i in 0..total {
-            edges.push(Edge {
-                a: i,
-                b: (i + 1) % total,
-            });
+            let a = indices[i];
+            let b = indices[(i + 1) % total];
+            graph.add_edge(a, b, ());
         }
 
-        MapGraph { nodes, edges }
-    }
-
-    pub fn star(
-        num_players: usize,
-        num_bandits: usize,
-        outer_radius: f32,
-        inner_radius: f32,
-    ) -> Self {
-        let mut nodes = Vec::with_capacity(num_players + num_bandits);
-        let mut edges = Vec::new();
-
-        for i in 0..num_players {
-            let angle = (i as f32 / num_players as f32) * TAU;
-            let pos = Vec2::new(outer_radius * angle.cos(), outer_radius * angle.sin());
-            nodes.push(Node {
-                id: i,
-                node_type: NodeType::Player,
-                position: pos,
-            });
-        }
-
-        for j in 0..num_bandits {
-            let idx = num_players + j;
-            let angle = (j as f32 / num_bandits as f32) * TAU;
-            let pos = Vec2::new(inner_radius * angle.cos(), inner_radius * angle.sin());
-            nodes.push(Node {
-                id: idx,
-                node_type: NodeType::Bandit,
-                position: pos,
-            });
-        }
-
-        for p in 0..num_players {
-            for b in num_players..(num_players + num_bandits) {
-                edges.push(Edge { a: p, b });
-            }
-        }
-
-        for b1 in num_players..(num_players + num_bandits) {
-            for b2 in (b1 + 1)..(num_players + num_bandits) {
-                edges.push(Edge { a: b1, b: b2 });
-            }
-        }
-
-        MapGraph { nodes, edges }
+        MapGraph(graph)
     }
 }
 
@@ -132,21 +94,18 @@ fn init_map(
     mut commands: Commands,
     players: Query<Entity, With<Player>>,
 ) {
-    let Some(FromClient {
-        client_entity: _,
-        event,
-    }) = lobby_events.read().next()
-    else {
+    let Some(FromClient { event, .. }) = lobby_events.read().next() else {
         return;
     };
 
     #[allow(irrefutable_let_patterns)]
-    let LobbyEvent::StartGame = &event else {
+    let LobbyEvent::StartGame = event else {
         return;
     };
 
-    let num_players = players.iter().count();
-    let map = MapGraph::circular(num_players, num_players, 25. + 25. * num_players as f32);
+    let players: Vec<Entity> = players.iter().collect();
+    let num_players = players.len();
+    let map = MapGraph::circular(commands.reborrow(), players, 25. + 25. * num_players as f32);
 
     commands.insert_resource(map.clone());
     commands.server_trigger(ToClients {

@@ -4,7 +4,7 @@ use bevy::input::common_conditions::input_just_pressed;
 use shared::{
     PlayerState,
     server::game_scenes::{
-        map::{LoadMap, MapGraph, NodeType},
+        map::{LoadMap, MapGraph, Scene},
         travel::Traveling,
     },
 };
@@ -238,7 +238,8 @@ fn setup_map(
     assets: Res<AssetServer>,
     map_icons: Res<MapIconSpriteSheet>,
 ) {
-    let map = &**trigger.event();
+    let graph = &**trigger.event();
+
     let map_texture = assets.load::<Image>("sprites/ui/map.png");
 
     commands
@@ -246,26 +247,27 @@ fn setup_map(
             Map,
             Visibility::Hidden,
             Sprite::from_image(map_texture),
-            Transform::from_scale(Vec3::new(1. / 3., 1. / 3., 1.)),
+            Transform::from_scale(Vec3::splat(1.0 / 3.0)),
         ))
         .with_children(|parent| {
-            for node in &map.nodes {
-                let icon_type = match node.node_type {
-                    NodeType::Player => MapIcons::Player,
-                    NodeType::Bandit => MapIcons::Bandit,
+            for node_idx in graph.node_indices() {
+                let node = &graph[node_idx];
+                let icon_type = match node.scene {
+                    Scene::Player => MapIcons::Player,
+                    Scene::Bandit => MapIcons::Bandit,
                 };
-
                 parent.spawn((
                     Sprite::from_atlas_image(
                         map_icons.sprite_sheet.texture.clone(),
                         map_icons.sprite_sheet.texture_atlas(icon_type),
                     ),
-                    Transform::from_xyz(node.position.x, node.position.y, 2.),
+                    Transform::from_xyz(node.position.x, node.position.y, 2.0),
                 ));
             }
         });
 
-    commands.insert_resource(LocalMap(map.clone()));
+    // store a local copy of the graph
+    commands.insert_resource(LocalMap((**trigger.event()).clone()));
 }
 
 fn toggle_map(

@@ -20,84 +20,56 @@ use crate::{
 };
 use std::collections::VecDeque;
 
-use super::travel::{Portal, TravelDestination};
+use super::{
+    map::{LoadMap, Scene},
+    travel::{Portal, TravelDestination},
+};
 
 pub struct StartGamePlugin;
 
 impl Plugin for StartGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            PreUpdate,
-            start_game
-                .after(ServerSet::Receive)
-                .run_if(server_or_singleplayer),
-        );
+        app.add_observer(start_game);
     }
 }
 
 fn start_game(
-    mut lobby_events: EventReader<FromClient<LobbyEvent>>,
-    mut players: Query<(Entity, &mut Transform), With<Player>>,
+    trigger: Trigger<LoadMap>,
+    mut players: Query<&mut Transform, With<Player>>,
     mut commands: Commands,
 ) {
-    for FromClient {
-        client_entity: _,
-        event,
-    } in lobby_events.read()
-    {
-        #[allow(irrefutable_let_patterns)]
-        if let LobbyEvent::StartGame = &event {
-            let mut map = VecDeque::new();
+    let map = &**trigger.event();
+    for i in map.node_indices() {
+        let node = &map[i];
+        let offset = Vec3::new(10000. * i.index() as f32, 0., 0.);
 
-            for (i, (player, mut transform)) in players.iter_mut().enumerate() {
-                info!("Creating base and camps for player {}", i);
-                let base_offset = Vec3::new(10000. * i as f32, 0., 0.);
-                transform.translation = base_offset.with_z(Layers::Player.as_f32());
-
-                let base_left_portal = commands.spawn_empty().id();
-                let base_right_portal = commands.spawn_empty().id();
-
-                let camp_left_portal = commands.spawn_empty().id();
-                let camp_right_portal = commands.spawn_empty().id();
-
-                map.insert(
-                    i,
-                    (
-                        base_left_portal,
-                        base_right_portal,
-                        camp_left_portal,
-                        camp_right_portal,
-                    ),
-                );
-
-                player_base(
-                    commands.reborrow(),
-                    base_offset,
-                    player,
-                    base_left_portal,
-                    base_right_portal,
-                );
-
-                let camp_offset = Vec3::new(-10000. * (i as f32 + 1.), 0., 0.);
-                camp(
-                    commands.reborrow(),
-                    camp_offset,
-                    camp_left_portal,
-                    camp_right_portal,
-                );
+        match node.scene {
+            Scene::Player {
+                player,
+                left,
+                right,
+            } => {
+                player_base(commands.reborrow(), offset, player, left, right);
+                let mut transform = players.get_mut(player).unwrap();
+                transform.translation = offset.with_z(Layers::Player.as_f32());
             }
+            Scene::Bandit { left, right } => camp(commands.reborrow(), offset, left, right),
+        };
+    }
 
-            let len = map.len();
-            for (i, (base_left, base_right, camp_left, _)) in map.iter().enumerate() {
-                // base_left <-> previous_base.camp_right (3)
-                let previous_index = if i == 0 { len - 1 } else { i - 1 };
-                let previous_camp_right = map[previous_index].3;
-                connect_portals(commands.reborrow(), *base_left, previous_camp_right);
+    for i in map.edge_indices() {
+        // TODO: add portals
+    }
 
-                // base_right <-> camp_left
-                connect_portals(commands.reborrow(), *base_right, *camp_left);
-            }
-        }
+    let len = map.len();
+    for (i, (base_left, base_right, camp_left, _)) in map.iter().enumerate() {
+        // base_left <-> previous_base.camp_right (3)
+        let previous_index = if i == 0 { len - 1 } else { i - 1 };
+        let previous_camp_right = map[previous_index].3;
+        connect_portals(commands.reborrow(), *base_left, previous_camp_right);
+
+        // base_right <-> camp_left
+        connect_portals(commands.reborrow(), *base_right, *camp_left);
     }
 }
 
