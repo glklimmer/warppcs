@@ -33,11 +33,13 @@ impl<T: Clone + Send + Sync + 'static> Plugin for MenuPlugin<T> {
             .init_resource::<MenuSingleton>()
             .add_observer(open_menu::<T>)
             .add_event::<CloseEvent>()
+            .add_event::<ClosedMenu<T>>()
             .add_systems(
                 Update,
                 (
                     selection_callback::<T>.run_if(input_just_pressed(KeyCode::KeyF)),
                     cycle_commands::<T>,
+                    close_menu_trigger::<T>,
                 )
                     .run_if(in_state(PlayerState::Interaction)),
             );
@@ -95,10 +97,15 @@ impl<T: Clone + 'static> Menu<T> {
             config: MenuConfig::default(),
         }
     }
+
+    pub fn with_gap(mut self, gap: f32) -> Self {
+        self.config.gap = gap;
+        self
+    }
 }
 
-struct MenuConfig {
-    gap: f32,
+pub struct MenuConfig {
+    pub gap: f32,
 }
 
 impl Default for MenuConfig {
@@ -175,6 +182,9 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
     active.push(menu_entity);
 }
 
+#[derive(Event)]
+pub struct NodeSelected<T>(PhantomData<T>);
+
 fn cycle_commands<T: Clone + Send + Sync + 'static>(
     input: Res<ButtonInput<KeyCode>>,
     active_menu: Res<ActiveMenus>,
@@ -248,6 +258,23 @@ fn close_menu(
     if active_menus.is_empty() {
         next_state.set(PlayerState::World);
     }
+}
+
+#[derive(Event)]
+pub struct ClosedMenu<T>(PhantomData<T>);
+
+fn close_menu_trigger<T: Clone + Send + Sync + 'static>(
+    mut close_events: EventReader<ClosedMenu<T>>,
+    input: Res<ButtonInput<KeyCode>>,
+    mut commands: Commands,
+) {
+    let key_pressed = input.any_just_pressed([KeyCode::Escape, KeyCode::KeyS]);
+    let event_fired = close_events.read().next().is_some();
+    if !(key_pressed || event_fired) {
+        return;
+    }
+
+    commands.trigger(ClosedMenu::<T>(PhantomData));
 }
 
 #[derive(Resource, Deref, DerefMut, Default)]

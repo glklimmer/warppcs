@@ -18,11 +18,11 @@ use server::{
         item_assignment::{
             AssignItem, CloseBuildingDialog, ItemAssignment, OpenBuildingDialog, StartBuild,
         },
-        recruiting::Flag,
+        recruiting::{Flag, FlagAssignment, FlagHolder},
     },
     entities::{
         Unit,
-        commander::{CommanderInteraction, SlotSelection, SlotsAssignments},
+        commander::{CommanderInteraction, CommanderSlot, SlotsAssignments},
     },
     game_scenes::Portal,
     physics::{
@@ -73,6 +73,8 @@ impl Plugin for SharedPlugin {
         .replicate_mapped::<Interactable>()
         .replicate_mapped::<AttachedTo>()
         .replicate_mapped::<SlotsAssignments>()
+        .replicate_mapped::<FlagHolder>()
+        .replicate_mapped::<FlagAssignment>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
@@ -83,7 +85,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Mount, Transform)>()
         .replicate_group::<(Chest, Transform)>()
         .replicate_group::<(Item, Transform)>()
-        .add_client_trigger::<SlotSelection>(Channel::Ordered)
+        .add_client_trigger::<CommanderSlot>(Channel::Ordered)
         .add_client_trigger::<AssignItem>(Channel::Ordered)
         .add_client_trigger::<StartBuild>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use item_assignment::ItemAssignmentPlugins;
-use recruiting::{RecruitEvent, check_recruit, recruit};
+use recruiting::{RecruitEvent, check_recruit, recruit_commander, recruit_units};
 
 use crate::{
     Owner,
@@ -50,7 +50,7 @@ impl Plugin for BuildingsPlugins {
                         (construct_building, enable_goldfarm)
                             .run_if(on_event::<BuildingConstruction>),
                         (upgrade_building,).run_if(on_event::<BuildingUpgrade>),
-                        recruit.run_if(on_event::<RecruitEvent>),
+                        (recruit_units, recruit_commander).run_if(on_event::<RecruitEvent>),
                     ),
                 )
                     .chain(),

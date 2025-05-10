@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use commander::CommanderInteractionPlugin;
 use highlight::HighlightPlugin;
 use item_assignment::ItemAssignmentPlugin;
 use items::ItemsPlugin;
@@ -8,6 +9,7 @@ use spawn::SpawnPlugin;
 mod item_assignment;
 mod spawn;
 
+pub mod commander;
 pub mod highlight;
 pub mod items;
 
@@ -18,6 +20,7 @@ impl Plugin for EntitiesPlugin {
         app.add_plugins(SpawnPlugin)
             .add_plugins(HighlightPlugin)
             .add_plugins(ItemsPlugin)
-            .add_plugins(ItemAssignmentPlugin);
+            .add_plugins(ItemAssignmentPlugin)
+            .add_plugins(CommanderInteractionPlugin);
     }
 }

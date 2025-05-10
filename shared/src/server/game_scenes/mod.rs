@@ -82,12 +82,7 @@ fn travel(
                 units_on_flag
                     .iter()
                     .filter(|(_, assignment, _)| {
-                        let possible_positions = [
-                            slots_assignments.front,
-                            slots_assignments.middle,
-                            slots_assignments.back,
-                        ];
-                        possible_positions.contains(&Some(assignment.0))
+                        slots_assignments.slots.contains(&Some(assignment.0))
                     })
                     .for_each(|(entity, _, _)| travel_entities.push(entity));
             };

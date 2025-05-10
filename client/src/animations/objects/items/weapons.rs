@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 use shared::enum_map::*;
+use shared::networking::UnitType;
 
 use crate::animations::AnimationSpriteSheet;
 use crate::animations::SpriteSheetAnimation;
+use crate::entities::items::BuildSprite;
 
 #[derive(Debug, Clone, Copy, Mappable)]
 pub enum Weapons {
@@ -11,9 +13,27 @@ pub enum Weapons {
     Bow,
 }
 
+impl From<UnitType> for Weapons {
+    fn from(unit_type: UnitType) -> Self {
+        match unit_type {
+            UnitType::Shieldwarrior => Weapons::SwordAndShield,
+            UnitType::Pikeman => Weapons::Pike,
+            UnitType::Archer => Weapons::Bow,
+            UnitType::Bandit => todo!(),
+            UnitType::Commander => todo!(),
+        }
+    }
+}
+
 #[derive(Resource)]
 pub struct WeaponsSpriteSheet {
     pub sprite_sheet: AnimationSpriteSheet<Weapons>,
+}
+
+impl WeaponsSpriteSheet {
+    pub fn sprite_for_unit(&self, unit: UnitType) -> Sprite {
+        self.sprite_sheet.sprite_for::<Weapons>(unit.into())
+    }
 }
 
 impl FromWorld for WeaponsSpriteSheet {

@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::entity::MapEntities, prelude::*};
 
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
@@ -35,20 +35,32 @@ use super::item_assignment::ItemAssignment;
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Deref, DerefMut, Deserialize, Serialize)]
 pub struct FlagHolder(pub Entity);
 
-#[derive(Component)]
+impl MapEntities for FlagHolder {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        **self = entity_mapper.map_entity(**self);
+    }
+}
+
+#[derive(Component, Deserialize, Serialize)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
+
+impl MapEntities for FlagAssignment {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.map_entity(self.0);
+    }
+}
 
 #[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
     player: Entity,
     unit_type: UnitType,
-    items: Vec<Item>,
+    items: Option<Vec<Item>>,
 }
 
-pub fn recruit(
+pub fn recruit_units(
     mut commands: Commands,
     mut recruit: EventReader<RecruitEvent>,
     mut player_query: Query<(&Transform, &mut Inventory)>,
@@ -59,8 +71,15 @@ pub fn recruit(
         items,
     } in recruit.read()
     {
+        if let UnitType::Commander = unit_type {
+            continue;
+        }
+
         let player = *player;
         let unit_type = *unit_type;
+        let Some(items) = items else {
+            continue;
+        };
 
         let (player_transform, mut inventory) = player_query.get_mut(player).unwrap();
         let player_translation = player_transform.translation;
@@ -69,7 +88,6 @@ pub fn recruit(
         inventory.gold -= cost.gold;
 
         let owner = Owner(Faction::Player(player));
-        // TODO: Refactor with Bevy 0.16 Parent API
         let flag_entity = commands
             .spawn((
                 Flag,
@@ -84,11 +102,7 @@ pub fn recruit(
 
         commands.entity(player).insert(FlagHolder(flag_entity));
 
-        let unit_amount = if let UnitType::Commander = unit_type {
-            1
-        } else {
-            items.calculated(Effect::UnitAmount) as i32
-        };
+        let unit_amount = items.calculated(Effect::UnitAmount) as i32;
 
         let time = items.calculated(Effect::AttackSpeed) / 2.;
         let unit = Unit {
@@ -115,29 +129,101 @@ pub fn recruit(
 
         for unit_number in 1..=unit_amount {
             let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
-            commands
-                .spawn((
-                    player_translation.with_layer(Layers::Flag),
-                    unit.clone(),
-                    health,
-                    speed,
-                    damage,
-                    range,
-                    owner,
-                    FlagAssignment(flag_entity, offset),
-                    UnitBehaviour::FollowFlag(flag_entity, offset),
-                ))
-                .insert_if(
-                    Interactable {
-                        kind: InteractionType::CommanderInteraction,
-                        restricted_to: Some(owner),
-                    },
-                    || unit_type.eq(&UnitType::Commander),
-                )
-                .insert_if(SlotsAssignments::default(), || {
-                    unit_type.eq(&UnitType::Commander)
-                });
+            commands.spawn((
+                player_translation.with_layer(Layers::Flag),
+                unit.clone(),
+                health,
+                speed,
+                damage,
+                range,
+                owner,
+                FlagAssignment(flag_entity, offset),
+                UnitBehaviour::FollowFlag(flag_entity, offset),
+            ));
         }
+
+        commands.server_trigger(ToClients {
+            mode: SendMode::Broadcast,
+            event: InteractableSound {
+                kind: InteractionType::Recruit,
+                spatial_position: player_transform.translation,
+            },
+        });
+    }
+}
+
+pub fn recruit_commander(
+    mut commands: Commands,
+    mut recruit: EventReader<RecruitEvent>,
+    mut player_query: Query<(&Transform, &mut Inventory)>,
+) {
+    for RecruitEvent {
+        player,
+        unit_type,
+        items: _,
+    } in recruit.read()
+    {
+        let UnitType::Commander = unit_type else {
+            continue;
+        };
+
+        let player = *player;
+        let (player_transform, mut inventory) = player_query.get_mut(player).unwrap();
+        let player_translation = player_transform.translation;
+
+        let cost = &unit_type.recruitment_cost();
+        inventory.gold -= cost.gold;
+
+        let owner = Owner(Faction::Player(player));
+        let flag_entity = commands
+            .spawn((
+                Flag,
+                AttachedTo(player),
+                Interactable {
+                    kind: InteractionType::Flag,
+                    restricted_to: Some(owner),
+                },
+                owner,
+            ))
+            .id();
+
+        commands.entity(player).insert(FlagHolder(flag_entity));
+
+        let time = 50.;
+        let unit = Unit {
+            swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
+            unit_type: UnitType::Commander,
+        };
+
+        let hitpoints = 100.;
+        let health = Health { hitpoints };
+
+        let movement_speed = 50.;
+        let speed = Speed(movement_speed);
+
+        let damage = 20.;
+        let damage = Damage(damage);
+
+        let range = 50.;
+        let range = Range(range);
+
+        let offset = Vec2::new(-18., 0.);
+        commands.spawn((
+            player_translation.with_layer(Layers::Flag),
+            unit.clone(),
+            health,
+            speed,
+            damage,
+            range,
+            owner,
+            FlagAssignment(flag_entity, offset),
+            UnitBehaviour::FollowFlag(flag_entity, offset),
+            Interactable {
+                kind: InteractionType::CommanderInteraction,
+                restricted_to: Some(owner),
+            },
+            SlotsAssignments::default(),
+        ));
 
         commands.server_trigger(ToClients {
             mode: SendMode::Broadcast,
@@ -153,7 +239,7 @@ pub fn check_recruit(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut recruit: EventWriter<RecruitEvent>,
     player: Query<&Inventory>,
-    building: Query<(&Building, &ItemAssignment), With<RecruitBuilding>>,
+    building: Query<(&Building, Option<&ItemAssignment>), With<RecruitBuilding>>,
 ) {
     for event in interactions.read() {
         let InteractionType::Recruit = &event.interaction else {
@@ -161,7 +247,14 @@ pub fn check_recruit(
         };
         let inventory = player.get(event.player).unwrap();
         let (building, item_assignment) = building.get(event.interactable).unwrap();
-        let Building::Unit { weapon: unit_type } = *building else {
+
+        let unit_type = match *building {
+            Building::MainBuilding { level } => Some(UnitType::Commander),
+            Building::Unit { weapon: unit_type } => Some(unit_type),
+            Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => None,
+        };
+
+        let Some(unit_type) = unit_type else {
             continue;
         };
 
@@ -171,15 +264,13 @@ pub fn check_recruit(
             continue;
         }
 
+        let items: Option<Vec<_>> = item_assignment
+            .map(|assignment| assignment.items.clone().into_iter().flatten().collect());
+
         recruit.send(RecruitEvent {
             player: event.player,
             unit_type,
-            items: item_assignment
-                .items
-                .clone()
-                .into_iter()
-                .flatten()
-                .collect(),
+            items,
         });
     }
 }

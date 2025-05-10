@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ClientPlayerMap,
+    enum_map::*,
     server::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         physics::attachment::AttachedTo,
@@ -25,7 +26,7 @@ struct SlotInteraction {
     player: Entity,
     commander: Entity,
     flag: Option<Entity>,
-    selected_slot: SlotSelection,
+    selected_slot: CommanderSlot,
 }
 
 #[derive(PartialEq, Eq)]
@@ -35,43 +36,35 @@ enum SlotCommand {
     Swap,
 }
 
-#[derive(Event, Serialize, Deserialize, Copy, Clone)]
-pub enum SlotSelection {
+#[derive(Event, Serialize, Deserialize, Copy, Clone, Mappable, Eq, PartialEq)]
+pub enum CommanderSlot {
     Front,
     Middle,
     Back,
 }
 
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Component, Serialize, Deserialize, Clone)]
 pub struct SlotsAssignments {
-    pub front: Option<Entity>,
-    pub middle: Option<Entity>,
-    pub back: Option<Entity>,
+    pub slots: EnumMap<CommanderSlot, Option<Entity>>,
 }
 
 impl Default for SlotsAssignments {
     fn default() -> Self {
         Self {
-            front: None,
-            middle: None,
-            back: None,
+            slots: EnumMap::new(|slot| match slot {
+                CommanderSlot::Front => None,
+                CommanderSlot::Middle => None,
+                CommanderSlot::Back => None,
+            }),
         }
     }
 }
 
 impl MapEntities for SlotsAssignments {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        if let Some(back) = self.back.take() {
-            self.back = Some(entity_mapper.map_entity(back));
-        }
-
-        if let Some(middle) = self.middle.take() {
-            self.middle = Some(entity_mapper.map_entity(middle));
-        }
-
-        if let Some(front) = self.front.take() {
-            self.front = Some(entity_mapper.map_entity(front));
-        }
+        self.slots.iter_mut().for_each(|entity| {
+            *entity = entity.take().map(|entity| entity_mapper.map_entity(entity));
+        });
     }
 }
 
@@ -122,7 +115,7 @@ fn commander_interaction(
 }
 
 fn handle_slot_selection(
-    trigger: Trigger<FromClient<SlotSelection>>,
+    trigger: Trigger<FromClient<CommanderSlot>>,
     active: Res<ActiveCommander>,
     slots: Query<&SlotsAssignments>,
     client_player_map: ResMut<ClientPlayerMap>,
@@ -134,12 +127,7 @@ fn handle_slot_selection(
     let slot_assignments = slots.get(*commander).unwrap();
 
     let selected_slot = trigger.event;
-
-    let is_slot_occupied = match selected_slot {
-        SlotSelection::Front => slot_assignments.front.is_some(),
-        SlotSelection::Middle => slot_assignments.middle.is_some(),
-        SlotSelection::Back => slot_assignments.back.is_some(),
-    };
+    let is_slot_occupied = slot_assignments.slots.get(selected_slot).is_some();
 
     let player_flag = flag.get(*player).map(|f| f.0).ok();
 
@@ -192,11 +180,9 @@ fn assign_flag_to_slot(
         return;
     }
 
-    match trigger.selected_slot {
-        SlotSelection::Front => slot_assignments.front = Some(flag),
-        SlotSelection::Middle => slot_assignments.middle = Some(flag),
-        SlotSelection::Back => slot_assignments.back = Some(flag),
-    };
+    slot_assignments
+        .slots
+        .set(trigger.selected_slot, Some(flag));
 
     commands.entity(flag).insert(AttachedTo(trigger.commander));
     commands.entity(trigger.player).remove::<FlagHolder>();
@@ -213,23 +199,10 @@ fn remove_flag_from_slot(
 
     let mut slot_assignments = slots.get_mut(trigger.commander).unwrap();
 
-    let flag = match trigger.selected_slot {
-        SlotSelection::Front => {
-            let flag = slot_assignments.front.unwrap();
-            slot_assignments.front = None;
-            flag
-        }
-        SlotSelection::Middle => {
-            let flag = slot_assignments.middle.unwrap();
-            slot_assignments.middle = None;
-            flag
-        }
-        SlotSelection::Back => {
-            let flag = slot_assignments.back.unwrap();
-            slot_assignments.back = None;
-            flag
-        }
-    };
+    let flag = slot_assignments
+        .slots
+        .set(trigger.selected_slot, None)
+        .unwrap();
 
     commands.entity(flag).insert(AttachedTo(trigger.player));
     commands.entity(trigger.player).insert(FlagHolder(flag));
@@ -247,12 +220,16 @@ fn swap_flag_from_slot(
     let mut slot_assignments = slots.get_mut(trigger.commander).unwrap();
     let flag = trigger.flag.unwrap();
 
-    match trigger.selected_slot {
-        SlotSelection::Front => slot_assignments.front = Some(flag),
-        SlotSelection::Middle => slot_assignments.middle = Some(flag),
-        SlotSelection::Back => slot_assignments.back = Some(flag),
-    };
+    let slot_flag = slot_assignments
+        .slots
+        .set(trigger.selected_slot, Some(flag))
+        .unwrap();
 
     commands.entity(flag).insert(AttachedTo(trigger.commander));
-    commands.entity(trigger.player).remove::<FlagHolder>();
+    commands
+        .entity(slot_flag)
+        .insert(AttachedTo(trigger.player));
+    commands
+        .entity(trigger.player)
+        .insert(FlagHolder(slot_flag));
 }
