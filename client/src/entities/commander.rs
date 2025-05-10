@@ -39,9 +39,9 @@ struct ActiveCommander(Option<Entity>);
 
 impl Plugin for CommanderInteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ActiveCommander>();
-        app.add_event::<DrawHoverFlag>();
-        app.add_observer(open_commander_dialog)
+        app.init_resource::<ActiveCommander>()
+            .add_event::<DrawHoverFlag>()
+            .add_observer(open_commander_dialog)
             .add_observer(open_slots_dialog)
             .add_observer(send_selected)
             .add_observer(despawn_hover_weapon)
