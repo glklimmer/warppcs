@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
-use bevy_replicon::prelude::Replicated;
+use bevy_replicon::prelude::{Replicated, server_or_singleplayer};
 use serde::{Deserialize, Serialize};
 
 use crate::server::players::interaction::InteractionType;
@@ -16,8 +16,11 @@ pub struct TravelPlugin;
 
 impl Plugin for TravelPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, travel_timer)
-            .add_systems(FixedUpdate, (start_travel, end_travel));
+        app.add_systems(Update, travel_timer.run_if(server_or_singleplayer))
+            .add_systems(
+                FixedUpdate,
+                (start_travel, end_travel).run_if(server_or_singleplayer),
+            );
     }
 }
 
