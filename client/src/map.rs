@@ -4,7 +4,7 @@ use bevy::input::common_conditions::input_just_pressed;
 use shared::{
     PlayerState,
     server::game_scenes::{
-        map::{LoadMap, MapGraph, NodeType},
+        map::{GameScene, LoadMap, SceneType},
         travel::Traveling,
     },
 };
@@ -18,8 +18,7 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<LocalMap>()
-            .add_observer(setup_map)
+        app.add_observer(setup_map)
             // ------------
             // todo: move to state(?) plugin
             .add_observer(enter_travel_state)
@@ -34,10 +33,11 @@ impl Plugin for MapPlugin {
                 Update,
                 (
                     sync_ui_to_camera,
-                    toggle_map.run_if(input_just_pressed(KeyCode::KeyM)),
+                    toggle_map
+                        .run_if(input_just_pressed(KeyCode::KeyM))
+                        .run_if(not(in_state(PlayerState::Traveling))),
                 ),
             )
-            // .add_systems(Startup, setup)
             .add_systems(Update, animate_dashes);
     }
 }
@@ -97,23 +97,6 @@ impl DashLine {
             timer: Timer::from_seconds(per_dash_secs, TimerMode::Repeating),
         }
     }
-}
-
-fn setup(mut commands: Commands) {
-    let a = Vec2::new(-120.0, -10.0);
-    let b = Vec2::new(120.0, 100.0);
-
-    let dash_len = 4.5;
-    let gap = 3.5;
-    let thickness = 1.5;
-    let color = Color::srgb_u8(206, 164, 129);
-    let wiggle = 80.;
-
-    let total_time = 5.;
-
-    commands.spawn(DashLine::new(
-        a, b, dash_len, gap, thickness, wiggle, color, total_time,
-    ));
 }
 
 fn bezier(a: Vec2, c1: Vec2, c2: Vec2, b: Vec2, t: f32) -> Vec2 {
@@ -193,19 +176,31 @@ fn leave_travel_state(
     next_state.set(PlayerState::World);
 }
 
-fn spawn_travel_dashline(mut commands: Commands, map: Res<LocalMap>) {
-    let a = map.nodes[0].position;
-    let b = map.nodes[1].position;
+fn spawn_travel_dashline(
+    mut commands: Commands,
+    traveling: Query<&Traveling, With<ControlledPlayer>>,
+    game_scene: Query<&GameScene>,
+) {
+    let traveling = traveling.single();
+    let source = game_scene.get(traveling.source).unwrap();
+    let target = game_scene.get(traveling.target).unwrap();
 
     let dash_len = 4.5;
     let gap = 3.0;
     let thickness = 2.0;
     let color = Color::srgb_u8(206, 164, 129);
-    let wiggle = 80.;
+    let wiggle = 40.;
     let total_time = 5.;
 
     commands.spawn((DashLine::new(
-        a, b, dash_len, gap, thickness, wiggle, color, total_time,
+        source.position,
+        target.position,
+        dash_len,
+        gap,
+        thickness,
+        wiggle,
+        color,
+        total_time,
     ),));
 }
 
@@ -225,9 +220,6 @@ fn sync_ui_to_camera(
     }
 }
 
-#[derive(Resource, Default, Deref, DerefMut)]
-struct LocalMap(MapGraph);
-
 #[derive(Component)]
 #[require(UIElement)]
 struct Map;
@@ -238,7 +230,8 @@ fn setup_map(
     assets: Res<AssetServer>,
     map_icons: Res<MapIconSpriteSheet>,
 ) {
-    let map = &**trigger.event();
+    let graph = &**trigger.event();
+
     let map_texture = assets.load::<Image>("sprites/ui/map.png");
 
     commands
@@ -246,26 +239,28 @@ fn setup_map(
             Map,
             Visibility::Hidden,
             Sprite::from_image(map_texture),
-            Transform::from_scale(Vec3::new(1. / 3., 1. / 3., 1.)),
+            Transform::from_scale(Vec3::splat(1.0 / 3.0)),
         ))
         .with_children(|parent| {
-            for node in &map.nodes {
-                let icon_type = match node.node_type {
-                    NodeType::Player => MapIcons::Player,
-                    NodeType::Bandit => MapIcons::Bandit,
+            for node_idx in graph.node_indices() {
+                let node = &graph[node_idx];
+                let icon_type = match node.scene {
+                    SceneType::Player {
+                        player: _,
+                        left: _,
+                        right: _,
+                    } => MapIcons::Player,
+                    SceneType::Bandit { left: _, right: _ } => MapIcons::Bandit,
                 };
-
                 parent.spawn((
                     Sprite::from_atlas_image(
                         map_icons.sprite_sheet.texture.clone(),
                         map_icons.sprite_sheet.texture_atlas(icon_type),
                     ),
-                    Transform::from_xyz(node.position.x, node.position.y, 2.),
+                    Transform::from_xyz(node.position.x, node.position.y, 2.0),
                 ));
             }
         });
-
-    commands.insert_resource(LocalMap(map.clone()));
 }
 
 fn toggle_map(

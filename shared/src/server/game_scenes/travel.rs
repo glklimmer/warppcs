@@ -1,16 +1,16 @@
 use bevy::prelude::*;
-use bevy::sprite::Anchor;
+
+use bevy::{ecs::entity::MapEntities, sprite::Anchor};
 use bevy_replicon::prelude::{Replicated, server_or_singleplayer};
 use serde::{Deserialize, Serialize};
 
-use crate::server::players::interaction::InteractionType;
+use crate::{BoxCollider, map::Layers, server::players::interaction::InteractionType};
 
 use super::super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
     entities::{Unit, commander::SlotsAssignments},
     players::interaction::{Interactable, InteractionTriggeredEvent},
 };
-use crate::{BoxCollider, map::Layers};
 
 pub struct TravelPlugin;
 
@@ -26,16 +26,25 @@ impl Plugin for TravelPlugin {
 
 #[derive(Component, Serialize, Deserialize)]
 pub struct Traveling {
-    destination: Vec3,
+    pub source: Entity,
+    pub target: Entity,
     time_left: Timer,
 }
 
 impl Traveling {
-    fn to(destination: Vec3) -> Self {
+    fn between(source: Entity, target: Entity) -> Self {
         Self {
-            destination,
+            source,
+            target,
             time_left: Timer::from_seconds(5., TimerMode::Once),
         }
+    }
+}
+
+impl MapEntities for Traveling {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.source = entity_mapper.map_entity(self.source);
+        self.target = entity_mapper.map_entity(self.target);
     }
 }
 
@@ -78,15 +87,13 @@ fn travel_timer(mut query: Query<&mut Traveling>, time: Res<Time>) {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn start_travel(
     mut commands: Commands,
     mut traveling: EventReader<InteractionTriggeredEvent>,
     flag_holders: Query<&FlagHolder>,
     commanders: Query<(&FlagAssignment, &SlotsAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
-    destination: Query<&TravelDestination>,
-    transform: Query<&Transform>,
+    destination: Query<(Entity, &TravelDestination)>,
 ) {
     for event in traveling.read() {
         let InteractionType::Travel = &event.interaction else {
@@ -94,11 +101,10 @@ fn start_travel(
         };
 
         let player_entity = event.player;
-        let destination = destination.get(event.interactable).unwrap();
-        let target_position = transform.get(**destination).unwrap().translation;
+        let (source, destination) = destination.get(event.interactable).unwrap();
         let flag_holder = flag_holders.get(player_entity);
 
-        info!("Travel starting to target position: {:?}", target_position);
+        info!("Travel starting...");
 
         let mut travel_entities = Vec::new();
 
@@ -124,23 +130,28 @@ fn start_travel(
 
         commands
             .entity(player_entity)
-            .insert(Traveling::to(target_position));
+            .insert(Traveling::between(source, **destination));
 
         for group in travel_entities {
             commands
                 .entity(group)
-                .insert(Traveling::to(target_position));
+                .insert(Traveling::between(source, **destination));
         }
     }
 }
 
-fn end_travel(mut commands: Commands, query: Query<(Entity, &Traveling)>) {
+fn end_travel(
+    mut commands: Commands,
+    query: Query<(Entity, &Traveling)>,
+    transform: Query<&Transform>,
+) {
     for (entity, travel) in query.iter() {
         if !travel.time_left.finished() {
             continue;
         }
 
-        let target_position = &travel.destination;
+        let target_transform = transform.get(travel.target).unwrap();
+        let target_position = target_transform.translation;
 
         info!("Travel finished to target position: {:?}", target_position);
 

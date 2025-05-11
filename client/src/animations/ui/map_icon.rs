@@ -31,8 +31,8 @@ impl FromWorld for MapIconSpriteSheet {
         ));
 
         let parts = EnumMap::new(|c| match c {
-            MapIcons::Player => 0,
-            MapIcons::Bandit => 1,
+            MapIcons::Bandit => 0,
+            MapIcons::Player => 1,
         });
 
         Self {
