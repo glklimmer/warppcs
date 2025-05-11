@@ -919,6 +919,7 @@ dependencies = [
  "bevy_picking",
  "bevy_ptr",
  "bevy_reflect",
+ "bevy_remote",
  "bevy_render",
  "bevy_scene",
  "bevy_sprite",
@@ -4987,12 +4988,14 @@ dependencies = [
  "bevy_replicon",
  "bevy_replicon_renet",
  "bincode",
+ "console_protocol",
  "enum_as_f32_macro",
  "enum_mappable",
  "fastrand",
  "petgraph 0.8.1",
  "renet_steam",
  "serde",
+ "serde_json",
  "steamworks",
 ]
 

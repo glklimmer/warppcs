@@ -43,6 +43,7 @@ bevy = { version = "0.15.3", default-features = false, features = [
     "vorbis",
     # "webgl2",
     "x11",
+    "bevy_remote",
 ] }
 enum_as_f32_macro = { path = "../enum_as_f32_macro" }
 enum_mappable = { path = "../enum_mappable" }
@@ -55,3 +56,5 @@ serde = { version = "1.0.219", features = ["derive"] }
 renet_steam = { version = "1.0.0", features = ["bevy"] }
 steamworks = { version = "0.11" }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
+serde_json = "1.0.140"
+console_protocol = { version = "0.1.0", path = "../console_protocol" }
