@@ -22,13 +22,12 @@ pub struct PPC {
 #[derive(Subcommand)]
 pub enum PPCSubCommands {
     RandomItem {},
-    Print {
-        #[arg(short, long, value_hint = ValueHint::CommandWithArguments)]
-        message: String,
-    },
     SpawnUnit {
         #[arg(short, long, value_hint = ValueHint::CommandWithArguments)]
-        unit: bool,
+        unit: Option<String>,
+
+        #[arg(short, long, value_hint = ValueHint::CommandWithArguments, default_value_t = 0)]
+        player: u8,
     },
 }
 
@@ -52,7 +51,7 @@ fn main() {
         PPCSubCommands::RandomItem {} => {
             let req = BrpRequest {
                 jsonrpc: String::from("2.0"),
-                method: BRP_TRIGGER_RANDOM_ITEMS.into(),
+                method: BRP_TRIGGER_RANDOM_ITEM.into(),
                 id: None,
                 params: None,
             };
@@ -65,10 +64,10 @@ fn main() {
 
             println!("{:#}", res);
         }
-        PPCSubCommands::Print { message } => println!("{}", message),
-        PPCSubCommands::SpawnUnit { unit } => {
+        PPCSubCommands::SpawnUnit { unit, player } => {
             let unit_spawn = match unit {
-                true => {
+                Some(unit) => unit,
+                None => {
                     let items = vec!["archer", "pikemen", "shield"];
                     let selection = Select::new()
                         .with_prompt("Which unit?")
@@ -78,7 +77,6 @@ fn main() {
 
                     items[selection].to_string()
                 }
-                false => String::from("archer"),
             };
 
             let req = BrpRequest {
@@ -86,8 +84,11 @@ fn main() {
                 method: BRP_TRIGGER_SPAWN_UNIT.into(),
                 id: None,
                 params: Some(
-                    to_value(BrpSpawnUnit { unit: unit_spawn })
-                        .expect("Unable to convert query parameters to a valid JSON value"),
+                    to_value(BrpSpawnUnit {
+                        unit: unit_spawn,
+                        player,
+                    })
+                    .expect("Unable to convert query parameters to a valid JSON value"),
                 ),
             };
             let res = ureq::post(&url)
