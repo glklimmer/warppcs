@@ -1,6 +1,14 @@
 [workspace]
 resolver = "2"
-members = ["client", "server", "shared", "enum_as_f32_macro", "enum_mappable"]
+members = [
+    "client",
+    "server",
+    "shared",
+    "enum_as_f32_macro",
+    "enum_mappable",
+    "ppc_console",
+    "console_protocol",
+]
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
