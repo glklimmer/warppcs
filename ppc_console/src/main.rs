@@ -30,6 +30,10 @@ pub enum PPCSubCommands {
         #[arg(short, long, value_hint = ValueHint::CommandWithArguments, default_value_t = 0)]
         player: u8,
     },
+    SpawnFullCommander {
+        #[arg(short, long, value_hint = ValueHint::CommandWithArguments, default_value_t = 0)]
+        player: u8,
+    },
 }
 
 fn main() {
@@ -76,6 +80,15 @@ fn main() {
                 ),
             }
         }
+        PPCSubCommands::SpawnFullCommander { player } => BrpRequest {
+            jsonrpc: String::from("2.0"),
+            method: BRP_SPAWN_FULL_COMMANDER.into(),
+            id: None,
+            params: Some(
+                to_value(BrpSpawnFullCommander { player })
+                    .expect("Unable to convert query parameters to a valid JSON value"),
+            ),
+        },
     };
 
     let maybe_response = ureq::post(&url).send_json(request);
