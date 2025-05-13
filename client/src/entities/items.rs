@@ -206,11 +206,10 @@ fn init_item_info(
 
     let info = commands
         .spawn((
-            Sprite {
-                texture_atlas: info.sprite_sheet.texture_atlas(ItemInfoParts::ItemPreview),
-                image: info.sprite_sheet.texture.clone(),
-                ..Default::default()
-            },
+            Sprite::from_atlas_image(
+                info.sprite_sheet.texture.clone(),
+                info.sprite_sheet.texture_atlas(ItemInfoParts::ItemPreview),
+            ),
             transform
                 .translation
                 .offset_x(48.)
@@ -233,7 +232,7 @@ fn init_item_info(
                     }),
                     anchor: Anchor::TopCenter,
                     image: info.sprite_sheet.texture.clone(),
-                    texture_atlas: info.sprite_sheet.texture_atlas(ItemInfoParts::Text),
+                    texture_atlas: Some(info.sprite_sheet.texture_atlas(ItemInfoParts::Text)),
                     image_mode: SpriteImageMode::Sliced(TextureSlicer {
                         border: BorderRect {
                             left: 2.,

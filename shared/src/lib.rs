@@ -10,7 +10,6 @@ use map::{
 };
 use networking::{Inventory, Mounted};
 use player_attacks::PlayerAttacks;
-use player_loadout::PlayerLoadout;
 use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
 use server::{
@@ -24,7 +23,10 @@ use server::{
         Unit,
         commander::{CommanderInteraction, CommanderSlot, SlotsAssignments},
     },
-    game_scenes::Portal,
+    game_scenes::{
+        map::{GameScene, LoadMap},
+        travel::{Portal, Traveling},
+    },
     physics::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},
@@ -42,7 +44,6 @@ pub mod enum_map;
 pub mod map;
 pub mod networking;
 pub mod player_attacks;
-pub mod player_loadout;
 pub mod player_movement;
 pub mod server;
 pub mod steamworks;
@@ -61,7 +62,6 @@ impl Plugin for SharedPlugin {
             RepliconRenetPlugins,
             PlayerMovement,
             PlayerAttacks,
-            PlayerLoadout,
             InteractPlugin,
         ))
         .init_resource::<ClientPlayerMap>()
@@ -70,6 +70,8 @@ impl Plugin for SharedPlugin {
         .replicate::<BoxCollider>()
         .replicate::<Mounted>()
         .replicate::<ItemAssignment>()
+        .replicate_mapped::<Traveling>()
+        .replicate_mapped::<GameScene>()
         .replicate_mapped::<Interactable>()
         .replicate_mapped::<AttachedTo>()
         .replicate_mapped::<SlotsAssignments>()
@@ -90,6 +92,7 @@ impl Plugin for SharedPlugin {
         .add_client_trigger::<StartBuild>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
+        .add_server_trigger::<LoadMap>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
         .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
@@ -298,6 +301,7 @@ pub enum GameState {
 pub enum PlayerState {
     World,
     Interaction,
+    Traveling,
 }
 
 pub trait Vec3LayerExt {

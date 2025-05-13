@@ -8,7 +8,7 @@ use shared::{
     server::{
         buildings::recruiting::Flag,
         entities::{Unit, UnitAnimation},
-        game_scenes::Portal,
+        game_scenes::travel::Portal,
         physics::projectile::ProjectileType,
         players::{chest::Chest, mount::Mount},
     },
