@@ -301,3 +301,63 @@ fn spawn_unit(
     }
     flag_entity
 }
+
+fn spawn_unit(
+    world: &mut World,
+    player: Entity,
+    commander: Entity,
+    unit_type: UnitType,
+    player_translation: Vec3,
+) -> Entity {
+    let owner = Owner(Faction::Player(player));
+    let flag_entity = world
+        .spawn((
+            Flag,
+            AttachedTo(commander),
+            Interactable {
+                kind: InteractionType::Flag,
+                restricted_to: Some(owner),
+            },
+            owner,
+        ))
+        .id();
+
+    let unit = Unit {
+        swing_timer: Timer::from_seconds(1., TimerMode::Repeating),
+        unit_type,
+    };
+
+    let hitpoints = 20.;
+    let health = Health { hitpoints };
+
+    let movement_speed = 40.;
+    let speed = Speed(movement_speed);
+
+    let damage = 20.;
+    let damage = Damage(damage);
+
+    let range = match unit_type {
+        UnitType::Shieldwarrior => 20.,
+        UnitType::Pikeman => 20.,
+        UnitType::Archer => 100.,
+        UnitType::Bandit => todo!(),
+        UnitType::Commander => todo!(),
+    };
+    let range = Range(range);
+
+    for unit_number in 1..=4 {
+        let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
+        world.spawn((
+            player_translation.with_layer(Layers::Flag),
+            unit.clone(),
+            health,
+            speed,
+            damage,
+            range,
+            owner,
+            FlagAssignment(flag_entity, offset),
+            UnitBehaviour::FollowFlag(flag_entity, offset),
+        ));
+    }
+    flag_entity
+}
