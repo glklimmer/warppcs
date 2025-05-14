@@ -7,7 +7,7 @@ use serde_json::{Value, to_value};
 #[derive(Parser)]
 #[command(name = "ppc", about = "Cheat console for warppcs.", version = "0.1.0")]
 pub struct PPC {
-    #[arg(long, default_value = "DEFAULT_ADDR.to_string()")]
+    #[arg(long, default_value_t = DEFAULT_ADDR.to_string())]
     host: String,
 
     #[arg(long, default_value_t = DEFAULT_PORT)]
