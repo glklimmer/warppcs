@@ -1823,15 +1823,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "clap_complete"
-version = "4.5.50"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c91d3baa3bcd889d60e6ef28874126a0b384fd225ab83aa6d8a801c519194ce1"
-dependencies = [
- "clap",
-]
-
-[[package]]
 name = "clap_derive"
 version = "4.5.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4321,13 +4312,11 @@ version = "0.1.0"
 dependencies = [
  "bevy_remote",
  "clap",
- "clap_complete",
  "console_protocol",
  "dialoguer",
  "dirs",
  "serde",
  "serde_json",
- "shlex",
  "ureq",
 ]
 

@@ -1,10 +1,8 @@
 use bevy_remote::{BrpRequest, http::DEFAULT_ADDR, http::DEFAULT_PORT};
-use clap::{CommandFactory, Parser, Subcommand, ValueHint, arg, command};
-use clap_complete::{Shell, generate};
+use clap::{Parser, Subcommand, ValueHint, arg, command};
 use console_protocol::*;
 use dialoguer::Select;
 use serde_json::{Value, to_value};
-use std::{fs::File, path::PathBuf};
 
 #[derive(Parser)]
 #[command(name = "ppc", about = "The warppc first tooling", version = "0.1.0")]
@@ -21,7 +19,10 @@ pub struct PPC {
 
 #[derive(Subcommand)]
 pub enum PPCSubCommands {
-    RandomItem {},
+    RandomItems {
+        #[arg(short, long, value_hint = ValueHint::CommandWithArguments, default_value_t = 0)]
+        player: u8,
+    },
     SpawnUnit {
         #[arg(short, long, value_hint = ValueHint::CommandWithArguments)]
         unit: Option<String>,
@@ -34,26 +35,19 @@ pub enum PPCSubCommands {
 fn main() {
     let cli = PPC::parse();
 
-    let host_part = format!("{}:{}", DEFAULT_ADDR.to_string(), DEFAULT_PORT);
+    let host_part = format!("{}:{}", DEFAULT_ADDR, DEFAULT_PORT);
     let url = format!("http://{}/", host_part);
-    let home_dir = dirs::home_dir().expect("Could not find home directory");
-
-    let mut zsh_completion_dir = PathBuf::from(home_dir);
-    zsh_completion_dir.push(".zsh");
-    zsh_completion_dir.push("completion");
-    zsh_completion_dir.push("ppc");
-    let mut output_file =
-        File::create(&zsh_completion_dir).expect(&format!("Could not create file: "));
-
-    generate(Shell::Zsh, &mut PPC::command(), "ppc", &mut output_file);
 
     match cli.command {
-        PPCSubCommands::RandomItem {} => {
+        PPCSubCommands::RandomItems { player } => {
             let req = BrpRequest {
                 jsonrpc: String::from("2.0"),
-                method: BRP_TRIGGER_RANDOM_ITEM.into(),
+                method: BRP_SPAWN_RANDOM_ITEM.into(),
                 id: None,
-                params: None,
+                params: Some(
+                    to_value(BrpSpawnItems { player })
+                        .expect("Unable to convert query parameters to a valid JSON value"),
+                ),
             };
             let res = ureq::post(&url)
                 .send_json(req)
@@ -81,7 +75,7 @@ fn main() {
 
             let req = BrpRequest {
                 jsonrpc: String::from("2.0"),
-                method: BRP_TRIGGER_SPAWN_UNIT.into(),
+                method: BRP_SPAWN_UNIT.into(),
                 id: None,
                 params: Some(
                     to_value(BrpSpawnUnit {
