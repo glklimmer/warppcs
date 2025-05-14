@@ -109,7 +109,7 @@ pub enum Hitby {
 }
 /// Key is NetworkEntity
 /// Value is PlayerEntity
-#[derive(Resource, DerefMut, Deref, Default)]
+#[derive(Resource, DerefMut, Deref, Default, Reflect)]
 pub struct ClientPlayerMap(HashMap<Entity, Entity>);
 
 impl ClientPlayerMap {

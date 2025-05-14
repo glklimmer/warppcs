@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use super::{
-    ai::AIPlugin, buildings::BuildingsPlugins, entities::EntityPlugin,
+    ai::AIPlugin, buildings::BuildingsPlugins, console::ConsolePlugin, entities::EntityPlugin,
     game_scenes::GameScenesPlugin, physics::PhysicsPlugin, players::PlayerPlugin,
 };
 use crate::networking::NetworkRegistry;
@@ -18,6 +18,7 @@ impl Plugin for ServerNetworkPlugin {
             BuildingsPlugins,
             PlayerPlugin,
             EntityPlugin,
+            ConsolePlugin,
         ));
     }
 }

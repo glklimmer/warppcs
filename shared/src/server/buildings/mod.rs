@@ -39,6 +39,8 @@ impl Plugin for BuildingsPlugins {
             .add_event::<BuildingConstruction>()
             .add_event::<BuildingUpgrade>();
 
+        app.add_observer(recruit_units);
+        app.add_observer(recruit_commander);
         app.add_systems(
             FixedUpdate,
             (
@@ -50,7 +52,6 @@ impl Plugin for BuildingsPlugins {
                         (construct_building, enable_goldfarm)
                             .run_if(on_event::<BuildingConstruction>),
                         (upgrade_building,).run_if(on_event::<BuildingUpgrade>),
-                        (recruit_units, recruit_commander).run_if(on_event::<RecruitEvent>),
                     ),
                 )
                     .chain(),
