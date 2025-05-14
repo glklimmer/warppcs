@@ -5,7 +5,7 @@ use dialoguer::Select;
 use serde_json::{Value, to_value};
 
 #[derive(Parser)]
-#[command(name = "ppc", about = "The warppc first tooling", version = "0.1.0")]
+#[command(name = "ppc", about = "Cheat console for warppcs.", version = "0.1.0")]
 pub struct PPC {
     #[arg(long, default_value = "DEFAULT_ADDR.to_string()")]
     host: String,
@@ -38,26 +38,16 @@ fn main() {
     let host_part = format!("{}:{}", DEFAULT_ADDR, DEFAULT_PORT);
     let url = format!("http://{}/", host_part);
 
-    match cli.command {
-        PPCSubCommands::RandomItems { player } => {
-            let req = BrpRequest {
-                jsonrpc: String::from("2.0"),
-                method: BRP_SPAWN_RANDOM_ITEM.into(),
-                id: None,
-                params: Some(
-                    to_value(BrpSpawnItems { player })
-                        .expect("Unable to convert query parameters to a valid JSON value"),
-                ),
-            };
-            let res = ureq::post(&url)
-                .send_json(req)
-                .unwrap()
-                .body_mut()
-                .read_json::<Value>()
-                .unwrap();
-
-            println!("{:#}", res);
-        }
+    let request = match cli.command {
+        PPCSubCommands::RandomItems { player } => BrpRequest {
+            jsonrpc: String::from("2.0"),
+            method: BRP_SPAWN_RANDOM_ITEM.into(),
+            id: None,
+            params: Some(
+                to_value(BrpSpawnItems { player })
+                    .expect("Unable to convert query parameters to a valid JSON value"),
+            ),
+        },
         PPCSubCommands::SpawnUnit { unit, player } => {
             let unit_spawn = match unit {
                 Some(unit) => unit,
@@ -73,7 +63,7 @@ fn main() {
                 }
             };
 
-            let req = BrpRequest {
+            BrpRequest {
                 jsonrpc: String::from("2.0"),
                 method: BRP_SPAWN_UNIT.into(),
                 id: None,
@@ -84,15 +74,16 @@ fn main() {
                     })
                     .expect("Unable to convert query parameters to a valid JSON value"),
                 ),
-            };
-            let res = ureq::post(&url)
-                .send_json(req)
-                .unwrap()
-                .body_mut()
-                .read_json::<Value>()
-                .unwrap();
-
-            println!("{:#}", res);
+            }
         }
     };
+
+    let response = ureq::post(&url)
+        .send_json(request)
+        .unwrap()
+        .body_mut()
+        .read_json::<Value>()
+        .unwrap();
+
+    println!("{:#}", response);
 }
