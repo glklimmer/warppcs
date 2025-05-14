@@ -78,12 +78,13 @@ fn main() {
         }
     };
 
-    let response = ureq::post(&url)
-        .send_json(request)
-        .unwrap()
-        .body_mut()
-        .read_json::<Value>()
-        .unwrap();
+    let maybe_response = ureq::post(&url).send_json(request);
 
-    println!("{:#}", response);
+    match maybe_response {
+        Ok(mut body) => {
+            let response = body.body_mut().read_json::<Value>().unwrap();
+            println!("{:#}", response);
+        }
+        Err(_) => println!("No running bevy application found."),
+    }
 }
