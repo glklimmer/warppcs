@@ -53,25 +53,40 @@ impl MapEntities for FlagAssignment {
     }
 }
 
-#[derive(Event, Deserialize, Serialize, Debug)]
+#[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
-    pub player: Entity,
-    pub unit_type: UnitType,
-    pub(crate) items: Option<Vec<Item>>,
+    player: Entity,
+    unit_type: UnitType,
+    items: Option<Vec<Item>>,
 }
 
-pub fn recruit(
+impl RecruitEvent {
+    pub fn new(player: Entity, unit_type: UnitType, items: Option<Vec<Item>>) -> Self {
+        Self {
+            player,
+            unit_type,
+            items,
+        }
+    }
+}
+
+pub fn recruit_units(
     trigger: Trigger<RecruitEvent>,
     mut commands: Commands,
     mut player_query: Query<(&Transform, &mut Inventory)>,
 ) {
-    if let UnitType::Commander = trigger.unit_type {
+    let RecruitEvent {
+        player,
+        unit_type,
+        items,
+    } = &*trigger;
+
+    if let UnitType::Commander = unit_type {
         return;
     }
-
-    let player = trigger.player;
-    let unit_type = trigger.unit_type;
-    let Some(items) = &trigger.items else {
+    let player = *player;
+    let unit_type = *unit_type;
+    let Some(items) = items else {
         return;
     };
 
@@ -82,7 +97,6 @@ pub fn recruit(
     inventory.gold -= cost.gold;
 
     let owner = Owner(Faction::Player(player));
-    // TODO: Refactor with Bevy 0.16 Parent API
     let flag_entity = commands
         .spawn((
             Flag,
@@ -97,11 +111,7 @@ pub fn recruit(
 
     commands.entity(player).insert(FlagHolder(flag_entity));
 
-    let unit_amount = if let UnitType::Commander = unit_type {
-        1
-    } else {
-        items.calculated(Effect::UnitAmount) as i32
-    };
+    let unit_amount = items.calculated(Effect::UnitAmount) as i32;
 
     let time = items.calculated(Effect::AttackSpeed) / 2.;
     let unit = Unit {
@@ -155,15 +165,19 @@ pub fn recruit_commander(
     mut commands: Commands,
     mut player_query: Query<(&Transform, &mut Inventory)>,
 ) {
-    let UnitType::Commander = trigger.unit_type else {
+    let RecruitEvent {
+        player,
+        unit_type,
+        items: _,
+    } = &*trigger;
+
+    let UnitType::Commander = unit_type else {
         return;
     };
 
-    let player = trigger.player;
+    let player = *player;
     let (player_transform, mut inventory) = player_query.get_mut(player).unwrap();
     let player_translation = player_transform.translation;
-
-    let unit_type = trigger.unit_type;
 
     let cost = &unit_type.recruitment_cost();
     inventory.gold -= cost.gold;
@@ -230,9 +244,9 @@ pub fn recruit_commander(
 
 pub fn check_recruit(
     mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut commands: Commands,
     player: Query<&Inventory>,
     building: Query<(&Building, Option<&ItemAssignment>), With<RecruitBuilding>>,
-    mut commands: Commands,
 ) {
     for event in interactions.read() {
         let InteractionType::Recruit = &event.interaction else {

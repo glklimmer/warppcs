@@ -76,10 +76,10 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
 
     let player = unit_req.player_entity(world)?;
 
-    world.trigger(RecruitEvent {
+    world.trigger(RecruitEvent::new(
         player,
         unit_type,
-        items: Some(vec![
+        Some(vec![
             ItemBuilder::default()
                 .with_type(ItemType::Weapon(WeaponType::Projectile(
                     ProjectileWeapon::Bow,
@@ -89,7 +89,7 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
             ItemBuilder::default().with_type(ItemType::Chest).build(),
             ItemBuilder::default().with_type(ItemType::Feet).build(),
         ]),
-    });
+    ));
 
     Ok(json!("success"))
 }
