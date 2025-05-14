@@ -120,7 +120,6 @@ fn interact(
         );
 
     if let Some((interactable, _, _, interaction)) = priority_interaction {
-        info!("Sending {:?}", interaction.kind);
         triggered_events.send(InteractionTriggeredEvent {
             player,
             interactable,

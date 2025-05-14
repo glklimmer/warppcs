@@ -1,21 +1,35 @@
 use bevy::prelude::*;
 
-use bevy::remote::BrpError;
 use bevy::{
     app::Plugin,
     ecs::{entity::Entity, system::In, world::World},
     reflect::Map,
-    remote::{BrpResult, RemotePlugin, http::RemoteHttpPlugin},
+    remote::{BrpError, BrpResult, RemotePlugin, http::RemoteHttpPlugin},
 };
 use console_protocol::*;
 use serde_json::{Value, json};
 
-use crate::{ClientPlayerMap, Vec3LayerExt, map::Layers, networking::UnitType};
+use crate::{
+    ClientPlayerMap, Faction, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers,
+    networking::UnitType,
+};
 
 use super::{
-    buildings::recruiting::RecruitEvent,
-    physics::movement::Velocity,
-    players::items::{Item, ItemBuilder, ItemType, ProjectileWeapon, Rarity, WeaponType},
+    ai::UnitBehaviour,
+    buildings::recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
+    entities::{
+        Damage, Range, Unit,
+        commander::{CommanderSlot, SlotsAssignments},
+        health::Health,
+    },
+    physics::{
+        attachment::AttachedTo,
+        movement::{Speed, Velocity},
+    },
+    players::{
+        interaction::{Interactable, InteractionType},
+        items::{Item, ItemType, MeleeWeapon, ProjectileWeapon, Rarity, WeaponType},
+    },
 };
 
 pub struct ConsolePlugin;
@@ -25,7 +39,8 @@ impl Plugin for ConsolePlugin {
         app.add_plugins((
             RemotePlugin::default()
                 .with_method(BRP_SPAWN_UNIT, spawn_unit_handler)
-                .with_method(BRP_SPAWN_RANDOM_ITEM, spawn_random_items),
+                .with_method(BRP_SPAWN_RANDOM_ITEM, spawn_random_items)
+                .with_method(BRP_SPAWN_FULL_COMMANDER, spawn_full_commander),
             RemoteHttpPlugin::default(),
         ));
     }
@@ -59,6 +74,12 @@ impl PlayerCommand for BrpSpawnUnit {
     }
 }
 
+impl PlayerCommand for BrpSpawnFullCommander {
+    fn player(&self) -> u8 {
+        self.player
+    }
+}
+
 fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpResult<Value> {
     let value = params.ok_or_else(|| BrpError::internal("spawn-units requires parameters"))?;
 
@@ -75,19 +96,22 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
     };
 
     let player = unit_req.player_entity(world)?;
+    let weapon_type = match unit_type {
+        UnitType::Shieldwarrior => ItemType::Weapon(WeaponType::Melee(MeleeWeapon::SwordAndShield)),
+        UnitType::Pikeman => ItemType::Weapon(WeaponType::Melee(MeleeWeapon::Pike)),
+        UnitType::Archer => ItemType::Weapon(WeaponType::Projectile(ProjectileWeapon::Bow)),
+        UnitType::Bandit => todo!(),
+        UnitType::Commander => todo!(),
+    };
 
     world.trigger(RecruitEvent::new(
         player,
         unit_type,
         Some(vec![
-            ItemBuilder::default()
-                .with_type(ItemType::Weapon(WeaponType::Projectile(
-                    ProjectileWeapon::Bow,
-                )))
-                .build(),
-            ItemBuilder::default().with_type(ItemType::Head).build(),
-            ItemBuilder::default().with_type(ItemType::Chest).build(),
-            ItemBuilder::default().with_type(ItemType::Feet).build(),
+            Item::builder().with_type(weapon_type).build(),
+            Item::builder().with_type(ItemType::Head).build(),
+            Item::builder().with_type(ItemType::Chest).build(),
+            Item::builder().with_type(ItemType::Feet).build(),
         ]),
     ));
 
@@ -122,4 +146,162 @@ fn spawn_random_items(In(params): In<Option<serde_json::Value>>, world: &mut Wor
     }
 
     Ok(json!("success"))
+}
+
+fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> BrpResult {
+    let value =
+        params.ok_or_else(|| BrpError::internal("spawn-full-commander requires parameters"))?;
+
+    let brp: BrpSpawnFullCommander = serde_json::from_value(value)
+        .map_err(|e| BrpError::internal(format!("invalid commander parameters: {}", e)))?;
+    let player = brp.player_entity(world)?;
+
+    let owner = Owner(Faction::Player(player));
+    let flag_commander = world
+        .spawn((
+            Flag,
+            AttachedTo(player),
+            Interactable {
+                kind: InteractionType::Flag,
+                restricted_to: Some(owner),
+            },
+            owner,
+        ))
+        .id();
+
+    world.entity_mut(player).insert(FlagHolder(flag_commander));
+    let player_translation = world
+        .query::<&Transform>()
+        .get_mut(world, player)
+        .unwrap()
+        .translation;
+    let time = 50.;
+    let unit = Unit {
+        swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
+        unit_type: UnitType::Commander,
+    };
+
+    let hitpoints = 100.;
+    let health = Health { hitpoints };
+
+    let movement_speed = 50.;
+    let speed = Speed(movement_speed);
+
+    let damage = 20.;
+    let damage = Damage(damage);
+
+    let range = 50.;
+    let range = Range(range);
+
+    let offset = Vec2::new(-18., 0.);
+
+    let commander = world
+        .spawn((
+            player_translation.with_layer(Layers::Flag),
+            unit.clone(),
+            health,
+            speed,
+            damage,
+            range,
+            owner,
+            FlagAssignment(flag_commander, offset),
+            UnitBehaviour::FollowFlag(flag_commander, offset),
+            Interactable {
+                kind: InteractionType::CommanderInteraction,
+                restricted_to: Some(owner),
+            },
+        ))
+        .id();
+
+    let front = spawn_unit(
+        world,
+        player,
+        commander,
+        UnitType::Shieldwarrior,
+        player_translation,
+    );
+    let middle = spawn_unit(
+        world,
+        player,
+        commander,
+        UnitType::Pikeman,
+        player_translation,
+    );
+    let back = spawn_unit(
+        world,
+        player,
+        commander,
+        UnitType::Archer,
+        player_translation,
+    );
+
+    world.entity_mut(commander).insert(SlotsAssignments {
+        slots: EnumMap::new(|c| match c {
+            CommanderSlot::Front => Some(front),
+            CommanderSlot::Middle => Some(middle),
+            CommanderSlot::Back => Some(back),
+        }),
+    });
+
+    Ok(json!("success"))
+}
+
+fn spawn_unit(
+    world: &mut World,
+    player: Entity,
+    commander: Entity,
+    unit_type: UnitType,
+    player_translation: Vec3,
+) -> Entity {
+    let owner = Owner(Faction::Player(player));
+    let flag_entity = world
+        .spawn((
+            Flag,
+            AttachedTo(commander),
+            Interactable {
+                kind: InteractionType::Flag,
+                restricted_to: Some(owner),
+            },
+            owner,
+        ))
+        .id();
+
+    let unit = Unit {
+        swing_timer: Timer::from_seconds(1., TimerMode::Repeating),
+        unit_type,
+    };
+
+    let hitpoints = 20.;
+    let health = Health { hitpoints };
+
+    let movement_speed = 40.;
+    let speed = Speed(movement_speed);
+
+    let damage = 20.;
+    let damage = Damage(damage);
+
+    let range = match unit_type {
+        UnitType::Shieldwarrior => 20.,
+        UnitType::Pikeman => 20.,
+        UnitType::Archer => 100.,
+        UnitType::Bandit => todo!(),
+        UnitType::Commander => todo!(),
+    };
+    let range = Range(range);
+
+    for unit_number in 1..=4 {
+        let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
+        world.spawn((
+            player_translation.with_layer(Layers::Flag),
+            unit.clone(),
+            health,
+            speed,
+            damage,
+            range,
+            owner,
+            FlagAssignment(flag_entity, offset),
+            UnitBehaviour::FollowFlag(flag_entity, offset),
+        ));
+    }
+    flag_entity
 }
