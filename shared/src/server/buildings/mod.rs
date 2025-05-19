@@ -88,7 +88,7 @@ fn check_building_interaction(
                 if !inventory.gold.ge(&building.cost().gold) {
                     continue;
                 }
-                build.send(BuildingConstruction(info));
+                build.write(BuildingConstruction(info));
             }
             BuildStatus::Built => {
                 if building.can_upgrade() {
@@ -98,11 +98,11 @@ fn check_building_interaction(
                     {
                         continue;
                     }
-                    upgrade.send(BuildingUpgrade(info));
+                    upgrade.write(BuildingUpgrade(info));
                 }
             }
             BuildStatus::Destroyed => {
-                build.send(BuildingConstruction(info));
+                build.write(BuildingConstruction(info));
             }
         }
     }

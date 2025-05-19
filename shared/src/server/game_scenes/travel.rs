@@ -41,13 +41,6 @@ impl Traveling {
     }
 }
 
-impl MapEntities for Traveling {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.source = entity_mapper.map_entity(self.source);
-        self.target = entity_mapper.map_entity(self.target);
-    }
-}
-
 #[derive(Component, Clone, Deref)]
 pub struct TravelDestination(Entity);
 
@@ -61,12 +54,12 @@ impl TravelDestination {
 #[require(
     Replicated,
     Transform,
-    BoxCollider(portal_collider),
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
-    Interactable(|| Interactable {
+    BoxCollider = portal_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Interactable{
         kind: InteractionType::Travel,
         restricted_to: None,
-    }),
+    },
 )]
 pub struct Portal;
 

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_renet::{client_just_disconnected, netcode::NetcodeClientTransport};
+use bevy_replicon::prelude::client_just_disconnected;
 use shared::GameState;
 
 #[cfg(feature = "steam")]
@@ -12,9 +12,9 @@ use steamworks::{LobbyId, SteamId};
 
 #[cfg(feature = "steam")]
 use crate::widgets::text_input::TextInputValue;
-use crate::widgets::text_input::{
-    TextInput, TextInputPlugin, TextInputTextColor, TextInputTextFont,
-};
+// use crate::widgets::text_input::{
+//     TextInput, TextInputPlugin, TextInputTextColor, TextInputTextFont,
+// };
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum MainMenuStates {
@@ -51,7 +51,7 @@ pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(TextInputPlugin);
+        // app.add_plugins(TextInputPlugin);
 
         app.add_systems(OnEnter(MainMenuStates::TitleScreen), display_main_menu);
         app.add_systems(OnExit(MainMenuStates::TitleScreen), clean_ui);
@@ -78,7 +78,7 @@ impl Plugin for MenuPlugin {
         }
 
         app.add_systems(OnExit(MainMenuStates::Lobby), clean_ui);
-        app.add_systems(OnExit(MainMenuStates::Lobby), disconect_client);
+        // app.add_systems(OnExit(MainMenuStates::Lobby), disconect_client);
     }
 }
 
@@ -160,13 +160,14 @@ fn display_main_menu(mut commands: Commands) {
 
 fn clean_ui(mut commands: Commands, buttons_query: Query<Entity, With<Node>>) {
     for button_entity in buttons_query.iter() {
-        commands.entity(button_entity).despawn_recursive();
+        commands.entity(button_entity).despawn();
     }
 }
 
-fn disconect_client(mut transport: ResMut<NetcodeClientTransport>) {
-    transport.disconnect();
-}
+// TODO: Netocde
+// fn disconect_client(mut transport: ResMut<NetcodeClientTransport>) {
+//     transport.disconnect();
+// }
 
 #[allow(clippy::type_complexity)]
 fn button_system(
@@ -215,18 +216,18 @@ fn change_state_on_button_steam(
                     next_state.set(MainMenuStates::Multiplayer);
                 }
                 Buttons::CreateLobby => {
-                    join_lobby_request.send(JoinSteamLobby(steam_client.user().steam_id()));
+                    join_lobby_request.write(JoinSteamLobby(steam_client.user().steam_id()));
                 }
                 Buttons::JoinLobby => next_state.set(MainMenuStates::JoinScreen),
                 Buttons::StartGame => {
-                    player_commands.send(PlayerCommand::StartGame);
+                    player_commands.write(PlayerCommand::StartGame);
                 }
                 Buttons::InvitePlayer => steam_client
                     .friends()
                     .activate_invite_dialog(LobbyId::from_raw(76561198079103566)),
                 Buttons::Join => match lobby_code.single().0.parse::<u64>() {
                     Ok(value) => {
-                        join_lobby_request.send(JoinSteamLobby(SteamId::from_raw(value)));
+                        join_lobby_request.write(JoinSteamLobby(SteamId::from_raw(value)));
                     }
                     Err(_) => {
                         println!("Invalid SteamID u64 value.")
@@ -362,12 +363,12 @@ fn display_join_screen(mut commands: Commands) {
                     margin: UiRect::bottom(Val::Px(5.0)),
                     ..default()
                 },
-                TextInput,
-                TextInputTextFont(TextFont {
-                    font_size: 34.,
-                    ..default()
-                }),
-                TextInputTextColor(TextColor(TEXT_COLOR)),
+                // TextInput,
+                // TextInputTextFont(TextFont {
+                //     font_size: 34.,
+                //     ..default()
+                // }),
+                // TextInputTextColor(TextColor(TEXT_COLOR)),
                 BorderColor(BORDER_COLOR_ACTIVE),
                 BackgroundColor(BACKGROUND_COLOR),
             ));

@@ -32,20 +32,6 @@ pub struct InteractableSound {
     pub spatial_position: Vec3,
 }
 
-impl MapEntities for Interactable {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        let Some(owner) = self.restricted_to else {
-            return;
-        };
-
-        let Faction::Player(entity) = *owner else {
-            return;
-        };
-
-        self.restricted_to = Some(Owner(Faction::Player(entity_mapper.map_entity(entity))));
-    }
-}
-
 #[derive(Event)]
 pub struct InteractionTriggeredEvent {
     pub player: Entity,
@@ -120,7 +106,7 @@ fn interact(
         );
 
     if let Some((interactable, _, _, interaction)) = priority_interaction {
-        triggered_events.send(InteractionTriggeredEvent {
+        triggered_events.write(InteractionTriggeredEvent {
             player,
             interactable,
             interaction: interaction.kind,

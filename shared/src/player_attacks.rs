@@ -31,7 +31,7 @@ fn attack(
 ) {
     let player = client_player_map.get(&trigger.client_entity).unwrap();
 
-    animation.send(ToClients {
+    animation.write(ToClients {
         mode: SendMode::Broadcast,
         event: AnimationChangeEvent {
             entity: *player,

@@ -29,11 +29,11 @@ pub enum UnitAnimation {
 #[require(
     Replicated,
     Transform,
-    BoxCollider(unit_collider),
+    BoxCollider = unit_collider(),
     Velocity,
     PushBack,
     UnitAnimation,
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
+Sprite{anchor: Anchor::BottomCenter, ..default()},
     RandomVelocityMul
 )]
 pub struct Unit {

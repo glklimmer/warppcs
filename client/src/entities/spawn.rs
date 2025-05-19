@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_parallax::CameraFollow;
+// use bevy_parallax::CameraFollow;
 use bevy_replicon::client::ClientSet;
 use shared::{
     ChestAnimation, Player, SetLocalPlayer,
@@ -61,9 +61,9 @@ fn init_local_player(
         info!("init controlled player for {:?}", player);
         let mut player_commands = commands.entity(player);
         player_commands.insert((ControlledPlayer, SpatialListener::new(50.0)));
-        commands
-            .entity(camera.single())
-            .insert(CameraFollow::fixed(player).with_offset(Vec2 { x: 0., y: 50. }));
+        // commands
+        //     .entity(camera.single())
+        //     .insert(CameraFollow::fixed(player).with_offset(Vec2 { x: 0., y: 50. }));
     }
 }
 
@@ -73,7 +73,7 @@ fn init_player_sprite(
     mut commands: Commands,
     king_sprite_sheet: Res<KingSpriteSheet>,
 ) {
-    let Ok(mut sprite) = players.get_mut(trigger.entity()) else {
+    let Ok(mut sprite) = players.get_mut(trigger.target()) else {
         return;
     };
     let sprite_sheet = &king_sprite_sheet.sprite_sheet;
@@ -84,7 +84,7 @@ fn init_player_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
-    let mut commands = commands.entity(trigger.entity());
+    let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), KingAnimation::default()));
 }
 
@@ -93,7 +93,7 @@ fn init_recruit_building_sprite(
     mut slots: Query<(&mut Sprite, &BuildStatus, Option<&Building>)>,
     asset_server: Res<AssetServer>,
 ) {
-    let Ok((mut sprite, status, maybe_building)) = slots.get_mut(trigger.entity()) else {
+    let Ok((mut sprite, status, maybe_building)) = slots.get_mut(trigger.target()) else {
         return;
     };
 
@@ -109,7 +109,7 @@ fn init_building_sprite(
     mut buildings: Query<(&mut Sprite, &Building, &BuildStatus)>,
     asset_server: Res<AssetServer>,
 ) {
-    let Ok((mut sprite, building, status)) = buildings.get_mut(trigger.entity()) else {
+    let Ok((mut sprite, building, status)) = buildings.get_mut(trigger.target()) else {
         return;
     };
 
@@ -170,7 +170,7 @@ fn init_unit_sprite(
     sprite_sheets: Res<UnitSpriteSheets>,
     mut commands: Commands,
 ) {
-    let Ok((mut sprite, unit)) = units.get_mut(trigger.entity()) else {
+    let Ok((mut sprite, unit)) = units.get_mut(trigger.target()) else {
         return;
     };
 
@@ -181,7 +181,7 @@ fn init_unit_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
-    let mut commands = commands.entity(trigger.entity());
+    let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), UnitAnimation::default()));
 }
 
@@ -191,7 +191,7 @@ fn init_flag_sprite(
     mut flag: Query<&mut Sprite>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
 ) {
-    let Ok(mut sprite) = flag.get_mut(trigger.entity()) else {
+    let Ok(mut sprite) = flag.get_mut(trigger.target()) else {
         return;
     };
 
@@ -202,7 +202,7 @@ fn init_flag_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
-    let mut commands = commands.entity(trigger.entity());
+    let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), FlagAnimation::default()));
 }
 
@@ -212,7 +212,7 @@ fn init_portal_sprite(
     mut portal: Query<&mut Sprite>,
     portal_sprite_sheet: Res<PortalSpriteSheet>,
 ) {
-    let Ok(mut sprite) = portal.get_mut(trigger.entity()) else {
+    let Ok(mut sprite) = portal.get_mut(trigger.target()) else {
         return;
     };
 
@@ -223,7 +223,7 @@ fn init_portal_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
-    let mut commands = commands.entity(trigger.entity());
+    let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), PortalAnimation::default()));
 }
 
@@ -233,7 +233,7 @@ fn init_horse_sprite(
     mut portal: Query<&mut Sprite>,
     horse_sprite_sheet: Res<HorseSpriteSheet>,
 ) {
-    let Ok(mut sprite) = portal.get_mut(trigger.entity()) else {
+    let Ok(mut sprite) = portal.get_mut(trigger.target()) else {
         return;
     };
 
@@ -244,7 +244,7 @@ fn init_horse_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
-    let mut commands = commands.entity(trigger.entity());
+    let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), HorseAnimation::default()));
 }
 
@@ -253,7 +253,7 @@ fn init_projectile_sprite(
     mut projectile: Query<(&mut Sprite, &ProjectileType)>,
     asset_server: Res<AssetServer>,
 ) {
-    let Ok((mut sprite, projectile_type)) = projectile.get_mut(trigger.entity()) else {
+    let Ok((mut sprite, projectile_type)) = projectile.get_mut(trigger.target()) else {
         return;
     };
 
@@ -268,7 +268,7 @@ fn init_chest_sprite(
     mut chests: Query<&mut Sprite>,
     sprite_sheets: Res<ChestSpriteSheet>,
 ) {
-    let Ok(mut sprite) = chests.get_mut(trigger.entity()) else {
+    let Ok(mut sprite) = chests.get_mut(trigger.target()) else {
         return;
     };
 

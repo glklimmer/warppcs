@@ -1,3 +1,4 @@
+use bevy::ecs::component::HookContext;
 use bevy::prelude::*;
 
 use bevy::{
@@ -13,7 +14,7 @@ use std::cmp::Ordering;
 
 use crate::networking::ControlledPlayer;
 
-fn on_remove_highlighted(mut world: DeferredWorld, entity: Entity, _id: ComponentId) {
+fn on_remove_highlighted(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
     let mut entity_mut = world.entity_mut(entity);
     let value = entity_mut
         .get::<Highlighted>()
@@ -103,7 +104,7 @@ fn check_highlight(
     >,
     player: Query<(&Transform, &BoxCollider), With<ControlledPlayer>>,
 ) {
-    let Ok((player_transform, player_collider)) = player.get_single() else {
+    let Ok((player_transform, player_collider)) = player.single() else {
         return;
     };
 
@@ -167,7 +168,7 @@ fn init_highlightable(
     controlled_player: Query<Entity, With<ControlledPlayer>>,
     interactable: Query<(&Interactable, Option<&AttachedTo>)>,
 ) {
-    let Ok((interactable, maybe_attached)) = interactable.get(trigger.entity()) else {
+    let Ok((interactable, maybe_attached)) = interactable.get(trigger.target()) else {
         return;
     };
 
@@ -175,7 +176,7 @@ fn init_highlightable(
         return;
     }
 
-    let controller_player = controlled_player.single();
+    let controller_player = controlled_player.single().unwrap();
 
     if let Some(owner) = interactable.restricted_to {
         match *owner {
@@ -188,26 +189,26 @@ fn init_highlightable(
         }
     }
     commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .insert(Highlightable::default());
 }
 
 fn remove_highlightable(trigger: Trigger<OnRemove, Interactable>, mut commands: Commands) {
     commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .remove::<Highlightable>()
         .remove::<Highlighted>();
 }
 
 fn remove_highlightable_on_attached(trigger: Trigger<OnAdd, AttachedTo>, mut commands: Commands) {
     commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .remove::<Highlightable>()
         .remove::<Highlighted>();
 }
 
 fn add_highlightable_on_attached(trigger: Trigger<OnRemove, AttachedTo>, mut commands: Commands) {
     commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .insert(Highlightable::default());
 }

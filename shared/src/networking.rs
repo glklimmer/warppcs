@@ -43,7 +43,7 @@ impl UnitType {
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
-#[require(BoxCollider(horse_collider))]
+#[require(BoxCollider= horse_collider())]
 pub enum MountType {
     Horse,
 }

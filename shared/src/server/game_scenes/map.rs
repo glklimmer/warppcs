@@ -47,26 +47,6 @@ pub struct GameScene {
     pub position: Vec2,
 }
 
-impl MapEntities for GameScene {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.scene = match self.scene {
-            SceneType::Player {
-                player,
-                left,
-                right,
-            } => SceneType::Player {
-                player: entity_mapper.map_entity(player),
-                left: entity_mapper.map_entity(left),
-                right: entity_mapper.map_entity(right),
-            },
-            SceneType::Bandit { left, right } => SceneType::Bandit {
-                left: entity_mapper.map_entity(left),
-                right: entity_mapper.map_entity(right),
-            },
-        }
-    }
-}
-
 impl MapGraph {
     pub fn circular(mut commands: Commands, players: Vec<Entity>, radius: f32) -> MapGraph {
         let total = players.len() * 2;

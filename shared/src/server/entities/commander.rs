@@ -1,4 +1,4 @@
-use bevy::{ecs::entity::MapEntities, prelude::*, utils::HashMap};
+use bevy::{ecs::entity::MapEntities, platform::collections::HashMap, prelude::*};
 use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
@@ -57,20 +57,6 @@ impl Default for SlotsAssignments {
                 CommanderSlot::Back => None,
             }),
         }
-    }
-}
-
-impl MapEntities for SlotsAssignments {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.slots.iter_mut().for_each(|entity| {
-            *entity = entity.take().map(|entity| entity_mapper.map_entity(entity));
-        });
-    }
-}
-
-impl MapEntities for CommanderInteraction {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.commander = entity_mapper.map_entity(self.commander);
     }
 }
 

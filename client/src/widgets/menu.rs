@@ -1,3 +1,4 @@
+use bevy::ecs::component::HookContext;
 use bevy::prelude::*;
 
 use bevy::{
@@ -58,12 +59,12 @@ pub struct Selected;
 #[component(on_add = color_tree_grey)]
 struct GrayOnSpawn;
 
-fn color_tree_white(mut world: DeferredWorld, root: Entity, _id: ComponentId) {
-    color_tree(&mut world, root, Color::WHITE);
+fn color_tree_white(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    color_tree(&mut world, entity, Color::WHITE);
 }
 
-fn color_tree_grey(mut world: DeferredWorld, root: Entity, _id: ComponentId) {
-    color_tree(&mut world, root, Color::Srgba(GREY));
+fn color_tree_grey(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    color_tree(&mut world, entity, Color::Srgba(GREY));
 }
 
 fn color_tree(world: &mut DeferredWorld, root: Entity, color: Color) {
@@ -78,7 +79,7 @@ fn color_tree(world: &mut DeferredWorld, root: Entity, color: Color) {
             continue;
         };
 
-        for &child in children.iter() {
+        for child in children.iter() {
             stack.push(child);
         }
     }
@@ -150,7 +151,7 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
     mut active: ResMut<ActiveMenus>,
     query: Query<&Menu<T>>,
 ) {
-    let menu_entity = trigger.entity();
+    let menu_entity = trigger.target();
     let menu = query.get(menu_entity).unwrap();
 
     let len = menu.nodes.len();
@@ -214,9 +215,9 @@ fn cycle_commands<T: Clone + Send + Sync + 'static>(
 
     let mut current_index: i32 = 0;
     for (i, menu_node) in descendants.iter().enumerate() {
-        if active.contains(*menu_node) {
+        if active.contains(menu_node) {
             current_index = i as i32;
-            commands.entity(*menu_node).remove::<Selected>();
+            commands.entity(menu_node).remove::<Selected>();
             break;
         }
     }
@@ -250,8 +251,8 @@ fn close_menu(
     };
 
     if let Ok(children) = children_query.get(menu_entity) {
-        for &child in children.iter() {
-            commands.entity(child).despawn_recursive();
+        for child in children.iter() {
+            commands.entity(child).despawn();
         }
     }
 
@@ -300,7 +301,7 @@ fn selection_callback<T: Clone + Send + Sync + 'static>(
         return;
     };
 
-    for &child in children.iter() {
+    for child in children.iter() {
         let Ok(selected) = menu_query.get(child) else {
             continue;
         };

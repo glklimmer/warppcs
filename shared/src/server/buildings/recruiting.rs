@@ -29,29 +29,17 @@ use super::item_assignment::ItemAssignment;
 #[derive(Component, Deserialize, Serialize)]
 #[require(
     Replicated,
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
-    BoxCollider(flag_collider),
-    Transform( || Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()) , scale: Vec3::splat(1./3.), ..default()}))]
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    BoxCollider = flag_collider(),
+    Transform = (Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()) , scale: Vec3::splat(1./3.), ..default()}))]
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder
 #[derive(Component, Clone, Copy, Deref, DerefMut, Deserialize, Serialize)]
 pub struct FlagHolder(pub Entity);
 
-impl MapEntities for FlagHolder {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        **self = entity_mapper.map_entity(**self);
-    }
-}
-
 #[derive(Component, Deserialize, Serialize)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
-
-impl MapEntities for FlagAssignment {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.map_entity(self.0);
-    }
-}
 
 #[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
