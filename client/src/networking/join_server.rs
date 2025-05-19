@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_renet::renet::{ConnectionConfig, RenetClient};
 use bevy_replicon::prelude::RepliconChannels;
-use bevy_replicon_renet::RenetChannelsExt;
 
 #[cfg(feature = "steam")]
 use crate::menu::{JoinSteamLobby, MainMenuStates};
@@ -49,39 +47,38 @@ pub fn join_steam_server(
     }
 }
 
-#[cfg(feature = "netcode")]
-pub fn join_netcode_server(mut commands: Commands, channels: Res<RepliconChannels>) {
-    use bevy_renet::netcode::{ClientAuthentication, NetcodeClientTransport};
-    use shared::networking::PROTOCOL_ID;
-    use std::{net::UdpSocket, time::SystemTime};
+// #[cfg(feature = "netcode")]
+// // pub fn join_netcode_server(mut commands: Commands, channels: Res<RepliconChannels>) {
+// //     use shared::networking::PROTOCOL_ID;
+// //     use std::{net::UdpSocket, time::SystemTime};
 
-    let server_channels_config = channels.server_configs();
-    let client_channels_config = channels.client_configs();
+// //     let server_channels_config = channels.server_configs();
+// //     let client_channels_config = channels.client_configs();
 
-    let client = RenetClient::new(ConnectionConfig {
-        server_channels_config,
-        client_channels_config,
-        ..Default::default()
-    });
+// //     let client = RenetClient::new(ConnectionConfig {
+// //         server_channels_config,
+// //         client_channels_config,
+// //         ..Default::default()
+// //     });
 
-    let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
-    let current_time = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap();
-    let client_id = current_time.as_millis() as u64;
-    let authentication = ClientAuthentication::Unsecure {
-        client_id,
-        protocol_id: PROTOCOL_ID,
-        server_addr: "127.0.0.1:5000".parse().unwrap(),
-        user_data: None,
-    };
+// //     let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
+// //     let current_time = SystemTime::now()
+// //         .duration_since(SystemTime::UNIX_EPOCH)
+// //         .unwrap();
+// //     let client_id = current_time.as_millis() as u64;
+// //     let authentication = ClientAuthentication::Unsecure {
+// //         client_id,
+// //         protocol_id: PROTOCOL_ID,
+// //         server_addr: "127.0.0.1:5000".parse().unwrap(),
+// //         user_data: None,
+// //     };
 
-    match NetcodeClientTransport::new(current_time, authentication, socket) {
-        Ok(transport) => {
-            commands.insert_resource(client);
-            commands.insert_resource(transport);
-            info!("Successfully joined server.");
-        }
-        Err(error) => println!("join_netcode_server error {}", error),
-    }
-}
+// //     match NetcodeClientTransport::new(current_time, authentication, socket) {
+// //         Ok(transport) => {
+// //             commands.insert_resource(client);
+// //             commands.insert_resource(transport);
+// //             info!("Successfully joined server.");
+// //         }
+// //         Err(error) => println!("join_netcode_server error {}", error),
+// //     }
+// // }
