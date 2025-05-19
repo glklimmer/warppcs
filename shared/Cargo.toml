@@ -8,19 +8,15 @@ client = []
 server = []
 
 [dependencies]
-bevy = { version = "0.15.3", default-features = false, features = [
-    # "android-game-activity",
-    # "android_shared_stdcxx",
+bevy = { version = "0.16", default-features = false, features = [
+    "std",
     "animation",
     "bevy_asset",
     "bevy_audio",
     "bevy_color",
     "bevy_core_pipeline",
-    # "bevy_gilrs",
     "bevy_gizmos",
-    # "bevy_gltf",
     "bevy_mesh_picking_backend",
-    # "bevy_pbr",
     "bevy_picking",
     "bevy_render",
     "bevy_scene",
@@ -37,24 +33,20 @@ bevy = { version = "0.15.3", default-features = false, features = [
     "hdr",
     "multi_threaded",
     "png",
-    # "smaa_luts",
     "sysinfo_plugin",
-    # "tonemapping_luts",
     "vorbis",
-    # "webgl2",
     "x11",
     "bevy_remote",
+    "bevy_log",
 ] }
 enum_as_f32_macro = { path = "../enum_as_f32_macro" }
 enum_mappable = { path = "../enum_mappable" }
-bevy_renet = { version = "1.0.0" }
-bevy_replicon = "0.32.0"
-bevy_replicon_renet = { version = "0.9.0" }
 bincode = "2.0.1"
 fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
-renet_steam = { version = "1.0.0", features = ["bevy"] }
 steamworks = { version = "0.11" }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
 serde_json = "1.0.140"
 console_protocol = { version = "0.1.0", path = "../console_protocol" }
+bevy_replicon = "0.33"
+bevy-steamworks = "0.13.0"
