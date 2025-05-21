@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-// use bevy_parallax::CameraFollow;
+use bevy_parallax::CameraFollow;
 use bevy_replicon::client::ClientSet;
 use shared::{
     ChestAnimation, Player, SetLocalPlayer,
@@ -46,25 +46,21 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_projectile_sprite)
             .add_observer(init_chest_sprite)
             .add_systems(Update, update_building_sprite)
-            .add_systems(PreUpdate, init_local_player.after(ClientSet::Receive));
+            .add_observer(init_local_player);
     }
 }
 
 fn init_local_player(
+    trigger: Trigger<SetLocalPlayer>,
     mut commands: Commands,
-    mut events: EventReader<SetLocalPlayer>,
     camera: Query<Entity, With<Camera>>,
 ) {
-    for event in events.read() {
-        let player = **event;
-
-        info!("init controlled player for {:?}", player);
-        let mut player_commands = commands.entity(player);
-        player_commands.insert((ControlledPlayer, SpatialListener::new(50.0)));
-        // commands
-        //     .entity(camera.single())
-        //     .insert(CameraFollow::fixed(player).with_offset(Vec2 { x: 0., y: 50. }));
-    }
+    let player = trigger.entity();
+    let mut player_commands = commands.entity(player);
+    player_commands.insert((ControlledPlayer, SpatialListener::new(50.0)));
+    commands
+        .entity(camera.single().unwrap())
+        .insert(CameraFollow::fixed(player).with_offset(Vec2 { x: 0., y: 50. }));
 }
 
 fn init_player_sprite(
@@ -76,6 +72,8 @@ fn init_player_sprite(
     let Ok(mut sprite) = players.get_mut(trigger.target()) else {
         return;
     };
+    info!("Adding sprite for {:?}", trigger.target());
+
     let sprite_sheet = &king_sprite_sheet.sprite_sheet;
 
     sprite.image = sprite_sheet.texture.clone();

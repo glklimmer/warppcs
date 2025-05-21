@@ -11,6 +11,7 @@ netcode = []
 [dependencies]
 bevy = { version = "0.16", default-features = false, features = [
     "std",
+    "serialize",
     "animation",
     "bevy_asset",
     "bevy_audio",
@@ -38,12 +39,18 @@ bevy = { version = "0.16", default-features = false, features = [
     "vorbis",
     "wayland",
 ] }
-bevy_replicon = "0.33.0"
+bevy_replicon = { version = "0.33.0", features = ["client"] }
 bincode = "2.0.1"
 fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
 steamworks = { version = "0.11", optional = true }
 shared = { path = "../shared", features = ["client"] }
 arboard = "3.5.0"
-# bevy-parallax = { git = "https://github.com/Corrosive-Games/bevy-parallax" }
+bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax" }
 image = { version = "0.25.6", features = ["png"] }
+aeronet = "0.14.0"
+aeronet_webtransport = { version = "0.14.0", features = [
+    "client",
+    "dangerous-configuration",
+] }
+aeronet_replicon = { version = "0.14.0", features = ["client"] }

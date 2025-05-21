@@ -42,7 +42,6 @@ fn start_game(
     let map = &**trigger.event();
     for (i, node) in map.node_references() {
         let offset = Vec3::new(10000. * i.index() as f32, 0., 0.);
-
         match node.scene {
             SceneType::Player {
                 player,
@@ -52,6 +51,7 @@ fn start_game(
                 player_base(commands.reborrow(), offset, player, left, right);
                 let mut transform = players.get_mut(player).unwrap();
                 transform.translation = offset.with_z(Layers::Player.as_f32());
+                info!("pos {}", transform.translation);
 
                 for item_type in ItemType::all_variants() {
                     let translation = transform.translation;

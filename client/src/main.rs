@@ -1,11 +1,14 @@
 use bevy::prelude::*;
 
 use bevy::audio::{AudioPlugin, SpatialScale, Volume};
+use bevy_parallax::ParallaxPlugin;
 use bevy_replicon::prelude::client_connected;
 use gizmos::GizmosPlugin;
 use map::MapPlugin;
 use menu::{MainMenuStates, MenuPlugin};
 use networking::Connected;
+use networking::join_server::{JoinServerPlugin, JoinWebTransportServer};
+use shared::server::create_server::CreateWebTransportServer;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
@@ -91,7 +94,7 @@ fn main() {
         .insert_state(MainMenuStates::TitleScreen)
         .insert_state(GameState::MainMenu)
         .add_plugins((
-            // ParallaxPlugin,
+            ParallaxPlugin,
             CameraPlugin,
             InputPlugin,
             AnimationPlugin,
@@ -125,18 +128,24 @@ fn main() {
 
     #[cfg(feature = "netcode")]
     {
-        client.configure_sets(Update, Connected.run_if(client_connected));
-
         if args.contains(&String::from("server")) {
             client.add_plugins(ServerNetworkPlugin);
-            // .add_systems(Startup, create_netcode_server);
+            client.add_systems(Startup, open_server);
         } else {
-            client.add_plugins(NetworkRegistry);
-            // .add_systems(Startup, join_netcode_server);
+            client.add_plugins((NetworkRegistry, JoinServerPlugin));
+            client.add_systems(Startup, join_server);
         }
     }
 
     client.run();
+}
+
+fn open_server(mut commands: Commands) {
+    commands.trigger(CreateWebTransportServer);
+}
+
+fn join_server(mut commands: Commands) {
+    commands.trigger(JoinWebTransportServer);
 }
 
 fn setup_background(

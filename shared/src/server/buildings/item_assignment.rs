@@ -63,6 +63,12 @@ pub struct OpenBuildingDialog {
     pub building: Entity,
 }
 
+impl MapEntities for OpenBuildingDialog {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.building = entity_mapper.get_mapped(self.building);
+    }
+}
+
 #[derive(Event, Deserialize, Serialize)]
 pub struct CloseBuildingDialog;
 

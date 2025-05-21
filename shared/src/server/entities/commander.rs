@@ -20,6 +20,12 @@ pub struct CommanderInteraction {
     pub commander: Entity,
 }
 
+impl MapEntities for CommanderInteraction {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.commander = entity_mapper.get_mapped(self.commander);
+    }
+}
+
 #[derive(Event)]
 struct SlotInteraction {
     command: SlotCommand,

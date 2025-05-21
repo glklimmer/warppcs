@@ -8,6 +8,7 @@ client = []
 server = []
 
 [dependencies]
+bevy-steamworks = "0.13.0"
 bevy = { version = "0.16", default-features = false, features = [
     "std",
     "animation",
@@ -38,7 +39,9 @@ bevy = { version = "0.16", default-features = false, features = [
     "x11",
     "bevy_remote",
     "bevy_log",
+    "serialize",
 ] }
+bevy_replicon = { version = "0.33", features = ["server"] }
 enum_as_f32_macro = { path = "../enum_as_f32_macro" }
 enum_mappable = { path = "../enum_mappable" }
 bincode = "2.0.1"
@@ -48,5 +51,6 @@ steamworks = { version = "0.11" }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
 serde_json = "1.0.140"
 console_protocol = { version = "0.1.0", path = "../console_protocol" }
-bevy_replicon = "0.33"
-bevy-steamworks = "0.13.0"
+aeronet = "0.14.0"
+aeronet_webtransport = { version = "0.14.0", features = ["client", "server"] }
+aeronet_replicon = { version = "0.14.0", features = ["client", "server"] }

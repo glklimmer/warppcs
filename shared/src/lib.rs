@@ -1,11 +1,12 @@
+use aeronet_replicon::client::AeronetRepliconClient;
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
-        AppRuleExt, Channel, ClientTriggerAppExt, ConnectedClient, Replicated, SendMode,
-        ServerEventAppExt, ServerTriggerAppExt, ToClients,
+        AppRuleExt, Channel, ClientEventAppExt, ClientTriggerAppExt, ConnectedClient, Replicated,
+        SendMode, ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, ToClients,
     },
-    server::{ServerPlugin, VisibilityPolicy},
+    server::{ServerPlugin, TickPolicy, VisibilityPolicy},
 };
 use enum_map::*;
 
@@ -62,6 +63,8 @@ impl Plugin for SharedPlugin {
         app.add_plugins((
             RepliconPlugins.set(ServerPlugin {
                 visibility_policy: VisibilityPolicy::All,
+                // 1 frame lasts `1.0 / TICK_RATE` anyway
+                // tick_policy: TickPolicy::EveryFrame,
                 ..Default::default()
             }),
             PlayerMovement,
@@ -97,11 +100,11 @@ impl Plugin for SharedPlugin {
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
         .add_server_trigger::<LoadMap>(Channel::Ordered)
-        .add_server_trigger::<CommanderInteraction>(Channel::Ordered)
-        .add_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
-        .add_server_event::<SetLocalPlayer>(Channel::Ordered)
-        .add_server_event::<AnimationChangeEvent>(Channel::Ordered)
-        .add_server_event::<ChestAnimationEvent>(Channel::Ordered)
+        .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
+        .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
+        .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)
+        .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
+        .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
         .add_observer(spawn_clients);
     }
 }
@@ -137,6 +140,12 @@ pub struct AnimationChangeEvent {
     pub change: AnimationChange,
 }
 
+impl MapEntities for AnimationChangeEvent {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.entity = entity_mapper.get_mapped(self.entity);
+    }
+}
+
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Deserialize, Serialize)]
 pub enum ChestAnimation {
     Open,
@@ -149,14 +158,17 @@ pub struct ChestAnimationEvent {
     pub animation: ChestAnimation,
 }
 
+impl MapEntities for ChestAnimationEvent {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.entity = entity_mapper.get_mapped(self.entity);
+    }
+}
+
 fn spawn_clients(
     trigger: Trigger<OnAdd, ConnectedClient>,
     mut commands: Commands,
-    mut set_local_player: EventWriter<ToClients<SetLocalPlayer>>,
     mut client_player_map: ResMut<ClientPlayerMap>,
 ) {
-    info!("spawning player for `{:?}`", trigger.target());
-
     let player = commands
         .entity(trigger.target())
         .insert((
@@ -165,7 +177,7 @@ fn spawn_clients(
         ))
         .id();
 
-    set_local_player.write(ToClients {
+    commands.server_trigger(ToClients {
         mode: SendMode::Direct(trigger.target()),
         event: SetLocalPlayer(player),
     });
@@ -175,6 +187,12 @@ fn spawn_clients(
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
 pub struct SetLocalPlayer(Entity);
+
+impl MapEntities for SetLocalPlayer {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.get_mapped(self.0);
+    }
+}
 
 #[derive(Component, Deserialize, Serialize)]
 #[require(
