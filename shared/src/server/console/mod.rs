@@ -10,7 +10,7 @@ use console_protocol::*;
 use serde_json::{Value, json};
 
 use crate::{
-    ClientPlayerMap, Faction, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers,
+    ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers,
     networking::UnitType,
 };
 
@@ -156,14 +156,14 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         .map_err(|e| BrpError::internal(format!("invalid commander parameters: {}", e)))?;
     let player = brp.player_entity(world)?;
 
-    let owner = Owner(Faction::Player(player));
+    let owner = Owner(player);
     let flag_commander = world
         .spawn((
             Flag,
             AttachedTo(player),
             Interactable {
                 kind: InteractionType::Flag,
-                restricted_to: Some(owner),
+                restricted_to: Some(player),
             },
             owner,
         ))
@@ -208,7 +208,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             UnitBehaviour::FollowFlag(flag_commander, offset),
             Interactable {
                 kind: InteractionType::CommanderInteraction,
-                restricted_to: Some(owner),
+                restricted_to: Some(player),
             },
         ))
         .id();
@@ -253,14 +253,14 @@ fn spawn_unit(
     unit_type: UnitType,
     player_translation: Vec3,
 ) -> Entity {
-    let owner = Owner(Faction::Player(player));
+    let owner = Owner(player);
     let flag_entity = world
         .spawn((
             Flag,
             AttachedTo(commander),
             Interactable {
                 kind: InteractionType::Flag,
-                restricted_to: Some(owner),
+                restricted_to: Some(player),
             },
             owner,
         ))

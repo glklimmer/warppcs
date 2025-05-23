@@ -1,10 +1,10 @@
-use bevy::{ecs::entity::MapEntities, prelude::*};
+use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, ClientPlayerMap, Faction, Owner, PlayerState};
+use crate::{BoxCollider, ClientPlayerMap, PlayerState};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {
@@ -81,10 +81,7 @@ fn interact(
         .iter()
         .filter(|(.., transform, collider, _)| player_bounds.intersects(&collider.at(transform)))
         .filter(|(.., interactable)| match interactable.restricted_to {
-            Some(owner) => match *owner {
-                Faction::Player(item_owner) => item_owner.eq(&player),
-                Faction::Bandits => false,
-            },
+            Some(owner) => owner.eq(&player),
             None => true,
         })
         .max_by(

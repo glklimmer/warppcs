@@ -2,11 +2,9 @@ use bevy::prelude::*;
 
 use bevy::audio::{AudioPlugin, SpatialScale, Volume};
 use bevy_parallax::ParallaxPlugin;
-use bevy_replicon::prelude::client_connected;
 use gizmos::GizmosPlugin;
 use map::MapPlugin;
-use menu::{MainMenuStates, MenuPlugin};
-use networking::Connected;
+use menu::MainMenuStates;
 use networking::join_server::{JoinServerPlugin, JoinWebTransportServer};
 use shared::server::create_server::CreateWebTransportServer;
 use shared::{

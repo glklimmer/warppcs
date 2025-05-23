@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 use bevy_parallax::CameraFollow;
-use bevy_replicon::client::ClientSet;
 use shared::{
     ChestAnimation, Player, SetLocalPlayer,
     map::buildings::{BuildStatus, Building, RecruitBuilding},

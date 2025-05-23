@@ -48,6 +48,7 @@ fn start_game(
                 left,
                 right,
             } => {
+
                 player_base(commands.reborrow(), offset, player, left, right);
                 let mut transform = players.get_mut(player).unwrap();
                 transform.translation = offset.with_z(Layers::Player.as_f32());
@@ -108,17 +109,20 @@ fn connect_portals(mut commands: Commands, left: &GameScene, right: &GameScene) 
 
 fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_right_portal: Entity) {
     for i in 1..10 {
-        commands.spawn((
-            Owner(Faction::Bandits),
-            Unit {
-                unit_type: UnitType::Bandit,
-                swing_timer: Timer::default(),
-            },
-            Health { hitpoints: 20. },
-            offset
-                .offset_x(50. - 10. * i as f32)
-                .with_layer(Layers::Unit),
-        ));
+        let bandits = commands
+            .spawn((
+                Faction::Bandits,
+                Unit {
+                    unit_type: UnitType::Bandit,
+                    swing_timer: Timer::default(),
+                },
+                Health { hitpoints: 20. },
+                offset
+                    .offset_x(50. - 10. * i as f32)
+                    .with_layer(Layers::Unit),
+            ))
+            .id();
+        commands.entity(bandits).insert(Owner(bandits));
     }
     commands
         .entity(camp_left_portal)
@@ -135,7 +139,7 @@ fn player_base(
     left_portal: Entity,
     right_portal: Entity,
 ) {
-    let owner = Owner(Faction::Player(player));
+    let owner = Owner(player);
     println!("onwer {:?}", player);
     commands.spawn((
         Building::MainBuilding {
@@ -151,7 +155,7 @@ fn player_base(
         RecruitBuilding,
         Interactable {
             kind: InteractionType::Recruit,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
     ));
     commands.spawn((
@@ -171,7 +175,7 @@ fn player_base(
         owner,
         Interactable {
             kind: InteractionType::ItemAssignment,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
     ));
     commands.spawn((
@@ -181,7 +185,7 @@ fn player_base(
         owner,
         Interactable {
             kind: InteractionType::ItemAssignment,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
     ));
     commands.spawn((
@@ -191,7 +195,7 @@ fn player_base(
         owner,
         Interactable {
             kind: InteractionType::ItemAssignment,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
     ));
     commands.spawn((
@@ -202,7 +206,7 @@ fn player_base(
         owner,
         Interactable {
             kind: InteractionType::Building,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
     ));
     commands.spawn((
@@ -213,7 +217,7 @@ fn player_base(
         owner,
         Interactable {
             kind: InteractionType::Building,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
     ));
     commands.spawn((
@@ -222,7 +226,7 @@ fn player_base(
         owner,
         Interactable {
             kind: InteractionType::Building,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
     ));
     commands.spawn((
@@ -231,7 +235,7 @@ fn player_base(
         owner,
         Interactable {
             kind: InteractionType::Building,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
     ));
 
