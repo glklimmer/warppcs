@@ -37,10 +37,19 @@ pub struct Flag;
 /// PlayerEntity is FlagHolder
 #[derive(Component, Clone, Copy, Deref, DerefMut, Deserialize, Serialize)]
 pub struct FlagHolder(pub Entity);
+impl MapEntities for FlagHolder {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.get_mapped(self.0);
+    }
+}
 
 #[derive(Component, Deserialize, Serialize)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
-
+impl MapEntities for FlagAssignment {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.get_mapped(self.0);
+    }
+}
 #[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
     player: Entity,
@@ -84,14 +93,14 @@ pub fn recruit_units(
     let cost = &unit_type.recruitment_cost();
     inventory.gold -= cost.gold;
 
-    let owner = Owner(Faction::Player(player));
+    let owner = Owner(player);
     let flag_entity = commands
         .spawn((
             Flag,
             AttachedTo(player),
             Interactable {
                 kind: InteractionType::Flag,
-                restricted_to: Some(owner),
+                restricted_to: Some(player),
             },
             owner,
         ))
@@ -170,14 +179,14 @@ pub fn recruit_commander(
     let cost = &unit_type.recruitment_cost();
     inventory.gold -= cost.gold;
 
-    let owner = Owner(Faction::Player(player));
+    let owner = Owner(player);
     let flag_entity = commands
         .spawn((
             Flag,
             AttachedTo(player),
             Interactable {
                 kind: InteractionType::Flag,
-                restricted_to: Some(owner),
+                restricted_to: Some(player),
             },
             owner,
         ))
@@ -216,7 +225,7 @@ pub fn recruit_commander(
         UnitBehaviour::FollowFlag(flag_entity, offset),
         Interactable {
             kind: InteractionType::CommanderInteraction,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
         SlotsAssignments::default(),
     ));

@@ -26,7 +26,9 @@ impl Plugin for TravelPlugin {
 
 #[derive(Component, Serialize, Deserialize)]
 pub struct Traveling {
+    #[entities]
     pub source: Entity,
+    #[entities]
     pub target: Entity,
     time_left: Timer,
 }

@@ -54,6 +54,14 @@ pub struct SlotsAssignments {
     pub slots: EnumMap<CommanderSlot, Option<Entity>>,
 }
 
+impl MapEntities for SlotsAssignments {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.slots.iter_mut().for_each(|entity| {
+            *entity = entity.take().map(|entity| entity_mapper.get_mapped(entity));
+        });
+    }
+}
+
 impl Default for SlotsAssignments {
     fn default() -> Self {
         Self {
