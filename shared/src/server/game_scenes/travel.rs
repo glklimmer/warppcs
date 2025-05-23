@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy::{ecs::entity::MapEntities, sprite::Anchor};
+use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, server_or_singleplayer};
 use serde::{Deserialize, Serialize};
 

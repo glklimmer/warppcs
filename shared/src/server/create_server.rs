@@ -5,10 +5,7 @@ use aeronet::io::{
     connection::{Disconnected, LocalAddr},
     server::Server,
 };
-use aeronet_replicon::{
-    client::AeronetRepliconClient,
-    server::{AeronetRepliconServer, AeronetRepliconServerPlugin},
-};
+use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
 use aeronet_webtransport::{
     cert,
     server::{SessionRequest, SessionResponse, WebTransportServer, WebTransportServerPlugin},
@@ -17,7 +14,7 @@ use aeronet_webtransport::{
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
-use crate::{ClientPlayerMap, Player, SetLocalPlayer, map::Layers};
+use crate::{ClientPlayerMap, Player, SetLocalPlayer};
 
 pub const WEB_TRANSPORT_PORT: u16 = 25571;
 

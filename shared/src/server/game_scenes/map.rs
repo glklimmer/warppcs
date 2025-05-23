@@ -1,7 +1,9 @@
-use bevy::{ecs::entity::MapEntities, prelude::*};
+use bevy::prelude::*;
 
 use bevy_replicon::{
-    prelude::{FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer},
+    prelude::{
+        FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer,
+    },
     server::ServerSet,
 };
 use petgraph::{Graph, Undirected};

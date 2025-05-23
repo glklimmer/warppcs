@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use bevy::{
     color::palettes::css::GREY,
-    ecs::{component::ComponentId, world::DeferredWorld},
+    ecs::world::DeferredWorld,
     input::common_conditions::input_just_pressed,
 };
 use shared::{PlayerState, Vec3LayerExt, map::Layers};

@@ -217,7 +217,7 @@ fn play_fight_music(
             if unit_animations.eq(&UnitAnimation::Death) {
                 continue;
             }
-            if player_owner.is_different_faction(unit_owner) {
+            if player_owner.ne(unit_owner) {
                 let enemy_distance = player_transform
                     .translation
                     .distance(unit_transform.translation);

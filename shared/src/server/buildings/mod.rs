@@ -132,7 +132,7 @@ fn construct_building(
         if building.is_recruit_building() {
             building_entity.insert(Interactable {
                 kind: InteractionType::Recruit,
-                restricted_to: Some(*owner),
+                restricted_to: Some(owner.get_player_entity().unwrap()),
             });
         }
 

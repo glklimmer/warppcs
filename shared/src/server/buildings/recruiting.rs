@@ -5,7 +5,7 @@ use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, Faction, Owner, Vec3LayerExt, flag_collider,
+    BoxCollider, Owner, Vec3LayerExt, flag_collider,
     map::{
         Layers,
         buildings::{Building, RecruitBuilding},
@@ -50,6 +50,7 @@ impl MapEntities for FlagAssignment {
         self.0 = entity_mapper.get_mapped(self.0);
     }
 }
+
 #[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
     player: Entity,
@@ -93,7 +94,7 @@ pub fn recruit_units(
     let cost = &unit_type.recruitment_cost();
     inventory.gold -= cost.gold;
 
-    let owner = Owner(player);
+    let owner = Owner::Player(player);
     let flag_entity = commands
         .spawn((
             Flag,
@@ -179,7 +180,7 @@ pub fn recruit_commander(
     let cost = &unit_type.recruitment_cost();
     inventory.gold -= cost.gold;
 
-    let owner = Owner(player);
+    let owner = Owner::Player(player);
     let flag_entity = commands
         .spawn((
             Flag,
