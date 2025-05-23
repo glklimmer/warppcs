@@ -5,7 +5,7 @@ use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, Faction, Owner, Vec3LayerExt, flag_collider,
+    BoxCollider, Owner, Vec3LayerExt, flag_collider,
     map::{
         Layers,
         buildings::{Building, RecruitBuilding},

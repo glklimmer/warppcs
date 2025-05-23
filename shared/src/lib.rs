@@ -1,12 +1,11 @@
-use aeronet_replicon::client::AeronetRepliconClient;
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
-        AppRuleExt, Channel, ClientEventAppExt, ClientTriggerAppExt, ConnectedClient, Replicated,
+        AppRuleExt, Channel, ClientTriggerAppExt, ConnectedClient, Replicated,
         SendMode, ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, ToClients,
     },
-    server::{ServerPlugin, TickPolicy, VisibilityPolicy},
+    server::{ServerPlugin, VisibilityPolicy},
 };
 use enum_map::*;
 
@@ -63,8 +62,6 @@ impl Plugin for SharedPlugin {
         app.add_plugins((
             RepliconPlugins.set(ServerPlugin {
                 visibility_policy: VisibilityPolicy::All,
-                // 1 frame lasts `1.0 / TICK_RATE` anyway
-                // tick_policy: TickPolicy::EveryFrame,
                 ..Default::default()
             }),
             PlayerMovement,
@@ -75,6 +72,7 @@ impl Plugin for SharedPlugin {
         .replicate::<Moving>()
         .replicate::<Grounded>()
         .replicate::<BoxCollider>()
+        .replicate::<Owner>()
         .replicate::<Mounted>()
         .replicate::<ItemAssignment>()
         .replicate::<Traveling>()
@@ -169,6 +167,8 @@ fn spawn_clients(
     mut commands: Commands,
     mut client_player_map: ResMut<ClientPlayerMap>,
 ) {
+    info!("{} connected", trigger.target());
+
     let player = commands
         .entity(trigger.target())
         .insert((
@@ -264,32 +264,14 @@ pub fn flag_collider() -> BoxCollider {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Component)]
 pub enum Faction {
-    Player(Entity),
+    Player,
     Bandits,
 }
 
 #[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref)]
-pub struct Owner(Faction);
-
-impl Owner {
-    pub fn is_different_faction(&self, other: &Self) -> bool {
-        match (self.0, other.0) {
-            // Two players - compare client IDs
-            (Faction::Player { 0: id1 }, Faction::Player { 0: id2 }) => id1 != id2,
-            // Different enum variants means different factions
-            (Faction::Player { .. }, Faction::Bandits)
-            | (Faction::Bandits, Faction::Player { .. }) => true,
-            // Both bandits are the same faction
-            (Faction::Bandits, Faction::Bandits) => false,
-        }
-    }
-
-    pub fn is_same_faction(&self, other: &Self) -> bool {
-        !self.is_different_faction(other)
-    }
-}
+pub struct Owner(#[entities] Entity);
 
 #[derive(Component)]
 struct DelayedDespawn(Timer);

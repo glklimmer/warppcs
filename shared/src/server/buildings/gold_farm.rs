@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{Faction, Owner, map::buildings::Building, networking::Inventory};
+use crate::{Owner, map::buildings::Building, networking::Inventory};
 
 use super::BuildingConstruction;
 
@@ -43,10 +43,8 @@ pub fn gold_farm_output(
         farm_timer.timer.tick(time.delta());
 
         if farm_timer.timer.just_finished() {
-            if let Faction::Player(player_entity) = **owner {
-                if let Ok(mut inventory) = inventory_query.get_mut(player_entity) {
-                    inventory.gold += GOLD_PER_TICK;
-                }
+            if let Ok(mut inventory) = inventory_query.get_mut(**owner) {
+                inventory.gold += GOLD_PER_TICK;
             }
         }
     }

@@ -3,11 +3,10 @@ use bevy::prelude::*;
 
 use bevy::{
     asset::RenderAssetUsages,
-    ecs::{component::ComponentId, world::DeferredWorld},
+    ecs::world::DeferredWorld,
     math::bounding::IntersectsVolume,
 };
 use image::{GenericImage, GenericImageView, Rgba};
-use shared::Faction;
 use shared::server::physics::attachment::AttachedTo;
 use shared::{BoxCollider, server::players::interaction::Interactable};
 use std::cmp::Ordering;
@@ -179,13 +178,8 @@ fn init_highlightable(
     let controller_player = controlled_player.single().unwrap();
 
     if let Some(owner) = interactable.restricted_to {
-        match *owner {
-            Faction::Player(player) => {
-                if player != controller_player {
-                    return;
-                }
-            }
-            Faction::Bandits => return,
+        if owner != controller_player {
+            return;
         }
     }
     commands

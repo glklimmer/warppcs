@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 use bevy::app::ScheduleRunnerPlugin;
-use bevy_steamworks::SteamworksPlugin;
 use shared::{SharedPlugin, server::networking::ServerNetworkPlugin};
 
 use std::time::Duration;

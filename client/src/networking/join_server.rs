@@ -113,7 +113,7 @@ fn join_web_transport_server(_: Trigger<JoinWebTransportServer>, mut commands: C
     let config = web_transport_config("".to_string());
     let default_target = format!("https://127.0.0.1:{WEB_TRANSPORT_PORT}");
     commands
-        .spawn((Name::new("client")))
+        .spawn(Name::new("client"))
         .queue(WebTransportClient::connect(config, default_target));
 }
 
