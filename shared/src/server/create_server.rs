@@ -199,16 +199,11 @@ fn on_opened(
     });
 }
 
-fn on_connected(
-    trigger: Trigger<OnAdd, Session>,
-    clients: Query<&ChildOf>,
-    mut commands: Commands,
-) {
+fn on_connected(trigger: Trigger<OnAdd, Session>, clients: Query<&ChildOf>) {
     let client = trigger.target();
     let Ok(&ChildOf(server)) = clients.get(client) else {
         return;
     };
-    // commands.entity(client).insert(Player);
     info!("{client} connected to {server}");
 }
 

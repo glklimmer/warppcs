@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::movement::{Moving, Velocity};
 
 #[derive(Component, Serialize, Deserialize)]
-pub struct AttachedTo(pub Entity);
+pub struct AttachedTo(#[entities] pub Entity);
 
 pub struct AttachmentPlugin;
 

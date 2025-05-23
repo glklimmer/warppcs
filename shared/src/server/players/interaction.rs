@@ -23,7 +23,8 @@ pub enum InteractionType {
 #[require(Replicated)]
 pub struct Interactable {
     pub kind: InteractionType,
-    pub restricted_to: Option<Owner>,
+    #[entities]
+    pub restricted_to: Option<Entity>,
 }
 
 #[derive(Event, Clone, Copy, Serialize, Deserialize)]
