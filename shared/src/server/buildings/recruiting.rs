@@ -5,7 +5,7 @@ use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, Faction, Owner, Vec3LayerExt, flag_collider,
+    BoxCollider, Owner, Vec3LayerExt, flag_collider,
     map::{
         Layers,
         buildings::{Building, RecruitBuilding},
@@ -29,27 +29,25 @@ use super::item_assignment::ItemAssignment;
 #[derive(Component, Deserialize, Serialize)]
 #[require(
     Replicated,
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
-    BoxCollider(flag_collider),
-    Transform( || Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()) , scale: Vec3::splat(1./3.), ..default()}))]
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    BoxCollider = flag_collider(),
+    Transform = (Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()) , scale: Vec3::splat(1./3.), ..default()}))]
 pub struct Flag;
 
 /// PlayerEntity is FlagHolder
 #[derive(Component, Clone, Copy, Deref, DerefMut, Deserialize, Serialize)]
 pub struct FlagHolder(pub Entity);
-
 impl MapEntities for FlagHolder {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        **self = entity_mapper.map_entity(**self);
+        self.0 = entity_mapper.get_mapped(self.0);
     }
 }
 
 #[derive(Component, Deserialize, Serialize)]
 pub struct FlagAssignment(pub Entity, pub Vec2);
-
 impl MapEntities for FlagAssignment {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.map_entity(self.0);
+        self.0 = entity_mapper.get_mapped(self.0);
     }
 }
 
@@ -96,14 +94,14 @@ pub fn recruit_units(
     let cost = &unit_type.recruitment_cost();
     inventory.gold -= cost.gold;
 
-    let owner = Owner(Faction::Player(player));
+    let owner = Owner::Player(player);
     let flag_entity = commands
         .spawn((
             Flag,
             AttachedTo(player),
             Interactable {
                 kind: InteractionType::Flag,
-                restricted_to: Some(owner),
+                restricted_to: Some(player),
             },
             owner,
         ))
@@ -182,14 +180,14 @@ pub fn recruit_commander(
     let cost = &unit_type.recruitment_cost();
     inventory.gold -= cost.gold;
 
-    let owner = Owner(Faction::Player(player));
+    let owner = Owner::Player(player);
     let flag_entity = commands
         .spawn((
             Flag,
             AttachedTo(player),
             Interactable {
                 kind: InteractionType::Flag,
-                restricted_to: Some(owner),
+                restricted_to: Some(player),
             },
             owner,
         ))
@@ -228,7 +226,7 @@ pub fn recruit_commander(
         UnitBehaviour::FollowFlag(flag_entity, offset),
         Interactable {
             kind: InteractionType::CommanderInteraction,
-            restricted_to: Some(owner),
+            restricted_to: Some(player),
         },
         SlotsAssignments::default(),
     ));

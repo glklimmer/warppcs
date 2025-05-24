@@ -20,10 +20,10 @@ use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionTyp
     BoxCollider,
     Velocity,
     Sprite,
-    Interactable(|| Interactable {
+    Interactable{
         kind: InteractionType::Item,
         restricted_to: None,
-    }),
+    },
 )]
 pub struct Item {
     pub item_type: ItemType,
@@ -434,7 +434,7 @@ pub fn pickup_item(
         let mut inventory = player.get_mut(event.player).unwrap();
         inventory.items.push(item.clone());
 
-        commands.entity(event.interactable).despawn_recursive();
+        commands.entity(event.interactable).despawn();
 
         info!(
             "Inventory items: {:?}",

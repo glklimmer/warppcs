@@ -49,10 +49,10 @@ fn stop_animation_sound_on_remove(
     query: Query<&SpatialAudioSink>,
     mut commands: Commands,
 ) {
-    if let Ok(sink) = query.get(trigger.entity()) {
+    if let Ok(sink) = query.get(trigger.target()) {
         sink.stop();
         sink.pause();
-        commands.entity(trigger.entity()).remove::<AudioPlayer>();
+        commands.entity(trigger.target()).remove::<AudioPlayer>();
     }
 }
 
@@ -66,7 +66,7 @@ fn handle_multiple_animation_sound(
         }
 
         let random_sound = fastrand::choice(event.sound_handles.iter()).unwrap();
-        if let Some(mut entity_command) = commands.get_entity(event.entity) {
+        if let Ok(mut entity_command) = commands.get_entity(event.entity) {
             entity_command.insert((
                 AudioPlayer::<AudioSource>(random_sound.clone_weak()),
                 PlaybackSettings {
@@ -90,7 +90,7 @@ fn handle_single_animation_sound(
             continue;
         };
 
-        if let Some(mut entity_command) = commands.get_entity(event.entity) {
+        if let Ok(mut entity_command) = commands.get_entity(event.entity) {
             entity_command.insert((
                 AudioPlayer::<AudioSource>(event.sound_handles[0].clone_weak()),
                 PlaybackSettings {
@@ -120,7 +120,7 @@ fn play_sound_on_entity_change(
             _ => continue,
         };
 
-        sound_events.send(PlayAnimationSoundEvent {
+        sound_events.write(PlayAnimationSoundEvent {
             entity: event.entity,
             sound_handles: if sound.is_empty() {
                 Vec::new()
@@ -128,7 +128,7 @@ fn play_sound_on_entity_change(
                 vec![asset_server.load(sound)]
             },
             speed: 1.0,
-            volume: Volume::new(ANIMATION_VOLUME),
+            volume: Volume::Linear(ANIMATION_VOLUME),
         });
     }
 }
@@ -139,7 +139,7 @@ fn play_animation_on_projectile_spawn(
     mut sound_events: EventWriter<PlayAnimationSoundEvent>,
     asset_server: Res<AssetServer>,
 ) {
-    let Ok(projectile_type) = projectile.get_mut(trigger.entity()) else {
+    let Ok(projectile_type) = projectile.get_mut(trigger.target()) else {
         return;
     };
 
@@ -147,11 +147,11 @@ fn play_animation_on_projectile_spawn(
         ProjectileType::Arrow => vec![asset_server.load("animation_sound/arrow/arrow_flying.ogg")],
     };
 
-    sound_events.send(PlayAnimationSoundEvent {
-        entity: trigger.entity(),
+    sound_events.write(PlayAnimationSoundEvent {
+        entity: trigger.target(),
         sound_handles,
         speed: 1.5,
-        volume: Volume::new(ANIMATION_VOLUME),
+        volume: Volume::Linear(ANIMATION_VOLUME),
     });
 }
 
@@ -178,7 +178,7 @@ fn play_on_interactable(
         AudioPlayer::<AudioSource>(audio_file),
         PlaybackSettings {
             mode: PlaybackMode::Remove,
-            volume: Volume::new(ANIMATION_VOLUME * 0.5),
+            volume: Volume::Linear(ANIMATION_VOLUME * 0.5),
             spatial: true,
             ..default()
         },
@@ -207,11 +207,11 @@ fn play_animation_on_frame_timer(
         if sprite_animation.frame_timer.just_finished()
             && atlas.index == sprite_animation.first_sprite_index
         {
-            sound_events.send(PlayAnimationSoundEvent {
+            sound_events.write(PlayAnimationSoundEvent {
                 entity,
                 sound_handles: sound.sound_handles.clone(),
                 speed: 1.0,
-                volume: Volume::new(ANIMATION_VOLUME),
+                volume: Volume::Linear(ANIMATION_VOLUME),
             });
         }
     }
@@ -231,11 +231,11 @@ fn play_animation_on_enter(
             continue;
         };
 
-        sound_events.send(PlayAnimationSoundEvent {
+        sound_events.write(PlayAnimationSoundEvent {
             entity,
             sound_handles: sound.sound_handles.clone(),
             speed: 1.0,
-            volume: Volume::new(ANIMATION_VOLUME),
+            volume: Volume::Linear(ANIMATION_VOLUME),
         });
 
         commands.entity(entity).remove::<AnimationSound>();

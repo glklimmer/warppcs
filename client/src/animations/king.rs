@@ -152,7 +152,7 @@ pub fn trigger_king_animation(
 
             commands.entity(event.entity).insert(PlayOnce);
 
-            animation_trigger.send(AnimationTrigger {
+            animation_trigger.write(AnimationTrigger {
                 entity: event.entity,
                 state: new_animation,
             });
@@ -165,14 +165,14 @@ pub fn set_king_walking(
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<Option<&Mounted>>,
 ) {
-    if let Ok(maybe_mounted) = mounted.get(trigger.entity()) {
+    if let Ok(maybe_mounted) = mounted.get(trigger.target()) {
         let new_animation = match maybe_mounted {
             Some(_) => KingAnimation::HorseWalk,
             None => KingAnimation::Walk,
         };
 
-        animation_trigger.send(AnimationTrigger {
-            entity: trigger.entity(),
+        animation_trigger.write(AnimationTrigger {
+            entity: trigger.target(),
             state: new_animation,
         });
     }
@@ -183,7 +183,7 @@ pub fn set_king_after_play_once(
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<(&KingAnimation, Option<&Mounted>)>,
 ) {
-    if let Ok((animation, maybe_mounted)) = mounted.get(trigger.entity()) {
+    if let Ok((animation, maybe_mounted)) = mounted.get(trigger.target()) {
         let new_animation = match animation {
             KingAnimation::Attack | KingAnimation::Mount => match maybe_mounted {
                 Some(_) => KingAnimation::HorseIdle,
@@ -192,8 +192,8 @@ pub fn set_king_after_play_once(
             _ => *animation,
         };
 
-        animation_trigger.send(AnimationTrigger {
-            entity: trigger.entity(),
+        animation_trigger.write(AnimationTrigger {
+            entity: trigger.target(),
             state: new_animation,
         });
     }
@@ -204,14 +204,14 @@ pub fn set_king_idle(
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<Option<&Mounted>>,
 ) {
-    if let Ok(maybe_mounted) = mounted.get(trigger.entity()) {
+    if let Ok(maybe_mounted) = mounted.get(trigger.target()) {
         let new_animation = match maybe_mounted {
             Some(_) => KingAnimation::HorseIdle,
             None => KingAnimation::Idle,
         };
 
-        animation_trigger.send(AnimationTrigger {
-            entity: trigger.entity(),
+        animation_trigger.write(AnimationTrigger {
+            entity: trigger.target(),
             state: new_animation,
         });
     }

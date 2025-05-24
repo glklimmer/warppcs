@@ -16,10 +16,10 @@ fn setup_camera(mut commands: Commands, mut create_parallax: EventWriter<CreateP
     let camera = commands
         .spawn((
             Camera2d,
-            OrthographicProjection {
+            Projection::Orthographic(OrthographicProjection {
                 scale: 1.0 / 3.0,
                 ..OrthographicProjection::default_2d()
-            },
+            }),
         ))
         .insert(ParallaxCameraComponent::default())
         .id();
@@ -56,5 +56,5 @@ fn setup_camera(mut commands: Commands, mut create_parallax: EventWriter<CreateP
         ],
         camera,
     };
-    create_parallax.send(event);
+    create_parallax.write(event);
 }

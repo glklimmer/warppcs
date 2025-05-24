@@ -10,5 +10,5 @@ pub mod join_server;
 pub struct Connected;
 
 #[derive(Component)]
-#[require(BoxCollider(player_collider), KingAnimation)]
+#[require(BoxCollider = player_collider(), KingAnimation)]
 pub struct ControlledPlayer;

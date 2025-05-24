@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use shared::PlayerState;
 
 pub mod menu;
-pub mod text_input;
 
 pub struct WidgetsPlugin;
 

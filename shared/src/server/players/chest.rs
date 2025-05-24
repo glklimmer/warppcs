@@ -18,13 +18,13 @@ use super::{
 #[require(
     Replicated,
     Transform,
-    BoxCollider(unit_collider),
+    BoxCollider = unit_collider(),
     Velocity,
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
-    Interactable(|| Interactable {
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Interactable {
         kind: InteractionType::Mount,
         restricted_to: None,
-    }),
+    },
 )]
 pub struct Mount {
     pub mount_type: MountType,
@@ -34,12 +34,12 @@ pub struct Mount {
 #[require(
     Replicated,
     Transform,
-    BoxCollider(chest_collider),
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
-    Interactable(|| Interactable {
+    BoxCollider = chest_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Interactable{
         kind: InteractionType::Chest,
         restricted_to: None,
-    }),
+    },
 )]
 pub enum Chest {
     Normal,
@@ -76,7 +76,7 @@ pub fn open_chest(
             Velocity(Vec2::new((fastrand::f32() - 0.5) * 50., 50.)),
         ));
 
-        animation.send(ToClients {
+        animation.write(ToClients {
             mode: SendMode::Broadcast,
             event: ChestAnimationEvent {
                 entity: event.interactable,

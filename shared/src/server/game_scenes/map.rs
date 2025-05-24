@@ -1,7 +1,9 @@
-use bevy::{ecs::entity::MapEntities, prelude::*};
+use bevy::prelude::*;
 
 use bevy_replicon::{
-    prelude::{FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer},
+    prelude::{
+        FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer,
+    },
     server::ServerSet,
 };
 use petgraph::{Graph, Undirected};
@@ -45,26 +47,6 @@ pub enum SceneType {
 pub struct GameScene {
     pub scene: SceneType,
     pub position: Vec2,
-}
-
-impl MapEntities for GameScene {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.scene = match self.scene {
-            SceneType::Player {
-                player,
-                left,
-                right,
-            } => SceneType::Player {
-                player: entity_mapper.map_entity(player),
-                left: entity_mapper.map_entity(left),
-                right: entity_mapper.map_entity(right),
-            },
-            SceneType::Bandit { left, right } => SceneType::Bandit {
-                left: entity_mapper.map_entity(left),
-                right: entity_mapper.map_entity(right),
-            },
-        }
-    }
 }
 
 impl MapGraph {

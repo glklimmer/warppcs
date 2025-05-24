@@ -90,9 +90,9 @@ pub fn set_chest_after_play_once(
     mut commands: Commands,
     chest: Query<&Chest>,
 ) {
-    if let Ok(_) = chest.get(trigger.entity()) {
+    if let Ok(_) = chest.get(trigger.target()) {
         commands
-            .entity(trigger.entity())
+            .entity(trigger.target())
             .remove::<SpriteSheetAnimation>();
     }
 }

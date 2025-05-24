@@ -1,6 +1,7 @@
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 
-use bevy::{ecs::entity::MapEntities, utils::HashMap};
+use bevy::ecs::entity::MapEntities;
 use bevy_replicon::prelude::{FromClient, Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
@@ -64,7 +65,7 @@ pub struct OpenBuildingDialog {
 
 impl MapEntities for OpenBuildingDialog {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.building = entity_mapper.map_entity(self.building);
+        self.building = entity_mapper.get_mapped(self.building);
     }
 }
 
@@ -126,7 +127,7 @@ fn check_start_building(
         info!("No weapon in assigned items!");
     }
 
-    interactions.send(InteractionTriggeredEvent {
+    interactions.write(InteractionTriggeredEvent {
         player,
         interactable: active_building,
         interaction: InteractionType::Building,

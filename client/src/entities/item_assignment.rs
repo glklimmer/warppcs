@@ -87,7 +87,7 @@ fn slot_selected(
         menu: _,
         entry,
     } = *trigger;
-    let items = &inventory.single().items;
+    let items = &inventory.single().unwrap().items;
     let transform = transform.get(entry).unwrap().translation();
 
     let sheets = SpriteSheets {
@@ -181,10 +181,10 @@ fn show_item_info(
     mut commands: Commands,
     items: Query<&ItemInfo>,
 ) {
-    let Ok(info) = items.get(trigger.entity()) else {
+    let Ok(info) = items.get(trigger.target()) else {
         return;
     };
-    let Some(mut entity) = commands.get_entity(info.tooltip) else {
+    let Ok(mut entity) = commands.get_entity(info.tooltip) else {
         return;
     };
     entity.try_insert(Visibility::Visible);
@@ -195,10 +195,10 @@ fn hide_item_info(
     mut commands: Commands,
     items: Query<&ItemInfo>,
 ) {
-    let Ok(info) = items.get(trigger.entity()) else {
+    let Ok(info) = items.get(trigger.target()) else {
         return;
     };
-    let Some(mut entity) = commands.get_entity(info.tooltip) else {
+    let Ok(mut entity) = commands.get_entity(info.tooltip) else {
         return;
     };
     entity.try_insert(Visibility::Hidden);
@@ -244,7 +244,7 @@ fn update_assignment(
             .id();
 
         let mut entity = commands.entity(entry);
-        entity.despawn_descendants().add_child(item_sprite);
+        entity.despawn_related::<Children>().add_child(item_sprite);
     }
 }
 

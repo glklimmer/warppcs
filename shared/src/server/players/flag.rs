@@ -33,13 +33,13 @@ pub fn flag_interact(
 
         match has_flag {
             Some(_) => {
-                drop_flag.send(DropFlagEvent {
+                drop_flag.write(DropFlagEvent {
                     player,
                     flag: event.interactable,
                 });
             }
             None => {
-                pick_flag.send(PickFlagEvent {
+                pick_flag.write(PickFlagEvent {
                     player,
                     flag: event.interactable,
                 });

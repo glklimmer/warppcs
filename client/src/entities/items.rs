@@ -166,7 +166,7 @@ fn init_item_sprite(
     feet_sprite_sheet: Res<FeetSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
 ) {
-    let Ok(item) = item.get_mut(trigger.entity()) else {
+    let Ok(item) = item.get_mut(trigger.target()) else {
         return;
     };
 
@@ -177,11 +177,11 @@ fn init_item_sprite(
         &heads_sprite_sheet,
     );
 
-    commands.entity(trigger.entity()).insert((
+    commands.entity(trigger.target()).insert((
         sprite.clone(),
         ItemInfo {
             item: item.clone(),
-            tooltip: trigger.entity(),
+            tooltip: trigger.target(),
         },
     ));
 }
@@ -196,7 +196,7 @@ fn init_item_info(
     feet_sprite_sheet: Res<FeetSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
 ) {
-    let Ok((ItemInfo { item, tooltip: _ }, transform)) = item.get_mut(trigger.entity()) else {
+    let Ok((ItemInfo { item, tooltip: _ }, transform)) = item.get_mut(trigger.target()) else {
         return;
     };
 
@@ -299,7 +299,7 @@ fn init_item_info(
         })
         .id();
 
-    let mut item_entity = commands.entity(trigger.entity());
+    let mut item_entity = commands.entity(trigger.target());
     item_entity.add_child(info);
     item_entity.insert(ItemInfo {
         item: item.clone(),
@@ -331,10 +331,10 @@ fn show_item_info(
     mut commands: Commands,
     items: Query<&ItemInfo>,
 ) {
-    let Ok(info) = items.get(trigger.entity()) else {
+    let Ok(info) = items.get(trigger.target()) else {
         return;
     };
-    let Some(mut entity) = commands.get_entity(info.tooltip) else {
+    let Ok(mut entity) = commands.get_entity(info.tooltip) else {
         return;
     };
     entity.try_insert(Visibility::Visible);
@@ -345,10 +345,10 @@ fn hide_item_info(
     mut commands: Commands,
     items: Query<&ItemInfo>,
 ) {
-    let Ok(info) = items.get(trigger.entity()) else {
+    let Ok(info) = items.get(trigger.target()) else {
         return;
     };
-    let Some(mut entity) = commands.get_entity(info.tooltip) else {
+    let Ok(mut entity) = commands.get_entity(info.tooltip) else {
         return;
     };
     entity.try_insert(Visibility::Hidden);

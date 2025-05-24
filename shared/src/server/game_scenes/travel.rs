@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy::{ecs::entity::MapEntities, sprite::Anchor};
+use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, server_or_singleplayer};
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +26,9 @@ impl Plugin for TravelPlugin {
 
 #[derive(Component, Serialize, Deserialize)]
 pub struct Traveling {
+    #[entities]
     pub source: Entity,
+    #[entities]
     pub target: Entity,
     time_left: Timer,
 }
@@ -38,13 +40,6 @@ impl Traveling {
             target,
             time_left: Timer::from_seconds(5., TimerMode::Once),
         }
-    }
-}
-
-impl MapEntities for Traveling {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.source = entity_mapper.map_entity(self.source);
-        self.target = entity_mapper.map_entity(self.target);
     }
 }
 
@@ -61,12 +56,12 @@ impl TravelDestination {
 #[require(
     Replicated,
     Transform,
-    BoxCollider(portal_collider),
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
-    Interactable(|| Interactable {
+    BoxCollider = portal_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Interactable{
         kind: InteractionType::Travel,
         restricted_to: None,
-    }),
+    },
 )]
 pub struct Portal;
 

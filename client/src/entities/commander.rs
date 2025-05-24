@@ -179,8 +179,8 @@ fn send_selected(
     } = *trigger;
 
     commands.client_trigger(slot);
-    if let Ok(current) = current_hover.get_single() {
-        commands.entity(current).despawn_recursive();
+    if let Ok(current) = current_hover.single() {
+        commands.entity(current).despawn();
     };
 }
 
@@ -189,10 +189,10 @@ fn despawn_hover_weapon(
     current_hover: Query<Entity, With<HoverWeapon>>,
     mut commands: Commands,
 ) {
-    let Ok(current) = current_hover.get_single() else {
+    let Ok(current) = current_hover.single() else {
         return;
     };
-    commands.entity(current).despawn_recursive();
+    commands.entity(current).despawn();
 }
 
 fn draw_flag(
@@ -204,7 +204,7 @@ fn draw_flag(
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     mut commands: Commands,
 ) {
-    let Ok(maybe_player_flag) = player_flag.get_single() else {
+    let Ok(maybe_player_flag) = player_flag.single() else {
         return;
     };
 
@@ -224,7 +224,7 @@ fn draw_flag(
 
     let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(unit.unit_type);
 
-    match current_hover.get_single_mut() {
+    match current_hover.single_mut() {
         Ok(mut flag_position) => {
             flag_position.translation.x = entry_position.translation().x;
         }
@@ -245,7 +245,7 @@ fn draw_flag_on_selected(
     menu_entries_add: Query<Entity, (Added<Selected>, With<NodePayload<CommanderSlot>>)>,
     mut commands: Commands,
 ) {
-    let Ok(entry) = menu_entries_add.get_single() else {
+    let Ok(entry) = menu_entries_add.single() else {
         return;
     };
 
@@ -268,13 +268,13 @@ fn assign_unit(
         return;
     };
 
-    let Ok((entry, slot)) = menu_entries.get_single() else {
+    let Ok((entry, slot)) = menu_entries.single() else {
         return;
     };
 
     let maybe_flag_assigned = slots_assigment.slots.get(**slot);
     let Some(flag_assigned) = maybe_flag_assigned else {
-        commands.entity(entry).despawn_descendants();
+        commands.entity(entry).despawn_related::<Children>();
         commands.trigger(DrawHoverFlag(entry));
         return;
     };
@@ -293,7 +293,7 @@ fn assign_unit(
 
     commands
         .entity(entry)
-        .despawn_descendants()
+        .despawn_related::<Children>()
         .add_child(flag_weapon_slot);
 
     // Flag maybe be swapped between player and unit.

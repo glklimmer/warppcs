@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::Anchor};
-use bevy_replicon::prelude::*;
 
+use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
 use crate::{BoxCollider, networking::UnitType, server::entities::health::Health};
@@ -27,18 +27,18 @@ pub struct Cost {
 #[require(
     Replicated,
     Transform,
-    BoxCollider(marker_collider),
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
-    BuildStatus(|| BuildStatus::Marker),
+    BoxCollider = marker_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    BuildStatus = (BuildStatus::Marker),
 )]
 pub struct RecruitBuilding;
 
 #[derive(Component, Debug, Copy, Clone, Serialize, Deserialize)]
 #[require(
     Replicated,
-    BoxCollider(marker_collider),
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
-    BuildStatus(|| BuildStatus::Marker),
+    BoxCollider = marker_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    BuildStatus = (BuildStatus::Marker),
 )]
 pub enum Building {
     MainBuilding { level: MainBuildingLevels },

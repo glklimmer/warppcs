@@ -17,13 +17,13 @@ use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionTyp
 #[require(
     Replicated,
     Transform,
-    BoxCollider(unit_collider),
+    BoxCollider = unit_collider(),
     Velocity,
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
-    Interactable(|| Interactable {
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Interactable{
         kind: InteractionType::Mount,
         restricted_to: None,
-    }),
+    },
 )]
 pub struct Mount {
     pub mount_type: MountType,
@@ -49,12 +49,12 @@ pub fn mount(
         let new_speed = mount_speed(&mount.mount_type);
         speed.0 = new_speed;
 
-        commands.entity(event.interactable).despawn_recursive();
+        commands.entity(event.interactable).despawn();
         commands.entity(player).insert(Mounted {
             mount_type: mount.mount_type,
         });
 
-        animation.send(ToClients {
+        animation.write(ToClients {
             mode: SendMode::Broadcast,
             event: AnimationChangeEvent {
                 entity: player,
