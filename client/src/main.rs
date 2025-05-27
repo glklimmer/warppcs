@@ -5,8 +5,8 @@ use bevy_parallax::ParallaxPlugin;
 use gizmos::GizmosPlugin;
 use map::MapPlugin;
 use menu::MainMenuStates;
-use networking::join_server::{JoinServerPlugin, JoinWebTransportServer};
-use shared::server::create_server::CreateWebTransportServer;
+use networking::join_server::{JoinServerPlugin, join_web_transport_server};
+use shared::server::create_server::create_web_transport_server;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
@@ -128,22 +128,14 @@ fn main() {
     {
         if args.contains(&String::from("server")) {
             client.add_plugins(ServerNetworkPlugin);
-            client.add_systems(Startup, open_server);
+            client.add_systems(Startup, create_web_transport_server);
         } else {
             client.add_plugins((NetworkRegistry, JoinServerPlugin));
-            client.add_systems(Startup, join_server);
+            client.add_systems(Startup, join_web_transport_server);
         }
     }
 
     client.run();
-}
-
-fn open_server(mut commands: Commands) {
-    commands.trigger(CreateWebTransportServer);
-}
-
-fn join_server(mut commands: Commands) {
-    commands.trigger(JoinWebTransportServer);
 }
 
 fn setup_background(

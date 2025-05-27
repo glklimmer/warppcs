@@ -99,25 +99,20 @@ pub const WEB_TRANSPORT_PORT: u16 = 25571;
 //
 //
 
-#[derive(Event)]
-pub struct CreateWebTransportServer;
-
 pub struct CreateServerPlugin;
 
 impl Plugin for CreateServerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((WebTransportServerPlugin, AeronetRepliconServerPlugin));
 
-        app.add_event::<CreateWebTransportServer>();
-        app.add_observer(open_web_transport_server)
-            .add_observer(on_session_request)
+        app.add_observer(on_session_request)
             .add_observer(on_opened)
             .add_observer(on_connected)
             .add_observer(on_disconnected);
     }
 }
 
-fn open_web_transport_server(_: Trigger<CreateWebTransportServer>, mut commands: Commands) {
+pub fn create_web_transport_server(mut commands: Commands) {
     let identity = wtransport::Identity::self_signed(["localhost", "127.0.0.1", "::1"])
         .expect("all given SANs should be valid DNS names");
     let cert = &identity.certificate_chain().as_slice()[0];

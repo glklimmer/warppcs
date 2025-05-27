@@ -92,24 +92,19 @@ pub fn join_steam_server(
 // //     }
 // // }
 
-#[derive(Event)]
-pub struct JoinWebTransportServer;
-
 pub struct JoinServerPlugin;
 
 impl Plugin for JoinServerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((WebTransportClientPlugin, AeronetRepliconClientPlugin));
 
-        app.add_event::<JoinWebTransportServer>();
-        app.add_observer(join_web_transport_server)
-            .add_observer(on_connecting)
+        app.add_observer(on_connecting)
             .add_observer(on_connected)
             .add_observer(on_disconnected);
     }
 }
 
-fn join_web_transport_server(_: Trigger<JoinWebTransportServer>, mut commands: Commands) {
+pub fn join_web_transport_server(mut commands: Commands) {
     let config = web_transport_config("".to_string());
     let default_target = format!("https://127.0.0.1:{WEB_TRANSPORT_PORT}");
     commands
