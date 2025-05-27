@@ -200,8 +200,6 @@ fn init_item_info(
         return;
     };
 
-    info!("adding info");
-
     let text_color = Color::srgb_u8(143, 86, 59);
 
     let info = commands
