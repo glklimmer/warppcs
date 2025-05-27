@@ -51,7 +51,6 @@ fn start_game(
                 player_base(commands.reborrow(), offset, player, left, right);
                 let mut transform = players.get_mut(player).unwrap();
                 transform.translation = offset.with_z(Layers::Player.as_f32());
-                info!("pos {}", transform.translation);
 
                 for item_type in ItemType::all_variants() {
                     let translation = transform.translation;
@@ -136,7 +135,6 @@ fn player_base(
     right_portal: Entity,
 ) {
     let owner = Owner::Player(player);
-    println!("onwer {:?}", player);
     commands.spawn((
         Building::MainBuilding {
             level: MainBuildingLevels::Tent,

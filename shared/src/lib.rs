@@ -167,8 +167,6 @@ fn spawn_clients(
     mut commands: Commands,
     mut client_player_map: ResMut<ClientPlayerMap>,
 ) {
-    info!("{} connected", trigger.target());
-
     let player = commands
         .entity(trigger.target())
         .insert((

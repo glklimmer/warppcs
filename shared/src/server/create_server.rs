@@ -7,7 +7,6 @@ use aeronet::io::{
 };
 use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
 use aeronet_webtransport::{
-    cert,
     server::{SessionRequest, SessionResponse, WebTransportServer, WebTransportServerPlugin},
     wtransport,
 };
@@ -106,7 +105,7 @@ impl Plugin for CreateServerPlugin {
         app.add_plugins((WebTransportServerPlugin, AeronetRepliconServerPlugin));
 
         app.add_observer(on_session_request)
-            .add_observer(on_opened)
+            .add_observer(on_created)
             .add_observer(on_connected)
             .add_observer(on_disconnected);
     }
@@ -115,32 +114,17 @@ impl Plugin for CreateServerPlugin {
 pub fn create_web_transport_server(mut commands: Commands) {
     let identity = wtransport::Identity::self_signed(["localhost", "127.0.0.1", "::1"])
         .expect("all given SANs should be valid DNS names");
-    let cert = &identity.certificate_chain().as_slice()[0];
-    let spki_fingerprint = cert::spki_fingerprint_b64(cert).expect("should be a valid certificate");
-    let cert_hash = cert::hash_to_b64(cert.hash());
-    info!("************************");
-    info!("SPKI FINGERPRINT");
-    info!("  {spki_fingerprint}");
-    info!("CERTIFICATE HASH");
-    info!("  {cert_hash}");
-    info!("************************");
-
     let config = web_transport_config(identity);
-    let server = commands
+
+    commands
         .spawn((
-            Name::new("WebTransport Server"),
             Transform::default(),
             Visibility::default(),
-            // IMPORTANT
-            //
-            // Make sure to insert this component into your server entity,
-            // so that `aeronet_replicon` knows you want to use this for `bevy_replicon`!
             AeronetRepliconServer,
         ))
-        .queue(WebTransportServer::open(config))
-        .id();
+        .queue(WebTransportServer::open(config));
 
-    info!("Opening WebTransport server {server}");
+    info!("Creating server...")
 }
 
 type WebTransportServerConfig = aeronet_webtransport::server::ServerConfig;
@@ -155,21 +139,7 @@ fn web_transport_config(identity: wtransport::Identity) -> WebTransportServerCon
         .build()
 }
 
-fn on_session_request(mut request: Trigger<SessionRequest>, clients: Query<&ChildOf>) {
-    let client = request.target();
-    let Ok(&ChildOf(server)) = clients.get(client) else {
-        return;
-    };
-
-    info!("{client} connecting to {server} with headers:");
-    for (header_key, header_value) in &request.headers {
-        info!("  {header_key}: {header_value}");
-    }
-
-    request.respond(SessionResponse::Accepted);
-}
-
-fn on_opened(
+fn on_created(
     trigger: Trigger<OnAdd, Server>,
     servers: Query<&LocalAddr>,
     mut client_player_map: ResMut<ClientPlayerMap>,
@@ -179,7 +149,8 @@ fn on_opened(
     let local_addr = servers
         .get(server)
         .expect("opened server should have a binding socket `LocalAddr`");
-    info!("{server} opened on {}", **local_addr);
+
+    info!("Successfully created server on {}.", **local_addr);
 
     let server_player = commands.spawn(Player).id();
 
@@ -191,29 +162,29 @@ fn on_opened(
     });
 }
 
-fn on_connected(trigger: Trigger<OnAdd, Session>, clients: Query<&ChildOf>) {
-    let client = trigger.target();
-    let Ok(&ChildOf(server)) = clients.get(client) else {
-        return;
-    };
-    info!("{client} connected to {server}");
+fn on_session_request(mut request: Trigger<SessionRequest>) {
+    let client = request.target();
+    info!("Client {client} connecting...");
+    request.respond(SessionResponse::Accepted);
 }
 
-fn on_disconnected(trigger: Trigger<Disconnected>, clients: Query<&ChildOf>) {
+fn on_connected(trigger: Trigger<OnAdd, Session>) {
     let client = trigger.target();
-    let Ok(&ChildOf(server)) = clients.get(client) else {
-        return;
-    };
+    info!("Client {client} connected.");
+}
+
+fn on_disconnected(trigger: Trigger<Disconnected>) {
+    let client = trigger.target();
 
     match &*trigger {
         Disconnected::ByUser(reason) => {
-            info!("{client} disconnected from {server} by user: {reason}");
+            info!("Client {client} disconnected from server by user: {reason}");
         }
         Disconnected::ByPeer(reason) => {
-            info!("{client} disconnected from {server} by peer: {reason}");
+            info!("Client {client} disconnected from server by peer: {reason}");
         }
         Disconnected::ByError(err) => {
-            warn!("{client} disconnected from {server} due to error: {err:?}");
+            warn!("Client {client} disconnected from server due to error: {err:?}");
         }
     }
 }

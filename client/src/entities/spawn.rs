@@ -71,7 +71,6 @@ fn init_player_sprite(
     let Ok(mut sprite) = players.get_mut(trigger.target()) else {
         return;
     };
-    info!("Adding sprite for {:?}", trigger.target());
 
     let sprite_sheet = &king_sprite_sheet.sprite_sheet;
 

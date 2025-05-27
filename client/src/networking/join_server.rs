@@ -107,8 +107,9 @@ impl Plugin for JoinServerPlugin {
 pub fn join_web_transport_server(mut commands: Commands) {
     let config = web_transport_config("".to_string());
     let default_target = format!("https://127.0.0.1:{WEB_TRANSPORT_PORT}");
+
     commands
-        .spawn(Name::new("client"))
+        .spawn_empty()
         .queue(WebTransportClient::connect(config, default_target));
 }
 
@@ -120,7 +121,6 @@ fn web_transport_config(cert_hash: String) -> WebTransportClientConfig {
     let config = WebTransportClientConfig::builder().with_bind_default();
 
     let config = if cert_hash.is_empty() {
-        warn!("Connecting without certificate validation");
         config.with_no_cert_validation()
     } else {
         match cert::hash_from_b64(&cert_hash) {
@@ -139,52 +139,34 @@ fn web_transport_config(cert_hash: String) -> WebTransportClientConfig {
         .build()
 }
 
-fn on_connecting(
-    trigger: Trigger<OnAdd, SessionEndpoint>,
-    names: Query<&Name>,
-    mut commands: Commands,
-) {
+fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>, mut commands: Commands) {
     let entity = trigger.target();
-    let name = names
-        .get(entity)
-        .expect("our session entity should have a name");
-    info!("Entity {} in SessionEndpoint {}", entity, name);
 
-    // IMPORTANT
-    //
-    // Make sure to insert this component into your client entity,
-    // so that `aeronet_replicon` knows you want to use this for `bevy_replicon`!
-    //
-    // You can also do this when `spawn`ing the entity instead, which is a bit more
-    // efficient. We just do it on `OnAdd, SessionEndpoint`, since we have
-    // multiple `spawn` calls, and it's nicer to centralize inserting this
-    // component in a single place.
+    info!("Joining server...");
+
     commands.entity(entity).insert(AeronetRepliconClient);
 }
 
 fn on_connected(trigger: Trigger<OnAdd, Session>, mut commands: Commands) {
     let entity = trigger.target();
-    info!("Entity {} in Session", entity);
+
+    info!("Joined server.");
 
     commands
         .entity(entity)
         .insert((TransportConfig { ..default() },));
 }
 
-fn on_disconnected(trigger: Trigger<Disconnected>, names: Query<&Name>) {
-    let session = trigger.target();
-    let name = names
-        .get(session)
-        .expect("our session entity should have a name");
+fn on_disconnected(trigger: Trigger<Disconnected>) {
     match &*trigger {
         Disconnected::ByUser(reason) => {
-            format!("{name} disconnected by user: {reason}")
+            format!("Disconnected by user: {reason}")
         }
         Disconnected::ByPeer(reason) => {
-            format!("{name} disconnected by peer: {reason}")
+            format!("Disconnected by peer: {reason}")
         }
         Disconnected::ByError(err) => {
-            format!("{name} disconnected due to error: {err:?}")
+            format!("Disconnected due to error: {err:?}")
         }
     };
 }
