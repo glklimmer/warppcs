@@ -105,7 +105,7 @@ impl Plugin for JoinServerPlugin {
 }
 
 pub fn join_web_transport_server(mut commands: Commands) {
-    let config = web_transport_config("".to_string());
+    let config = web_transport_config(None);
     let default_target = format!("https://127.0.0.1:{WEB_TRANSPORT_PORT}");
 
     commands
@@ -115,21 +115,21 @@ pub fn join_web_transport_server(mut commands: Commands) {
 
 type WebTransportClientConfig = aeronet_webtransport::client::ClientConfig;
 
-fn web_transport_config(cert_hash: String) -> WebTransportClientConfig {
+fn web_transport_config(cert_hash: Option<String>) -> WebTransportClientConfig {
     use {aeronet_webtransport::wtransport::tls::Sha256Digest, core::time::Duration};
 
     let config = WebTransportClientConfig::builder().with_bind_default();
 
-    let config = if cert_hash.is_empty() {
-        config.with_no_cert_validation()
-    } else {
-        match cert::hash_from_b64(&cert_hash) {
+    let config = if let Some(hash) = cert_hash {
+        match cert::hash_from_b64(&hash) {
             Ok(hash) => config.with_server_certificate_hashes([Sha256Digest::new(hash)]),
             Err(err) => {
                 warn!("Failed to read certificate hash from string: {err:?}");
                 config.with_server_certificate_hashes([])
             }
         }
+    } else {
+        config.with_no_cert_validation()
     };
 
     config
