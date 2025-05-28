@@ -4,6 +4,11 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
+use crate::server::ai::FollowOffset;
+use crate::server::entities::commander::{
+    BASE_OFFSET, BASE_SLOT_WIDTH, CommanderSlot, PhysicalSlotOf,
+};
+use crate::server::physics::movement::Velocity;
 use crate::{
     BoxCollider, Owner, Vec3LayerExt, flag_collider,
     map::{
@@ -43,8 +48,9 @@ impl MapEntities for FlagHolder {
     }
 }
 
-#[derive(Component, Deserialize, Serialize)]
-pub struct FlagAssignment(pub Entity, pub Vec2);
+#[derive(Component, Deserialize, Serialize, Deref, DerefMut)]
+pub struct FlagAssignment(pub Entity);
+
 impl MapEntities for FlagAssignment {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.0 = entity_mapper.get_mapped(self.0);
@@ -144,8 +150,9 @@ pub fn recruit_units(
             damage,
             range,
             owner,
-            FlagAssignment(flag_entity, offset),
-            UnitBehaviour::FollowFlag(flag_entity, offset),
+            FlagAssignment(flag_entity),
+            FollowOffset(offset),
+            UnitBehaviour::FollowFlag(flag_entity),
         ));
     }
 

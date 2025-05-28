@@ -13,6 +13,7 @@ use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
 };
 
+use super::ai::FollowOffset;
 use super::{
     ai::UnitBehaviour,
     buildings::recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
@@ -203,8 +204,9 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             damage,
             range,
             owner,
-            FlagAssignment(flag_commander, offset),
-            UnitBehaviour::FollowFlag(flag_commander, offset),
+            FlagAssignment(flag_commander),
+            FollowOffset(offset),
+            UnitBehaviour::FollowFlag(flag_commander),
             Interactable {
                 kind: InteractionType::CommanderInteraction,
                 restricted_to: Some(player),
@@ -298,8 +300,9 @@ fn spawn_unit(
             damage,
             range,
             owner,
-            FlagAssignment(flag_entity, offset),
-            UnitBehaviour::FollowFlag(flag_entity, offset),
+            FollowOffset(offset),
+            FlagAssignment(flag_entity),
+            UnitBehaviour::FollowFlag(flag_entity),
         ));
     }
     flag_entity

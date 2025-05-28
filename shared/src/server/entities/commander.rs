@@ -6,6 +6,7 @@ use crate::{
     ClientPlayerMap,
     enum_map::*,
     server::{
+        ai::FollowOffset,
         buildings::recruiting::{FlagAssignment, FlagHolder},
         physics::attachment::AttachedTo,
         players::interaction::{InteractionTriggeredEvent, InteractionType},
