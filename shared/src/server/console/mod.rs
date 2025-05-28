@@ -9,6 +9,8 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
+use crate::BoxCollider;
+use crate::server::entities::commander::PhysicalSlotOf;
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
 };
@@ -214,24 +216,50 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         ))
         .id();
 
+    const BASE_SLOT_WIDTH: f32 = 50.;
+    const BASE_OFFSET: f32 = 5.;
+    let meshes = BoxCollider {
+        dimension: Vec2::new(BASE_SLOT_WIDTH, 1.),
+        offset: None,
+    };
+
+    let mut offset_acc = 0.;
+
+    let mut physical_slots: Vec<Entity> = vec![];
+
+    for slot in CommanderSlot::ALL {
+        offset_acc += (BASE_SLOT_WIDTH) + BASE_OFFSET;
+        let slot = world
+            .spawn((
+                slot,
+                PhysicalSlotOf(commander),
+                Velocity::default(),
+                meshes,
+                FollowOffset(Vec2::new(-offset_acc, 0.)),
+                Transform::default(),
+            ))
+            .id();
+        physical_slots.push(slot);
+    }
+
     let front = spawn_unit(
         world,
         player,
-        commander,
+        physical_slots[0],
         UnitType::Shieldwarrior,
         player_translation,
     );
     let middle = spawn_unit(
         world,
         player,
-        commander,
+        physical_slots[1],
         UnitType::Pikeman,
         player_translation,
     );
     let back = spawn_unit(
         world,
         player,
-        commander,
+        physical_slots[2],
         UnitType::Archer,
         player_translation,
     );

@@ -221,22 +221,42 @@ pub fn recruit_commander(
     let range = Range(range);
 
     let offset = Vec2::new(-18., 0.);
-    commands.spawn((
-        player_translation.with_layer(Layers::Flag),
-        unit.clone(),
-        health,
-        speed,
-        damage,
-        range,
-        owner,
-        FlagAssignment(flag_entity, offset),
-        UnitBehaviour::FollowFlag(flag_entity, offset),
-        Interactable {
-            kind: InteractionType::CommanderInteraction,
-            restricted_to: Some(player),
-        },
-        SlotsAssignments::default(),
-    ));
+    let commander = commands
+        .spawn((
+            player_translation.with_layer(Layers::Flag),
+            unit.clone(),
+            health,
+            speed,
+            damage,
+            range,
+            owner,
+            FlagAssignment(flag_entity),
+            FollowOffset(offset),
+            UnitBehaviour::FollowFlag(flag_entity),
+            Interactable {
+                kind: InteractionType::CommanderInteraction,
+                restricted_to: Some(player),
+            },
+            SlotsAssignments::default(),
+        ))
+        .id();
+
+    let meshes = BoxCollider {
+        dimension: Vec2::new(BASE_SLOT_WIDTH, 1.),
+        offset: None,
+    };
+    let mut offset_acc = 0.;
+    for slot in CommanderSlot::ALL {
+        offset_acc += (BASE_SLOT_WIDTH) + BASE_OFFSET;
+        commands.spawn((
+            slot,
+            PhysicalSlotOf(commander),
+            Velocity::default(),
+            meshes,
+            FollowOffset(Vec2::new(-offset_acc, 0.)),
+            Transform::default(),
+        ));
+    }
 
     commands.server_trigger(ToClients {
         mode: SendMode::Broadcast,

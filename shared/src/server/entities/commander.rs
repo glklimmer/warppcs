@@ -43,12 +43,23 @@ enum SlotCommand {
     Swap,
 }
 
-#[derive(Event, Serialize, Deserialize, Copy, Clone, Mappable, Eq, PartialEq)]
+#[derive(Event, Component, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq)]
 pub enum CommanderSlot {
     Front,
     Middle,
     Back,
 }
+
+pub const BASE_SLOT_WIDTH: f32 = 50.;
+pub const BASE_OFFSET: f32 = 5.;
+
+#[derive(Component)]
+#[relationship(relationship_target = PhysicalSlots)]
+pub struct PhysicalSlotOf(pub Entity);
+
+#[derive(Component, Deref)]
+#[relationship_target(relationship = PhysicalSlotOf)]
+pub struct PhysicalSlots(Vec<Entity>);
 
 #[derive(Component, Serialize, Deserialize, Clone)]
 pub struct SlotsAssignments {
@@ -91,6 +102,25 @@ impl Plugin for CommanderPlugin {
             FixedUpdate,
             commander_interaction.run_if(on_event::<InteractionTriggeredEvent>),
         );
+
+        app.add_systems(FixedUpdate, slots_follow_commander);
+    }
+}
+
+fn slots_follow_commander(
+    commanders: Query<(Entity, &PhysicalSlots)>,
+    mut transform: Query<&mut Transform>,
+    offets: Query<&FollowOffset>,
+) {
+    for (commander, slots) in commanders.iter() {
+        let commander_transform = transform.get(commander).unwrap();
+        let commander_pos = commander_transform.translation;
+        let commander_facing = commander_transform.scale.x.signum();
+        for slot in slots.iter() {
+            let mut slot_pos = transform.get_mut(slot).unwrap().translation;
+            let follow_offset = offets.get(slot).unwrap();
+            slot_pos.x = commander_pos.x + follow_offset.x * commander_facing;
+        }
     }
 }
 
@@ -136,8 +166,8 @@ fn handle_slot_selection(
         (true, true) => {
             commands.trigger(SlotInteraction {
                 command: SlotCommand::Swap,
-                player: player.clone(),
-                commander: commander.clone(),
+                player: *player,
+                commander: *commander,
                 flag: player_flag,
                 selected_slot,
             });
@@ -145,8 +175,8 @@ fn handle_slot_selection(
         (true, false) => {
             commands.trigger(SlotInteraction {
                 command: SlotCommand::Remove,
-                player: player.clone(),
-                commander: commander.clone(),
+                player: *player,
+                commander: *commander,
                 flag: None,
                 selected_slot,
             });
@@ -154,27 +184,36 @@ fn handle_slot_selection(
         (false, true) => {
             commands.trigger(SlotInteraction {
                 command: SlotCommand::Assign,
-                player: player.clone(),
-                commander: commander.clone(),
+                player: *player,
+                commander: *commander,
                 flag: player_flag,
                 selected_slot,
             });
         }
-        (false, false) => return,
+        (false, false) => {}
     }
 }
 
 fn assign_flag_to_slot(
     trigger: Trigger<SlotInteraction>,
     mut commands: Commands,
-    mut slots: Query<(&mut SlotsAssignments, &FlagAssignment)>,
+    mut commanders: Query<(&mut SlotsAssignments, &FlagAssignment)>,
+    slots: Query<(Entity, &PhysicalSlotOf, &CommanderSlot)>,
 ) {
     let SlotCommand::Assign = trigger.command else {
         return;
     };
 
-    let (mut slot_assignments, flag_assignment) = slots.get_mut(trigger.commander).unwrap();
+    let (mut slot_assignments, flag_assignment) = commanders.get_mut(trigger.commander).unwrap();
     let flag = trigger.flag.unwrap();
+
+    let slot = slots
+        .iter()
+        .find(|(_, slot_of, slot_position)| {
+            slot_of.0 == trigger.commander && slot_position.eq(&&trigger.selected_slot)
+        })
+        .unwrap()
+        .0;
 
     // Prevent assigning own flag
     if flag_assignment.0 == flag {
@@ -185,40 +224,46 @@ fn assign_flag_to_slot(
         .slots
         .set(trigger.selected_slot, Some(flag));
 
-    commands.entity(flag).insert(AttachedTo(trigger.commander));
+    // Hide Flag when assigned to a physical slot
+    commands
+        .entity(flag)
+        .insert((AttachedTo(slot), Visibility::Hidden));
     commands.entity(trigger.player).remove::<FlagHolder>();
 }
 
 fn remove_flag_from_slot(
     trigger: Trigger<SlotInteraction>,
     mut commands: Commands,
-    mut slots: Query<&mut SlotsAssignments>,
+    mut commanders: Query<&mut SlotsAssignments>,
 ) {
     let SlotCommand::Remove = trigger.command else {
         return;
     };
 
-    let mut slot_assignments = slots.get_mut(trigger.commander).unwrap();
+    let mut slot_assignments = commanders.get_mut(trigger.commander).unwrap();
 
     let flag = slot_assignments
         .slots
         .set(trigger.selected_slot, None)
         .unwrap();
 
-    commands.entity(flag).insert(AttachedTo(trigger.player));
+    commands
+        .entity(flag)
+        .insert((AttachedTo(trigger.player), Visibility::Visible));
     commands.entity(trigger.player).insert(FlagHolder(flag));
 }
 
 fn swap_flag_from_slot(
     trigger: Trigger<SlotInteraction>,
     mut commands: Commands,
-    mut slots: Query<&mut SlotsAssignments>,
+    mut commanders: Query<&mut SlotsAssignments>,
+    slots: Query<(Entity, &PhysicalSlotOf, &CommanderSlot)>,
 ) {
     let SlotCommand::Swap = trigger.command else {
         return;
     };
 
-    let mut slot_assignments = slots.get_mut(trigger.commander).unwrap();
+    let mut slot_assignments = commanders.get_mut(trigger.commander).unwrap();
     let flag = trigger.flag.unwrap();
 
     let slot_flag = slot_assignments
@@ -226,10 +271,21 @@ fn swap_flag_from_slot(
         .set(trigger.selected_slot, Some(flag))
         .unwrap();
 
-    commands.entity(flag).insert(AttachedTo(trigger.commander));
+    let slot = slots
+        .iter()
+        .find(|(_, slot_of, slot_position)| {
+            slot_of.0 == trigger.commander && slot_position.eq(&&trigger.selected_slot)
+        })
+        .unwrap()
+        .0;
+
+    commands
+        .entity(flag)
+        .insert((AttachedTo(slot), Visibility::Hidden));
+
     commands
         .entity(slot_flag)
-        .insert(AttachedTo(trigger.player));
+        .insert((AttachedTo(trigger.player), Visibility::Visible));
     commands
         .entity(trigger.player)
         .insert(FlagHolder(slot_flag));
