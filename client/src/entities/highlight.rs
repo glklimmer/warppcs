@@ -1,9 +1,8 @@
-use bevy::ecs::component::HookContext;
 use bevy::prelude::*;
 
 use bevy::{
     asset::RenderAssetUsages,
-    ecs::world::DeferredWorld,
+    ecs::{component::HookContext, world::DeferredWorld},
     math::bounding::IntersectsVolume,
 };
 use image::{GenericImage, GenericImageView, Rgba};
@@ -57,10 +56,10 @@ impl Plugin for HighlightPlugin {
 }
 
 fn highlight_entity(
-    mut sprites: Query<&mut Sprite, Changed<Highlighted>>,
+    mut sprites: Query<(&mut Sprite, &Highlightable), Changed<Highlighted>>,
     mut images: ResMut<Assets<Image>>,
 ) {
-    for mut sprite in sprites.iter_mut() {
+    for (mut sprite, highlightable) in sprites.iter_mut() {
         if let Some(texture) = images.get_mut(sprite.image.id()) {
             let width = texture.width();
             let height = texture.height();
@@ -76,7 +75,11 @@ fn highlight_entity(
                 let up = dynamic_image.get_pixel(x, y - 1)[3];
                 let down = dynamic_image.get_pixel(x, y + 1)[3];
                 if current != left || current != right || current != up || current != down {
-                    outlined_image.put_pixel(x, y, Rgba([255, 255, 255, 255]));
+                    outlined_image.put_pixel(
+                        x,
+                        y,
+                        Rgba(highlightable.outline_color.to_srgba().to_u8_array()),
+                    );
                 }
             }
 
@@ -171,7 +174,7 @@ fn init_highlightable(
         return;
     };
 
-    if let Some(_) = maybe_attached {
+    if maybe_attached.is_some() {
         return;
     }
 
@@ -190,15 +193,15 @@ fn init_highlightable(
 fn remove_highlightable(trigger: Trigger<OnRemove, Interactable>, mut commands: Commands) {
     commands
         .entity(trigger.target())
-        .remove::<Highlightable>()
-        .remove::<Highlighted>();
+        .try_remove::<Highlightable>()
+        .try_remove::<Highlighted>();
 }
 
 fn remove_highlightable_on_attached(trigger: Trigger<OnAdd, AttachedTo>, mut commands: Commands) {
     commands
         .entity(trigger.target())
-        .remove::<Highlightable>()
-        .remove::<Highlighted>();
+        .try_remove::<Highlightable>()
+        .try_remove::<Highlighted>();
 }
 
 fn add_highlightable_on_attached(trigger: Trigger<OnRemove, AttachedTo>, mut commands: Commands) {
