@@ -4,7 +4,7 @@ use bevy::audio::{AudioPlugin, SpatialScale, Volume};
 use bevy_parallax::ParallaxPlugin;
 use gizmos::GizmosPlugin;
 use map::MapPlugin;
-use networking::join_server::{JoinServerPlugin, join_web_transport_server};
+use networking::join_server::JoinServerPlugin;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
@@ -129,6 +129,8 @@ fn main() {
 
         #[cfg(feature = "netcode")]
         {
+            use networking::join_server::join_web_transport_server;
+
             client.add_systems(Startup, join_web_transport_server);
         }
     }
