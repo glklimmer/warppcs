@@ -5,7 +5,6 @@ use bevy_parallax::ParallaxPlugin;
 use gizmos::GizmosPlugin;
 use map::MapPlugin;
 use networking::join_server::{JoinServerPlugin, join_web_transport_server};
-use shared::server::create_server::{create_steam_server, create_web_transport_server};
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
@@ -104,6 +103,7 @@ fn main() {
         {
             use aeronet_steam::server::SteamNetServerPlugin;
             use bevy_steamworks::ClientManager;
+            use shared::server::create_server::create_steam_server;
 
             client
                 .add_plugins(SteamNetServerPlugin::<ClientManager>::default())
@@ -112,6 +112,8 @@ fn main() {
 
         #[cfg(feature = "netcode")]
         {
+            use shared::server::create_server::create_web_transport_server;
+
             client.add_systems(Startup, create_web_transport_server);
         }
     } else {
