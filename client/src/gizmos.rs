@@ -40,7 +40,7 @@ fn draw_range(
 fn draw_collider(
     mut gizmos: Gizmos,
     settings: Res<GizmosSettings>,
-    query: Query<(&Transform, &BoxCollider)>,
+    query: Query<(&GlobalTransform, &BoxCollider)>,
 ) {
     if !settings.on {
         return;
@@ -48,7 +48,7 @@ fn draw_collider(
     for (transform, collider) in query.iter() {
         gizmos.rect_2d(
             Isometry2d::new(
-                transform.translation.truncate() + collider.offset.unwrap_or_default(),
+                transform.translation().truncate() + collider.offset.unwrap_or_default(),
                 Rot2::degrees(0.),
             ),
             collider.dimension,
