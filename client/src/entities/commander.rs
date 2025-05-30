@@ -7,7 +7,7 @@ use shared::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         entities::{
             Unit,
-            commander::{CommanderInteraction, CommanderSlot, UnitsAssignments},
+            commander::{ArmyFlagAssignments, CommanderFormation, CommanderInteraction},
         },
     },
 };
@@ -52,7 +52,7 @@ impl Plugin for CommanderInteractionPlugin {
             )
             .add_plugins((
                 MenuPlugin::<MainMenuEntries>::default(),
-                MenuPlugin::<CommanderSlot>::default(),
+                MenuPlugin::<CommanderFormation>::default(),
             ));
     }
 }
@@ -108,7 +108,7 @@ fn open_commander_dialog(
 fn open_slots_dialog(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
     mut commands: Commands,
-    slot_assignments: Query<&UnitsAssignments>,
+    army_flag_assignments: Query<&ArmyFlagAssignments>,
     transform: Query<&GlobalTransform>,
     asset_server: Res<AssetServer>,
     units_on_flag: Query<(&FlagAssignment, &Unit)>,
@@ -120,9 +120,9 @@ fn open_slots_dialog(
     };
 
     let entry_position = transform.get(trigger.entry).unwrap().translation();
-    let slot_assignments = slot_assignments.get(active.unwrap()).unwrap();
+    let army_flag_assignments = army_flag_assignments.get(active.unwrap()).unwrap();
 
-    let menu_nodes = slot_assignments
+    let menu_nodes = army_flag_assignments
         .flags
         .iter_enums()
         .map(|(slot, slot_assignment)| {
@@ -168,7 +168,7 @@ fn open_slots_dialog(
 }
 
 fn send_selected(
-    trigger: Trigger<SelectionEvent<CommanderSlot>>,
+    trigger: Trigger<SelectionEvent<CommanderFormation>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
     mut commands: Commands,
 ) {
@@ -185,7 +185,7 @@ fn send_selected(
 }
 
 fn despawn_hover_weapon(
-    _: Trigger<ClosedMenu<CommanderSlot>>,
+    _: Trigger<ClosedMenu<CommanderFormation>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
     mut commands: Commands,
 ) {
@@ -198,7 +198,7 @@ fn despawn_hover_weapon(
 fn draw_flag(
     trigger: Trigger<DrawHoverFlag>,
     mut current_hover: Query<&mut Transform, With<HoverWeapon>>,
-    menu_entries_add: Query<&GlobalTransform, With<NodePayload<CommanderSlot>>>,
+    menu_entries_add: Query<&GlobalTransform, With<NodePayload<CommanderFormation>>>,
     units_on_flag: Query<(&FlagAssignment, &Unit)>,
     player_flag: Query<Option<&FlagHolder>, With<ControlledPlayer>>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
@@ -242,7 +242,7 @@ fn draw_flag(
 }
 
 fn draw_flag_on_selected(
-    menu_entries_add: Query<Entity, (Added<Selected>, With<NodePayload<CommanderSlot>>)>,
+    menu_entries_add: Query<Entity, (Added<Selected>, With<NodePayload<CommanderFormation>>)>,
     mut commands: Commands,
 ) {
     let Ok(entry) = menu_entries_add.single() else {
@@ -253,8 +253,8 @@ fn draw_flag_on_selected(
 }
 
 fn assign_unit(
-    slot_assigments: Query<&UnitsAssignments, Changed<UnitsAssignments>>,
-    menu_entries: Query<(Entity, &NodePayload<CommanderSlot>), With<Selected>>,
+    army_flag_assigments: Query<&ArmyFlagAssignments, Changed<ArmyFlagAssignments>>,
+    menu_entries: Query<(Entity, &NodePayload<CommanderFormation>), With<Selected>>,
     units_on_flag: Query<(&FlagAssignment, &Unit)>,
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
@@ -264,7 +264,7 @@ fn assign_unit(
         return;
     };
 
-    let Ok(slots_assigment) = slot_assigments.get(active_commander) else {
+    let Ok(army_flag_assigment) = army_flag_assigments.get(active_commander) else {
         return;
     };
 
@@ -272,7 +272,7 @@ fn assign_unit(
         return;
     };
 
-    let maybe_flag_assigned = slots_assigment.flags.get(**slot);
+    let maybe_flag_assigned = army_flag_assigment.flags.get(**slot);
     let Some(flag_assigned) = maybe_flag_assigned else {
         commands.entity(entry).despawn_related::<Children>();
         commands.trigger(DrawHoverFlag(entry));

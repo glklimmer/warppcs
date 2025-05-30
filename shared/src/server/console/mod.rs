@@ -10,18 +10,19 @@ use console_protocol::*;
 use serde_json::{Value, json};
 
 use crate::BoxCollider;
-use crate::server::entities::commander::SlotsAssignments;
+use crate::server::entities::commander::ArmyFormation;
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
 };
 
 use super::ai::FollowOffset;
+use super::entities::commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH};
 use super::{
     ai::UnitBehaviour,
     buildings::recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
     entities::{
         Damage, Range, Unit,
-        commander::{CommanderSlot, UnitsAssignments},
+        commander::{ArmyFlagAssignments, CommanderFormation},
         health::Health,
     },
     physics::{
@@ -216,68 +217,63 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         ))
         .id();
 
-    const BASE_SLOT_WIDTH: f32 = 50.;
-    const BASE_OFFSET: f32 = 5.;
     let meshes = BoxCollider {
-        dimension: Vec2::new(BASE_SLOT_WIDTH, 1.),
+        dimension: Vec2::new(BASE_FORMATION_WIDTH, 1.),
         offset: None,
     };
 
-    let mut offset_acc = 0.;
+    let mut formation_offset = 0.;
 
-    let mut physical_slots: Vec<Entity> = vec![];
+    let mut army_formation: Vec<Entity> = vec![];
 
-    for slot in CommanderSlot::ALL {
-        offset_acc += (BASE_SLOT_WIDTH) + BASE_OFFSET;
-        let slot = world
+    CommanderFormation::ALL.iter().for_each(|_| {
+        formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
+        let formation = world
             .spawn((
-                slot,
                 ChildOf(commander),
-                // PhysicalSlotOf(commander),
                 Velocity::default(),
                 meshes,
-                FollowOffset(Vec2::new(-offset_acc, 0.)),
-                Transform::from_translation(Vec3::new(-offset_acc, 0., 0.)),
+                Transform::from_translation(Vec3::new(-formation_offset, 0., 0.)),
             ))
             .id();
-        physical_slots.push(slot);
-    }
+        army_formation.push(formation);
+    });
 
     let front = spawn_unit(
         world,
         player,
-        physical_slots[0],
+        army_formation[0],
         UnitType::Shieldwarrior,
         player_translation,
     );
     let middle = spawn_unit(
         world,
         player,
-        physical_slots[1],
+        army_formation[1],
         UnitType::Pikeman,
         player_translation,
     );
     let back = spawn_unit(
         world,
         player,
-        physical_slots[2],
+        army_formation[2],
         UnitType::Archer,
         player_translation,
     );
 
     world.entity_mut(commander).insert((
-        UnitsAssignments {
+        ArmyFlagAssignments {
             flags: EnumMap::new(|c| match c {
-                CommanderSlot::Front => Some(front),
-                CommanderSlot::Middle => Some(middle),
-                CommanderSlot::Back => Some(back),
+                CommanderFormation::Front => Some(front),
+                CommanderFormation::Middle => Some(middle),
+                CommanderFormation::Back => Some(back),
             }),
         },
-        SlotsAssignments {
+        ArmyFormation {
             positions: EnumMap::new(|c| match c {
-                CommanderSlot::Front => physical_slots[0],
-                CommanderSlot::Middle => physical_slots[1],
-                CommanderSlot::Back => physical_slots[2],
+                CommanderFormation::Front => army_formation[0],
+                CommanderFormation::Middle => army_formation[1],
+                CommanderFormation::Back => army_formation[2],
             }),
         },
     ));

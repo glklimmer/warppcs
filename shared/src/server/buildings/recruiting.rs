@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use crate::enum_map::EnumMap;
 use crate::server::ai::FollowOffset;
 use crate::server::entities::commander::{
-    BASE_OFFSET, BASE_SLOT_WIDTH, CommanderSlot, SlotsAssignments, UnitsAssignments,
+    ArmyFlagAssignments, ArmyFormation, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH,
+    CommanderFormation,
 };
 use crate::server::physics::movement::Velocity;
 use crate::{
@@ -238,36 +239,36 @@ pub fn recruit_commander(
                 kind: InteractionType::CommanderInteraction,
                 restricted_to: Some(player),
             },
-            UnitsAssignments::default(),
+            ArmyFlagAssignments::default(),
         ))
         .id();
 
-    let meshes = BoxCollider {
-        dimension: Vec2::new(BASE_SLOT_WIDTH, 1.),
+    let collider = BoxCollider {
+        dimension: Vec2::new(BASE_FORMATION_WIDTH, 1.),
         offset: None,
     };
-    let mut offset_acc = 0.;
-    let mut slots: Vec<Entity> = vec![];
-    for slot in CommanderSlot::ALL {
-        offset_acc += (BASE_SLOT_WIDTH) + BASE_OFFSET;
-        let slot = commands
+
+    let mut formation_offset = 0.;
+
+    let mut army_formation: Vec<Entity> = vec![];
+
+    CommanderFormation::ALL.iter().for_each(|_| {
+        formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
+        let formation = commands
             .spawn((
-                slot,
                 ChildOf(commander),
                 Velocity::default(),
-                meshes,
-                FollowOffset(Vec2::new(-offset_acc, 0.)),
-                Transform::from_translation(Vec3::new(-offset_acc, 0., 0.)),
+                collider,
+                Transform::from_translation(Vec3::new(-formation_offset, 0., 0.)),
             ))
             .id();
-        slots.push(slot);
-    }
-
-    commands.entity(commander).insert(SlotsAssignments {
+        army_formation.push(formation);
+    });
+    commands.entity(commander).insert(ArmyFormation {
         positions: EnumMap::new(|c| match c {
-            CommanderSlot::Front => slots[0],
-            CommanderSlot::Middle => slots[1],
-            CommanderSlot::Back => slots[2],
+            CommanderFormation::Front => army_formation[0],
+            CommanderFormation::Middle => army_formation[1],
+            CommanderFormation::Back => army_formation[2],
         }),
     });
 

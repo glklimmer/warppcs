@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     BoxCollider,
     map::Layers,
-    server::{entities::commander::UnitsAssignments, players::interaction::InteractionType},
+    server::{entities::commander::ArmyFlagAssignments, players::interaction::InteractionType},
 };
 
 use super::super::{
@@ -90,7 +90,7 @@ fn start_travel(
     mut commands: Commands,
     mut traveling: EventReader<InteractionTriggeredEvent>,
     flag_holders: Query<&FlagHolder>,
-    commanders: Query<(&FlagAssignment, &UnitsAssignments)>,
+    commanders: Query<(&FlagAssignment, &ArmyFlagAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
     destination: Query<(Entity, &TravelDestination)>,
 ) {
