@@ -27,7 +27,7 @@ use server::{
     },
     entities::{
         Unit,
-        commander::{CommanderInteraction, CommanderSlot, SlotsAssignments},
+        commander::{CommanderInteraction, CommanderSlot, UnitsAssignments},
     },
     game_scenes::{
         map::{GameScene, LoadMap},
@@ -79,7 +79,7 @@ impl Plugin for SharedPlugin {
         .replicate::<GameScene>()
         .replicate::<Interactable>()
         .replicate::<AttachedTo>()
-        .replicate::<SlotsAssignments>()
+        .replicate::<UnitsAssignments>()
         .replicate::<FlagHolder>()
         .replicate::<FlagAssignment>()
         .replicate_group::<(Player, Transform, Inventory)>()

@@ -10,7 +10,7 @@ use console_protocol::*;
 use serde_json::{Value, json};
 
 use crate::BoxCollider;
-use crate::server::entities::commander::PhysicalSlotOf;
+use crate::server::entities::commander::SlotsAssignments;
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
 };
@@ -21,7 +21,7 @@ use super::{
     buildings::recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
     entities::{
         Damage, Range, Unit,
-        commander::{CommanderSlot, SlotsAssignments},
+        commander::{CommanderSlot, UnitsAssignments},
         health::Health,
     },
     physics::{
@@ -232,11 +232,12 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         let slot = world
             .spawn((
                 slot,
-                PhysicalSlotOf(commander),
+                ChildOf(commander),
+                // PhysicalSlotOf(commander),
                 Velocity::default(),
                 meshes,
                 FollowOffset(Vec2::new(-offset_acc, 0.)),
-                Transform::default(),
+                Transform::from_translation(Vec3::new(-offset_acc, 0., 0.)),
             ))
             .id();
         physical_slots.push(slot);
@@ -264,13 +265,22 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         player_translation,
     );
 
-    world.entity_mut(commander).insert(SlotsAssignments {
-        slots: EnumMap::new(|c| match c {
-            CommanderSlot::Front => Some(front),
-            CommanderSlot::Middle => Some(middle),
-            CommanderSlot::Back => Some(back),
-        }),
-    });
+    world.entity_mut(commander).insert((
+        UnitsAssignments {
+            flags: EnumMap::new(|c| match c {
+                CommanderSlot::Front => Some(front),
+                CommanderSlot::Middle => Some(middle),
+                CommanderSlot::Back => Some(back),
+            }),
+        },
+        SlotsAssignments {
+            positions: EnumMap::new(|c| match c {
+                CommanderSlot::Front => physical_slots[0],
+                CommanderSlot::Middle => physical_slots[1],
+                CommanderSlot::Back => physical_slots[2],
+            }),
+        },
+    ));
 
     Ok(json!("success"))
 }

@@ -4,11 +4,15 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, server_or_singleplayer};
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, map::Layers, server::players::interaction::InteractionType};
+use crate::{
+    BoxCollider,
+    map::Layers,
+    server::{entities::commander::UnitsAssignments, players::interaction::InteractionType},
+};
 
 use super::super::{
     buildings::recruiting::{FlagAssignment, FlagHolder},
-    entities::{Unit, commander::SlotsAssignments},
+    entities::Unit,
     players::interaction::{Interactable, InteractionTriggeredEvent},
 };
 
@@ -86,7 +90,7 @@ fn start_travel(
     mut commands: Commands,
     mut traveling: EventReader<InteractionTriggeredEvent>,
     flag_holders: Query<&FlagHolder>,
-    commanders: Query<(&FlagAssignment, &SlotsAssignments)>,
+    commanders: Query<(&FlagAssignment, &UnitsAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
     destination: Query<(Entity, &TravelDestination)>,
 ) {
@@ -117,7 +121,7 @@ fn start_travel(
                 units_on_flag
                     .iter()
                     .filter(|(_, assignment, _)| {
-                        slots_assignments.slots.contains(&Some(assignment.0))
+                        slots_assignments.flags.contains(&Some(assignment.0))
                     })
                     .for_each(|(entity, _, _)| travel_entities.push(entity));
             };

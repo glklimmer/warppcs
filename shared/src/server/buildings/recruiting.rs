@@ -4,9 +4,10 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
+use crate::enum_map::EnumMap;
 use crate::server::ai::FollowOffset;
 use crate::server::entities::commander::{
-    BASE_OFFSET, BASE_SLOT_WIDTH, CommanderSlot, PhysicalSlotOf,
+    BASE_OFFSET, BASE_SLOT_WIDTH, CommanderSlot, SlotsAssignments, UnitsAssignments,
 };
 use crate::server::physics::movement::Velocity;
 use crate::{
@@ -18,7 +19,7 @@ use crate::{
     networking::{Inventory, UnitType},
     server::{
         ai::UnitBehaviour,
-        entities::{Damage, Range, Unit, commander::SlotsAssignments, health::Health},
+        entities::{Damage, Range, Unit, health::Health},
         physics::{attachment::AttachedTo, movement::Speed},
         players::{
             interaction::{
@@ -237,7 +238,7 @@ pub fn recruit_commander(
                 kind: InteractionType::CommanderInteraction,
                 restricted_to: Some(player),
             },
-            SlotsAssignments::default(),
+            UnitsAssignments::default(),
         ))
         .id();
 
@@ -246,17 +247,29 @@ pub fn recruit_commander(
         offset: None,
     };
     let mut offset_acc = 0.;
+    let mut slots: Vec<Entity> = vec![];
     for slot in CommanderSlot::ALL {
         offset_acc += (BASE_SLOT_WIDTH) + BASE_OFFSET;
-        commands.spawn((
-            slot,
-            PhysicalSlotOf(commander),
-            Velocity::default(),
-            meshes,
-            FollowOffset(Vec2::new(-offset_acc, 0.)),
-            Transform::default(),
-        ));
+        let slot = commands
+            .spawn((
+                slot,
+                ChildOf(commander),
+                Velocity::default(),
+                meshes,
+                FollowOffset(Vec2::new(-offset_acc, 0.)),
+                Transform::from_translation(Vec3::new(-offset_acc, 0., 0.)),
+            ))
+            .id();
+        slots.push(slot);
     }
+
+    commands.entity(commander).insert(SlotsAssignments {
+        positions: EnumMap::new(|c| match c {
+            CommanderSlot::Front => slots[0],
+            CommanderSlot::Middle => slots[1],
+            CommanderSlot::Back => slots[2],
+        }),
+    });
 
     commands.server_trigger(ToClients {
         mode: SendMode::Broadcast,

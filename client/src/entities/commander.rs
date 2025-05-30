@@ -7,7 +7,7 @@ use shared::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         entities::{
             Unit,
-            commander::{CommanderInteraction, CommanderSlot, SlotsAssignments},
+            commander::{CommanderInteraction, CommanderSlot, UnitsAssignments},
         },
     },
 };
@@ -108,7 +108,7 @@ fn open_commander_dialog(
 fn open_slots_dialog(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
     mut commands: Commands,
-    slot_assignments: Query<&SlotsAssignments>,
+    slot_assignments: Query<&UnitsAssignments>,
     transform: Query<&GlobalTransform>,
     asset_server: Res<AssetServer>,
     units_on_flag: Query<(&FlagAssignment, &Unit)>,
@@ -123,7 +123,7 @@ fn open_slots_dialog(
     let slot_assignments = slot_assignments.get(active.unwrap()).unwrap();
 
     let menu_nodes = slot_assignments
-        .slots
+        .flags
         .iter_enums()
         .map(|(slot, slot_assignment)| {
             let empty_slot = asset_server.load::<Image>("ui/commander/slot_empty.png");
@@ -253,7 +253,7 @@ fn draw_flag_on_selected(
 }
 
 fn assign_unit(
-    slot_assigments: Query<&SlotsAssignments, Changed<SlotsAssignments>>,
+    slot_assigments: Query<&UnitsAssignments, Changed<UnitsAssignments>>,
     menu_entries: Query<(Entity, &NodePayload<CommanderSlot>), With<Selected>>,
     units_on_flag: Query<(&FlagAssignment, &Unit)>,
     active: Res<ActiveCommander>,
@@ -272,7 +272,7 @@ fn assign_unit(
         return;
     };
 
-    let maybe_flag_assigned = slots_assigment.slots.get(**slot);
+    let maybe_flag_assigned = slots_assigment.flags.get(**slot);
     let Some(flag_assigned) = maybe_flag_assigned else {
         commands.entity(entry).despawn_related::<Children>();
         commands.trigger(DrawHoverFlag(entry));
