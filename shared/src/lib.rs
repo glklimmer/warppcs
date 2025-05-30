@@ -269,7 +269,7 @@ pub enum Owner {
 }
 
 impl Owner {
-    pub fn get_player_entity(&self) -> Option<Entity> {
+    pub fn entity(&self) -> Option<Entity> {
         match self {
             Owner::Player(entity) => Some(*entity),
             Owner::Bandits => None,

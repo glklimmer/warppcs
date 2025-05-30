@@ -43,7 +43,7 @@ pub fn gold_farm_output(
         farm_timer.timer.tick(time.delta());
 
         if farm_timer.timer.just_finished() {
-            if let Ok(mut inventory) = inventory_query.get_mut(owner.get_player_entity().unwrap()) {
+            if let Ok(mut inventory) = inventory_query.get_mut(owner.entity().unwrap()) {
                 inventory.gold += GOLD_PER_TICK;
             }
         }
