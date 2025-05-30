@@ -1,89 +1,168 @@
+use aeronet::io::{Session, SessionEndpoint, connection::Disconnected, server::Server};
+use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
-use bevy_renet::{
-    netcode::{NetcodeServerTransport, ServerAuthentication, ServerConfig},
-    renet::{ConnectionConfig, RenetServer},
-};
-use bevy_replicon::prelude::RepliconChannels;
-use bevy_replicon_renet::RenetChannelsExt;
-
 use crate::{ClientPlayerMap, Player, SetLocalPlayer};
 
-pub fn create_steam_server(mut commands: Commands, channels: Res<RepliconChannels>) {
-    use crate::steamworks::SteamworksClient;
-    use renet_steam::AccessPermission;
-    use renet_steam::SteamServerConfig;
-    use renet_steam::SteamServerTransport;
+pub struct CreateServerPlugin;
 
-    let server_channels_config = channels.server_configs();
-    let client_channels_config = channels.client_configs();
+impl Plugin for CreateServerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(AeronetRepliconServerPlugin)
+            .add_observer(on_created)
+            .add_observer(on_connecting)
+            .add_observer(on_connected)
+            .add_observer(on_disconnected);
 
-    let server = RenetServer::new(ConnectionConfig {
-        server_channels_config,
-        client_channels_config,
-        ..Default::default()
-    });
+        #[cfg(feature = "netcode")]
+        {
+            use aeronet_webtransport::server::WebTransportServerPlugin;
 
-    commands.insert_resource(server);
+            app.add_plugins(WebTransportServerPlugin)
+                .add_observer(on_session_request_web);
+        }
 
-    commands.queue(|world: &mut World| {
-        let steam_client = world.get_resource::<SteamworksClient>().unwrap();
-        println!("From Server lib: {}", steam_client.friends().name());
-        let steam_transport_config = SteamServerConfig {
-            max_clients: 10,
-            access_permission: AccessPermission::Public,
-        };
+        #[cfg(feature = "steam")]
+        {
+            app.add_observer(on_session_request_steam);
+        }
+    }
+}
 
-        world.insert_non_send_resource(
-            SteamServerTransport::new(steam_client, steam_transport_config).unwrap(),
-        );
+#[cfg(feature = "netcode")]
+pub const WEB_TRANSPORT_PORT: u16 = 25571;
+
+#[cfg(feature = "netcode")]
+pub fn create_web_transport_server(mut commands: Commands) {
+    use aeronet_webtransport::{server::WebTransportServer, wtransport::Identity};
+
+    let identity = Identity::self_signed(["localhost", "127.0.0.1", "::1"])
+        .expect("all given SANs should be valid DNS names");
+    let config = web_transport_config(identity);
+
+    commands
+        .spawn((
+            Transform::default(),
+            Visibility::default(),
+            AeronetRepliconServer,
+        ))
+        .queue(WebTransportServer::open(config));
+
+    info!("Creating server...")
+}
+
+#[cfg(feature = "netcode")]
+type WebTransportServerConfig = aeronet_webtransport::server::ServerConfig;
+
+#[cfg(feature = "netcode")]
+fn web_transport_config(
+    identity: aeronet_webtransport::wtransport::Identity,
+) -> WebTransportServerConfig {
+    use std::time::Duration;
+
+    WebTransportServerConfig::builder()
+        .with_bind_default(WEB_TRANSPORT_PORT)
+        .with_identity(identity)
+        .keep_alive_interval(Some(Duration::from_secs(1)))
+        .max_idle_timeout(Some(Duration::from_secs(5)))
+        .expect("should be a valid idle timeout")
+        .build()
+}
+
+#[cfg(feature = "steam")]
+pub fn create_steam_server(mut commands: Commands, client: Res<aeronet_steam::SteamworksClient>) {
+    use aeronet_steam::{
+        SessionConfig,
+        server::{ListenTarget, SteamNetServer},
+        steamworks::ClientManager,
+    };
+
+    let target = ListenTarget::Peer { virtual_port: 0 };
+
+    client
+        .matchmaking()
+        .create_lobby(bevy_steamworks::LobbyType::FriendsOnly, 8, |result| {
+            let Ok(lobby_id) = result else {
+                error!("Could not create steam lobby.");
+                return;
+            };
+
+            info!("Created steam lobby: {:?}", lobby_id);
+        });
+
+    commands
+        .spawn((
+            Transform::default(),
+            Visibility::default(),
+            AeronetRepliconServer,
+        ))
+        .queue(SteamNetServer::<ClientManager>::open(
+            SessionConfig::default(),
+            target,
+        ));
+
+    info!("Creating server...")
+}
+
+fn on_created(
+    _: Trigger<OnAdd, Server>,
+    mut client_player_map: ResMut<ClientPlayerMap>,
+    mut commands: Commands,
+) {
+    info!("Successfully created server");
+
+    let server_player = commands.spawn(Player).id();
+
+    client_player_map.insert(SERVER, server_player);
+
+    commands.server_trigger(ToClients {
+        mode: SendMode::Broadcast,
+        event: SetLocalPlayer(server_player),
     });
 }
 
-pub fn create_netcode_server(
-    mut commands: Commands,
-    channels: Res<RepliconChannels>,
-    mut set_local_player: EventWriter<ToClients<SetLocalPlayer>>,
-    mut client_player_map: ResMut<ClientPlayerMap>,
-) {
-    use crate::networking::PROTOCOL_ID;
-    use std::{net::UdpSocket, time::SystemTime};
+#[cfg(feature = "steam")]
+fn on_session_request_steam(mut request: Trigger<aeronet_steam::server::SessionRequest>) {
+    use aeronet_steam::server::SessionResponse;
 
-    let server_channels_config = channels.server_configs();
-    let client_channels_config = channels.client_configs();
+    let client = request.steam_id;
+    info!("Steamclient {:?} requesting connection...", client);
 
-    let server = RenetServer::new(ConnectionConfig {
-        server_channels_config,
-        client_channels_config,
-        ..Default::default()
-    });
+    request.respond(SessionResponse::Accepted);
+}
 
-    let public_addr = "127.0.0.1:5000".parse().unwrap();
-    let socket = UdpSocket::bind(public_addr).unwrap();
-    let current_time: std::time::Duration = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap();
-    let server_config = ServerConfig {
-        current_time,
-        max_clients: 64,
-        protocol_id: PROTOCOL_ID,
-        public_addresses: vec![public_addr],
-        authentication: ServerAuthentication::Unsecure,
-    };
+#[cfg(feature = "netcode")]
+fn on_session_request_web(mut request: Trigger<aeronet_webtransport::server::SessionRequest>) {
+    use aeronet_webtransport::server::SessionResponse;
 
-    let transport = NetcodeServerTransport::new(server_config, socket).unwrap();
-    commands.insert_resource(server);
-    commands.insert_resource(transport);
+    let client = request.target();
+    info!("Client {client} requesting connection...");
+    request.respond(SessionResponse::Accepted);
+}
 
-    let player = commands.spawn(Player).id();
+fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>) {
+    let client = trigger.target();
+    info!("Client {client} connecting...");
+}
 
-    client_player_map.insert(SERVER, player);
+fn on_connected(trigger: Trigger<OnAdd, Session>) {
+    let client = trigger.target();
+    info!("Client {client} connected.");
+}
 
-    set_local_player.send(ToClients {
-        mode: SendMode::Broadcast,
-        event: SetLocalPlayer(player),
-    });
+fn on_disconnected(trigger: Trigger<Disconnected>) {
+    let client = trigger.target();
 
-    info!("Successfully started server.")
+    match &*trigger {
+        Disconnected::ByUser(reason) => {
+            info!("Client {client} disconnected from server by user: {reason}");
+        }
+        Disconnected::ByPeer(reason) => {
+            info!("Client {client} disconnected from server by peer: {reason}");
+        }
+        Disconnected::ByError(err) => {
+            warn!("Client {client} disconnected from server due to error: {err:?}");
+        }
+    }
 }

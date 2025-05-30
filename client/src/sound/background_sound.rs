@@ -4,7 +4,7 @@ use bevy::{
     audio::{PlaybackMode, Volume},
     prelude::*,
 };
-use shared::{server::entities::UnitAnimation, Owner};
+use shared::{Owner, server::entities::UnitAnimation};
 
 use crate::networking::ControlledPlayer;
 
@@ -68,7 +68,7 @@ trait VolumeDiff {
 
 impl VolumeDiff for Volume {
     fn diff(&self, other: &Volume) -> f32 {
-        (**self - **other).abs()
+        (self.to_linear() - other.to_linear()).abs()
     }
 }
 
@@ -123,14 +123,14 @@ fn setup_music(mut commands: Commands, asset_server: Res<AssetServer>) {
             AudioPlayer::new(handle),
             PlaybackSettings {
                 mode: PlaybackMode::Loop,
-                volume: Volume::new(BACKGROUND_VOLUME),
+                volume: Volume::Linear(BACKGROUND_VOLUME),
                 paused,
                 ..default()
             },
             MusicPlayer {
                 track,
-                volume: Volume::new(BACKGROUND_VOLUME),
-                target_volume: Volume::new(0.0),
+                volume: Volume::Linear(BACKGROUND_VOLUME),
+                target_volume: Volume::Linear(0.0),
                 fade_speed: 1.0.into(),
             },
         )
@@ -148,10 +148,10 @@ fn handle_music_transitions(
         // Set target volumes and fade speeds for all players
         for (mut music_player, sink) in music_players.iter_mut() {
             if music_player.track == event.track {
-                music_player.target_volume = Volume::new(BACKGROUND_VOLUME);
+                music_player.target_volume = Volume::Linear(BACKGROUND_VOLUME);
                 sink.play();
             } else {
-                music_player.target_volume = Volume::new(0.0);
+                music_player.target_volume = Volume::Linear(0.0);
                 sink.pause();
             }
 
@@ -170,7 +170,7 @@ fn handle_music_transitions(
 fn update_music_volume(
     time: Res<Time>,
     mut music_state: ResMut<MusicState>,
-    mut music_players: Query<(&mut MusicPlayer, &AudioSink)>,
+    mut music_players: Query<(&mut MusicPlayer, &mut AudioSink)>,
 ) {
     if !music_state.is_transitioning {
         return;
@@ -179,20 +179,22 @@ fn update_music_volume(
     let dt = time.delta_secs();
     let mut all_faded = true;
 
-    for (mut player, sink) in music_players.iter_mut() {
+    for (mut player, mut sink) in music_players.iter_mut() {
         if player.volume.diff(&player.target_volume) > 0.01 {
-            let volume = if *player.volume < *player.target_volume {
-                (*player.volume + player.fade_speed * dt).min(*player.target_volume)
+            let volume = if player.volume.lt(&player.target_volume) {
+                (player.volume.to_linear() + player.fade_speed * dt)
+                    .min(player.target_volume.to_linear())
             } else {
-                (*player.volume - player.fade_speed * dt).max(*player.target_volume)
+                (player.volume.to_linear() - player.fade_speed * dt)
+                    .max(player.target_volume.to_linear())
             };
-            player.volume = Volume::new(volume);
+            player.volume = Volume::Linear(volume);
 
-            sink.set_volume(*player.volume);
+            sink.set_volume(player.volume);
             all_faded = false;
         }
 
-        if *player.volume >= 0.99 && player.track != music_state.current_track {
+        if player.volume.to_linear() >= 0.99 && player.track != music_state.current_track {
             music_state.current_track = player.track;
         }
     }
@@ -209,13 +211,13 @@ fn play_fight_music(
     player_query: Query<(&Transform, &Owner), With<ControlledPlayer>>,
     unit_query: Query<(&Transform, &Owner, &UnitAnimation), Without<ControlledPlayer>>,
 ) {
-    if let Ok((player_transform, player_owner)) = player_query.get_single() {
+    if let Ok((player_transform, player_owner)) = player_query.single() {
         let mut enemy_nearby = false;
         for (unit_transform, unit_owner, unit_animations) in unit_query.iter() {
             if unit_animations.eq(&UnitAnimation::Death) {
                 continue;
             }
-            if player_owner.is_different_faction(unit_owner) {
+            if player_owner.ne(unit_owner) {
                 let enemy_distance = player_transform
                     .translation
                     .distance(unit_transform.translation);
@@ -228,14 +230,14 @@ fn play_fight_music(
         if enemy_nearby {
             if MusicTrack::Combat != music_state.desired_track {
                 music_state.desired_track = MusicTrack::Combat;
-                music_events.send(MusicTransitionEvent {
+                music_events.write(MusicTransitionEvent {
                     track: MusicTrack::Combat,
                     fade_time: 1.5.into(),
                 });
             }
         } else if MusicTrack::Base != music_state.desired_track {
             music_state.desired_track = MusicTrack::Base;
-            music_events.send(MusicTransitionEvent {
+            music_events.write(MusicTransitionEvent {
                 track: MusicTrack::Base,
                 fade_time: 1.5.into(),
             });

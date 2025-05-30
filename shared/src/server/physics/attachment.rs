@@ -1,16 +1,10 @@
-use bevy::{ecs::entity::MapEntities, prelude::*};
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::movement::{Moving, Velocity};
 
 #[derive(Component, Serialize, Deserialize)]
-pub struct AttachedTo(pub Entity);
-
-impl MapEntities for AttachedTo {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.map_entity(self.0)
-    }
-}
+pub struct AttachedTo(#[entities] pub Entity);
 
 pub struct AttachmentPlugin;
 

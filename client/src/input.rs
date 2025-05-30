@@ -22,7 +22,7 @@ fn lobby_input(
     mut lobby_events: EventWriter<LobbyEvent>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Enter) {
-        lobby_events.send(LobbyEvent::StartGame);
+        lobby_events.write(LobbyEvent::StartGame);
     }
 }
 

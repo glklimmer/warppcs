@@ -1,10 +1,10 @@
-use bevy::{ecs::entity::MapEntities, prelude::*};
+use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, ClientPlayerMap, Faction, Owner, PlayerState};
+use crate::{BoxCollider, ClientPlayerMap, PlayerState};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {
@@ -23,27 +23,14 @@ pub enum InteractionType {
 #[require(Replicated)]
 pub struct Interactable {
     pub kind: InteractionType,
-    pub restricted_to: Option<Owner>,
+    #[entities]
+    pub restricted_to: Option<Entity>,
 }
 
 #[derive(Event, Clone, Copy, Serialize, Deserialize)]
 pub struct InteractableSound {
     pub kind: InteractionType,
     pub spatial_position: Vec3,
-}
-
-impl MapEntities for Interactable {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        let Some(owner) = self.restricted_to else {
-            return;
-        };
-
-        let Faction::Player(entity) = *owner else {
-            return;
-        };
-
-        self.restricted_to = Some(Owner(Faction::Player(entity_mapper.map_entity(entity))));
-    }
 }
 
 #[derive(Event)]
@@ -94,10 +81,7 @@ fn interact(
         .iter()
         .filter(|(.., transform, collider, _)| player_bounds.intersects(&collider.at(transform)))
         .filter(|(.., interactable)| match interactable.restricted_to {
-            Some(owner) => match *owner {
-                Faction::Player(item_owner) => item_owner.eq(&player),
-                Faction::Bandits => false,
-            },
+            Some(owner) => owner.eq(&player),
             None => true,
         })
         .max_by(
@@ -120,7 +104,7 @@ fn interact(
         );
 
     if let Some((interactable, _, _, interaction)) = priority_interaction {
-        triggered_events.send(InteractionTriggeredEvent {
+        triggered_events.write(InteractionTriggeredEvent {
             player,
             interactable,
             interaction: interaction.kind,

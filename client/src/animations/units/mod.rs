@@ -61,7 +61,7 @@ pub fn trigger_unit_animation(
 
         commands.entity(event.entity).insert(PlayOnce);
 
-        animation_trigger.send(AnimationTrigger {
+        animation_trigger.write(AnimationTrigger {
             entity: event.entity,
             state: new_animation,
         });
@@ -73,12 +73,12 @@ pub fn set_unit_walking(
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
     query: Query<Entity, With<Health>>,
 ) {
-    if query.get(trigger.entity()).is_err() {
+    if query.get(trigger.target()).is_err() {
         return;
     }
 
-    animation_trigger.send(AnimationTrigger {
-        entity: trigger.entity(),
+    animation_trigger.write(AnimationTrigger {
+        entity: trigger.target(),
         state: UnitAnimation::Walk,
     });
 }
@@ -89,8 +89,8 @@ pub fn set_unit_after_play_once(
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
     unit_animation: Query<&UnitAnimation>,
 ) {
-    if let Ok(animation) = unit_animation.get(trigger.entity()) {
-        let mut entity = commands.entity(trigger.entity());
+    if let Ok(animation) = unit_animation.get(trigger.target()) {
+        let mut entity = commands.entity(trigger.target());
         if let UnitAnimation::Death = animation {
             entity.remove::<SpriteSheetAnimation>();
             return;
@@ -101,8 +101,8 @@ pub fn set_unit_after_play_once(
             _ => *animation,
         };
 
-        animation_trigger.send(AnimationTrigger {
-            entity: trigger.entity(),
+        animation_trigger.write(AnimationTrigger {
+            entity: trigger.target(),
             state: new_animation,
         });
     }
@@ -113,12 +113,12 @@ pub fn set_unit_idle(
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
     query: Query<Entity, With<Health>>,
 ) {
-    if query.get(trigger.entity()).is_err() {
+    if query.get(trigger.target()).is_err() {
         return;
     }
 
-    animation_trigger.send(AnimationTrigger {
-        entity: trigger.entity(),
+    animation_trigger.write(AnimationTrigger {
+        entity: trigger.target(),
         state: UnitAnimation::Idle,
     });
 }

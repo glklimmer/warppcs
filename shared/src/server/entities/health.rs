@@ -53,7 +53,7 @@ fn apply_damage(
         if let Ok((entity, mut health)) = query.get_mut(event.target_entity) {
             health.hitpoints -= event.damage;
 
-            animation.send(ToClients {
+            animation.write(ToClients {
                 mode: SendMode::Broadcast,
                 event: AnimationChangeEvent {
                     entity,
@@ -76,7 +76,7 @@ fn on_unit_death(
                 .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
                 .remove::<Health>();
 
-            animation.send(ToClients {
+            animation.write(ToClients {
                 mode: SendMode::Broadcast,
                 event: AnimationChangeEvent {
                     entity,
@@ -90,7 +90,7 @@ fn on_unit_death(
 fn on_building_destroy(mut commands: Commands, query: Query<(Entity, &Health, &Building, &Owner)>) {
     for (entity, health, building, _) in query.iter() {
         if health.hitpoints <= 0. {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
 
             if let Building::MainBuilding { level: _ } = building {
                 // TODO: handle player dead
@@ -109,7 +109,7 @@ fn delayed_despawn(
         timer.tick(time.delta());
 
         if timer.just_finished() {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 }

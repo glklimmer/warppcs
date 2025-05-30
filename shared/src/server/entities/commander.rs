@@ -1,4 +1,4 @@
-use bevy::{ecs::entity::MapEntities, prelude::*, utils::HashMap};
+use bevy::{ecs::entity::MapEntities, platform::collections::HashMap, prelude::*};
 use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
@@ -18,6 +18,12 @@ struct ActiveCommander(HashMap<Entity, Entity>);
 #[derive(Event, Serialize, Deserialize)]
 pub struct CommanderInteraction {
     pub commander: Entity,
+}
+
+impl MapEntities for CommanderInteraction {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.commander = entity_mapper.get_mapped(self.commander);
+    }
 }
 
 #[derive(Event)]
@@ -48,6 +54,14 @@ pub struct SlotsAssignments {
     pub slots: EnumMap<CommanderSlot, Option<Entity>>,
 }
 
+impl MapEntities for SlotsAssignments {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.slots.iter_mut().for_each(|entity| {
+            *entity = entity.take().map(|entity| entity_mapper.get_mapped(entity));
+        });
+    }
+}
+
 impl Default for SlotsAssignments {
     fn default() -> Self {
         Self {
@@ -57,20 +71,6 @@ impl Default for SlotsAssignments {
                 CommanderSlot::Back => None,
             }),
         }
-    }
-}
-
-impl MapEntities for SlotsAssignments {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.slots.iter_mut().for_each(|entity| {
-            *entity = entity.take().map(|entity| entity_mapper.map_entity(entity));
-        });
-    }
-}
-
-impl MapEntities for CommanderInteraction {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.commander = entity_mapper.map_entity(self.commander);
     }
 }
 

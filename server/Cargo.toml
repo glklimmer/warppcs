@@ -3,53 +3,18 @@ name = "server"
 version = "0.1.0"
 edition = "2024"
 
-[features]
-default = ["steam"]
-steam = ["dep:renet_steam", "steamworks"]
-
 [dependencies]
-bevy = { version = "0.15.3", default-features = false, features = [
-    # "android-game-activity",
-    # "android_shared_stdcxx",
-    # "animation",
-    "bevy_asset",
-    # "bevy_audio",
-    # "bevy_color",
-    "bevy_core_pipeline",
-    # "bevy_gilrs",
-    # "bevy_gizmos",
-    # "bevy_gltf",
-    # "bevy_mesh_picking_backend",
-    # "bevy_pbr",
-    # "bevy_picking",
-    # "bevy_render",
-    "bevy_scene",
-    # "bevy_sprite",
-    # "bevy_sprite_picking_backend",
-    "bevy_state",
-    # "bevy_text",
-    # "bevy_ui",
-    # "bevy_ui_picking_backend",
-    # "bevy_window",
-    # "bevy_winit",
-    # "custom_cursor",
-    # "default_font",
-    # "hdr",
-    "multi_threaded",
-    # "png",
-    # "smaa_luts",
-    "sysinfo_plugin",
-    # "tonemapping_luts",
-    # "vorbis",
-    # "webgl2",
-    # "x11",
+bevy = { version = "0.16", default-features = false, features = [
+  "bevy_asset",
+  "bevy_core_pipeline",
+  "bevy_scene",
+  "bevy_state",
+  "multi_threaded",
+  "sysinfo_plugin",
 ] }
-bevy_renet = { version = "1.0.0", features = ["steam"] }
-bevy_replicon = "0.32.0"
-bevy_replicon_renet = { version = "0.9.0" }
 bincode = "2.0.1"
 fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
 renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }
-steamworks = { version = "0.11", optional = true }
-shared = { path = "../shared", features = ["server"] }
+shared = { path = "../shared" }
+bevy-steamworks = { git = "https://github.com/glklimmer/bevy_steamworks" }

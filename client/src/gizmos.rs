@@ -26,21 +26,21 @@ pub struct GizmosSettings {
 fn draw_range(
     mut gizmos: Gizmos,
     settings: Res<GizmosSettings>,
-    query: Query<(&Transform, &UnitRange)>,
+    query: Query<(&GlobalTransform, &UnitRange)>,
 ) {
     if !settings.on {
         return;
     }
     for (transform, range) in query.iter() {
-        gizmos.circle_2d(transform.translation.truncate(), range.0, RED);
-        gizmos.circle_2d(transform.translation.truncate(), SIGHT_RANGE, GREEN);
+        gizmos.circle_2d(transform.translation().truncate(), range.0, RED);
+        gizmos.circle_2d(transform.translation().truncate(), SIGHT_RANGE, GREEN);
     }
 }
 
 fn draw_collider(
     mut gizmos: Gizmos,
     settings: Res<GizmosSettings>,
-    query: Query<(&Transform, &BoxCollider)>,
+    query: Query<(&GlobalTransform, &BoxCollider)>,
 ) {
     if !settings.on {
         return;
@@ -48,7 +48,7 @@ fn draw_collider(
     for (transform, collider) in query.iter() {
         gizmos.rect_2d(
             Isometry2d::new(
-                transform.translation.truncate() + collider.offset.unwrap_or_default(),
+                transform.translation().truncate() + collider.offset.unwrap_or_default(),
                 Rot2::degrees(0.),
             ),
             collider.dimension,

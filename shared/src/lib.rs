@@ -1,9 +1,15 @@
-use bevy::{prelude::*, utils::HashMap};
-use bevy_replicon::prelude::*;
+use bevy::{platform::collections::HashMap, prelude::*};
+use bevy_replicon::{
+    RepliconPlugins,
+    prelude::{
+        AppRuleExt, Channel, ClientTriggerAppExt, ConnectedClient, Replicated, SendMode,
+        ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, ToClients,
+    },
+    server::{ServerPlugin, VisibilityPolicy},
+};
 use enum_map::*;
 
 use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d, sprite::Anchor};
-use bevy_replicon_renet::RepliconRenetPlugins;
 use map::{
     Layers,
     buildings::{BuildStatus, Building, RecruitBuilding},
@@ -46,7 +52,6 @@ pub mod networking;
 pub mod player_attacks;
 pub mod player_movement;
 pub mod server;
-pub mod steamworks;
 
 pub const GRAVITY_G: f32 = 9.81 * 33.;
 
@@ -59,7 +64,6 @@ impl Plugin for SharedPlugin {
                 visibility_policy: VisibilityPolicy::All,
                 ..Default::default()
             }),
-            RepliconRenetPlugins,
             PlayerMovement,
             PlayerAttacks,
             InteractPlugin,
@@ -68,15 +72,16 @@ impl Plugin for SharedPlugin {
         .replicate::<Moving>()
         .replicate::<Grounded>()
         .replicate::<BoxCollider>()
+        .replicate::<Owner>()
         .replicate::<Mounted>()
         .replicate::<ItemAssignment>()
-        .replicate_mapped::<Traveling>()
-        .replicate_mapped::<GameScene>()
-        .replicate_mapped::<Interactable>()
-        .replicate_mapped::<AttachedTo>()
-        .replicate_mapped::<SlotsAssignments>()
-        .replicate_mapped::<FlagHolder>()
-        .replicate_mapped::<FlagAssignment>()
+        .replicate::<Traveling>()
+        .replicate::<GameScene>()
+        .replicate::<Interactable>()
+        .replicate::<AttachedTo>()
+        .replicate::<SlotsAssignments>()
+        .replicate::<FlagHolder>()
+        .replicate::<FlagAssignment>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
@@ -95,7 +100,7 @@ impl Plugin for SharedPlugin {
         .add_server_trigger::<LoadMap>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
-        .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
+        .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
         .add_observer(spawn_clients);
@@ -135,7 +140,7 @@ pub struct AnimationChangeEvent {
 
 impl MapEntities for AnimationChangeEvent {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.entity = entity_mapper.map_entity(self.entity);
+        self.entity = entity_mapper.get_mapped(self.entity);
     }
 }
 
@@ -153,32 +158,29 @@ pub struct ChestAnimationEvent {
 
 impl MapEntities for ChestAnimationEvent {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.entity = entity_mapper.map_entity(self.entity);
+        self.entity = entity_mapper.get_mapped(self.entity);
     }
 }
 
 fn spawn_clients(
     trigger: Trigger<OnAdd, ConnectedClient>,
     mut commands: Commands,
-    mut set_local_player: EventWriter<ToClients<SetLocalPlayer>>,
     mut client_player_map: ResMut<ClientPlayerMap>,
 ) {
-    info!("spawning player for `{:?}`", trigger.entity());
-
     let player = commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .insert((
             Player,
             Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
         ))
         .id();
 
-    set_local_player.send(ToClients {
-        mode: SendMode::Direct(trigger.entity()),
+    commands.server_trigger(ToClients {
+        mode: SendMode::Direct(trigger.target()),
         event: SetLocalPlayer(player),
     });
 
-    client_player_map.insert(trigger.entity(), player);
+    client_player_map.insert(trigger.target(), player);
 }
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
@@ -186,18 +188,18 @@ pub struct SetLocalPlayer(Entity);
 
 impl MapEntities for SetLocalPlayer {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        **self = entity_mapper.map_entity(**self);
+        self.0 = entity_mapper.get_mapped(self.0);
     }
 }
 
 #[derive(Component, Deserialize, Serialize)]
 #[require(
     Replicated,
-    Transform(|| Transform::from_xyz(0., 0., Layers::Player.as_f32())),
-    BoxCollider(player_collider),
+    Transform = (Transform::from_xyz(0., 0., Layers::Player.as_f32())),
+    BoxCollider = player_collider(),
     Speed,
     Velocity,
-    Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
     Inventory
 )]
 pub struct Player;
@@ -260,30 +262,41 @@ pub fn flag_collider() -> BoxCollider {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
-pub enum Faction {
+#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone)]
+pub enum Owner {
     Player(Entity),
     Bandits,
 }
 
-#[derive(Debug, Component, Eq, PartialEq, Serialize, Deserialize, Copy, Clone, Deref)]
-pub struct Owner(Faction);
-
 impl Owner {
+    pub fn entity(&self) -> Option<Entity> {
+        match self {
+            Owner::Player(entity) => Some(*entity),
+            Owner::Bandits => None,
+        }
+    }
+
     pub fn is_different_faction(&self, other: &Self) -> bool {
-        match (self.0, other.0) {
-            // Two players - compare client IDs
-            (Faction::Player { 0: id1 }, Faction::Player { 0: id2 }) => id1 != id2,
-            // Different enum variants means different factions
-            (Faction::Player { .. }, Faction::Bandits)
-            | (Faction::Bandits, Faction::Player { .. }) => true,
-            // Both bandits are the same faction
-            (Faction::Bandits, Faction::Bandits) => false,
+        match (self, other) {
+            (Owner::Player { 0: id1 }, Owner::Player { 0: id2 }) => id1 != id2,
+            (Owner::Player { .. }, Owner::Bandits) | (Owner::Bandits, Owner::Player { .. }) => true,
+            (Owner::Bandits, Owner::Bandits) => false,
         }
     }
 
     pub fn is_same_faction(&self, other: &Self) -> bool {
         !self.is_different_faction(other)
+    }
+}
+
+impl MapEntities for Owner {
+    fn map_entities<E: EntityMapper>(&mut self, entity_mapper: &mut E) {
+        match self {
+            Owner::Player(entity) => {
+                *entity = entity_mapper.get_mapped(*entity);
+            }
+            Owner::Bandits => todo!(),
+        }
     }
 }
 

@@ -53,7 +53,7 @@ fn process_attacks(
                     | UnitType::Pikeman
                     | UnitType::Bandit
                     | UnitType::Commander => {
-                        attack_events.send(TakeDamage {
+                        attack_events.write(TakeDamage {
                             target_entity: *target_entity,
                             damage: **damage,
                             direction: match delta_x > 0. {
@@ -62,7 +62,7 @@ fn process_attacks(
                             },
                             by: Hitby::Melee,
                         });
-                        animation.send(ToClients {
+                        animation.write(ToClients {
                             mode: SendMode::Broadcast,
                             event: AnimationChangeEvent {
                                 entity,
@@ -119,7 +119,7 @@ fn process_attacks(
                             Damage(**damage),
                         ));
 
-                        animation.send(ToClients {
+                        animation.write(ToClients {
                             mode: SendMode::Broadcast,
                             event: AnimationChangeEvent {
                                 entity,

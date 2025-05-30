@@ -73,7 +73,7 @@ pub fn next_horse_animation(
             | AnimationChange::Mount => HorseAnimation::Idle,
         };
 
-        animation_trigger.send(AnimationTrigger {
+        animation_trigger.write(AnimationTrigger {
             entity: event.entity,
             state: new_animation,
         });

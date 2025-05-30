@@ -45,8 +45,8 @@ fn update_gold_amount(
     mut gold_display_query: Query<&mut Text, With<GoldAmountDisplay>>,
     inventory_query: Query<&Inventory, With<ControlledPlayer>>,
 ) {
-    if let Ok(inventory) = inventory_query.get_single() {
-        let mut gold_display = gold_display_query.single_mut();
+    if let Ok(inventory) = inventory_query.single() {
+        let mut gold_display = gold_display_query.single_mut().unwrap();
         gold_display.0 = format!("Gold Amount: {}", inventory.gold);
     }
 }

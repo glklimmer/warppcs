@@ -16,7 +16,7 @@ use crate::{
 use super::movement::Velocity;
 
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
-#[require(Replicated, Velocity, Transform, BoxCollider(projectile_collider), Sprite(|| Sprite{anchor: Anchor::BottomCenter, ..default()}),)]
+#[require(Replicated, Velocity, Transform, BoxCollider = projectile_collider(), Sprite{anchor: Anchor::BottomCenter, ..default()})]
 pub enum ProjectileType {
     Arrow,
 }
@@ -69,7 +69,7 @@ fn projectile_collision(
             if projectile.intersects(&target) {
                 let delta_x = target_transform.translation.x - transform.translation.x;
 
-                attack_events.send(TakeDamage {
+                attack_events.write(TakeDamage {
                     target_entity,
                     damage: **damage,
                     direction: match delta_x > 0. {

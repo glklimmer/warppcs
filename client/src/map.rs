@@ -143,7 +143,7 @@ fn animate_dashes(
                 ))
                 .id();
 
-            commands.entity(map.single()).add_child(dash);
+            commands.entity(map.single().unwrap()).add_child(dash);
 
             line.spawned += 1;
         }
@@ -159,7 +159,7 @@ fn enter_travel_state(
     mut next_state: ResMut<NextState<PlayerState>>,
     query: Query<Entity, With<ControlledPlayer>>,
 ) {
-    let Ok(_) = query.get(trigger.entity()) else {
+    let Ok(_) = query.get(trigger.target()) else {
         return;
     };
     next_state.set(PlayerState::Traveling);
@@ -170,7 +170,7 @@ fn leave_travel_state(
     mut next_state: ResMut<NextState<PlayerState>>,
     query: Query<Entity, With<ControlledPlayer>>,
 ) {
-    let Ok(_) = query.get(trigger.entity()) else {
+    let Ok(_) = query.get(trigger.target()) else {
         return;
     };
     next_state.set(PlayerState::World);
@@ -181,7 +181,7 @@ fn spawn_travel_dashline(
     traveling: Query<&Traveling, With<ControlledPlayer>>,
     game_scene: Query<&GameScene>,
 ) {
-    let traveling = traveling.single();
+    let traveling = traveling.single().unwrap();
     let source = game_scene.get(traveling.source).unwrap();
     let target = game_scene.get(traveling.target).unwrap();
 
@@ -211,7 +211,7 @@ fn sync_ui_to_camera(
     mut query: Query<&mut Transform, With<UIElement>>,
     camera: Query<&Transform, (With<Camera>, Without<UIElement>)>,
 ) {
-    let Ok(camera) = camera.get_single() else {
+    let Ok(camera) = camera.single() else {
         return;
     };
 
@@ -268,7 +268,7 @@ fn toggle_map(
     mut next_state: ResMut<NextState<PlayerState>>,
 ) {
     info!("toggle map");
-    let Ok(mut map) = map.get_single_mut() else {
+    let Ok(mut map) = map.single_mut() else {
         return;
     };
 
@@ -282,13 +282,13 @@ fn toggle_map(
 }
 
 fn show_map(mut map: Query<&mut Visibility, With<Map>>) {
-    if let Ok(mut map) = map.get_single_mut() {
+    if let Ok(mut map) = map.single_mut() {
         *map = Visibility::Visible;
     }
 }
 
 fn hide_map(mut map: Query<&mut Visibility, With<Map>>) {
-    if let Ok(mut map) = map.get_single_mut() {
+    if let Ok(mut map) = map.single_mut() {
         *map = Visibility::Hidden;
     }
 }
