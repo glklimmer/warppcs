@@ -302,6 +302,7 @@ fn spawn_unit(
                 restricted_to: Some(player),
             },
             owner,
+            Visibility::Hidden,
         ))
         .id();
 
