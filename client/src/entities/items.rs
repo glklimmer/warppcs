@@ -255,7 +255,7 @@ fn init_item_info(
                     },
                     TextLayout::new_with_justify(JustifyText::Left).with_no_wrap(),
                     TextColor(text_color),
-                    TextBounds::new_horizontal(92.),
+                    TextBounds::new_horizontal(200.),
                     Anchor::TopCenter,
                     Transform {
                         translation: Vec3::new(0.5, -58. / 2. - 5., 1.0),
