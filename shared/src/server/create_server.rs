@@ -1,102 +1,22 @@
 use std::time::Duration;
 
-use aeronet::io::{
-    Session,
-    connection::{Disconnected, LocalAddr},
-    server::Server,
-};
+use aeronet::io::{Session, SessionEndpoint, connection::Disconnected, server::Server};
 use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
+use aeronet_steam::{
+    SessionConfig, SteamworksClient,
+    server::{ListenTarget, SteamNetServer},
+};
 use aeronet_webtransport::{
     server::{SessionRequest, SessionResponse, WebTransportServer, WebTransportServerPlugin},
     wtransport,
 };
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
+use steamworks::ClientManager;
 
 use crate::{ClientPlayerMap, Player, SetLocalPlayer};
 
 pub const WEB_TRANSPORT_PORT: u16 = 25571;
-
-// pub fn create_steam_server(mut commands: Commands, channels: Res<RepliconChannels>) {
-//     use crate::steamworks::SteamworksClient;
-//     use renet_steam::AccessPermission;
-//     use renet_steam::SteamServerConfig;
-//     use renet_steam::SteamServerTransport;
-
-//     let server_channels_config = channels.server_configs();
-//     let client_channels_config = channels.client_configs();
-
-//     let server = RenetServer::new(ConnectionConfig {
-//         server_channels_config,
-//         client_channels_config,
-//         ..Default::default()
-//     });
-
-//     commands.insert_resource(server);
-
-//     commands.queue(|world: &mut World| {
-//         let steam_client = world.get_resource::<SteamworksClient>().unwrap();
-//         println!("From Server lib: {}", steam_client.friends().name());
-//         let steam_transport_config = SteamServerConfig {
-//             max_clients: 10,
-//             access_permission: AccessPermission::Public,
-//         };
-
-//         world.insert_non_send_resource(
-//             SteamServerTransport::new(steam_client, steam_transport_config).unwrap(),
-//         );
-//     });
-// }
-
-// pub fn create_netcode_server(
-//     mut commands: Commands,
-//     channels: Res<RepliconChannels>,
-//     mut set_local_player: EventWriter<ToClients<SetLocalPlayer>>,
-//     mut client_player_map: ResMut<ClientPlayerMap>,
-// ) {
-//     use crate::networking::PROTOCOL_ID;
-//     use std::{net::UdpSocket, time::SystemTime};
-
-//     let server_channels_config = channels.server_configs();
-//     let client_channels_config = channels.client_configs();
-
-//     let server = RenetServer::new(ConnectionConfig {
-//         server_channels_config,
-//         client_channels_config,
-//         ..Default::default()
-//     });
-
-//     let public_addr = "127.0.0.1:5000".parse().unwrap();
-//     let socket = UdpSocket::bind(public_addr).unwrap();
-//     let current_time: std::time::Duration = SystemTime::now()
-//         .duration_since(SystemTime::UNIX_EPOCH)
-//         .unwrap();
-//     let server_config = ServerConfig {
-//         current_time,
-//         max_clients: 64,
-//         protocol_id: PROTOCOL_ID,
-//         public_addresses: vec![public_addr],
-//         authentication: ServerAuthentication::Unsecure,
-//     };
-
-//     let transport = NetcodeServerTransport::new(server_config, socket).unwrap();
-//     commands.insert_resource(server);
-//     commands.insert_resource(transport);
-
-//     let player = commands.spawn(Player).id();
-
-//     client_player_map.insert(SERVER, player);
-
-//     set_local_player.write(ToClients {
-//         mode: SendMode::Broadcast,
-//         event: SetLocalPlayer(player),
-//     });
-
-//     info!("Successfully started server.")
-// }
-//
-//
-//
 
 pub struct CreateServerPlugin;
 
@@ -104,8 +24,10 @@ impl Plugin for CreateServerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((WebTransportServerPlugin, AeronetRepliconServerPlugin));
 
-        app.add_observer(on_session_request)
+        app.add_observer(on_session_request_steam)
+            .add_observer(on_session_request)
             .add_observer(on_created)
+            .add_observer(on_connecting)
             .add_observer(on_connected)
             .add_observer(on_disconnected);
     }
@@ -139,18 +61,40 @@ fn web_transport_config(identity: wtransport::Identity) -> WebTransportServerCon
         .build()
 }
 
+pub fn create_steam_server(mut commands: Commands, client: Res<SteamworksClient>) {
+    let target = ListenTarget::Peer { virtual_port: 0 };
+
+    client
+        .matchmaking()
+        .create_lobby(steamworks::LobbyType::FriendsOnly, 8, |result| {
+            let Ok(lobby_id) = result else {
+                error!("Could not create steam lobby.");
+                return;
+            };
+
+            info!("Created steam lobby: {:?}", lobby_id);
+        });
+
+    commands
+        .spawn((
+            Transform::default(),
+            Visibility::default(),
+            AeronetRepliconServer,
+        ))
+        .queue(SteamNetServer::<ClientManager>::open(
+            SessionConfig::default(),
+            target,
+        ));
+
+    info!("Creating server...")
+}
+
 fn on_created(
-    trigger: Trigger<OnAdd, Server>,
-    servers: Query<&LocalAddr>,
+    _: Trigger<OnAdd, Server>,
     mut client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
 ) {
-    let server = trigger.target();
-    let local_addr = servers
-        .get(server)
-        .expect("opened server should have a binding socket `LocalAddr`");
-
-    info!("Successfully created server on {}.", **local_addr);
+    info!("Successfully created server");
 
     let server_player = commands.spawn(Player).id();
 
@@ -162,10 +106,22 @@ fn on_created(
     });
 }
 
+fn on_session_request_steam(mut request: Trigger<aeronet_steam::server::SessionRequest>) {
+    let client = request.steam_id;
+    info!("Steamclient {:?} requesting connection...", client);
+
+    request.respond(aeronet_steam::server::SessionResponse::Accepted);
+}
+
 fn on_session_request(mut request: Trigger<SessionRequest>) {
     let client = request.target();
-    info!("Client {client} connecting...");
+    info!("Client {client} requesting connection...");
     request.respond(SessionResponse::Accepted);
+}
+
+fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>) {
+    let client = trigger.target();
+    info!("Client {client} connecting...");
 }
 
 fn on_connected(trigger: Trigger<OnAdd, Session>) {

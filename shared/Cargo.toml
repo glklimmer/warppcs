@@ -54,3 +54,4 @@ console_protocol = { version = "0.1.0", path = "../console_protocol" }
 aeronet = "0.14.0"
 aeronet_webtransport = { version = "0.14.0", features = ["client", "server"] }
 aeronet_replicon = { version = "0.14.0", features = ["client", "server"] }
+aeronet_steam = { version = "0.14.0", features = ["client", "server"]}

@@ -140,6 +140,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "aeronet_steam"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8a9ace175faca9d78213b5f3567080d3d99f5d155ab6f5a115be76071ba40bb"
+dependencies = [
+ "aeronet_io",
+ "anyhow",
+ "bevy_app 0.16.0",
+ "bevy_ecs 0.16.0",
+ "bevy_platform",
+ "blocking",
+ "bytes",
+ "derive_more 2.0.1",
+ "oneshot",
+ "steamworks",
+ "sync_wrapper",
+ "tracing",
+]
+
+[[package]]
 name = "aeronet_transport"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -665,6 +685,18 @@ dependencies = [
  "bevy_ecs 0.15.1",
  "bevy_log 0.15.1",
  "bevy_utils 0.15.3",
+ "steamworks",
+]
+
+[[package]]
+name = "bevy-steamworks"
+version = "0.13.0"
+source = "git+https://github.com/glklimmer/bevy_steamworks#c94bfd4ef964fd884a0caad859e45a075e75168a"
+dependencies = [
+ "bevy_app 0.16.0",
+ "bevy_ecs 0.16.0",
+ "bevy_log 0.16.0",
+ "bevy_utils 0.16.0",
  "steamworks",
 ]
 
@@ -2181,17 +2213,18 @@ version = "0.1.0"
 dependencies = [
  "aeronet",
  "aeronet_replicon",
+ "aeronet_steam",
  "aeronet_webtransport",
  "arboard",
  "bevy",
  "bevy-parallax",
+ "bevy-steamworks 0.13.0 (git+https://github.com/glklimmer/bevy_steamworks)",
  "bevy_replicon",
  "bincode",
  "fastrand",
  "image",
  "serde",
  "shared",
- "steamworks",
 ]
 
 [[package]]
@@ -4637,6 +4670,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
+name = "oneshot"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4ce411919553d3f9fa53a0880544cda985a112117a0444d5ff1e870a893d6ea"
+
+[[package]]
 name = "openssl-probe"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5700,7 +5739,7 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy-steamworks",
+ "bevy-steamworks 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bincode",
  "fastrand",
  "renet_steam",
@@ -5735,9 +5774,10 @@ version = "0.1.0"
 dependencies = [
  "aeronet",
  "aeronet_replicon",
+ "aeronet_steam",
  "aeronet_webtransport",
  "bevy",
- "bevy-steamworks",
+ "bevy-steamworks 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bevy_replicon",
  "bincode",
  "console_protocol",
@@ -6014,6 +6054,12 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "sync_wrapper"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
 
 [[package]]
 name = "synstructure"

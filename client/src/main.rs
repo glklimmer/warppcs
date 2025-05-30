@@ -4,9 +4,8 @@ use bevy::audio::{AudioPlugin, SpatialScale, Volume};
 use bevy_parallax::ParallaxPlugin;
 use gizmos::GizmosPlugin;
 use map::MapPlugin;
-use menu::MainMenuStates;
 use networking::join_server::{JoinServerPlugin, join_web_transport_server};
-use shared::server::create_server::create_web_transport_server;
+use shared::server::create_server::{create_steam_server, create_web_transport_server};
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
@@ -20,26 +19,12 @@ use entities::EntitiesPlugin;
 use input::InputPlugin;
 use sound::SoundPlugin;
 
-#[cfg(feature = "steam")]
-use bevy_renet::steam::{SteamClientPlugin, SteamTransportError};
-#[cfg(feature = "steam")]
-use menu::JoinSteamLobby;
-#[cfg(feature = "steam")]
-use networking::join_server::join_steam_server;
-
-#[cfg(feature = "netcode")]
-// use bevy_renet::netcode::NetcodeTransportError;
-#[cfg(feature = "netcode")]
-// use networking::join_server::join_netcode_server;
-#[cfg(feature = "netcode")]
-// use shared::server::create_server::create_netcode_server;
 pub mod animations;
 pub mod camera;
 pub mod entities;
 pub mod gizmos;
 pub mod input;
 pub mod map;
-pub mod menu;
 pub mod networking;
 pub mod sound;
 pub mod ui;
@@ -61,8 +46,17 @@ fn main() {
 
     #[cfg(feature = "steam")]
     {
-        use shared::steamworks::SteamworksPlugin;
-        client.add_plugins(SteamworksPlugin::init_app(1513980).unwrap());
+        use aeronet_steam::SteamworksClient;
+        use bevy_steamworks::SteamworksPlugin;
+
+        let (steam, steam_single) = aeronet_steam::steamworks::Client::init_app(1513980)
+            .expect("failed to initialize steam");
+        steam.networking_utils().init_relay_network_access();
+
+        client
+            .insert_resource(SteamworksClient(steam.clone()))
+            .insert_non_send_resource(steam_single)
+            .add_plugins(SteamworksPlugin::with(steam).unwrap());
     }
 
     let primary_window = Window {
@@ -82,55 +76,57 @@ fn main() {
             .set(AudioPlugin {
                 global_volume: GlobalVolume::new(Volume::Linear(0.)),
                 default_spatial_scale: SpatialScale::new_2d(AUDIO_SCALE),
-                ..default()
             }),
     );
 
     client.add_plugins(SharedPlugin);
 
-    client
-        .insert_state(MainMenuStates::TitleScreen)
-        .insert_state(GameState::MainMenu)
-        .add_plugins((
-            ParallaxPlugin,
-            CameraPlugin,
-            InputPlugin,
-            AnimationPlugin,
-            // MenuPlugin,
-            EntitiesPlugin,
-            WidgetsPlugin,
-            UiPlugin,
-            MapPlugin,
-            SoundPlugin,
-            GizmosPlugin,
-        ));
+    client.insert_state(GameState::MainMenu).add_plugins((
+        ParallaxPlugin,
+        CameraPlugin,
+        InputPlugin,
+        AnimationPlugin,
+        // MenuPlugin,
+        EntitiesPlugin,
+        WidgetsPlugin,
+        UiPlugin,
+        MapPlugin,
+        SoundPlugin,
+        GizmosPlugin,
+    ));
 
     client.add_systems(Startup, setup_background);
 
-    #[cfg(feature = "steam")]
-    {
-        client.add_plugins(SteamClientPlugin);
+    if args.contains(&String::from("server")) {
+        client.add_plugins(ServerNetworkPlugin);
 
-        client.configure_sets(Update, Connected.run_if(client_connected));
+        #[cfg(feature = "steam")]
+        {
+            use aeronet_steam::server::SteamNetServerPlugin;
+            use bevy_steamworks::ClientManager;
 
-        fn panic_on_error_system(mut renet_error: EventReader<SteamTransportError>) {
-            #[allow(clippy::never_loop)]
-            for e in renet_error.read() {
-                panic!("{}", e);
-            }
+            client
+                .add_plugins(SteamNetServerPlugin::<ClientManager>::default())
+                .add_systems(Startup, create_steam_server);
         }
 
-        client.add_systems(Update, panic_on_error_system.run_if(client_connected));
-        client.add_systems(Update, join_steam_server.run_if(on_event::<JoinSteamLobby>));
-    }
-
-    #[cfg(feature = "netcode")]
-    {
-        if args.contains(&String::from("server")) {
-            client.add_plugins(ServerNetworkPlugin);
+        #[cfg(feature = "netcode")]
+        {
             client.add_systems(Startup, create_web_transport_server);
-        } else {
-            client.add_plugins((NetworkRegistry, JoinServerPlugin));
+        }
+    } else {
+        client.add_plugins((NetworkRegistry, JoinServerPlugin));
+
+        #[cfg(feature = "steam")]
+        {
+            use aeronet_steam::client::SteamNetClientPlugin;
+            use bevy_steamworks::ClientManager;
+
+            client.add_plugins(SteamNetClientPlugin::<ClientManager>::default());
+        }
+
+        #[cfg(feature = "netcode")]
+        {
             client.add_systems(Startup, join_web_transport_server);
         }
     }
