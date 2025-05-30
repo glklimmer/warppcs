@@ -3,9 +3,6 @@ name = "server"
 version = "0.1.0"
 edition = "2024"
 
-[features]
-steam = ["bevy-steamworks"]
-
 [dependencies]
 bevy = { version = "0.16", default-features = false, features = [
   "bevy_asset",
@@ -20,4 +17,4 @@ fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
 renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }
 shared = { path = "../shared" }
-bevy-steamworks = { version = "0.13.0", optional = true }
+bevy-steamworks = { git = "https://github.com/glklimmer/bevy_steamworks" }
