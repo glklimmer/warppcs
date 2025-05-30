@@ -26,14 +26,14 @@ pub struct GizmosSettings {
 fn draw_range(
     mut gizmos: Gizmos,
     settings: Res<GizmosSettings>,
-    query: Query<(&Transform, &UnitRange)>,
+    query: Query<(&GlobalTransform, &UnitRange)>,
 ) {
     if !settings.on {
         return;
     }
     for (transform, range) in query.iter() {
-        gizmos.circle_2d(transform.translation.truncate(), range.0, RED);
-        gizmos.circle_2d(transform.translation.truncate(), SIGHT_RANGE, GREEN);
+        gizmos.circle_2d(transform.translation().truncate(), range.0, RED);
+        gizmos.circle_2d(transform.translation().truncate(), SIGHT_RANGE, GREEN);
     }
 }
 
