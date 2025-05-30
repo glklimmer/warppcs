@@ -1,40 +1,43 @@
-use std::time::Duration;
-
 use aeronet::io::{Session, SessionEndpoint, connection::Disconnected, server::Server};
 use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
-use aeronet_steam::{
-    SessionConfig, SteamworksClient,
-    server::{ListenTarget, SteamNetServer},
-};
-use aeronet_webtransport::{
-    server::{SessionRequest, SessionResponse, WebTransportServer, WebTransportServerPlugin},
-    wtransport,
-};
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
-use steamworks::ClientManager;
 
 use crate::{ClientPlayerMap, Player, SetLocalPlayer};
-
-pub const WEB_TRANSPORT_PORT: u16 = 25571;
 
 pub struct CreateServerPlugin;
 
 impl Plugin for CreateServerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((WebTransportServerPlugin, AeronetRepliconServerPlugin));
-
-        app.add_observer(on_session_request_steam)
-            .add_observer(on_session_request)
+        app.add_plugins(AeronetRepliconServerPlugin)
             .add_observer(on_created)
             .add_observer(on_connecting)
             .add_observer(on_connected)
             .add_observer(on_disconnected);
+
+        #[cfg(feature = "netcode")]
+        {
+            use aeronet_webtransport::server::WebTransportServerPlugin;
+
+            app.add_plugins(WebTransportServerPlugin)
+                .add_observer(on_session_request_web);
+        }
+
+        #[cfg(feature = "steam")]
+        {
+            app.add_observer(on_session_request_steam);
+        }
     }
 }
 
+#[cfg(feature = "netcode")]
+pub const WEB_TRANSPORT_PORT: u16 = 25571;
+
+#[cfg(feature = "netcode")]
 pub fn create_web_transport_server(mut commands: Commands) {
-    let identity = wtransport::Identity::self_signed(["localhost", "127.0.0.1", "::1"])
+    use aeronet_webtransport::{server::WebTransportServer, wtransport::Identity};
+
+    let identity = Identity::self_signed(["localhost", "127.0.0.1", "::1"])
         .expect("all given SANs should be valid DNS names");
     let config = web_transport_config(identity);
 
@@ -49,9 +52,15 @@ pub fn create_web_transport_server(mut commands: Commands) {
     info!("Creating server...")
 }
 
+#[cfg(feature = "netcode")]
 type WebTransportServerConfig = aeronet_webtransport::server::ServerConfig;
 
-fn web_transport_config(identity: wtransport::Identity) -> WebTransportServerConfig {
+#[cfg(feature = "netcode")]
+fn web_transport_config(
+    identity: aeronet_webtransport::wtransport::Identity,
+) -> WebTransportServerConfig {
+    use std::time::Duration;
+
     WebTransportServerConfig::builder()
         .with_bind_default(WEB_TRANSPORT_PORT)
         .with_identity(identity)
@@ -61,12 +70,19 @@ fn web_transport_config(identity: wtransport::Identity) -> WebTransportServerCon
         .build()
 }
 
-pub fn create_steam_server(mut commands: Commands, client: Res<SteamworksClient>) {
+#[cfg(feature = "steam")]
+pub fn create_steam_server(mut commands: Commands, client: Res<aeronet_steam::SteamworksClient>) {
+    use aeronet_steam::{
+        SessionConfig,
+        server::{ListenTarget, SteamNetServer},
+        steamworks::ClientManager,
+    };
+
     let target = ListenTarget::Peer { virtual_port: 0 };
 
     client
         .matchmaking()
-        .create_lobby(steamworks::LobbyType::FriendsOnly, 8, |result| {
+        .create_lobby(bevy_steamworks::LobbyType::FriendsOnly, 8, |result| {
             let Ok(lobby_id) = result else {
                 error!("Could not create steam lobby.");
                 return;
@@ -106,14 +122,20 @@ fn on_created(
     });
 }
 
+#[cfg(feature = "steam")]
 fn on_session_request_steam(mut request: Trigger<aeronet_steam::server::SessionRequest>) {
+    use aeronet_steam::server::SessionResponse;
+
     let client = request.steam_id;
     info!("Steamclient {:?} requesting connection...", client);
 
-    request.respond(aeronet_steam::server::SessionResponse::Accepted);
+    request.respond(SessionResponse::Accepted);
 }
 
-fn on_session_request(mut request: Trigger<SessionRequest>) {
+#[cfg(feature = "netcode")]
+fn on_session_request_web(mut request: Trigger<aeronet_webtransport::server::SessionRequest>) {
+    use aeronet_webtransport::server::SessionResponse;
+
     let client = request.target();
     info!("Client {client} requesting connection...");
     request.respond(SessionResponse::Accepted);

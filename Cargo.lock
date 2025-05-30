@@ -5745,7 +5745,6 @@ dependencies = [
  "renet_steam",
  "serde",
  "shared",
- "steamworks",
 ]
 
 [[package]]
@@ -5787,7 +5786,6 @@ dependencies = [
  "petgraph 0.8.1",
  "serde",
  "serde_json",
- "steamworks",
 ]
 
 [[package]]

@@ -1,24 +1,25 @@
+use bevy::prelude::*;
+
 use aeronet::{
     io::{Session, SessionEndpoint, connection::Disconnected},
     transport::TransportConfig,
 };
 use aeronet_replicon::client::{AeronetRepliconClient, AeronetRepliconClientPlugin};
-use aeronet_webtransport::{
-    cert,
-    client::{WebTransportClient, WebTransportClientPlugin},
-};
-use bevy::prelude::*;
-
-use shared::server::create_server::WEB_TRANSPORT_PORT;
 
 pub struct JoinServerPlugin;
 
 impl Plugin for JoinServerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((WebTransportClientPlugin, AeronetRepliconClientPlugin))
+        app.add_plugins(AeronetRepliconClientPlugin)
             .add_observer(on_connecting)
             .add_observer(on_connected)
             .add_observer(on_disconnected);
+
+        #[cfg(feature = "netcode")]
+        {
+            use aeronet_webtransport::client::WebTransportClientPlugin;
+            app.add_plugins(WebTransportClientPlugin);
+        }
 
         #[cfg(feature = "steam")]
         {
@@ -30,7 +31,11 @@ impl Plugin for JoinServerPlugin {
     }
 }
 
+#[cfg(feature = "netcode")]
 pub fn join_web_transport_server(mut commands: Commands) {
+    use aeronet_webtransport::client::WebTransportClient;
+    use shared::server::create_server::WEB_TRANSPORT_PORT;
+
     let config = web_transport_config(None);
     let default_target = format!("https://127.0.0.1:{WEB_TRANSPORT_PORT}");
 
@@ -39,15 +44,18 @@ pub fn join_web_transport_server(mut commands: Commands) {
         .queue(WebTransportClient::connect(config, default_target));
 }
 
+#[cfg(feature = "netcode")]
 type WebTransportClientConfig = aeronet_webtransport::client::ClientConfig;
 
+#[cfg(feature = "netcode")]
 fn web_transport_config(cert_hash: Option<String>) -> WebTransportClientConfig {
-    use {aeronet_webtransport::wtransport::tls::Sha256Digest, core::time::Duration};
+    use aeronet_webtransport::{cert::hash_from_b64, wtransport::tls::Sha256Digest};
+    use std::time::Duration;
 
     let config = WebTransportClientConfig::builder().with_bind_default();
 
     let config = if let Some(hash) = cert_hash {
-        match cert::hash_from_b64(&hash) {
+        match hash_from_b64(&hash) {
             Ok(hash) => config.with_server_certificate_hashes([Sha256Digest::new(hash)]),
             Err(err) => {
                 warn!("Failed to read certificate hash from string: {err:?}");

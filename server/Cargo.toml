@@ -4,21 +4,20 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-steam = ["steamworks"]
+steam = ["bevy-steamworks"]
 
 [dependencies]
 bevy = { version = "0.16", default-features = false, features = [
-    "bevy_asset",
-    "bevy_core_pipeline",
-    "bevy_scene",
-    "bevy_state",
-    "multi_threaded",
-    "sysinfo_plugin",
+  "bevy_asset",
+  "bevy_core_pipeline",
+  "bevy_scene",
+  "bevy_state",
+  "multi_threaded",
+  "sysinfo_plugin",
 ] }
 bincode = "2.0.1"
 fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
 renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }
-steamworks = { version = "0.11", optional = true }
-shared = { path = "../shared", features = ["server"] }
-bevy-steamworks = "0.13.0"
+shared = { path = "../shared" }
+bevy-steamworks = { version = "0.13.0", optional = true }
