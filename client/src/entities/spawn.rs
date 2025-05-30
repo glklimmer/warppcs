@@ -22,6 +22,7 @@ use crate::{
             chest::ChestSpriteSheet,
             flag::{FlagAnimation, FlagSpriteSheet},
             portal::{PortalAnimation, PortalSpriteSheet},
+            projectiles::{ProjectileSpriteSheet, Projectiles},
         },
         units::UnitSpriteSheets,
     },
@@ -247,16 +248,17 @@ fn init_horse_sprite(
 fn init_projectile_sprite(
     trigger: Trigger<OnAdd, ProjectileType>,
     mut projectile: Query<(&mut Sprite, &ProjectileType)>,
-    asset_server: Res<AssetServer>,
+    projectiles: Res<ProjectileSpriteSheet>,
 ) {
     let Ok((mut sprite, projectile_type)) = projectile.get_mut(trigger.target()) else {
         return;
     };
 
     let texture = match projectile_type {
-        ProjectileType::Arrow => asset_server.load("sprites/objects/arrow.png"),
+        ProjectileType::Arrow => projectiles.sprite_sheet.texture_atlas(Projectiles::Arrow),
     };
-    sprite.image = texture
+    sprite.texture_atlas = Some(texture);
+    sprite.image = projectiles.sprite_sheet.texture.clone();
 }
 
 fn init_chest_sprite(
