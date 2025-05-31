@@ -4,6 +4,13 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
+use crate::enum_map::EnumMap;
+use crate::server::ai::FollowOffset;
+use crate::server::entities::commander::{
+    ArmyFlagAssignments, ArmyFormation, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH,
+    CommanderFormation,
+};
+use crate::server::physics::movement::Velocity;
 use crate::{
     BoxCollider, Owner, Vec3LayerExt, flag_collider,
     map::{
@@ -13,7 +20,7 @@ use crate::{
     networking::{Inventory, UnitType},
     server::{
         ai::UnitBehaviour,
-        entities::{Damage, Range, Unit, commander::SlotsAssignments, health::Health},
+        entities::{Damage, Range, Unit, health::Health},
         physics::{attachment::AttachedTo, movement::Speed},
         players::{
             interaction::{
@@ -43,8 +50,9 @@ impl MapEntities for FlagHolder {
     }
 }
 
-#[derive(Component, Deserialize, Serialize)]
-pub struct FlagAssignment(pub Entity, pub Vec2);
+#[derive(Component, Deserialize, Serialize, Deref, DerefMut)]
+pub struct FlagAssignment(pub Entity);
+
 impl MapEntities for FlagAssignment {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.0 = entity_mapper.get_mapped(self.0);
@@ -144,8 +152,9 @@ pub fn recruit_units(
             damage,
             range,
             owner,
-            FlagAssignment(flag_entity, offset),
-            UnitBehaviour::FollowFlag(flag_entity, offset),
+            FlagAssignment(flag_entity),
+            FollowOffset(offset),
+            UnitBehaviour::FollowFlag(flag_entity),
         ));
     }
 
@@ -214,22 +223,48 @@ pub fn recruit_commander(
     let range = Range(range);
 
     let offset = Vec2::new(-18., 0.);
-    commands.spawn((
-        player_translation.with_layer(Layers::Flag),
-        unit.clone(),
-        health,
-        speed,
-        damage,
-        range,
-        owner,
-        FlagAssignment(flag_entity, offset),
-        UnitBehaviour::FollowFlag(flag_entity, offset),
-        Interactable {
-            kind: InteractionType::CommanderInteraction,
-            restricted_to: Some(player),
-        },
-        SlotsAssignments::default(),
-    ));
+    let commander = commands
+        .spawn((
+            player_translation.with_layer(Layers::Flag),
+            unit.clone(),
+            health,
+            speed,
+            damage,
+            range,
+            owner,
+            FlagAssignment(flag_entity),
+            FollowOffset(offset),
+            UnitBehaviour::FollowFlag(flag_entity),
+            Interactable {
+                kind: InteractionType::CommanderInteraction,
+                restricted_to: Some(player),
+            },
+            ArmyFlagAssignments::default(),
+        ))
+        .id();
+
+    let mut formation_offset = 0.;
+
+    let mut army_formation: Vec<Entity> = vec![];
+
+    CommanderFormation::ALL.iter().for_each(|_| {
+        formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
+        let formation = commands
+            .spawn((
+                ChildOf(commander),
+                Velocity::default(),
+                Transform::from_translation(Vec3::new(-formation_offset, 0., 0.)),
+            ))
+            .id();
+        army_formation.push(formation);
+    });
+    commands.entity(commander).insert(ArmyFormation {
+        positions: EnumMap::new(|c| match c {
+            CommanderFormation::Front => army_formation[0],
+            CommanderFormation::Middle => army_formation[1],
+            CommanderFormation::Back => army_formation[2],
+        }),
+    });
 
     commands.server_trigger(ToClients {
         mode: SendMode::Broadcast,

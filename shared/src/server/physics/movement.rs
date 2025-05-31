@@ -6,7 +6,7 @@ use crate::{
     BoxCollider, GRAVITY_G, Owner,
     map::buildings::{BuildStatus, Building},
     server::{
-        ai::UnitBehaviour,
+        ai::{FollowOffset, UnitBehaviour},
         entities::{Unit, health::Health},
     },
 };
@@ -183,6 +183,7 @@ fn set_unit_velocity(
             &mut Velocity,
             &mut Transform,
             &UnitBehaviour,
+            &FollowOffset,
             &PushBack,
             &RandomVelocityMul,
             &Speed,
@@ -191,7 +192,15 @@ fn set_unit_velocity(
     >,
     transform_query: Query<&Transform, Without<Unit>>,
 ) {
-    for (mut velocity, mut transform, behaviour, push_back, rand_velocity_mul, speed) in &mut query
+    for (
+        mut velocity,
+        mut transform,
+        behaviour,
+        follow_offset,
+        push_back,
+        rand_velocity_mul,
+        speed,
+    ) in &mut query
     {
         match behaviour {
             UnitBehaviour::Idle => {}
@@ -201,9 +210,10 @@ fn set_unit_velocity(
                 }
                 velocity.0.x = 0.;
             }
-            UnitBehaviour::FollowFlag(flag, offset) => {
+            UnitBehaviour::FollowFlag(flag) => {
                 let target = transform_query.get(*flag).unwrap().translation.truncate();
-                let target = target + *offset;
+
+                let target = target + **follow_offset;
                 let direction = (target.x - transform.translation.x).signum();
 
                 if (transform.translation.x - target.x).abs() <= MOVE_EPSILON {

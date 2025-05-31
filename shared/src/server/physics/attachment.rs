@@ -18,7 +18,7 @@ const BASE_OFFSET: f32 = 5.0;
 
 fn attachment_follow(
     mut query: Query<(&AttachedTo, &mut Transform)>,
-    target: Query<(&Transform, &Velocity, Option<&Moving>), Without<AttachedTo>>,
+    target: Query<(&GlobalTransform, &Velocity, Option<&Moving>), Without<AttachedTo>>,
     time: Res<Time>,
 ) {
     for (attached, mut transform) in query.iter_mut() {
@@ -29,8 +29,8 @@ fn attachment_follow(
                 0.0
             };
 
-            transform.translation.x = target_transform.translation.x;
-            transform.translation.y = target_transform.translation.y + BASE_OFFSET + sin_offset;
+            transform.translation.x = target_transform.translation().x;
+            transform.translation.y = target_transform.translation().y + BASE_OFFSET + sin_offset;
 
             let signum = velocity.0.x.signum();
             if signum != 0. {

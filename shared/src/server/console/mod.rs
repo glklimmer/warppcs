@@ -9,16 +9,20 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
+use crate::BoxCollider;
+use crate::server::entities::commander::ArmyFormation;
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
 };
 
+use super::ai::FollowOffset;
+use super::entities::commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH};
 use super::{
     ai::UnitBehaviour,
     buildings::recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
     entities::{
         Damage, Range, Unit,
-        commander::{CommanderSlot, SlotsAssignments},
+        commander::{ArmyFlagAssignments, CommanderFormation},
         health::Health,
     },
     physics::{
@@ -203,8 +207,9 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             damage,
             range,
             owner,
-            FlagAssignment(flag_commander, offset),
-            UnitBehaviour::FollowFlag(flag_commander, offset),
+            FlagAssignment(flag_commander),
+            FollowOffset(offset),
+            UnitBehaviour::FollowFlag(flag_commander),
             Interactable {
                 kind: InteractionType::CommanderInteraction,
                 restricted_to: Some(player),
@@ -212,35 +217,60 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         ))
         .id();
 
+    let mut formation_offset = 0.;
+
+    let mut army_formation: Vec<Entity> = vec![];
+
+    CommanderFormation::ALL.iter().for_each(|_| {
+        formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
+        let formation = world
+            .spawn((
+                ChildOf(commander),
+                Velocity::default(),
+                Transform::from_translation(Vec3::new(-formation_offset, 0., 0.)),
+            ))
+            .id();
+        army_formation.push(formation);
+    });
+
     let front = spawn_unit(
         world,
         player,
-        commander,
+        army_formation[0],
         UnitType::Shieldwarrior,
         player_translation,
     );
     let middle = spawn_unit(
         world,
         player,
-        commander,
+        army_formation[1],
         UnitType::Pikeman,
         player_translation,
     );
     let back = spawn_unit(
         world,
         player,
-        commander,
+        army_formation[2],
         UnitType::Archer,
         player_translation,
     );
 
-    world.entity_mut(commander).insert(SlotsAssignments {
-        slots: EnumMap::new(|c| match c {
-            CommanderSlot::Front => Some(front),
-            CommanderSlot::Middle => Some(middle),
-            CommanderSlot::Back => Some(back),
-        }),
-    });
+    world.entity_mut(commander).insert((
+        ArmyFlagAssignments {
+            flags: EnumMap::new(|c| match c {
+                CommanderFormation::Front => Some(front),
+                CommanderFormation::Middle => Some(middle),
+                CommanderFormation::Back => Some(back),
+            }),
+        },
+        ArmyFormation {
+            positions: EnumMap::new(|c| match c {
+                CommanderFormation::Front => army_formation[0],
+                CommanderFormation::Middle => army_formation[1],
+                CommanderFormation::Back => army_formation[2],
+            }),
+        },
+    ));
 
     Ok(json!("success"))
 }
@@ -262,6 +292,7 @@ fn spawn_unit(
                 restricted_to: Some(player),
             },
             owner,
+            Visibility::Hidden,
         ))
         .id();
 
@@ -298,8 +329,9 @@ fn spawn_unit(
             damage,
             range,
             owner,
-            FlagAssignment(flag_entity, offset),
-            UnitBehaviour::FollowFlag(flag_entity, offset),
+            FollowOffset(offset),
+            FlagAssignment(flag_entity),
+            UnitBehaviour::FollowFlag(flag_entity),
         ));
     }
     flag_entity

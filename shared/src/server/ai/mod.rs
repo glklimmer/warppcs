@@ -11,9 +11,12 @@ use super::{
 
 pub mod attack;
 
+#[derive(Debug, Deref, DerefMut, Component)]
+pub struct FollowOffset(pub Vec2);
+
 #[derive(Debug, Component)]
 pub enum UnitBehaviour {
-    FollowFlag(Entity, Vec2),
+    FollowFlag(Entity),
     AttackTarget(Entity),
     Idle,
 }
@@ -56,6 +59,7 @@ fn determine_behaviour(
             })
             .filter(|other| other.distance <= **range)
             .min_by(|a, b| a.distance.total_cmp(&b.distance));
+
         match nearest {
             Some(nearest_enemy) => match *behaviour {
                 UnitBehaviour::AttackTarget(enemy) => {
@@ -69,7 +73,7 @@ fn determine_behaviour(
             },
             None => {
                 let flag = flag.get(entity).unwrap();
-                *behaviour = UnitBehaviour::FollowFlag(flag.0, flag.1);
+                *behaviour = UnitBehaviour::FollowFlag(flag.0);
             }
         }
     }
