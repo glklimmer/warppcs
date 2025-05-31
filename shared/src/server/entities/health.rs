@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner, map::buildings::Building,
-    networking::Facing,
+    networking::Facing, server::buildings::recruiting::FlagAssignment,
 };
 
 use super::Unit;
@@ -74,6 +74,7 @@ fn on_unit_death(
             commands
                 .entity(entity)
                 .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
+                .remove::<FlagAssignment>()
                 .remove::<Health>();
 
             animation.write(ToClients {

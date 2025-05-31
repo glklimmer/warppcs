@@ -39,7 +39,9 @@ use super::item_assignment::ItemAssignment;
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     BoxCollider = flag_collider(),
     Transform = (Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()) , scale: Vec3::splat(1./3.), ..default()}))]
-pub struct Flag;
+pub struct Flag {
+    pub original_building: Entity,
+}
 
 /// PlayerEntity is FlagHolder
 #[derive(Component, Clone, Copy, Deref, DerefMut, Deserialize, Serialize)]
@@ -51,6 +53,7 @@ impl MapEntities for FlagHolder {
 }
 
 #[derive(Component, Deserialize, Serialize, Deref, DerefMut)]
+#[relationship(relationship_target = FlagUnits)]
 pub struct FlagAssignment(pub Entity);
 
 impl MapEntities for FlagAssignment {
@@ -59,19 +62,66 @@ impl MapEntities for FlagAssignment {
     }
 }
 
+#[derive(Component, Deref, DerefMut)]
+#[relationship_target(relationship = FlagAssignment)]
+pub struct FlagUnits(Vec<Entity>);
+
+pub fn assign_offset(
+    trigger: Trigger<OnAdd, FlagAssignment>,
+    mut units: Query<&mut FollowOffset>,
+    flag_units_query: Query<&FlagUnits>,
+    flag_assignment_query: Query<&FlagAssignment>,
+) {
+    let flag_assignment = flag_assignment_query.get(trigger.target()).unwrap();
+    let flag_entity = **flag_assignment;
+
+    let Ok(flag_units) = flag_units_query.get(flag_entity) else {
+        return;
+    };
+
+    let mut unit_entities = (**flag_units).clone();
+    unit_entities.push(trigger.target());
+
+    fastrand::shuffle(&mut unit_entities);
+
+    let count = unit_entities.len() as f32;
+    let half = (count - 1.0) / 2.0;
+    let spacing = 15.0;
+    let shift = if unit_entities.len() % 2 == 1 {
+        spacing / 2.0
+    } else {
+        0.0
+    };
+
+    for (i, unit_entity) in unit_entities.into_iter().enumerate() {
+        if let Ok(mut offset) = units.get_mut(unit_entity) {
+            let index = i as f32;
+            let offset_x = spacing * (index - half) - shift;
+            offset.0 = Vec2::new(offset_x, 0.0);
+        }
+    }
+}
+
 #[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
     player: Entity,
     unit_type: UnitType,
     items: Option<Vec<Item>>,
+    original_building: Entity,
 }
 
 impl RecruitEvent {
-    pub fn new(player: Entity, unit_type: UnitType, items: Option<Vec<Item>>) -> Self {
+    pub fn new(
+        player: Entity,
+        unit_type: UnitType,
+        items: Option<Vec<Item>>,
+        original_building: Entity,
+    ) -> Self {
         Self {
             player,
             unit_type,
             items,
+            original_building,
         }
     }
 }
@@ -85,6 +135,7 @@ pub fn recruit_units(
         player,
         unit_type,
         items,
+        original_building,
     } = &*trigger;
 
     if let UnitType::Commander = unit_type {
@@ -105,7 +156,9 @@ pub fn recruit_units(
     let owner = Owner::Player(player);
     let flag_entity = commands
         .spawn((
-            Flag,
+            Flag {
+                original_building: *original_building,
+            },
             AttachedTo(player),
             Interactable {
                 kind: InteractionType::Flag,
@@ -117,8 +170,52 @@ pub fn recruit_units(
 
     commands.entity(player).insert(FlagHolder(flag_entity));
 
+    spawn_units(
+        commands.reborrow(),
+        unit_type,
+        items,
+        player_translation,
+        owner,
+        flag_entity,
+    );
+
+    commands.server_trigger(ToClients {
+        mode: SendMode::Broadcast,
+        event: InteractableSound {
+            kind: InteractionType::Recruit,
+            spatial_position: player_transform.translation,
+        },
+    });
+}
+
+fn spawn_units(
+    mut commands: Commands,
+    unit_type: UnitType,
+    items: &[Item],
+    position: Vec3,
+    owner: Owner,
+    flag_entity: Entity,
+) {
     let unit_amount = items.calculated(Effect::UnitAmount) as i32;
 
+    let (unit, health, speed, damage, range) = unit_stats(unit_type, items);
+
+    for _ in 1..=unit_amount {
+        commands.spawn((
+            position.with_layer(Layers::Unit),
+            unit.clone(),
+            health,
+            speed,
+            damage,
+            range,
+            owner,
+            FlagAssignment(flag_entity),
+            UnitBehaviour::FollowFlag(flag_entity),
+        ));
+    }
+}
+
+pub fn unit_stats(unit_type: UnitType, items: &[Item]) -> (Unit, Health, Speed, Damage, Range) {
     let time = items.calculated(Effect::AttackSpeed) / 2.;
     let unit = Unit {
         swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
@@ -141,30 +238,7 @@ pub fn recruit_units(
         Some(Effect::Range(weapon))
     });
     let range = Range(range);
-
-    for unit_number in 1..=unit_amount {
-        let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
-        commands.spawn((
-            player_translation.with_layer(Layers::Flag),
-            unit.clone(),
-            health,
-            speed,
-            damage,
-            range,
-            owner,
-            FlagAssignment(flag_entity),
-            FollowOffset(offset),
-            UnitBehaviour::FollowFlag(flag_entity),
-        ));
-    }
-
-    commands.server_trigger(ToClients {
-        mode: SendMode::Broadcast,
-        event: InteractableSound {
-            kind: InteractionType::Recruit,
-            spatial_position: player_transform.translation,
-        },
-    });
+    (unit, health, speed, damage, range)
 }
 
 pub fn recruit_commander(
@@ -176,6 +250,7 @@ pub fn recruit_commander(
         player,
         unit_type,
         items: _,
+        original_building,
     } = &*trigger;
 
     let UnitType::Commander = unit_type else {
@@ -192,7 +267,9 @@ pub fn recruit_commander(
     let owner = Owner::Player(player);
     let flag_entity = commands
         .spawn((
-            Flag,
+            Flag {
+                original_building: *original_building,
+            },
             AttachedTo(player),
             Interactable {
                 kind: InteractionType::Flag,
@@ -288,13 +365,7 @@ pub fn check_recruit(
         let inventory = player.get(event.player).unwrap();
         let (building, item_assignment) = building.get(event.interactable).unwrap();
 
-        let unit_type = match *building {
-            Building::MainBuilding { level: _ } => Some(UnitType::Commander),
-            Building::Unit { weapon: unit_type } => Some(unit_type),
-            Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => None,
-        };
-
-        let Some(unit_type) = unit_type else {
+        let Some(unit_type) = building.unit_type() else {
             continue;
         };
 
@@ -311,6 +382,7 @@ pub fn check_recruit(
             player: event.player,
             unit_type,
             items,
+            original_building: event.interactable,
         });
     }
 }
