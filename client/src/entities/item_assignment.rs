@@ -66,7 +66,6 @@ struct CurrentBuilding(Option<Entity>);
 
 fn item_selected(trigger: Trigger<SelectionEvent<Item>>, mut commands: Commands) {
     let item = &trigger.selection;
-    println!("Item selected: {:?}", item);
 
     commands.client_trigger(AssignItem::new(item.clone()));
     commands.send_event(CloseEvent);
@@ -205,7 +204,8 @@ fn hide_item_info(
 }
 
 fn update_assignment(
-    query: Query<&ItemAssignment, Changed<ItemAssignment>>,
+    query: Query<(Entity, &ItemAssignment), Changed<ItemAssignment>>,
+    maybe_current_building: Res<CurrentBuilding>,
     mut commands: Commands,
     menu_entries: Query<(Entity, &NodePayload<ItemSlot>, Option<&Selected>)>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
@@ -213,38 +213,44 @@ fn update_assignment(
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
     feet_sprite_sheet: Res<FeetSpriteSheet>,
 ) {
-    let Some(item_assignment) = query.iter().next() else {
-        return;
-    };
-
-    for maybe_item in item_assignment.items.iter() {
-        let Some(item) = maybe_item else {
+    for (entity, item_assignment) in query.iter() {
+        let Some(current_building) = **maybe_current_building else {
             continue;
         };
 
-        let Some((entry, _, maybe_selected)) = menu_entries
-            .iter()
-            .find(|(_, slot, _)| ***slot == item.slot())
-        else {
+        if entity != current_building {
             continue;
-        };
-        let mut sprite = item.sprite(
-            &weapons_sprite_sheet,
-            &chests_sprite_sheet,
-            &feet_sprite_sheet,
-            &heads_sprite_sheet,
-        );
-        match maybe_selected {
-            Some(_) => sprite.color = Color::WHITE,
-            None => sprite.color = Color::Srgba(GREY),
         }
 
-        let item_sprite = commands
-            .spawn((sprite, Transform::from_xyz(0., 0., 1.)))
-            .id();
+        for maybe_item in item_assignment.items.iter() {
+            let Some(item) = maybe_item else {
+                continue;
+            };
 
-        let mut entity = commands.entity(entry);
-        entity.despawn_related::<Children>().add_child(item_sprite);
+            let Some((entry, _, maybe_selected)) = menu_entries
+                .iter()
+                .find(|(_, slot, _)| ***slot == item.slot())
+            else {
+                continue;
+            };
+            let mut sprite = item.sprite(
+                &weapons_sprite_sheet,
+                &chests_sprite_sheet,
+                &feet_sprite_sheet,
+                &heads_sprite_sheet,
+            );
+            match maybe_selected {
+                Some(_) => sprite.color = Color::WHITE,
+                None => sprite.color = Color::Srgba(GREY),
+            }
+
+            let item_sprite = commands
+                .spawn((sprite, Transform::from_xyz(0., 0., 1.)))
+                .id();
+
+            let mut entity = commands.entity(entry);
+            entity.despawn_related::<Children>().add_child(item_sprite);
+        }
     }
 }
 
