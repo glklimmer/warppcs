@@ -3,10 +3,11 @@ use bevy::prelude::*;
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use item_assignment::ItemAssignmentPlugins;
 use recruiting::{RecruitEvent, check_recruit, recruit_commander, recruit_units};
+use respawn::respawn_units;
 
 use crate::{
     Owner,
-    map::buildings::{BuildStatus, Building},
+    map::buildings::{BuildStatus, Building, respawn_timer},
     networking::Inventory,
     server::players::interaction::Interactable,
 };
@@ -14,6 +15,7 @@ use crate::{
 use super::players::interaction::{InteractionTriggeredEvent, InteractionType};
 
 mod gold_farm;
+mod respawn;
 
 pub mod item_assignment;
 pub mod recruiting;
@@ -45,6 +47,8 @@ impl Plugin for BuildingsPlugins {
             FixedUpdate,
             (
                 gold_farm_output,
+                respawn_timer,
+                respawn_units,
                 (
                     (check_recruit, check_building_interaction)
                         .run_if(on_event::<InteractionTriggeredEvent>),

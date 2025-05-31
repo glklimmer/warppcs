@@ -23,7 +23,7 @@ pub struct Cost {
     pub gold: u16,
 }
 
-#[derive(Component, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, Clone, Serialize, Deserialize)]
 #[require(
     Replicated,
     Transform,
@@ -31,7 +31,29 @@ pub struct Cost {
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     BuildStatus = (BuildStatus::Marker),
 )]
-pub struct RecruitBuilding;
+pub struct RecruitBuilding {
+    respawn_timer: Timer,
+}
+
+impl Default for RecruitBuilding {
+    fn default() -> Self {
+        Self {
+            respawn_timer: Timer::from_seconds(1., TimerMode::Repeating),
+        }
+    }
+}
+
+impl RecruitBuilding {
+    pub fn respawn_timer_finished(&self) -> bool {
+        self.respawn_timer.finished()
+    }
+}
+
+pub fn respawn_timer(mut recruit_buildings: Query<&mut RecruitBuilding>, time: Res<Time>) {
+    for mut recruit_building in &mut recruit_buildings.iter_mut() {
+        recruit_building.respawn_timer.tick(time.delta());
+    }
+}
 
 #[derive(Component, Debug, Copy, Clone, Serialize, Deserialize)]
 #[require(
@@ -232,6 +254,14 @@ impl Building {
             Building::Wall { level: _ } => false,
             Building::Tower => false,
             Building::GoldFarm => false,
+        }
+    }
+
+    pub fn unit_type(&self) -> Option<UnitType> {
+        match *self {
+            Building::MainBuilding { level: _ } => Some(UnitType::Commander),
+            Building::Unit { weapon: unit_type } => Some(unit_type),
+            Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => None,
         }
     }
 }

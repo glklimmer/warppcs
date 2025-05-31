@@ -72,14 +72,14 @@ fn start_game(
     }
 
     for edge in map.edge_references() {
-        let a = &map[edge.source()];
-        let b = &map[edge.target()];
+        let a = map[edge.source()];
+        let b = map[edge.target()];
 
         connect_portals(commands.reborrow(), a, b);
     }
 }
 
-fn connect_portals(mut commands: Commands, left: &GameScene, right: &GameScene) {
+fn connect_portals(mut commands: Commands, left: GameScene, right: GameScene) {
     let left_entity = match left.scene {
         SceneType::Player {
             player: _,
@@ -99,10 +99,10 @@ fn connect_portals(mut commands: Commands, left: &GameScene, right: &GameScene) 
 
     commands
         .entity(left_entity)
-        .insert((left.clone(), TravelDestination::new(right_entity)));
+        .insert((left, TravelDestination::new(right_entity)));
     commands
         .entity(right_entity)
-        .insert((right.clone(), TravelDestination::new(left_entity)));
+        .insert((right, TravelDestination::new(left_entity)));
 }
 
 fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_right_portal: Entity) {
@@ -146,7 +146,7 @@ fn player_base(
         BuildStatus::Built,
         offset.with_layer(Layers::Building),
         owner,
-        RecruitBuilding,
+        RecruitBuilding::default(),
         Interactable {
             kind: InteractionType::Recruit,
             restricted_to: Some(player),
@@ -163,7 +163,7 @@ fn player_base(
         offset.offset_x(-50.).with_layer(Layers::Chest),
     ));
     commands.spawn((
-        RecruitBuilding,
+        RecruitBuilding::default(),
         ItemAssignment::default(),
         offset.offset_x(135.).with_layer(Layers::Building),
         owner,
@@ -173,7 +173,7 @@ fn player_base(
         },
     ));
     commands.spawn((
-        RecruitBuilding,
+        RecruitBuilding::default(),
         ItemAssignment::default(),
         offset.offset_x(-135.).with_layer(Layers::Building),
         owner,
@@ -183,7 +183,7 @@ fn player_base(
         },
     ));
     commands.spawn((
-        RecruitBuilding,
+        RecruitBuilding::default(),
         ItemAssignment::default(),
         offset.offset_x(235.).with_layer(Layers::Building),
         owner,

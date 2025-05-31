@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_replicon::{
-    prelude::{
-        FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer,
-    },
+    prelude::{FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer},
     server::ServerSet,
 };
 use petgraph::{Graph, Undirected};
@@ -43,7 +41,7 @@ pub enum SceneType {
     },
 }
 
-#[derive(Component, Debug, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, Clone, Serialize, Deserialize, Copy)]
 pub struct GameScene {
     pub scene: SceneType,
     pub position: Vec2,

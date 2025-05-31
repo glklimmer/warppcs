@@ -145,7 +145,7 @@ impl Item {
 enum ModifierAmplitude {
     Low,
     Middle,
-    High,
+    // High,
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize, Debug, Mappable, Eq, PartialEq)]
@@ -277,7 +277,7 @@ impl Effect {
         let (min, max) = match amplitude {
             ModifierAmplitude::Low => (5, 20),
             ModifierAmplitude::Middle => (20, 50),
-            ModifierAmplitude::High => (50, 100),
+            // ModifierAmplitude::High => (50, 100),
         };
 
         let step_size = 5;
