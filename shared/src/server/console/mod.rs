@@ -283,16 +283,7 @@ fn spawn_unit(
 ) -> Entity {
     let owner = Owner::Player(player);
     let flag_entity = world
-        .spawn((
-            Flag,
-            AttachedTo(commander),
-            Interactable {
-                kind: InteractionType::Flag,
-                restricted_to: Some(player),
-            },
-            owner,
-            Visibility::Hidden,
-        ))
+        .spawn((Flag, AttachedTo(commander), owner, Visibility::Hidden))
         .id();
 
     let unit = Unit {

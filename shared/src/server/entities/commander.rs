@@ -1,4 +1,8 @@
-use bevy::{ecs::entity::MapEntities, platform::collections::HashMap, prelude::*};
+use bevy::{
+    ecs::{entity::MapEntities, entity_disabling::Disabled},
+    platform::collections::HashMap,
+    prelude::*,
+};
 use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +12,7 @@ use crate::{
     server::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         physics::attachment::AttachedTo,
-        players::interaction::{InteractionTriggeredEvent, InteractionType},
+        players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
 };
 
@@ -197,7 +201,8 @@ fn assign_flag_to_formation(
 
     commands
         .entity(flag)
-        .insert((AttachedTo(*formation), Visibility::Hidden));
+        .insert((AttachedTo(*formation), Visibility::Hidden))
+        .remove::<Interactable>();
     commands.entity(trigger.player).remove::<FlagHolder>();
 }
 
@@ -217,9 +222,14 @@ fn remove_flag_from_formation(
         .set(trigger.selected_slot, None)
         .unwrap();
 
-    commands
-        .entity(flag)
-        .insert((AttachedTo(trigger.player), Visibility::Visible));
+    commands.entity(flag).insert((
+        AttachedTo(trigger.player),
+        Visibility::Visible,
+        Interactable {
+            kind: InteractionType::Flag,
+            restricted_to: Some(trigger.player),
+        },
+    ));
 
     commands.entity(trigger.player).insert(FlagHolder(flag));
 }
@@ -246,10 +256,16 @@ fn swap_flag_from_formation(
 
     commands
         .entity(flag)
-        .insert((AttachedTo(*formation), Visibility::Hidden));
+        .insert((AttachedTo(*formation), Visibility::Hidden))
+        .remove::<Interactable>();
 
-    commands
-        .entity(flag)
-        .insert((AttachedTo(trigger.player), Visibility::Visible));
+    commands.entity(flag).insert((
+        AttachedTo(trigger.player),
+        Visibility::Visible,
+        Interactable {
+            kind: InteractionType::Flag,
+            restricted_to: Some(trigger.player),
+        },
+    ));
     commands.entity(trigger.player).insert(FlagHolder(flag));
 }
