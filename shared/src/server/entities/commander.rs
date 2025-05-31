@@ -195,7 +195,6 @@ fn assign_flag_to_formation(
 
     let formation = army_formation.positions.get(trigger.selected_slot);
 
-    // Hide Flag when assigned to a physical slot
     commands
         .entity(flag)
         .insert((AttachedTo(*formation), Visibility::Hidden));
