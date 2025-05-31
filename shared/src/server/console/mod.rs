@@ -9,20 +9,19 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
-use crate::BoxCollider;
-use crate::server::entities::commander::ArmyFormation;
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
+    server::entities::commander::ArmyFormation,
 };
 
-use super::ai::FollowOffset;
-use super::entities::commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH};
 use super::{
-    ai::UnitBehaviour,
+    ai::{FollowOffset, UnitBehaviour},
     buildings::recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
     entities::{
         Damage, Range, Unit,
-        commander::{ArmyFlagAssignments, CommanderFormation},
+        commander::{
+            ArmyFlagAssignments, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH, CommanderFormation,
+        },
         health::Health,
     },
     physics::{
