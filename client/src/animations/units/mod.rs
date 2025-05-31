@@ -9,7 +9,7 @@ use shared::{
     enum_map::*,
     networking::UnitType,
     server::{
-        entities::{Unit, UnitAnimation, health::Health},
+        entities::{Unit, UnitAnimation},
         physics::movement::Moving,
     },
 };
@@ -71,12 +71,7 @@ pub fn trigger_unit_animation(
 pub fn set_unit_walking(
     trigger: Trigger<OnAdd, Moving>,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
-    query: Query<Entity, With<Health>>,
 ) {
-    if query.get(trigger.target()).is_err() {
-        return;
-    }
-
     animation_trigger.write(AnimationTrigger {
         entity: trigger.target(),
         state: UnitAnimation::Walk,
@@ -111,12 +106,7 @@ pub fn set_unit_after_play_once(
 pub fn set_unit_idle(
     trigger: Trigger<OnRemove, Moving>,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
-    query: Query<Entity, With<Health>>,
 ) {
-    if query.get(trigger.target()).is_err() {
-        return;
-    }
-
     animation_trigger.write(AnimationTrigger {
         entity: trigger.target(),
         state: UnitAnimation::Idle,

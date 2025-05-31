@@ -16,6 +16,7 @@ use objects::{
         weapons::WeaponsSpriteSheet,
     },
     portal::PortalSpriteSheet,
+    projectiles::ProjectileSpriteSheet,
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
 use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
@@ -124,6 +125,7 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<ChestsSpriteSheet>();
         app.init_resource::<HeadsSpriteSheet>();
         app.init_resource::<FeetSpriteSheet>();
+        app.init_resource::<ProjectileSpriteSheet>();
 
         app.init_resource::<HorseSpriteSheet>();
         app.add_event::<AnimationTrigger<HorseAnimation>>();

@@ -117,13 +117,16 @@ fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
     }
 }
 
-fn set_walking(mut commands: Commands, entities: Query<(Entity, &Velocity, Option<&Grounded>)>) {
-    for (entity, velocity, maybe_grounded) in &entities {
+fn set_walking(
+    mut commands: Commands,
+    entities: Query<(Entity, &Velocity, Option<&Grounded>, Option<&Health>)>,
+) {
+    for (entity, velocity, maybe_grounded, maybe_health) in &entities {
         let Ok(mut entity) = commands.get_entity(entity) else {
             continue;
         };
 
-        if maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
+        if maybe_health.is_some() && maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
             entity.try_insert(Moving);
         } else {
             entity.try_remove::<Moving>();
