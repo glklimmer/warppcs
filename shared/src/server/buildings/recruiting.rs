@@ -243,11 +243,6 @@ pub fn recruit_commander(
         ))
         .id();
 
-    let collider = BoxCollider {
-        dimension: Vec2::new(BASE_FORMATION_WIDTH, 1.),
-        offset: None,
-    };
-
     let mut formation_offset = 0.;
 
     let mut army_formation: Vec<Entity> = vec![];
@@ -258,7 +253,6 @@ pub fn recruit_commander(
             .spawn((
                 ChildOf(commander),
                 Velocity::default(),
-                collider,
                 Transform::from_translation(Vec3::new(-formation_offset, 0., 0.)),
             ))
             .id();

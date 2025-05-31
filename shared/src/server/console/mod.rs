@@ -217,11 +217,6 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         ))
         .id();
 
-    let meshes = BoxCollider {
-        dimension: Vec2::new(BASE_FORMATION_WIDTH, 1.),
-        offset: None,
-    };
-
     let mut formation_offset = 0.;
 
     let mut army_formation: Vec<Entity> = vec![];
@@ -232,7 +227,6 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             .spawn((
                 ChildOf(commander),
                 Velocity::default(),
-                meshes,
                 Transform::from_translation(Vec3::new(-formation_offset, 0., 0.)),
             ))
             .id();
