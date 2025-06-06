@@ -9,11 +9,13 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
+use crate::map::buildings::{BuildStatus, Building, RecruitBuilding};
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
     server::entities::commander::ArmyFormation,
 };
 
+use super::buildings::item_assignment::{ItemAssignment, ItemSlot};
 use super::{
     ai::{FollowOffset, UnitBehaviour},
     buildings::recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
@@ -98,6 +100,12 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
     };
 
     let player = unit_req.player_entity(world)?;
+    let player_pos = {
+        let mut query: QueryState<&Transform> = QueryState::new(world);
+        let transform = query.get(world, player).unwrap();
+        transform.translation
+    };
+
     let weapon_type = match unit_type {
         UnitType::Shieldwarrior => ItemType::Weapon(WeaponType::Melee(MeleeWeapon::SwordAndShield)),
         UnitType::Pikeman => ItemType::Weapon(WeaponType::Melee(MeleeWeapon::Pike)),
@@ -106,15 +114,34 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
         UnitType::Commander => todo!(),
     };
 
+    let weapon = Item::builder().with_type(weapon_type).build();
+    let head = Item::builder().with_type(ItemType::Head).build();
+    let chest = Item::builder().with_type(ItemType::Chest).build();
+    let feet = Item::builder().with_type(ItemType::Feet).build();
+
+    let building = world
+        .spawn((
+            Building::Unit { weapon: unit_type },
+            RecruitBuilding::default(),
+            ItemAssignment {
+                items: EnumMap::new(|c| match c {
+                    ItemSlot::Weapon => Some(weapon.clone()),
+                    ItemSlot::Chest => Some(chest.clone()),
+                    ItemSlot::Head => Some(head.clone()),
+                    ItemSlot::Feet => Some(feet.clone()),
+                }),
+            },
+            BuildStatus::Built,
+            player_pos.with_layer(Layers::Building),
+            Owner::Player(player),
+        ))
+        .id();
+
     world.trigger(RecruitEvent::new(
         player,
         unit_type,
-        Some(vec![
-            Item::builder().with_type(weapon_type).build(),
-            Item::builder().with_type(ItemType::Head).build(),
-            Item::builder().with_type(ItemType::Chest).build(),
-            Item::builder().with_type(ItemType::Feet).build(),
-        ]),
+        Some(vec![weapon, head, chest, feet]),
+        building,
     ));
 
     Ok(json!("success"))
@@ -161,7 +188,9 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     let owner = Owner::Player(player);
     let flag_commander = world
         .spawn((
-            Flag,
+            Flag {
+                original_building: player,
+            },
             AttachedTo(player),
             Interactable {
                 kind: InteractionType::Flag,
@@ -283,7 +312,14 @@ fn spawn_unit(
 ) -> Entity {
     let owner = Owner::Player(player);
     let flag_entity = world
-        .spawn((Flag, AttachedTo(commander), owner, Visibility::Hidden))
+        .spawn((
+            Flag {
+                original_building: player,
+            },
+            AttachedTo(commander),
+            owner,
+            Visibility::Hidden,
+        ))
         .id();
 
     let unit = Unit {
@@ -309,8 +345,7 @@ fn spawn_unit(
     };
     let range = Range(range);
 
-    for unit_number in 1..=4 {
-        let offset = Vec2::new(15. * (unit_number - 3) as f32 + 12., 0.);
+    for _ in 1..=4 {
         world.spawn((
             player_translation.with_layer(Layers::Flag),
             unit.clone(),
@@ -319,7 +354,6 @@ fn spawn_unit(
             damage,
             range,
             owner,
-            FollowOffset(offset),
             FlagAssignment(flag_entity),
             UnitBehaviour::FollowFlag(flag_entity),
         ));

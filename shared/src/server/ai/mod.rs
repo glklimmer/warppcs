@@ -11,10 +11,11 @@ use super::{
 
 pub mod attack;
 
-#[derive(Debug, Deref, DerefMut, Component)]
+#[derive(Debug, Deref, DerefMut, Component, Default)]
 pub struct FollowOffset(pub Vec2);
 
 #[derive(Debug, Component)]
+#[require(FollowOffset)]
 pub enum UnitBehaviour {
     FollowFlag(Entity),
     AttackTarget(Entity),
@@ -72,8 +73,9 @@ fn determine_behaviour(
                 }
             },
             None => {
-                let flag = flag.get(entity).unwrap();
-                *behaviour = UnitBehaviour::FollowFlag(flag.0);
+                if let Ok(flag) = flag.get(entity) {
+                    *behaviour = UnitBehaviour::FollowFlag(flag.0);
+                }
             }
         }
     }

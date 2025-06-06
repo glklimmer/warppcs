@@ -275,9 +275,9 @@ impl Effect {
 
     fn multiplier(&self, amplitude: ModifierAmplitude, sign: ModifierSign) -> Modifier {
         let (min, max) = match amplitude {
-            ModifierAmplitude::Low => (5, 20),
-            ModifierAmplitude::Middle => (20, 50),
-            ModifierAmplitude::High => (50, 100),
+            ModifierAmplitude::Low => (1, 3),
+            ModifierAmplitude::Middle => (3, 5),
+            ModifierAmplitude::High => (5, 10),
         };
 
         let step_size = 5;
