@@ -190,6 +190,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         .spawn((
             Flag {
                 original_building: player,
+                unit_type: UnitType::Commander,
             },
             AttachedTo(player),
             Interactable {
@@ -315,6 +316,7 @@ fn spawn_unit(
         .spawn((
             Flag {
                 original_building: player,
+                unit_type,
             },
             AttachedTo(commander),
             owner,

@@ -1,4 +1,4 @@
-use bevy::{ecs::entity::MapEntities, prelude::*};
+use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
@@ -33,38 +33,31 @@ use crate::{
 
 use super::item_assignment::ItemAssignment;
 
-#[derive(Component, Deserialize, Serialize)]
+#[derive(Component, Deserialize, Serialize, Debug)]
 #[require(
     Replicated,
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     BoxCollider = flag_collider(),
-    Transform = (Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()) , scale: Vec3::splat(1./3.), ..default()}))]
+    Transform = (Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()) , scale: Vec3::splat(1./3.), ..default()})
+)]
 pub struct Flag {
+    #[entities]
     pub original_building: Entity,
+    pub unit_type: UnitType,
 }
 
-/// PlayerEntity is FlagHolder
+/// This component is added on Player. Tuple entity is flag.
 #[derive(Component, Clone, Copy, Deref, DerefMut, Deserialize, Serialize)]
-pub struct FlagHolder(pub Entity);
-impl MapEntities for FlagHolder {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.get_mapped(self.0);
-    }
-}
+#[require(Replicated)]
+pub struct FlagHolder(#[entities] pub Entity);
 
 #[derive(Component, Deserialize, Serialize, Deref, DerefMut)]
 #[relationship(relationship_target = FlagUnits)]
-pub struct FlagAssignment(pub Entity);
+pub struct FlagAssignment(#[entities] pub Entity);
 
-impl MapEntities for FlagAssignment {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.get_mapped(self.0);
-    }
-}
-
-#[derive(Component, Deref, DerefMut)]
+#[derive(Component, Deref, DerefMut, Serialize, Deserialize)]
 #[relationship_target(relationship = FlagAssignment)]
-pub struct FlagUnits(Vec<Entity>);
+pub struct FlagUnits(#[entities] Vec<Entity>);
 
 pub fn assign_offset(
     trigger: Trigger<OnAdd, FlagAssignment>,
@@ -79,7 +72,7 @@ pub fn assign_offset(
         return;
     };
 
-    let mut unit_entities = (**flag_units).clone();
+    let mut unit_entities = (**flag_units).to_vec();
     unit_entities.push(trigger.target());
 
     fastrand::shuffle(&mut unit_entities);
@@ -158,6 +151,7 @@ pub fn recruit_units(
         .spawn((
             Flag {
                 original_building: *original_building,
+                unit_type,
             },
             AttachedTo(player),
             Interactable {
@@ -269,6 +263,7 @@ pub fn recruit_commander(
         .spawn((
             Flag {
                 original_building: *original_building,
+                unit_type: *unit_type,
             },
             AttachedTo(player),
             Interactable {

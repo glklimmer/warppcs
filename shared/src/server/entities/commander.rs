@@ -44,7 +44,7 @@ enum SlotCommand {
     Swap,
 }
 
-#[derive(Event, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq)]
+#[derive(Event, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq, Debug)]
 pub enum CommanderFormation {
     Front,
     Middle,
@@ -56,20 +56,8 @@ pub const BASE_FORMATION_OFFSET: f32 = 5.;
 
 #[derive(Component, Serialize, Deserialize, Clone)]
 pub struct ArmyFlagAssignments {
+    #[entities]
     pub flags: EnumMap<CommanderFormation, Option<Entity>>,
-}
-
-#[derive(Component, Serialize, Deserialize, Clone)]
-pub struct ArmyFormation {
-    pub positions: EnumMap<CommanderFormation, Entity>,
-}
-
-impl MapEntities for ArmyFlagAssignments {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.flags.iter_mut().for_each(|entity| {
-            *entity = entity.take().map(|entity| entity_mapper.get_mapped(entity));
-        });
-    }
 }
 
 impl Default for ArmyFlagAssignments {
@@ -82,6 +70,11 @@ impl Default for ArmyFlagAssignments {
             }),
         }
     }
+}
+
+#[derive(Component, Clone)]
+pub struct ArmyFormation {
+    pub positions: EnumMap<CommanderFormation, Entity>,
 }
 
 pub struct CommanderPlugin;
@@ -130,7 +123,7 @@ fn handle_slot_selection(
     formations: Query<&ArmyFlagAssignments>,
     client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
-    flag: Query<&FlagHolder>,
+    flag_holder: Query<&FlagHolder>,
 ) {
     let player = client_player_map.get(&trigger.client_entity).unwrap();
     let commander = active.0.get(player).unwrap();
@@ -139,7 +132,7 @@ fn handle_slot_selection(
     let selected_slot = trigger.event;
     let is_slot_occupied = formation.flags.get(selected_slot).is_some();
 
-    let player_flag = flag.get(*player).map(|f| f.0).ok();
+    let player_flag = flag_holder.get(*player).map(|flag| **flag).ok();
 
     match (is_slot_occupied, player_flag.is_some()) {
         (true, true) => {
@@ -186,8 +179,8 @@ fn assign_flag_to_formation(
         commanders.get_mut(trigger.commander).unwrap();
     let flag = trigger.flag.unwrap();
 
-    // Prevent assigning own flag
-    if flag_assignment.0 == flag {
+    // Prevent assigning commander flag to formation
+    if **flag_assignment == flag {
         return;
     }
 
@@ -199,7 +192,7 @@ fn assign_flag_to_formation(
 
     commands
         .entity(flag)
-        .insert((AttachedTo(*formation), Visibility::Hidden))
+        .insert(AttachedTo(*formation))
         .remove::<Interactable>();
     commands.entity(trigger.player).remove::<FlagHolder>();
 }
@@ -222,7 +215,6 @@ fn remove_flag_from_formation(
 
     commands.entity(flag).insert((
         AttachedTo(trigger.player),
-        Visibility::Visible,
         Interactable {
             kind: InteractionType::Flag,
             restricted_to: Some(trigger.player),
