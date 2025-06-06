@@ -5,7 +5,9 @@ use shared::{
     map::Layers,
     server::{
         buildings::recruiting::{Flag, FlagHolder},
-        entities::commander::{ArmyFlagAssignments, CommanderFormation, CommanderInteraction},
+        entities::commander::{
+            ArmyFlagAssignments, CommanderCampInteraction, CommanderFormation, CommanderInteraction,
+        },
     },
 };
 
@@ -21,7 +23,7 @@ pub struct CommanderInteractionPlugin;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum MainMenuEntries {
-    Map,
+    Camp,
     Slots,
 }
 
@@ -39,6 +41,7 @@ impl Plugin for CommanderInteractionPlugin {
         app.init_resource::<ActiveCommander>()
             .add_event::<DrawHoverFlag>()
             .add_observer(open_commander_dialog)
+            .add_observer(open_create_camp)
             .add_observer(open_slots_dialog)
             .add_observer(send_selected)
             .add_observer(despawn_hover_weapon)
@@ -81,7 +84,7 @@ fn open_commander_dialog(
             .with_layer(Layers::Item),
         Menu::new(vec![
             MenuNode::bundle(
-                MainMenuEntries::Map,
+                MainMenuEntries::Camp,
                 Sprite {
                     image: map,
                     custom_size: Some(Vec2::splat(15.)),
@@ -101,6 +104,14 @@ fn open_commander_dialog(
     ));
 
     **active = Some(commander);
+}
+
+fn open_create_camp(trigger: Trigger<SelectionEvent<MainMenuEntries>>, mut commands: Commands) {
+    let MainMenuEntries::Camp = trigger.selection else {
+        return;
+    };
+
+    commands.client_trigger(CommanderCampInteraction);
 }
 
 fn open_slots_dialog(

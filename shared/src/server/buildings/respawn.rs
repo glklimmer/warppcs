@@ -6,7 +6,7 @@ use crate::{
     BoxCollider, Owner, Vec3LayerExt,
     map::{
         Layers,
-        buildings::{Building, RecruitBuilding},
+        buildings::{Building, RespawnZone},
     },
     server::{
         ai::UnitBehaviour,
@@ -29,7 +29,7 @@ pub fn respawn_units(
         &Owner,
         Option<&FlagUnits>,
     )>,
-    mut buildings: Query<(&mut RecruitBuilding, &Transform, &BoxCollider, &Owner)>,
+    mut respawn_zones: Query<(&mut RespawnZone, &Transform, &BoxCollider, &Owner)>,
     original_building: Query<(&Building, &ItemAssignment)>,
 ) {
     for (flag_entity, flag, flag_transform, flag_collider, flag_owner, maybe_flag_units) in
@@ -38,7 +38,7 @@ pub fn respawn_units(
         let flag_bounds = flag_collider.at(flag_transform);
 
         let matching_building =
-            buildings
+            respawn_zones
                 .iter_mut()
                 .find(|(recruit, transform, collider, owner)| {
                     if !recruit.respawn_timer_finished() {

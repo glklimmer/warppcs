@@ -5,10 +5,14 @@ use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ClientPlayerMap,
+    ClientPlayerMap, Owner, Vec3LayerExt,
     enum_map::*,
+    map::Layers,
     server::{
-        buildings::recruiting::{FlagAssignment, FlagHolder},
+        buildings::{
+            recruiting::{FlagAssignment, FlagHolder},
+            siege_camp::SiegeCamp,
+        },
         physics::attachment::AttachedTo,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
@@ -51,6 +55,9 @@ pub enum CommanderFormation {
     Back,
 }
 
+#[derive(Event, Serialize, Deserialize, Copy, Clone)]
+pub struct CommanderCampInteraction;
+
 pub const BASE_FORMATION_WIDTH: f32 = 50.;
 pub const BASE_FORMATION_OFFSET: f32 = 5.;
 
@@ -81,18 +88,18 @@ pub struct CommanderPlugin;
 
 impl Plugin for CommanderPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ActiveCommander>();
-        app.add_event::<SlotInteraction>();
-
-        app.add_observer(handle_slot_selection);
-        app.add_observer(assign_flag_to_formation);
-        app.add_observer(remove_flag_from_formation);
-        app.add_observer(swap_flag_from_formation);
-
-        app.add_systems(
-            FixedUpdate,
-            commander_interaction.run_if(on_event::<InteractionTriggeredEvent>),
-        );
+        app.init_resource::<ActiveCommander>()
+            .add_event::<SlotInteraction>()
+            .add_event::<CommanderCampInteraction>()
+            .add_observer(handle_slot_selection)
+            .add_observer(handle_camp_interaction)
+            .add_observer(assign_flag_to_formation)
+            .add_observer(remove_flag_from_formation)
+            .add_observer(swap_flag_from_formation)
+            .add_systems(
+                FixedUpdate,
+                commander_interaction.run_if(on_event::<InteractionTriggeredEvent>),
+            );
     }
 }
 
@@ -115,6 +122,25 @@ fn commander_interaction(
 
         active.insert(event.player, commander);
     }
+}
+
+fn handle_camp_interaction(
+    trigger: Trigger<FromClient<CommanderCampInteraction>>,
+    active: Res<ActiveCommander>,
+    client_player_map: ResMut<ClientPlayerMap>,
+    mut commands: Commands,
+    transform: Query<&Transform>,
+) {
+    let player = client_player_map.get(&trigger.client_entity).unwrap();
+    let commander = active.0.get(player).unwrap();
+    let commander_transform = transform.get(*commander).unwrap();
+    let commander_pos = commander_transform.translation;
+
+    commands.spawn((
+        SiegeCamp::default(),
+        commander_pos.with_layer(Layers::Building),
+        Owner::Player(*player),
+    ));
 }
 
 fn handle_slot_selection(

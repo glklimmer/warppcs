@@ -4,6 +4,7 @@ use gold_farm::{enable_goldfarm, gold_farm_output};
 use item_assignment::ItemAssignmentPlugins;
 use recruiting::{RecruitEvent, assign_offset, check_recruit, recruit_commander, recruit_units};
 use respawn::respawn_units;
+use siege_camp::siege_camp_lifetime;
 
 use crate::{
     Owner,
@@ -19,6 +20,7 @@ mod respawn;
 
 pub mod item_assignment;
 pub mod recruiting;
+pub mod siege_camp;
 
 pub struct CommonBuildingInfo {
     pub player_entity: Entity,
@@ -49,6 +51,7 @@ impl Plugin for BuildingsPlugins {
             (
                 gold_farm_output,
                 (respawn_timer, respawn_units).chain(),
+                siege_camp_lifetime,
                 (
                     (check_recruit, check_building_interaction)
                         .run_if(on_event::<InteractionTriggeredEvent>),

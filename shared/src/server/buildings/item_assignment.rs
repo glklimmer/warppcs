@@ -5,7 +5,7 @@ use bevy::ecs::entity::MapEntities;
 use bevy_replicon::prelude::{FromClient, Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
-use crate::map::buildings::Building;
+use crate::map::buildings::{Building, RespawnZone};
 use crate::networking::Inventory;
 use crate::server::players::items::ItemType;
 use crate::{
@@ -122,7 +122,7 @@ fn check_start_building(
     }) {
         commands
             .entity(active_building)
-            .insert(Building::Unit { weapon });
+            .insert((Building::Unit { weapon }, RespawnZone::default()));
     } else {
         info!("No weapon in assigned items!");
     }

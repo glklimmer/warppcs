@@ -9,7 +9,7 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
-use crate::map::buildings::{BuildStatus, Building, RecruitBuilding};
+use crate::map::buildings::{BuildStatus, Building, RecruitBuilding, RespawnZone};
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
     server::entities::commander::ArmyFormation,
@@ -122,7 +122,8 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
     let building = world
         .spawn((
             Building::Unit { weapon: unit_type },
-            RecruitBuilding::default(),
+            RecruitBuilding,
+            RespawnZone::default(),
             ItemAssignment {
                 items: EnumMap::new(|c| match c {
                     ItemSlot::Weapon => Some(weapon.clone()),

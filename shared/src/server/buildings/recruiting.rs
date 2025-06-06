@@ -5,6 +5,7 @@ use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::enum_map::EnumMap;
+use crate::map::buildings::RecruitBuilding;
 use crate::server::ai::FollowOffset;
 use crate::server::entities::commander::{
     ArmyFlagAssignments, ArmyFormation, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH,
@@ -13,10 +14,7 @@ use crate::server::entities::commander::{
 use crate::server::physics::movement::Velocity;
 use crate::{
     BoxCollider, Owner, Vec3LayerExt, flag_collider,
-    map::{
-        Layers,
-        buildings::{Building, RecruitBuilding},
-    },
+    map::{Layers, buildings::Building},
     networking::{Inventory, UnitType},
     server::{
         ai::UnitBehaviour,
