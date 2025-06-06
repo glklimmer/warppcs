@@ -9,7 +9,10 @@ use crate::{
     map::Layers,
     networking::{Facing, UnitType},
     server::{
-        entities::{Damage, Unit, health::TakeDamage},
+        entities::{
+            Damage, Unit,
+            health::{Health, TakeDamage},
+        },
         physics::{movement::Velocity, projectile::ProjectileType},
     },
 };
@@ -24,14 +27,17 @@ impl Plugin for AttackPlugin {
 
 fn process_attacks(
     mut commands: Commands,
-    mut query: Query<(
-        Entity,
-        &UnitBehaviour,
-        &mut Unit,
-        &Owner,
-        &Transform,
-        &Damage,
-    )>,
+    mut query: Query<
+        (
+            Entity,
+            &UnitBehaviour,
+            &mut Unit,
+            &Owner,
+            &Transform,
+            &Damage,
+        ),
+        With<Health>,
+    >,
     mut attack_events: EventWriter<TakeDamage>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
