@@ -103,9 +103,6 @@ pub struct AnimationTrigger<E> {
 }
 
 #[derive(Component)]
-pub struct FullAnimation;
-
-#[derive(Component)]
 pub struct PlayOnce;
 
 pub struct AnimationPlugin;
@@ -170,11 +167,10 @@ fn advance_animation(
         Entity,
         &mut SpriteSheetAnimation,
         &mut Sprite,
-        Option<&FullAnimation>,
         Option<&PlayOnce>,
     )>,
 ) {
-    for (entity, mut animation, mut sprite, maybe_full, maybe_play_once) in &mut query {
+    for (entity, mut animation, mut sprite, maybe_play_once) in &mut query {
         animation.frame_timer.tick(time.delta());
         let atlas = sprite.texture_atlas.as_mut().unwrap();
 
@@ -182,10 +178,7 @@ fn advance_animation(
             atlas.index = if atlas.index == animation.last_sprite_index {
                 if maybe_play_once.is_some() {
                     commands.entity(entity).remove::<PlayOnce>();
-                    return;
-                }
-                if maybe_full.is_some() {
-                    commands.entity(entity).remove::<FullAnimation>();
+                    continue;
                 }
                 animation.first_sprite_index
             } else {
