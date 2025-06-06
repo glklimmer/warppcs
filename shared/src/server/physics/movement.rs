@@ -3,7 +3,7 @@ use bevy_replicon::prelude::server_or_singleplayer;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, GRAVITY_G, Owner,
+    BoxCollider, GRAVITY_G, Owner, Player,
     map::buildings::{BuildStatus, Building},
     server::{
         ai::{FollowOffset, UnitBehaviour},
@@ -52,6 +52,7 @@ impl Plugin for MovementPlugin {
                     set_unit_velocity,
                     set_grounded,
                     set_walking,
+                    set_king_walking,
                     apply_friction,
                     set_projectile_rotation,
                 ),
@@ -119,7 +120,7 @@ fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
 
 fn set_walking(
     mut commands: Commands,
-    entities: Query<(Entity, &Velocity, Option<&Grounded>, Option<&Health>)>,
+    entities: Query<(Entity, &Velocity, Option<&Grounded>, Option<&Health>), Without<Player>>,
 ) {
     for (entity, velocity, maybe_grounded, maybe_health) in &entities {
         let Ok(mut entity) = commands.get_entity(entity) else {
@@ -127,6 +128,23 @@ fn set_walking(
         };
 
         if maybe_health.is_some() && maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
+            entity.try_insert(Moving);
+        } else {
+            entity.try_remove::<Moving>();
+        }
+    }
+}
+
+fn set_king_walking(
+    mut commands: Commands,
+    players: Query<(Entity, &Velocity, Option<&Grounded>), With<Player>>,
+) {
+    for (entity, velocity, maybe_grounded) in &players {
+        let Ok(mut entity) = commands.get_entity(entity) else {
+            continue;
+        };
+
+        if maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
             entity.try_insert(Moving);
         } else {
             entity.try_remove::<Moving>();
