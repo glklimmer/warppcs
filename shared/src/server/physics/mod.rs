@@ -1,14 +1,16 @@
+use avian2d::PhysicsPlugins;
 use bevy::prelude::*;
 
 use attachment::AttachmentPlugin;
 use movement::{MovementPlugin, Velocity};
 use projectile::ProjectilePlugin;
 
-use crate::networking::Facing;
+use crate::{networking::Facing, server::physics::avian::AvianPlugin};
 
 use super::entities::health::TakeDamage;
 
 pub mod attachment;
+pub mod avian;
 pub mod movement;
 pub mod projectile;
 
@@ -16,7 +18,8 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(MovementPlugin);
+        // app.add_plugins(MovementPlugin);
+        app.add_plugins(AvianPlugin);
         app.add_plugins(ProjectilePlugin);
         app.add_plugins(AttachmentPlugin);
 

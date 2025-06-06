@@ -1,3 +1,4 @@
+use avian2d::PhysicsPlugins;
 use bevy::prelude::*;
 
 use super::{

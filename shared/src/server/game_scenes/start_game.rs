@@ -1,3 +1,4 @@
+use avian2d::prelude::{Collider, CollisionLayers, LayerMask, RigidBody};
 use bevy::prelude::*;
 use petgraph::visit::{EdgeRef, IntoNodeReferences};
 
@@ -11,7 +12,7 @@ use crate::{
     server::{
         buildings::item_assignment::ItemAssignment,
         entities::{Unit, health::Health},
-        physics::movement::Velocity,
+        physics::{avian::GameLayer, movement::Velocity},
         players::{
             chest::Chest,
             interaction::{Interactable, InteractionType},
@@ -40,17 +41,33 @@ fn start_game(
     mut commands: Commands,
 ) {
     let map = &**trigger.event();
+
     for (i, node) in map.node_references() {
         let offset = Vec3::new(10000. * i.index() as f32, 0., 0.);
+
         match node.scene {
             SceneType::Player {
                 player,
                 left,
                 right,
             } => {
-                player_base(commands.reborrow(), offset, player, left, right);
                 let mut transform = players.get_mut(player).unwrap();
+
+                player_base(commands.reborrow(), offset, player, left, right);
                 transform.translation = offset.with_z(Layers::Player.as_f32());
+                commands.spawn((
+                    RigidBody::Static,
+                    Collider::rectangle(10000.0, 0.),
+                    Transform::from_xyz(transform.translation.x, 0., 0.),
+                    CollisionLayers::new(GameLayer::Ground, [GameLayer::Wall, GameLayer::Player]),
+                ));
+                commands.spawn((
+                    RigidBody::Static,
+                    Collider::rectangle(10., 100.),
+                    Transform::from_translation(transform.translation.offset_x(100.)),
+                    CollisionLayers::new(GameLayer::Wall, [GameLayer::Ground, GameLayer::Player]),
+                    Owner::Bandits,
+                ));
 
                 for item_type in ItemType::all_variants() {
                     let translation = transform.translation;
@@ -119,6 +136,13 @@ fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_rig
                 .with_layer(Layers::Unit),
         ));
     }
+    commands.spawn((
+        RigidBody::Static,
+        Collider::rectangle(10000.0, 0.),
+        Transform::from_xyz(offset.x, 0., 0.),
+        CollisionLayers::new(GameLayer::Ground, [GameLayer::Wall, GameLayer::Player]),
+    ));
+
     commands
         .entity(camp_left_portal)
         .insert((Portal, offset.offset_x(-150.).with_layer(Layers::Building)));
@@ -196,6 +220,7 @@ fn player_base(
         Building::Wall {
             level: WallLevels::Basic,
         },
+        RigidBody::Static,
         offset.offset_x(390.).with_layer(Layers::Wall),
         owner,
         Interactable {

@@ -1,3 +1,8 @@
+use avian2d::{
+    PhysicsPlugins,
+    math::Vector,
+    prelude::{Collider, CollisionLayers, RigidBody, ShapeCaster},
+};
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_replicon::{
     RepliconPlugins,
@@ -46,6 +51,8 @@ use server::{
     },
 };
 
+use crate::server::physics::avian::GameLayer;
+
 pub mod enum_map;
 pub mod map;
 pub mod networking;
@@ -64,6 +71,7 @@ impl Plugin for SharedPlugin {
                 visibility_policy: VisibilityPolicy::All,
                 ..Default::default()
             }),
+            PhysicsPlugins::default(),
             PlayerMovement,
             PlayerAttacks,
             InteractPlugin,
@@ -71,6 +79,7 @@ impl Plugin for SharedPlugin {
         .init_resource::<ClientPlayerMap>()
         .replicate::<Moving>()
         .replicate::<Grounded>()
+        .replicate::<Collider>()
         .replicate::<BoxCollider>()
         .replicate::<Owner>()
         .replicate::<Mounted>()
@@ -196,9 +205,11 @@ impl MapEntities for SetLocalPlayer {
 #[require(
     Replicated,
     Transform = (Transform::from_xyz(0., 0., Layers::Player.as_f32())),
-    BoxCollider = player_collider(),
+    Collider = player_collider(),
+    RigidBody = (RigidBody::Kinematic),
+    ShapeCaster = (ShapeCaster::new(player_collider(), Vector::ZERO, 0.0, Dir2::X)),
+    CollisionLayers = (CollisionLayers::new(GameLayer::Player, [GameLayer::Wall, GameLayer::Ground])),
     Speed,
-    Velocity,
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     Inventory
 )]
@@ -227,7 +238,12 @@ impl BoxCollider {
     }
 }
 
-pub fn player_collider() -> BoxCollider {
+pub fn player_collider() -> Collider {
+    let shape = Rectangle::new(16.0, 16.0);
+    Collider::compound(vec![(Vec2::new(0., 8.), 0.0, shape)])
+}
+
+pub fn player_box_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(16., 16.),
         offset: Some(Vec2::new(0., 8.)),

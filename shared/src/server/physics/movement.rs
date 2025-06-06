@@ -33,7 +33,7 @@ impl Default for Speed {
 }
 
 #[derive(Component)]
-pub struct RandomVelocityMul(f32);
+pub struct RandomVelocityMul(pub f32);
 
 impl Default for RandomVelocityMul {
     fn default() -> Self {

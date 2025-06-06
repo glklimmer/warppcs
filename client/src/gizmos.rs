@@ -1,3 +1,7 @@
+use avian2d::{
+    PhysicsPlugins,
+    prelude::{Collider, PhysicsDebugPlugin, PhysicsGizmos},
+};
 use bevy::{
     color::palettes::css::{BLUE, GREEN, RED},
     prelude::*,
@@ -9,9 +13,17 @@ pub struct GizmosPlugin;
 
 impl Plugin for GizmosPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(PhysicsDebugPlugin::default())
+            .insert_gizmo_config(
+                PhysicsGizmos {
+                    aabb_color: Some(Color::WHITE),
+                    ..default()
+                },
+                GizmoConfig::default(),
+            );
         app.insert_resource(GizmosSettings::default());
 
-        app.add_systems(Update, (draw_range, draw_collider));
+        // app.add_systems(Update, (draw_range, draw_collider));
     }
 }
 
@@ -37,22 +49,22 @@ fn draw_range(
     }
 }
 
-fn draw_collider(
-    mut gizmos: Gizmos,
-    settings: Res<GizmosSettings>,
-    query: Query<(&GlobalTransform, &BoxCollider)>,
-) {
-    if !settings.on {
-        return;
-    }
-    for (transform, collider) in query.iter() {
-        gizmos.rect_2d(
-            Isometry2d::new(
-                transform.translation().truncate() + collider.offset.unwrap_or_default(),
-                Rot2::degrees(0.),
-            ),
-            collider.dimension,
-            BLUE,
-        );
-    }
-}
+// fn draw_collider(
+//     mut gizmos: Gizmos,
+//     settings: Res<GizmosSettings>,
+//     query: Query<(&GlobalTransform, &Collider)>,
+// ) {
+//     if !settings.on {
+//         return;
+//     }
+//     for (transform, collider) in query.iter() {
+//         gizmos.rect_2d(
+//             Isometry2d::new(
+//                 transform.translation().truncate() + collider.offset.unwrap_or_default(),
+//                 Rot2::degrees(0.),
+//             ),
+//             collider.dimension,
+//             BLUE,
+//         );
+//     }
+// }

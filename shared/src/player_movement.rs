@@ -1,3 +1,4 @@
+use avian2d::prelude::LinearVelocity;
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
@@ -42,7 +43,7 @@ fn movement_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
 
 fn apply_movement(
     trigger: Trigger<FromClient<MovePlayer>>,
-    mut players: Query<(&mut Velocity, &mut Transform, &Speed)>,
+    mut players: Query<(&mut LinearVelocity, &mut Transform, &Speed)>,
     client_player_map: Res<ClientPlayerMap>,
 ) {
     let Ok((mut velocity, mut transform, speed)) =
