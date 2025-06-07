@@ -5,7 +5,7 @@ use shared::{
     ChestAnimation, Player, SetLocalPlayer,
     map::buildings::{BuildStatus, Building, RecruitBuilding},
     server::{
-        buildings::recruiting::Flag,
+        buildings::{recruiting::Flag, siege_camp::SiegeCamp},
         entities::{Unit, UnitAnimation},
         game_scenes::travel::Portal,
         physics::projectile::ProjectileType,
@@ -39,6 +39,7 @@ impl Plugin for SpawnPlugin {
         app.add_observer(init_player_sprite)
             .add_observer(init_recruit_building_sprite)
             .add_observer(init_building_sprite)
+            .add_observer(init_camp_sprite)
             .add_observer(init_unit_sprite)
             .add_observer(init_flag_sprite)
             .add_observer(init_portal_sprite)
@@ -111,6 +112,19 @@ fn init_building_sprite(
     };
 
     sprite.image = asset_server.load::<Image>(building.texture(*status));
+}
+
+fn init_camp_sprite(
+    trigger: Trigger<OnAdd, SiegeCamp>,
+    mut camp: Query<&mut Sprite>,
+    asset_server: Res<AssetServer>,
+) {
+    let Ok(mut sprite) = camp.get_mut(trigger.target()) else {
+        return;
+    };
+    info!("setting camp sprite");
+
+    sprite.image = asset_server.load::<Image>("sprites/buildings/siege_camp.png");
 }
 
 fn update_building_sprite(

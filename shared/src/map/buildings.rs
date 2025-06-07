@@ -23,19 +23,30 @@ pub struct Cost {
     pub gold: u16,
 }
 
-#[derive(Component, Debug, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, Clone, Serialize, Deserialize, Default)]
 #[require(
     Replicated,
     Transform,
     BoxCollider = marker_collider(),
     Sprite{anchor: Anchor::BottomCenter, ..default()},
-    BuildStatus = (BuildStatus::Marker),
+    BuildStatus = BuildStatus::Marker,
 )]
-pub struct RecruitBuilding {
+pub struct RecruitBuilding;
+
+#[derive(Component, Debug, Clone, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    Transform,
+    BoxCollider = BoxCollider{
+        dimension: Vec2::new(28., 26.),
+        offset: Some(Vec2::new(0., 13.)),
+    },
+)]
+pub struct RespawnZone {
     respawn_timer: Timer,
 }
 
-impl Default for RecruitBuilding {
+impl Default for RespawnZone {
     fn default() -> Self {
         Self {
             respawn_timer: Timer::from_seconds(2., TimerMode::Once),
@@ -43,7 +54,7 @@ impl Default for RecruitBuilding {
     }
 }
 
-impl RecruitBuilding {
+impl RespawnZone {
     pub fn respawn_timer_finished(&self) -> bool {
         self.respawn_timer.finished()
     }
@@ -53,7 +64,7 @@ impl RecruitBuilding {
     }
 }
 
-pub fn respawn_timer(mut recruit_buildings: Query<&mut RecruitBuilding>, time: Res<Time>) {
+pub fn respawn_timer(mut recruit_buildings: Query<&mut RespawnZone>, time: Res<Time>) {
     for mut recruit_building in &mut recruit_buildings.iter_mut() {
         recruit_building.respawn_timer.tick(time.delta());
     }
@@ -64,7 +75,7 @@ pub fn respawn_timer(mut recruit_buildings: Query<&mut RecruitBuilding>, time: R
     Replicated,
     BoxCollider = marker_collider(),
     Sprite{anchor: Anchor::BottomCenter, ..default()},
-    BuildStatus = (BuildStatus::Marker),
+    BuildStatus = BuildStatus::Marker,
 )]
 pub enum Building {
     MainBuilding { level: MainBuildingLevels },

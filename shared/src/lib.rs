@@ -12,7 +12,7 @@ use enum_map::*;
 use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d, sprite::Anchor};
 use map::{
     Layers,
-    buildings::{BuildStatus, Building, RecruitBuilding},
+    buildings::{BuildStatus, Building, RecruitBuilding, RespawnZone},
 };
 use networking::{Inventory, Mounted};
 use player_attacks::PlayerAttacks;
@@ -24,10 +24,13 @@ use server::{
             AssignItem, CloseBuildingDialog, ItemAssignment, OpenBuildingDialog, StartBuild,
         },
         recruiting::{Flag, FlagAssignment, FlagHolder},
+        siege_camp::SiegeCamp,
     },
     entities::{
         Unit,
-        commander::{ArmyFlagAssignments, CommanderFormation, CommanderInteraction},
+        commander::{
+            ArmyFlagAssignments, CommanderCampInteraction, CommanderFormation, CommanderInteraction,
+        },
     },
     game_scenes::{
         map::{GameScene, LoadMap},
@@ -84,6 +87,8 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
+        .replicate_group::<(RespawnZone, Transform)>()
+        .replicate_group::<(SiegeCamp, Transform)>()
         .replicate_group::<(Flag, Transform)>()
         .replicate_group::<(ProjectileType, Transform)>()
         .replicate_group::<(Unit, Transform)>()
@@ -93,6 +98,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Item, Transform)>()
         .sync_related_entities::<FlagAssignment>()
         .add_client_trigger::<CommanderFormation>(Channel::Ordered)
+        .add_client_trigger::<CommanderCampInteraction>(Channel::Ordered)
         .add_client_trigger::<AssignItem>(Channel::Ordered)
         .add_client_trigger::<StartBuild>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)

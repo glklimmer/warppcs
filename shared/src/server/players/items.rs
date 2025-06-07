@@ -435,16 +435,6 @@ pub fn pickup_item(
         inventory.items.push(item.clone());
 
         commands.entity(event.interactable).despawn();
-
-        info!(
-            "Inventory items: {:?}",
-            inventory
-                .items
-                .iter()
-                .map(|item| format!("{:?}", item.item_type))
-                .collect::<Vec<String>>()
-                .join(", ")
-        );
     }
 }
 
