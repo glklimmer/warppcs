@@ -1,5 +1,6 @@
 use std::mem::replace;
 
+use bevy::ecs::entity::{EntityMapper, MapEntities};
 pub use enum_mappable::Mappable;
 use serde::{Deserialize, Serialize};
 
@@ -126,5 +127,17 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         self.data.iter_mut()
+    }
+}
+
+impl<E, T> MapEntities for EnumMap<E, T>
+where
+    E: EnumIter,
+    T: MapEntities,
+{
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        for value in self.iter_mut() {
+            value.map_entities(entity_mapper);
+        }
     }
 }

@@ -4,11 +4,8 @@ use shared::{
     PlayerState, Vec3LayerExt,
     map::Layers,
     server::{
-        buildings::recruiting::{FlagAssignment, FlagHolder},
-        entities::{
-            Unit,
-            commander::{ArmyFlagAssignments, CommanderFormation, CommanderInteraction},
-        },
+        buildings::recruiting::{Flag, FlagHolder},
+        entities::commander::{ArmyFlagAssignments, CommanderFormation, CommanderInteraction},
     },
 };
 
@@ -28,7 +25,7 @@ enum MainMenuEntries {
     Slots,
 }
 
-#[derive(Event)]
+#[derive(Event, Deref)]
 struct DrawHoverFlag(Entity);
 
 #[derive(Component)]
@@ -45,10 +42,11 @@ impl Plugin for CommanderInteractionPlugin {
             .add_observer(open_slots_dialog)
             .add_observer(send_selected)
             .add_observer(despawn_hover_weapon)
-            .add_observer(draw_flag)
+            .add_observer(draw_hovering_flag)
             .add_systems(
                 Update,
-                (assign_unit, draw_flag_on_selected).run_if(in_state(PlayerState::Interaction)),
+                (update_flag_assignment, draw_flag_on_selected)
+                    .run_if(in_state(PlayerState::Interaction)),
             )
             .add_plugins((
                 MenuPlugin::<MainMenuEntries>::default(),
@@ -111,7 +109,7 @@ fn open_slots_dialog(
     army_flag_assignments: Query<&ArmyFlagAssignments>,
     transform: Query<&GlobalTransform>,
     asset_server: Res<AssetServer>,
-    units_on_flag: Query<(&FlagAssignment, &Unit)>,
+    flag: Query<&Flag>,
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
 ) {
@@ -125,24 +123,18 @@ fn open_slots_dialog(
     let menu_nodes = army_flag_assignments
         .flags
         .iter_enums()
-        .map(|(slot, slot_assignment)| {
+        .map(|(formation, maybe_flag)| {
             let empty_slot = asset_server.load::<Image>("ui/commander/slot_empty.png");
-            let mut has_unit_weapon = None;
-            if let Some(slot) = slot_assignment {
-                let unit = units_on_flag
-                    .iter()
-                    .find(|(assignment, _)| assignment.0 == *slot)
-                    .unwrap()
-                    .1;
-
-                let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(unit.unit_type);
-                let flag_weapon = commands
+            let has_unit_weapon = maybe_flag.map(|flag_entity| {
+                let flag = flag.get(flag_entity).unwrap();
+                let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
+                let flag_sprite = commands
                     .spawn((weapon_sprite, Transform::from_xyz(0., 0., 1.)))
                     .id();
-                has_unit_weapon = Some(flag_weapon);
-            };
+                flag_sprite
+            });
 
-            MenuNode::with_fn(slot, move |commands, entry| {
+            MenuNode::with_fn(formation, move |commands, entry| {
                 let mut entry = commands.entity(entry);
                 entry.insert(Sprite {
                     image: empty_slot.clone(),
@@ -195,34 +187,28 @@ fn despawn_hover_weapon(
     commands.entity(current).despawn();
 }
 
-fn draw_flag(
+fn draw_hovering_flag(
     trigger: Trigger<DrawHoverFlag>,
     mut current_hover: Query<&mut Transform, With<HoverWeapon>>,
     menu_entries_add: Query<&GlobalTransform, With<NodePayload<CommanderFormation>>>,
-    units_on_flag: Query<(&FlagAssignment, &Unit)>,
-    player_flag: Query<Option<&FlagHolder>, With<ControlledPlayer>>,
+    player: Query<Option<&FlagHolder>, With<ControlledPlayer>>,
+    flag: Query<&Flag>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     mut commands: Commands,
 ) {
-    let Ok(maybe_player_flag) = player_flag.single() else {
+    let Ok(maybe_flag_holder) = player.single() else {
         return;
     };
-
-    let Some(player_flag) = maybe_player_flag else {
+    let Some(flag_holder) = maybe_flag_holder else {
         return;
     };
+    let player_flag = **flag_holder;
+    let flag = flag.get(player_flag).unwrap();
+    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
 
-    let Ok(entry_position) = menu_entries_add.get(trigger.0) else {
+    let Ok(entry_position) = menu_entries_add.get(**trigger) else {
         return;
     };
-
-    let unit = units_on_flag
-        .iter()
-        .find(|(assignment, _)| assignment.0 == player_flag.0)
-        .unwrap()
-        .1;
-
-    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(unit.unit_type);
 
     match current_hover.single_mut() {
         Ok(mut flag_position) => {
@@ -252,12 +238,13 @@ fn draw_flag_on_selected(
     commands.trigger(DrawHoverFlag(entry));
 }
 
-fn assign_unit(
+fn update_flag_assignment(
     army_flag_assigments: Query<&ArmyFlagAssignments, Changed<ArmyFlagAssignments>>,
     menu_entries: Query<(Entity, &NodePayload<CommanderFormation>), With<Selected>>,
-    units_on_flag: Query<(&FlagAssignment, &Unit)>,
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
+    flag: Query<&Flag>,
+    player: Query<&FlagHolder, With<ControlledPlayer>>,
     mut commands: Commands,
 ) {
     let Some(active_commander) = **active else {
@@ -268,27 +255,27 @@ fn assign_unit(
         return;
     };
 
-    let Ok((entry, slot)) = menu_entries.single() else {
+    let Ok((entry, selected_slot)) = menu_entries.single() else {
         return;
     };
 
-    let maybe_flag_assigned = army_flag_assigment.flags.get(**slot);
+    let maybe_flag_assigned = army_flag_assigment.flags.get(**selected_slot);
     let Some(flag_assigned) = maybe_flag_assigned else {
+        let flag_holder = player.single().unwrap();
+        let player_flag = **flag_holder;
+        commands.entity(player_flag).insert(Visibility::Visible);
         commands.entity(entry).despawn_related::<Children>();
         commands.trigger(DrawHoverFlag(entry));
         return;
     };
 
-    let unit = units_on_flag
-        .iter()
-        .find(|(assignment, _)| assignment.0 == *flag_assigned)
-        .unwrap()
-        .1;
+    commands.entity(*flag_assigned).insert(Visibility::Hidden);
 
-    let unit_weapon = weapons_sprite_sheet.sprite_for_unit(unit.unit_type);
+    let flag = flag.get(*flag_assigned).unwrap();
+    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
 
     let flag_weapon_slot = commands
-        .spawn((unit_weapon, Transform::from_xyz(0., 0., 1.)))
+        .spawn((weapon_sprite, Transform::from_xyz(0., 0., 1.)))
         .id();
 
     commands
