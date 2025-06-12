@@ -1,6 +1,6 @@
-use std::ops::Deref;
+use bevy::prelude::*;
 
-use bevy::{color::palettes::css::PURPLE, prelude::*, ui::widget::ImageNodeSize};
+use bevy::color::palettes::css::PURPLE;
 use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
     PlayerState, Vec3LayerExt,
@@ -15,7 +15,10 @@ use shared::{
 };
 
 use crate::{
-    animations::objects::items::weapons::WeaponsSpriteSheet,
+    animations::{
+        objects::items::weapons::WeaponsSpriteSheet,
+        ui::army_formations::{FormationIconSpriteSheet, FormationIcons},
+    },
     networking::ControlledPlayer,
     widgets::menu::{
         ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
@@ -123,10 +126,10 @@ fn open_slots_dialog(
     mut commands: Commands,
     army_flag_assignments: Query<&ArmyFlagAssignments>,
     transform: Query<&GlobalTransform>,
-    asset_server: Res<AssetServer>,
     flag: Query<&Flag>,
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
+    formations: Res<FormationIconSpriteSheet>,
 ) {
     let MainMenuEntries::Slots = trigger.selection else {
         return;
@@ -140,9 +143,14 @@ fn open_slots_dialog(
         .flags
         .iter_enums()
         .map(|(formation, maybe_flag)| {
-            let formation_front = asset_server.load::<Image>("ui/commander/formation_front.png");
-            let formation_middle = asset_server.load::<Image>("ui/commander/formation_middle.png");
-            let formation_back = asset_server.load::<Image>("ui/commander/formation_back.png");
+            let icon = match formation {
+                CommanderFormation::Front => FormationIcons::Front,
+                CommanderFormation::Middle => FormationIcons::Middle,
+                CommanderFormation::Back => FormationIcons::Back,
+            };
+            let atlas = formations.sprite_sheet.texture_atlas(icon);
+            let texture = formations.sprite_sheet.texture.clone();
+
             let has_unit_weapon = maybe_flag.map(|flag_entity| {
                 let flag = flag.get(flag_entity).unwrap();
                 let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
@@ -153,18 +161,9 @@ fn open_slots_dialog(
             });
 
             MenuNode::with_fn(formation, move |commands, entry| {
-                let formation_sprite = match formation {
-                    CommanderFormation::Front => formation_front.clone(),
-                    CommanderFormation::Middle => formation_middle.clone(),
-                    CommanderFormation::Back => formation_back.clone(),
-                };
                 let mut entry = commands.entity(entry);
-                entry.insert(Sprite {
-                    image: formation_sprite,
-                    custom_size: Some(Vec2::splat(10.)),
-                    flip_x: commander_facing == 1.,
-                    ..Default::default()
-                });
+
+                entry.insert(Sprite::from_atlas_image(texture.clone(), atlas.clone()));
 
                 if let Some(flag_weapon) = has_unit_weapon {
                     entry.add_child(flag_weapon);
