@@ -162,7 +162,7 @@ fn open_slots_dialog(
                 entry.insert(Sprite {
                     image: formation_sprite,
                     custom_size: Some(Vec2::splat(10.)),
-                    flip_x: commander_facing != 1.,
+                    flip_x: commander_facing == 1.,
                     ..Default::default()
                 });
 
@@ -172,6 +172,7 @@ fn open_slots_dialog(
             })
         })
         .collect();
+    //        menu_nodes.reverse();
 
     let start_node = if commander_facing == 1. {
         menu_nodes.reverse();
