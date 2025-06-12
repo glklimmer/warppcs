@@ -2,8 +2,7 @@ use bevy::ecs::component::HookContext;
 use bevy::prelude::*;
 
 use bevy::{
-    color::palettes::css::GREY,
-    ecs::world::DeferredWorld,
+    color::palettes::css::GREY, ecs::world::DeferredWorld,
     input::common_conditions::input_just_pressed,
 };
 use shared::{PlayerState, Vec3LayerExt, map::Layers};
@@ -75,6 +74,14 @@ fn color_tree(world: &mut DeferredWorld, root: Entity, color: Color) {
             sprite.color = color;
         }
 
+        if let Some(mut text_color) = world.entity_mut(entity).get_mut::<TextColor>() {
+            text_color.0 = color;
+        }
+
+        if let Some(mut text_color) = world.entity_mut(entity).get_mut::<ImageNode>() {
+            text_color.color = color;
+        }
+
         let Some(children) = world.entity(entity).get::<Children>() else {
             continue;
         };
@@ -103,15 +110,24 @@ impl<T: Clone + 'static> Menu<T> {
         self.config.gap = gap;
         self
     }
+
+    pub fn with_start_node(mut self, selected_node: usize) -> Self {
+        self.config.selected_node = selected_node;
+        self
+    }
 }
 
 struct MenuConfig {
     gap: f32,
+    selected_node: usize,
 }
 
 impl Default for MenuConfig {
     fn default() -> Self {
-        Self { gap: 25. }
+        Self {
+            gap: 25.,
+            selected_node: 0,
+        }
     }
 }
 
@@ -175,7 +191,7 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
         commands
             .entity(entry)
             .insert(GrayOnSpawn)
-            .insert_if(Selected, || i == 0);
+            .insert_if(Selected, || i == menu.config.selected_node);
 
         commands.entity(menu_entity).add_child(entry);
     }
