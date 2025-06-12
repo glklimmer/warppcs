@@ -1,10 +1,12 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 
 use attachment::AttachmentPlugin;
 use movement::{MovementPlugin, Velocity};
 use projectile::ProjectilePlugin;
 
-use crate::networking::Facing;
+use crate::networking::WorldDirection;
 
 use super::entities::health::TakeDamage;
 
@@ -31,9 +33,9 @@ pub struct PushBack {
 
 impl Default for PushBack {
     fn default() -> Self {
-        Self {
-            timer: Timer::from_seconds(1., TimerMode::Once),
-        }
+        let mut timer = Timer::from_seconds(1., TimerMode::Once);
+        timer.tick(Duration::MAX);
+        Self { timer }
     }
 }
 fn apply_force_on_hit(
@@ -44,8 +46,8 @@ fn apply_force_on_hit(
         if let Ok((mut velocity, mut push_back)) = query.get_mut(event.target_entity) {
             if push_back.timer.finished() {
                 let push = match event.direction {
-                    Facing::Left => Vec2::new(50., 50.),
-                    Facing::Right => Vec2::new(-50., 50.),
+                    WorldDirection::Left => Vec2::new(50., 50.),
+                    WorldDirection::Right => Vec2::new(-50., 50.),
                 };
                 push_back.timer.reset();
                 velocity.0 += push;

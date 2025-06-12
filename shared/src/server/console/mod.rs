@@ -208,7 +208,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         .get_mut(world, player)
         .unwrap()
         .translation;
-    let time = 50.;
+    let time = 3.;
     let unit = Unit {
         swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
         unit_type: UnitType::Commander,
@@ -223,7 +223,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     let damage = 20.;
     let damage = Damage(damage);
 
-    let range = 50.;
+    let range = 20.;
     let range = Range(range);
 
     let offset = Vec2::new(-18., 0.);
@@ -239,7 +239,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             owner,
             FlagAssignment(flag_commander),
             FollowOffset(offset),
-            UnitBehaviour::FollowFlag(flag_commander),
+            UnitBehaviour::default(),
             Interactable {
                 kind: InteractionType::CommanderInteraction,
                 restricted_to: Some(player),
@@ -330,7 +330,7 @@ fn spawn_unit(
         unit_type,
     };
 
-    let hitpoints = 20.;
+    let hitpoints = 200.;
     let health = Health { hitpoints };
 
     let movement_speed = 40.;
@@ -340,7 +340,7 @@ fn spawn_unit(
     let damage = Damage(damage);
 
     let range = match unit_type {
-        UnitType::Shieldwarrior => 20.,
+        UnitType::Shieldwarrior => 10.,
         UnitType::Pikeman => 20.,
         UnitType::Archer => 100.,
         UnitType::Bandit => todo!(),
@@ -358,7 +358,7 @@ fn spawn_unit(
             range,
             owner,
             FlagAssignment(flag_entity),
-            UnitBehaviour::FollowFlag(flag_entity),
+            UnitBehaviour::default(),
         ));
     }
     flag_entity

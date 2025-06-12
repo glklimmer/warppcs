@@ -1,11 +1,10 @@
 use bevy::prelude::*;
 
 use bevy_replicon::prelude::{SendMode, ToClients};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner, map::buildings::Building,
-    networking::Facing, server::buildings::recruiting::FlagAssignment,
+    networking::WorldDirection, server::buildings::recruiting::FlagAssignment,
 };
 
 use super::Unit;
@@ -21,11 +20,11 @@ impl Default for Health {
     }
 }
 
-#[derive(Event, Debug, Serialize, Deserialize)]
+#[derive(Event, Debug)]
 pub struct TakeDamage {
     pub target_entity: Entity,
     pub damage: f32,
-    pub direction: Facing,
+    pub direction: WorldDirection,
     pub by: Hitby,
 }
 

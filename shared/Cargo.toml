@@ -61,3 +61,4 @@ aeronet_steam = { version = "0.14.0", features = [
   "client",
   "server",
 ], optional = true }
+bevy_behave = "0.3.0"
