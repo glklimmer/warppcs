@@ -3,8 +3,10 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner, map::buildings::Building,
-    networking::WorldDirection, server::buildings::recruiting::FlagAssignment,
+    AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner,
+    map::buildings::Building,
+    networking::{UnitType, WorldDirection},
+    server::buildings::recruiting::FlagAssignment,
 };
 
 use super::Unit;
@@ -20,12 +22,37 @@ impl Default for Health {
     }
 }
 
-#[derive(Event, Debug)]
+#[derive(Event, Debug, Clone)]
 pub struct TakeDamage {
     pub target_entity: Entity,
     pub damage: f32,
     pub direction: WorldDirection,
     pub by: Hitby,
+}
+
+#[derive(Component)]
+pub struct DelayedDamage {
+    timer: Timer,
+    damage: TakeDamage,
+}
+
+impl DelayedDamage {
+    pub fn new(unit_type: &UnitType, damage: TakeDamage) -> Self {
+        let frame_delay = match unit_type {
+            UnitType::Shieldwarrior => 2,
+            UnitType::Pikeman => 3,
+            UnitType::Archer => todo!(),
+            UnitType::Bandit => 2,
+            UnitType::Commander => 2,
+        };
+
+        let duration = frame_delay as f32 * 0.1;
+
+        Self {
+            timer: Timer::from_seconds(duration, TimerMode::Once),
+            damage,
+        }
+    }
 }
 
 pub struct HealthPlugin;
@@ -34,12 +61,34 @@ impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<TakeDamage>();
 
-        app.add_systems(FixedUpdate, (apply_damage).run_if(on_event::<TakeDamage>));
-
         app.add_systems(
             FixedUpdate,
-            (on_unit_death, on_building_destroy, delayed_despawn),
+            (
+                (
+                    delayed_damage,
+                    (apply_damage).run_if(on_event::<TakeDamage>),
+                )
+                    .chain(),
+                on_unit_death,
+                on_building_destroy,
+                delayed_despawn,
+            ),
         );
+    }
+}
+
+fn delayed_damage(
+    mut query: Query<(Entity, &mut DelayedDamage)>,
+    mut attack_events: EventWriter<TakeDamage>,
+    mut commands: Commands,
+    time: Res<Time>,
+) {
+    for (entity, mut delay) in query.iter_mut() {
+        delay.timer.tick(time.delta());
+        if delay.timer.finished() {
+            attack_events.write(delay.damage.clone());
+            commands.entity(entity).despawn();
+        }
     }
 }
 

@@ -10,7 +10,10 @@ use crate::{
     map::Layers,
     networking::{UnitType, WorldDirection},
     server::{
-        entities::{Damage, Unit, health::TakeDamage},
+        entities::{
+            Damage, Unit,
+            health::{DelayedDamage, TakeDamage},
+        },
         physics::{movement::Velocity, projectile::ProjectileType},
     },
 };
@@ -34,7 +37,6 @@ fn process_attacks(
         &Transform,
         &Damage,
     )>,
-    mut attack_events: EventWriter<TakeDamage>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
 ) {
@@ -59,15 +61,18 @@ fn process_attacks(
                 | UnitType::Pikeman
                 | UnitType::Bandit
                 | UnitType::Commander => {
-                    attack_events.write(TakeDamage {
-                        target_entity: **target,
-                        damage: **damage,
-                        direction: match delta_x > 0. {
-                            true => WorldDirection::Left,
-                            false => WorldDirection::Right,
+                    commands.spawn(DelayedDamage::new(
+                        &unit.unit_type,
+                        TakeDamage {
+                            target_entity: **target,
+                            damage: **damage,
+                            direction: match delta_x > 0. {
+                                true => WorldDirection::Left,
+                                false => WorldDirection::Right,
+                            },
+                            by: Hitby::Melee,
                         },
-                        by: Hitby::Melee,
-                    });
+                    ));
                 }
                 UnitType::Archer => {
                     let arrow_position = Vec3::new(
