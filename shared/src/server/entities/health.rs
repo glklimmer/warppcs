@@ -6,7 +6,10 @@ use crate::{
     AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner,
     map::buildings::Building,
     networking::{UnitType, WorldDirection},
-    server::buildings::recruiting::FlagAssignment,
+    server::{
+        ai::{Target, TargetedBy},
+        buildings::recruiting::FlagAssignment,
+    },
 };
 
 use super::Unit;
@@ -115,14 +118,16 @@ fn apply_damage(
 fn on_unit_death(
     mut commands: Commands,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
-    query: Query<(Entity, &Health), With<Unit>>,
+    query: Query<(Entity, &Health, &TargetedBy), With<Unit>>,
 ) {
-    for (entity, health) in query.iter() {
+    for (entity, health, targeted_by) in query.iter() {
         if health.hitpoints <= 0. {
             commands
                 .entity(entity)
                 .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
                 .remove::<FlagAssignment>()
+                .despawn_related::<Children>()
+                .remove_related::<Target>(targeted_by)
                 .remove::<Health>();
 
             animation.write(ToClients {
