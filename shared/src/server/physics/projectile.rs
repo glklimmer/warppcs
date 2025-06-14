@@ -7,9 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::Hitby;
 use crate::server::entities::Damage;
 use crate::{
-    BoxCollider, DelayedDespawn, Owner,
-    networking::WorldDirection,
-    projectile_collider,
+    BoxCollider, DelayedDespawn, Owner, projectile_collider,
     server::entities::health::{Health, TakeDamage},
 };
 
@@ -72,10 +70,7 @@ fn projectile_collision(
                 attack_events.write(TakeDamage {
                     target_entity,
                     damage: **damage,
-                    direction: match delta_x > 0. {
-                        true => WorldDirection::Left,
-                        false => WorldDirection::Right,
-                    },
+                    direction: delta_x.into(),
                     by: Hitby::Arrow,
                 });
                 commands.entity(entity).despawn();

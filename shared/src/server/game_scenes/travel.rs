@@ -78,10 +78,6 @@ fn portal_collider() -> BoxCollider {
 
 fn travel_timer(mut query: Query<&mut Traveling>, time: Res<Time>) {
     for mut traveling in &mut query {
-        info!(
-            "Travel happening, time left: {:?}",
-            traveling.time_left.elapsed_secs()
-        );
         traveling.time_left.tick(time.delta());
     }
 }
