@@ -4,7 +4,7 @@ use bevy_behave::prelude::BehaveCtx;
 use bevy_replicon::prelude::{SendMode, ToClients};
 use std::f32::consts::FRAC_PI_4;
 
-use super::{AttackingInRange, TargetInRange};
+use super::{AttackingInRange, Target};
 use crate::{
     AnimationChange, AnimationChangeEvent, GRAVITY_G, Hitby, Owner,
     map::Layers,
@@ -30,13 +30,7 @@ impl Plugin for AIAttackPlugin {
 fn process_attacks(
     query: Query<&BehaveCtx, With<AttackingInRange>>,
     mut commands: Commands,
-    mut unit: Query<(
-        &mut Unit,
-        Option<&TargetInRange>,
-        &Owner,
-        &Transform,
-        &Damage,
-    )>,
+    mut unit: Query<(&mut Unit, Option<&Target>, &Owner, &Transform, &Damage)>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
 ) {

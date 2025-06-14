@@ -1,7 +1,9 @@
 use bevy::prelude::*;
+
 use bevy_behave::prelude::BehaveCtx;
 
-use super::{FollowFlag, FollowOffset, TargetInSight, WalkIntoRange};
+use super::{FollowFlag, FollowOffset, Target, WalkIntoRange};
+
 use crate::server::{
     buildings::recruiting::FlagAssignment,
     entities::Range,
@@ -63,7 +65,7 @@ fn walk_into_range(
     mut unit: Query<(
         &mut Velocity,
         &Transform,
-        Option<&TargetInSight>,
+        Option<&Target>,
         &RandomVelocityMul,
         &Speed,
         &Range,
