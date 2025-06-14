@@ -74,3 +74,21 @@ pub enum WorldDirection {
     Left,
     Right,
 }
+
+impl From<f32> for WorldDirection {
+    fn from(value: f32) -> Self {
+        match value > 0. {
+            true => WorldDirection::Right,
+            false => WorldDirection::Left,
+        }
+    }
+}
+
+impl From<WorldDirection> for f32 {
+    fn from(value: WorldDirection) -> Self {
+        match value {
+            WorldDirection::Left => -1.,
+            WorldDirection::Right => 1.,
+        }
+    }
+}
