@@ -37,10 +37,9 @@ impl Plugin for AIPlugin {
             .add_observer(push_back_check)
             .add_observer(determine_target)
             .add_observer(has_enemy_in_range)
-            .add_observer(remove_target_in_sight_if_in_range)
             .add_systems(
                 FixedUpdate,
-                (remove_target_if_out_of_sight, remove_target_if_out_of_range),
+                (remove_target_if_out_of_sight, remove_target_if_out_of_sight),
             );
     }
 }
@@ -120,10 +119,12 @@ struct DetermineTarget;
 struct CheckHasEnemyInRange;
 
 #[derive(Component, Deref)]
-struct TargetInRange(Entity);
+#[relationship(relationship_target = TargetedBy)]
+pub struct Target(Entity);
 
 #[derive(Component, Deref)]
-struct TargetInSight(Entity);
+#[relationship_target(relationship = Target)]
+pub struct TargetedBy(Vec<Entity>);
 
 fn push_back_check(
     trigger: Trigger<BehaveTrigger<PushBackCheck>>,
@@ -148,12 +149,12 @@ fn push_back_check(
 fn determine_target(
     trigger: Trigger<BehaveTrigger<DetermineTarget>>,
     mut commands: Commands,
-    query: Query<(&Transform, &Owner, &Range, Option<&TargetInRange>)>,
+    query: Query<(&Transform, &Owner, Option<&Target>)>,
     others: Query<(Entity, &Transform, &Owner), With<Health>>,
 ) {
     let ctx = trigger.event().ctx();
     let unit_entity = ctx.target_entity();
-    let (transform, owner, range, maybe_target) = query.get(unit_entity).unwrap();
+    let (transform, owner, maybe_target) = query.get(unit_entity).unwrap();
 
     if maybe_target.is_some() {
         commands.trigger(ctx.success());
@@ -176,16 +177,8 @@ fn determine_target(
         .min_by(|(.., a), (.., b)| a.total_cmp(b));
 
     match nearest {
-        Some((nearest_enemy, distance)) => {
-            if distance <= **range {
-                commands
-                    .entity(unit_entity)
-                    .insert(TargetInRange(nearest_enemy));
-            } else {
-                commands
-                    .entity(unit_entity)
-                    .insert(TargetInSight(nearest_enemy));
-            }
+        Some((nearest_enemy, ..)) => {
+            commands.entity(unit_entity).insert(Target(nearest_enemy));
             commands.trigger(ctx.success());
         }
         None => commands.trigger(ctx.failure()),
@@ -195,46 +188,31 @@ fn determine_target(
 fn has_enemy_in_range(
     trigger: Trigger<BehaveTrigger<CheckHasEnemyInRange>>,
     mut commands: Commands,
-    query: Query<Option<&TargetInRange>>,
+    query: Query<(&Transform, &Range, Option<&Target>)>,
+    transform_query: Query<&Transform>,
 ) {
     let ctx = trigger.ctx();
-    let maybe_target = query.get(ctx.target_entity()).unwrap();
-    if maybe_target.is_some() {
+    let (transform, range, maybe_target) = query.get(ctx.target_entity()).unwrap();
+    let Some(target) = maybe_target else {
+        commands.trigger(ctx.failure());
+        return;
+    };
+    let other_transform = transform_query.get(**target).unwrap();
+    let distance = transform
+        .translation
+        .truncate()
+        .distance(other_transform.translation.truncate());
+
+    if distance <= **range {
         commands.trigger(ctx.success());
     } else {
         commands.trigger(ctx.failure());
     }
 }
 
-fn remove_target_if_out_of_range(
-    mut commands: Commands,
-    query: Query<(Entity, &TargetInRange, &Transform, &Range)>,
-    other: Query<&Transform>,
-) {
-    for (entity, target, transform, range) in query.iter() {
-        let other_transform = other.get(**target).unwrap();
-        let distance = transform
-            .translation
-            .truncate()
-            .distance(other_transform.translation.truncate());
-        if distance > **range {
-            commands.entity(entity).try_remove::<TargetInRange>();
-        }
-    }
-}
-
-fn remove_target_in_sight_if_in_range(
-    trigger: Trigger<OnAdd, TargetInRange>,
-    mut commands: Commands,
-) {
-    commands
-        .entity(trigger.target())
-        .try_remove::<TargetInSight>();
-}
-
 fn remove_target_if_out_of_sight(
     mut commands: Commands,
-    query: Query<(Entity, &TargetInSight, &Transform)>,
+    query: Query<(Entity, &Target, &Transform)>,
     other: Query<&Transform>,
 ) {
     for (entity, target, transform) in query.iter() {
@@ -244,7 +222,7 @@ fn remove_target_if_out_of_sight(
             .truncate()
             .distance(other_transform.translation.truncate());
         if distance > SIGHT_RANGE {
-            commands.entity(entity).try_remove::<TargetInRange>();
+            commands.entity(entity).try_remove::<Target>();
         }
     }
 }
