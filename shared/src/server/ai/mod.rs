@@ -20,7 +20,7 @@ mod movement;
 #[derive(Debug, Deref, DerefMut, Component, Default)]
 pub struct FollowOffset(pub Vec2);
 
-#[derive(Debug, Component, Default)]
+#[derive(Debug, Component, Default, Clone)]
 #[require(FollowOffset)]
 pub enum UnitBehaviour {
     #[default]
@@ -88,7 +88,10 @@ fn on_insert_unit_behaviour(
         )),
         UnitBehaviour::Attack(direction) => behave!(Behave::spawn_named(
             "Walking in attack direction",
-            WalkingInDirection(*direction)
+            (
+                WalkingInDirection(*direction),
+                BehaveTimeout::from_secs(2.0, true)
+            )
         )),
     };
 
@@ -106,6 +109,7 @@ fn on_insert_unit_behaviour(
 
     commands
         .entity(trigger.target())
+        .despawn_related::<Children>()
         .with_child(BehaveTree::new(tree).with_logging(false));
 }
 

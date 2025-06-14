@@ -6,8 +6,6 @@ use attachment::AttachmentPlugin;
 use movement::{MovementPlugin, Velocity};
 use projectile::ProjectilePlugin;
 
-use crate::networking::WorldDirection;
-
 use super::entities::health::TakeDamage;
 
 pub mod attachment;
@@ -45,10 +43,8 @@ fn apply_force_on_hit(
     for event in hit.read() {
         if let Ok((mut velocity, mut push_back)) = query.get_mut(event.target_entity) {
             if push_back.timer.finished() {
-                let push = match event.direction {
-                    WorldDirection::Left => Vec2::new(50., 50.),
-                    WorldDirection::Right => Vec2::new(-50., 50.),
-                };
+                let direction: f32 = event.direction.into();
+                let push = Vec2::new(direction * 50., 50.);
                 push_back.timer.reset();
                 velocity.0 += push;
             }
