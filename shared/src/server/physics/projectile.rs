@@ -8,7 +8,7 @@ use crate::Hitby;
 use crate::server::entities::Damage;
 use crate::{
     BoxCollider, DelayedDespawn, Owner,
-    networking::Facing,
+    networking::WorldDirection,
     projectile_collider,
     server::entities::health::{Health, TakeDamage},
 };
@@ -73,8 +73,8 @@ fn projectile_collision(
                     target_entity,
                     damage: **damage,
                     direction: match delta_x > 0. {
-                        true => Facing::Left,
-                        false => Facing::Right,
+                        true => WorldDirection::Left,
+                        false => WorldDirection::Right,
                     },
                     by: Hitby::Arrow,
                 });

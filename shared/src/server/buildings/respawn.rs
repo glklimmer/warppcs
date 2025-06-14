@@ -19,6 +19,7 @@ use super::{
     recruiting::{Flag, FlagAssignment, FlagUnits, unit_stats},
 };
 
+#[allow(clippy::type_complexity)]
 pub fn respawn_units(
     mut commands: Commands,
     flags: Query<(
@@ -83,7 +84,7 @@ pub fn respawn_units(
                 range,
                 *flag_owner,
                 FlagAssignment(flag_entity),
-                UnitBehaviour::FollowFlag(flag_entity),
+                UnitBehaviour::default(),
             ));
         }
     }

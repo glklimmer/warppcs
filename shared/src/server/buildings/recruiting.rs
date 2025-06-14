@@ -202,7 +202,7 @@ fn spawn_units(
             range,
             owner,
             FlagAssignment(flag_entity),
-            UnitBehaviour::FollowFlag(flag_entity),
+            UnitBehaviour::default(),
         ));
     }
 }
@@ -210,7 +210,7 @@ fn spawn_units(
 pub fn unit_stats(unit_type: UnitType, items: &[Item]) -> (Unit, Health, Speed, Damage, Range) {
     let time = items.calculated(Effect::AttackSpeed) / 2.;
     let unit = Unit {
-        swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
+        swing_timer: Timer::from_seconds(time, TimerMode::Once),
         unit_type,
     };
 
@@ -274,22 +274,22 @@ pub fn recruit_commander(
 
     commands.entity(player).insert(FlagHolder(flag_entity));
 
-    let time = 50.;
+    let time = 2.;
     let unit = Unit {
-        swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
+        swing_timer: Timer::from_seconds(time, TimerMode::Once),
         unit_type: UnitType::Commander,
     };
 
     let hitpoints = 100.;
     let health = Health { hitpoints };
 
-    let movement_speed = 50.;
+    let movement_speed = 35.;
     let speed = Speed(movement_speed);
 
     let damage = 20.;
     let damage = Damage(damage);
 
-    let range = 50.;
+    let range = 20.;
     let range = Range(range);
 
     let offset = Vec2::new(-18., 0.);
@@ -304,7 +304,7 @@ pub fn recruit_commander(
             owner,
             FlagAssignment(flag_entity),
             FollowOffset(offset),
-            UnitBehaviour::FollowFlag(flag_entity),
+            UnitBehaviour::default(),
             Interactable {
                 kind: InteractionType::CommanderInteraction,
                 restricted_to: Some(player),

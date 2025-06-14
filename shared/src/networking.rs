@@ -69,9 +69,8 @@ pub struct Mounted {
     pub mount_type: MountType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub enum Facing {
-    #[default]
+#[derive(Debug, Clone, Copy)]
+pub enum WorldDirection {
     Left,
     Right,
 }
