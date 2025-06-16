@@ -250,7 +250,6 @@ fn highligh_formation(
         .iter_enums()
         .for_each(|(formation, entity)| {
             if formation == **selected_formation {
-                info!("formation {:?} ", **selected_formation);
                 commands.entity(*entity).insert((
                     Mesh2d(meshes.add(Rectangle::default())),
                     MeshMaterial2d(materials.add(Color::from(PURPLE))),
