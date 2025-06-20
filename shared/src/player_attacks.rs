@@ -63,8 +63,10 @@ fn attack(
     };
     let behaviour = behaviour.get(unit).unwrap();
     let new_behaviour = match behaviour {
-        UnitBehaviour::Idle => UnitBehaviour::Attack(transform.scale.x.into()),
-        UnitBehaviour::Attack(_) => UnitBehaviour::Idle,
+        UnitBehaviour::Attack(_) => UnitBehaviour::FollowFlag,
+        UnitBehaviour::FollowFlag | UnitBehaviour::Idle => {
+            UnitBehaviour::Attack(transform.scale.x.into())
+        }
     };
 
     for unit in units.iter() {

@@ -24,6 +24,7 @@ pub struct FollowOffset(pub Vec2);
 #[require(FollowOffset)]
 pub enum UnitBehaviour {
     #[default]
+    FollowFlag,
     Idle,
     Attack(WorldDirection),
 }
@@ -66,26 +67,44 @@ fn on_insert_unit_behaviour(
     let entity = trigger.target();
     let behaviour = query.get(entity).unwrap();
 
-    let attack_nearby = behave!(
-        Behave::IfThen => {
-            Behave::trigger(DetermineTarget),
-            Behave::IfThen => {
-                Behave::trigger(CheckHasEnemyInRange),
-                Behave::spawn_named(
-                    "Attack nearest enemy",
-                    (AttackingInRange, BehaveTarget(entity))
-                ),
-                Behave::spawn_named(
-                    "Walk to nearest enemy in sight",
-                    (WalkIntoRange, BehaveTarget(entity))
-                )
-            }
-        },
-    );
+    let attack_nearby = match behaviour {
+        UnitBehaviour::FollowFlag => {
+            behave!(
+                Behave::IfThen => {
+                    Behave::trigger(DetermineTarget),
+                    Behave::IfThen => {
+                        Behave::trigger(CheckHasEnemyInRange),
+                        Behave::spawn_named(
+                            "Attack nearest enemy",
+                            (AttackingInRange, BehaveTarget(entity))
+                        )
+                    }
+                }
+            )
+        }
+        _ => {
+            behave!(
+                Behave::IfThen => {
+                    Behave::trigger(DetermineTarget),
+                    Behave::IfThen => {
+                        Behave::trigger(CheckHasEnemyInRange),
+                        Behave::spawn_named(
+                            "Attack nearest enemy",
+                            (AttackingInRange, BehaveTarget(entity))
+                        ),
+                        Behave::spawn_named(
+                            "Walk to nearest enemy in sight",
+                            (WalkIntoRange, BehaveTarget(entity))
+                        )
+                    }
+                }
+            )
+        }
+    };
 
     let stance = match behaviour {
-        UnitBehaviour::Idle => behave!(Behave::spawn_named(
-            "Following flag",
+        UnitBehaviour::Idle | UnitBehaviour::FollowFlag => behave!(Behave::spawn_named(
+            "Staying at flag",
             (
                 FollowFlag,
                 BehaveTimeout::from_secs(2.0, true),
