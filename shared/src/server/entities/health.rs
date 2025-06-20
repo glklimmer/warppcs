@@ -126,7 +126,6 @@ fn on_unit_death(
                 .entity(entity)
                 .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
                 .remove::<FlagAssignment>()
-                .despawn_related::<Children>()
                 .remove_related::<Target>(targeted_by)
                 .remove::<Health>();
 

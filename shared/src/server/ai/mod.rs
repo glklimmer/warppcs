@@ -20,10 +20,11 @@ mod movement;
 #[derive(Debug, Deref, DerefMut, Component, Default)]
 pub struct FollowOffset(pub Vec2);
 
-#[derive(Debug, Component, Default)]
+#[derive(Debug, Component, Default, Clone)]
 #[require(FollowOffset)]
 pub enum UnitBehaviour {
     #[default]
+    FollowFlag,
     Idle,
     Attack(WorldDirection),
 }
@@ -63,32 +64,60 @@ fn on_insert_unit_behaviour(
     mut commands: Commands,
     query: Query<&UnitBehaviour>,
 ) {
-    let behaviour = query.get(trigger.target()).unwrap();
-    let attack_nearby = behave!(
-        Behave::IfThen => {
-            Behave::trigger(DetermineTarget),
-            Behave::IfThen => {
-                Behave::trigger(CheckHasEnemyInRange),
-                Behave::spawn_named(
-                    "Attack nearest enemy",
-                    AttackingInRange
-                ),
-                Behave::spawn_named(
-                    "Walk to nearest enemy in sight",
-                    WalkIntoRange
-                )
-            }
-        },
-    );
+    let entity = trigger.target();
+    let behaviour = query.get(entity).unwrap();
+
+    let attack_nearby = match behaviour {
+        UnitBehaviour::FollowFlag => {
+            behave!(
+                Behave::IfThen => {
+                    Behave::trigger(DetermineTarget),
+                    Behave::IfThen => {
+                        Behave::trigger(CheckHasEnemyInRange),
+                        Behave::spawn_named(
+                            "Attack nearest enemy",
+                            (AttackingInRange, BehaveTarget(entity))
+                        )
+                    }
+                }
+            )
+        }
+        _ => {
+            behave!(
+                Behave::IfThen => {
+                    Behave::trigger(DetermineTarget),
+                    Behave::IfThen => {
+                        Behave::trigger(CheckHasEnemyInRange),
+                        Behave::spawn_named(
+                            "Attack nearest enemy",
+                            (AttackingInRange, BehaveTarget(entity))
+                        ),
+                        Behave::spawn_named(
+                            "Walk to nearest enemy in sight",
+                            (WalkIntoRange, BehaveTarget(entity))
+                        )
+                    }
+                }
+            )
+        }
+    };
 
     let stance = match behaviour {
-        UnitBehaviour::Idle => behave!(Behave::spawn_named(
+        UnitBehaviour::Idle | UnitBehaviour::FollowFlag => behave!(Behave::spawn_named(
             "Following flag",
-            (FollowFlag, BehaveTimeout::from_secs(2.0, true))
+            (
+                FollowFlag,
+                BehaveTimeout::from_secs(2.0, true),
+                BehaveTarget(entity)
+            )
         )),
         UnitBehaviour::Attack(direction) => behave!(Behave::spawn_named(
             "Walking in attack direction",
-            WalkingInDirection(*direction)
+            (
+                WalkingInDirection(*direction),
+                BehaveTimeout::from_secs(2.0, true),
+                BehaveTarget(entity)
+            )
         )),
     };
 
@@ -104,10 +133,23 @@ fn on_insert_unit_behaviour(
         }
     );
 
+    info!("new behave: {:?}", behaviour);
     commands
-        .entity(trigger.target())
-        .with_child(BehaveTree::new(tree).with_logging(false));
+        .entity(entity)
+        .despawn_related::<BehaveSources>()
+        .with_child((
+            BehaveTree::new(tree).with_logging(false),
+            BehaveTarget(entity),
+        ));
 }
+
+#[derive(Component, Clone, Deref)]
+#[relationship(relationship_target = BehaveSources)]
+pub struct BehaveTarget(Entity);
+
+#[derive(Component, Clone, Deref)]
+#[relationship_target(relationship = BehaveTarget)]
+pub struct BehaveSources(Vec<Entity>);
 
 #[derive(Clone)]
 struct PushBackCheck;

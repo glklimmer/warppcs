@@ -223,7 +223,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     let damage = 20.;
     let damage = Damage(damage);
 
-    let range = 20.;
+    let range = 10.;
     let range = Range(range);
 
     let offset = Vec2::new(-18., 0.);

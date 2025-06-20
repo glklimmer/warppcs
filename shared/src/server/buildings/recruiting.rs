@@ -289,7 +289,7 @@ pub fn recruit_commander(
     let damage = 20.;
     let damage = Damage(damage);
 
-    let range = 20.;
+    let range = 10.;
     let range = Range(range);
 
     let offset = Vec2::new(-18., 0.);
