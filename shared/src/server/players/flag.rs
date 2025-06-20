@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::server::{ai::UnitBehaviour, buildings::recruiting::FlagUnits};
+
 use super::{
     super::{buildings::recruiting::FlagHolder, physics::attachment::AttachedTo},
     interaction::{InteractionTriggeredEvent, InteractionType},
@@ -52,6 +54,7 @@ pub fn pick_flag(
     mut commands: Commands,
     mut pick_flag: EventReader<PickFlagEvent>,
     mut flag_query: Query<&mut Transform>,
+    units: Query<&FlagUnits>,
 ) {
     for event in pick_flag.read() {
         let mut transform = flag_query.get_mut(event.flag).unwrap();
@@ -60,6 +63,11 @@ pub fn pick_flag(
 
         commands.entity(event.flag).insert(AttachedTo(event.player));
         commands.entity(event.player).insert(FlagHolder(event.flag));
+
+        let units = units.get(event.flag).unwrap();
+        for unit in units.iter() {
+            commands.entity(unit).insert(UnitBehaviour::FollowFlag);
+        }
     }
 }
 
@@ -67,6 +75,7 @@ pub fn drop_flag(
     mut drop_flag: EventReader<DropFlagEvent>,
     mut commands: Commands,
     mut flag_query: Query<&mut Transform>,
+    units: Query<&FlagUnits>,
 ) {
     for event in drop_flag.read() {
         let mut transform = flag_query.get_mut(event.flag).unwrap();
@@ -75,5 +84,10 @@ pub fn drop_flag(
 
         commands.entity(event.flag).remove::<AttachedTo>();
         commands.entity(event.player).remove::<FlagHolder>();
+
+        let units = units.get(event.flag).unwrap();
+        for unit in units.iter() {
+            commands.entity(unit).insert(UnitBehaviour::Idle);
+        }
     }
 }
