@@ -46,6 +46,7 @@ fn process_attacks(
             let target_pos = if let Ok(target_transform) = position.get(**target) {
                 target_transform.translation
             } else {
+                commands.trigger(ctx.success());
                 continue;
             };
             let delta_x = target_pos.x - transform.translation.x;

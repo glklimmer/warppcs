@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use attack::AIAttackPlugin;
 use bevy_behave::{
     Behave, behave,
-    prelude::{BehavePlugin, BehaveTimeout, BehaveTree, BehaveTrigger},
+    prelude::{BehaveInterrupt, BehavePlugin, BehaveTree, BehaveTrigger},
 };
 use movement::AIMovementPlugin;
 
@@ -38,10 +38,7 @@ impl Plugin for AIPlugin {
             .add_observer(push_back_check)
             .add_observer(determine_target)
             .add_observer(has_enemy_in_range)
-            .add_systems(
-                FixedUpdate,
-                (remove_target_if_out_of_sight, remove_target_if_out_of_sight),
-            );
+            .add_systems(FixedPostUpdate, remove_target_if_out_of_sight);
     }
 }
 
@@ -76,7 +73,11 @@ fn on_insert_unit_behaviour(
                         Behave::trigger(CheckHasEnemyInRange),
                         Behave::spawn_named(
                             "Attack nearest enemy",
-                            (AttackingInRange, BehaveTarget(entity))
+                            (
+                                AttackingInRange,
+                                BehaveInterrupt::by_not(CheckHasEnemyInRange),
+                                BehaveTarget(entity)
+                            )
                         )
                     }
                 }
@@ -90,7 +91,11 @@ fn on_insert_unit_behaviour(
                         Behave::trigger(CheckHasEnemyInRange),
                         Behave::spawn_named(
                             "Attack nearest enemy",
-                            (AttackingInRange, BehaveTarget(entity))
+                            (
+                                AttackingInRange,
+                                BehaveInterrupt::by_not(CheckHasEnemyInRange),
+                                BehaveTarget(entity)
+                            )
                         ),
                         Behave::spawn_named(
                             "Walk to nearest enemy in sight",
@@ -107,7 +112,7 @@ fn on_insert_unit_behaviour(
             "Following flag",
             (
                 FollowFlag,
-                BehaveTimeout::from_secs(2.0, true),
+                BehaveInterrupt::by(CheckHasEnemyInRange).or_not(PushBackCheck),
                 BehaveTarget(entity)
             )
         )),
@@ -115,7 +120,7 @@ fn on_insert_unit_behaviour(
             "Walking in attack direction",
             (
                 WalkingInDirection(*direction),
-                BehaveTimeout::from_secs(2.0, true),
+                BehaveInterrupt::by(CheckHasEnemyInRange),
                 BehaveTarget(entity)
             )
         )),

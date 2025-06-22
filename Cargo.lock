@@ -830,8 +830,7 @@ dependencies = [
 [[package]]
 name = "bevy_behave"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9de12a97caa9447f28127d1366ea42c43ab174f8b6b67275c2f7112d3f5499a4"
+source = "git+https://github.com/glklimmer/bevy_behave#f62a0aedf6c302c41fed6e62ab180b3d2367d2e6"
 dependencies = [
  "bevy",
  "dyn-clone",
