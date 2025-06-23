@@ -306,7 +306,7 @@ pub fn recruit_commander(
             FollowOffset(offset),
             UnitBehaviour::default(),
             Interactable {
-                kind: InteractionType::CommanderInteraction,
+                kind: InteractionType::Commander,
                 restricted_to: Some(player),
             },
             ArmyFlagAssignments::default(),

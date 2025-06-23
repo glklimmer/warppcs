@@ -241,7 +241,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             FollowOffset(offset),
             UnitBehaviour::default(),
             Interactable {
-                kind: InteractionType::CommanderInteraction,
+                kind: InteractionType::Commander,
                 restricted_to: Some(player),
             },
         ))
