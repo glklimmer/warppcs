@@ -57,6 +57,7 @@ pub fn trigger_unit_animation(
             AnimationChange::Hit(_) => UnitAnimation::Hit,
             AnimationChange::Death => UnitAnimation::Death,
             AnimationChange::Mount => UnitAnimation::Idle,
+            AnimationChange::Unmount => UnitAnimation::Idle,
         };
 
         commands.entity(event.entity).insert(PlayOnce);
