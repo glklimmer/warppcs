@@ -50,6 +50,7 @@ impl Plugin for MovementPlugin {
                     set_walking,
                     set_king_walking,
                     apply_friction,
+                    apply_drag,
                     set_projectile_rotation,
                 ),
                 wall_collision,
@@ -100,6 +101,14 @@ fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Tim
         } else {
             velocity.0.x -= velocity.0.x.signum() * friction_force;
         }
+    }
+}
+
+fn apply_drag(mut query: Query<&mut Velocity>, time: Res<Time>) {
+    let drag_coeff = 3.0;
+    for mut vel in query.iter_mut() {
+        let old = vel.0;
+        vel.0 = old - old * drag_coeff * time.delta_secs();
     }
 }
 
