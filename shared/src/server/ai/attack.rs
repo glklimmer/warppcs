@@ -8,7 +8,7 @@ use super::{AttackingInRange, Target};
 use crate::{
     AnimationChange, AnimationChangeEvent, GRAVITY_G, Hitby, Owner,
     map::Layers,
-    networking::{UnitType, WorldDirection},
+    networking::UnitType,
     server::{
         entities::{
             Damage, Unit,
@@ -46,6 +46,7 @@ fn process_attacks(
             let target_pos = if let Ok(target_transform) = position.get(**target) {
                 target_transform.translation
             } else {
+                commands.trigger(ctx.success());
                 continue;
             };
             let delta_x = target_pos.x - transform.translation.x;
@@ -60,10 +61,7 @@ fn process_attacks(
                         TakeDamage {
                             target_entity: **target,
                             damage: **damage,
-                            direction: match delta_x > 0. {
-                                true => WorldDirection::Left,
-                                false => WorldDirection::Right,
-                            },
+                            direction: delta_x.into(),
                             by: Hitby::Melee,
                         },
                     ));
