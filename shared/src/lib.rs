@@ -136,6 +136,7 @@ pub enum AnimationChange {
     Hit(Hitby),
     Death,
     Mount,
+    Unmount,
 }
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize)]

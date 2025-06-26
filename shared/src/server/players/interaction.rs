@@ -8,15 +8,16 @@ use crate::{BoxCollider, ClientPlayerMap, PlayerState};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {
+    Unmount,
     Recruit,
     Flag,
     ItemAssignment,
     Building,
-    Mount,
     Travel,
+    Mount,
+    Commander,
     Chest,
     Item,
-    Commander,
 }
 
 #[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
