@@ -162,7 +162,6 @@ fn open_slots_dialog(
 
             MenuNode::with_fn(formation, move |commands, entry| {
                 let mut entry = commands.entity(entry);
-
                 entry.insert(Sprite::from_atlas_image(texture.clone(), atlas.clone()));
 
                 if let Some(flag_weapon) = has_unit_weapon {
@@ -171,7 +170,6 @@ fn open_slots_dialog(
             })
         })
         .collect();
-    //        menu_nodes.reverse();
 
     let start_node = if commander_facing == 1. {
         menu_nodes.reverse();
@@ -188,6 +186,7 @@ fn open_slots_dialog(
             .with_layer(Layers::Item),
         Menu::new(menu_nodes)
             .with_gap(15.)
+            .with_entry_scale(1. / 5.)
             .with_start_node(start_node),
     ));
 }

@@ -1,5 +1,5 @@
 use bevy::ecs::component::HookContext;
-use bevy::prelude::*;
+use bevy::{prelude::*, transform};
 
 use bevy::{
     color::palettes::css::GREY, ecs::world::DeferredWorld,
@@ -111,6 +111,11 @@ impl<T: Clone + 'static> Menu<T> {
         self
     }
 
+    pub fn with_entry_scale(mut self, scale: f32) -> Self {
+        self.config.node_scale = scale;
+        self
+    }
+
     pub fn with_start_node(mut self, selected_node: usize) -> Self {
         self.config.selected_node = selected_node;
         self
@@ -120,6 +125,7 @@ impl<T: Clone + 'static> Menu<T> {
 struct MenuConfig {
     gap: f32,
     selected_node: usize,
+    node_scale: f32,
 }
 
 impl Default for MenuConfig {
@@ -127,6 +133,7 @@ impl Default for MenuConfig {
         Self {
             gap: 25.,
             selected_node: 0,
+            node_scale: 1.,
         }
     }
 }
@@ -177,13 +184,14 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
     }
 
     for (i, node) in menu.nodes.iter().enumerate() {
+        let mut transform = Vec3::ZERO
+            .offset_x(offset + menu.config.gap * i as f32)
+            .with_layer(Layers::UI);
+
+        transform.scale = Vec3::splat(menu.config.node_scale);
+
         let entry = commands
-            .spawn((
-                NodePayload(node.payload.clone()),
-                Vec3::ZERO
-                    .offset_x(offset + menu.config.gap * i as f32)
-                    .with_layer(Layers::UI),
-            ))
+            .spawn((NodePayload(node.payload.clone()), transform))
             .id();
 
         (node.spawn_fn)(&mut commands, entry);
