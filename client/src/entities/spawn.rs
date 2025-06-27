@@ -17,6 +17,7 @@ use crate::{
     animations::{
         AnimationSound, AnimationSoundTrigger,
         animals::horse::{HorseAnimation, HorseSpriteSheet},
+        colored_sprite_loader::SpriteVariants,
         king::{KingAnimation, KingSpriteSheet},
         objects::{
             chest::ChestSpriteSheet,
@@ -66,20 +67,25 @@ fn init_local_player(
 
 fn init_player_sprite(
     trigger: Trigger<OnAdd, Player>,
-    mut players: Query<&mut Sprite>,
+    mut players: Query<(&mut Sprite, &Player)>,
     mut commands: Commands,
     king_sprite_sheet: Res<KingSpriteSheet>,
+    variants: Res<Assets<SpriteVariants>>,
 ) {
-    let Ok(mut sprite) = players.get_mut(trigger.target()) else {
+    let Ok((mut sprite, player)) = players.get_mut(trigger.target()) else {
         return;
     };
 
-    let sprite_sheet = &king_sprite_sheet.sprite_sheet;
+    let handle = &king_sprite_sheet.sprite_sheet.texture;
+    let sprite_variants = variants.get(handle).unwrap();
 
-    sprite.image = sprite_sheet.texture.clone();
-    let animation = sprite_sheet.animations.get(KingAnimation::Idle);
+    sprite.image = sprite_variants.variants.get(player.color).clone();
+    let animation = king_sprite_sheet
+        .sprite_sheet
+        .animations
+        .get(KingAnimation::Idle);
     sprite.texture_atlas = Some(TextureAtlas {
-        layout: sprite_sheet.layout.clone(),
+        layout: king_sprite_sheet.sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
     let mut commands = commands.entity(trigger.target());
@@ -180,13 +186,17 @@ fn init_unit_sprite(
     mut units: Query<(&mut Sprite, &Unit)>,
     sprite_sheets: Res<UnitSpriteSheets>,
     mut commands: Commands,
+    variants: Res<Assets<SpriteVariants>>,
 ) {
     let Ok((mut sprite, unit)) = units.get_mut(trigger.target()) else {
         return;
     };
 
     let sprite_sheet = &sprite_sheets.sprite_sheets.get(unit.unit_type);
-    sprite.image = sprite_sheet.texture.clone();
+    let handle = &sprite_sheet.texture;
+    let sprite_variants = variants.get(handle).unwrap();
+
+    sprite.image = sprite_variants.variants.get(unit.color).clone();
     let animation = sprite_sheet.animations.get(UnitAnimation::Idle);
     sprite.texture_atlas = Some(TextureAtlas {
         layout: sprite_sheet.layout.clone(),
@@ -199,15 +209,19 @@ fn init_unit_sprite(
 fn init_flag_sprite(
     trigger: Trigger<OnAdd, Flag>,
     mut commands: Commands,
-    mut flag: Query<&mut Sprite>,
+    mut flag: Query<(&mut Sprite, &Flag)>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
+    variants: Res<Assets<SpriteVariants>>,
 ) {
-    let Ok(mut sprite) = flag.get_mut(trigger.target()) else {
+    let Ok((mut sprite, flag)) = flag.get_mut(trigger.target()) else {
         return;
     };
 
     let sprite_sheet = &flag_sprite_sheet.sprite_sheet;
-    sprite.image = sprite_sheet.texture.clone();
+    let handle = &sprite_sheet.texture;
+    let sprite_variants = variants.get(handle).unwrap();
+
+    sprite.image = sprite_variants.variants.get(flag.color).clone();
     let animation = sprite_sheet.animations.get(FlagAnimation::Wave);
     sprite.texture_atlas = Some(TextureAtlas {
         layout: sprite_sheet.layout.clone(),

@@ -16,6 +16,7 @@ use shared::{
 
 use super::{
     AnimationSound, AnimationSpriteSheet, AnimationTrigger, PlayOnce, SpriteSheetAnimation,
+    colored_sprite_loader::SpriteVariants,
 };
 
 pub mod bandits;
@@ -23,7 +24,7 @@ pub mod humans;
 
 #[derive(Resource)]
 pub struct UnitSpriteSheets {
-    pub sprite_sheets: EnumMap<UnitType, AnimationSpriteSheet<UnitAnimation>>,
+    pub sprite_sheets: EnumMap<UnitType, AnimationSpriteSheet<UnitAnimation, SpriteVariants>>,
 }
 
 impl FromWorld for UnitSpriteSheets {

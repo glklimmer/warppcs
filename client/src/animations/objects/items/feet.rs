@@ -16,13 +16,13 @@ pub enum Feet {
 
 #[derive(Resource)]
 pub struct FeetSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<Feet>,
+    pub sprite_sheet: AnimationSpriteSheet<Feet, Image>,
 }
 
 impl FromWorld for FeetSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture: Handle<Image> = asset_server.load("sprites/objects/feet_armor.png");
+        let texture = asset_server.load("sprites/objects/feet_armor.png");
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(

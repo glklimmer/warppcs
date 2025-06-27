@@ -3,7 +3,7 @@ use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugi
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
-use crate::{ClientPlayerMap, Player, SetLocalPlayer};
+use crate::{ClientPlayerMap, Player, PlayerColor, SetLocalPlayer};
 
 pub struct CreateServerPlugin;
 
@@ -112,7 +112,11 @@ fn on_created(
 ) {
     info!("Successfully created server");
 
-    let server_player = commands.spawn(Player).id();
+    let server_player = commands
+        .spawn(Player {
+            color: PlayerColor::Blue,
+        })
+        .id();
 
     client_player_map.insert(SERVER, server_player);
 

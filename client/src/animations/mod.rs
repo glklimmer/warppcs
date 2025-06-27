@@ -4,6 +4,7 @@ use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
 use bevy_replicon::client::ClientSet;
+use colored_sprite_loader::{SpriteVariantLoader, SpriteVariants};
 use king::{
     KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
     set_king_sprite_animation, set_king_walking, trigger_king_animation,
@@ -26,18 +27,11 @@ use units::{
 };
 
 pub mod animals;
+pub mod colored_sprite_loader;
 pub mod king;
 pub mod objects;
 pub mod ui;
 pub mod units;
-
-#[derive(Clone)]
-pub struct AnimationSpriteSheet<E: EnumIter> {
-    pub texture: Handle<Image>,
-    pub layout: Handle<TextureAtlasLayout>,
-    pub animations: EnumMap<E, SpriteSheetAnimation>,
-    pub animations_sound: EnumMap<E, Option<AnimationSound>>,
-}
 
 #[derive(Clone)]
 pub struct StaticSpriteSheet<E: EnumIter> {
@@ -53,6 +47,14 @@ impl<E: EnumIter> StaticSpriteSheet<E> {
             index: *self.parts.get(part),
         }
     }
+}
+
+#[derive(Clone)]
+pub struct AnimationSpriteSheet<E: EnumIter, T: Asset> {
+    pub texture: Handle<T>,
+    pub layout: Handle<TextureAtlasLayout>,
+    pub animations: EnumMap<E, SpriteSheetAnimation>,
+    pub animations_sound: EnumMap<E, Option<AnimationSound>>,
 }
 
 #[derive(Clone)]
@@ -109,6 +111,9 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
+        app.init_asset::<SpriteVariants>();
+        app.init_asset_loader::<SpriteVariantLoader>();
+
         app.init_resource::<UnitSpriteSheets>();
         app.add_event::<AnimationTrigger<UnitAnimation>>();
 

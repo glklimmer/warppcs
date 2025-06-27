@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use petgraph::visit::{EdgeRef, IntoNodeReferences};
 
 use crate::{
-    Owner, Player, Vec3LayerExt,
+    Owner, Player, PlayerColor, Vec3LayerExt,
     map::{
         Layers,
         buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
@@ -112,6 +112,7 @@ fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_rig
             Unit {
                 unit_type: UnitType::Bandit,
                 swing_timer: Timer::default(),
+                color: PlayerColor::default(),
             },
             Health { hitpoints: 25. },
             offset
