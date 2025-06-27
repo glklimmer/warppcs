@@ -259,7 +259,10 @@ impl Effect {
             Effect::Damage => 6..=18,
             Effect::Health => 60..=120,
             Effect::Range(weapon) => match weapon {
-                WeaponType::Melee(_) => 20..=30,
+                WeaponType::Melee(meele) => match meele {
+                    MeleeWeapon::SwordAndShield => 20..=30,
+                    MeleeWeapon::Pike => 40..=50,
+                },
                 WeaponType::Projectile(_) => 160..=220,
             },
             Effect::AttackSpeed => 1..=4,

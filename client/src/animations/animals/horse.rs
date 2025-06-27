@@ -70,7 +70,8 @@ pub fn next_horse_animation(
             AnimationChange::Attack
             | AnimationChange::Hit(_)
             | AnimationChange::Death
-            | AnimationChange::Mount => HorseAnimation::Idle,
+            | AnimationChange::Mount
+            | AnimationChange::Unmount => HorseAnimation::Idle,
         };
 
         animation_trigger.write(AnimationTrigger {

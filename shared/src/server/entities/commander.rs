@@ -111,7 +111,7 @@ fn commander_interaction(
     mut active: ResMut<ActiveCommander>,
 ) {
     for event in interactions.read() {
-        let InteractionType::CommanderInteraction = &event.interaction else {
+        let InteractionType::Commander = &event.interaction else {
             continue;
         };
 

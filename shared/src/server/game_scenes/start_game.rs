@@ -113,7 +113,7 @@ fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_rig
                 unit_type: UnitType::Bandit,
                 swing_timer: Timer::default(),
             },
-            Health { hitpoints: 20. },
+            Health { hitpoints: 25. },
             offset
                 .offset_x(50. - 10. * i as f32)
                 .with_layer(Layers::Unit),

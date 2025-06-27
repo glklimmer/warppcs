@@ -115,7 +115,6 @@ fn check_building_interaction(
     }
 }
 
-#[allow(clippy::type_complexity)]
 fn construct_building(
     mut commands: Commands,
     mut builds: EventReader<BuildingConstruction>,

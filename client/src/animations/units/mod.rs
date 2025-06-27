@@ -57,6 +57,7 @@ pub fn trigger_unit_animation(
             AnimationChange::Hit(_) => UnitAnimation::Hit,
             AnimationChange::Death => UnitAnimation::Death,
             AnimationChange::Mount => UnitAnimation::Idle,
+            AnimationChange::Unmount => UnitAnimation::Idle,
         };
 
         commands.entity(event.entity).insert(PlayOnce);
@@ -129,6 +130,10 @@ pub fn set_unit_sprite_animation(
         if let Ok((entity, unit, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
         {
+            if let UnitAnimation::Death = *current_animation {
+                continue;
+            }
+
             let animation = sprite_sheets
                 .sprite_sheets
                 .get(unit.unit_type)
