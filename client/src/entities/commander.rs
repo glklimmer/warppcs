@@ -137,9 +137,9 @@ fn open_slots_dialog(
 
     let entry_position = transform.get(trigger.entry).unwrap().translation();
     let army_flag_assignments = army_flag_assignments.get(active.unwrap()).unwrap();
-    let commander_facing = transform.get(active.unwrap()).unwrap().scale().x.signum();
+    let commander_facing = transform.get(active.unwrap()).unwrap().scale().x.signum() * -1.;
 
-    let mut menu_nodes: Vec<MenuNode<CommanderFormation>> = army_flag_assignments
+    let menu_nodes: Vec<MenuNode<CommanderFormation>> = army_flag_assignments
         .flags
         .iter_enums()
         .map(|(formation, maybe_flag)| {
@@ -171,12 +171,7 @@ fn open_slots_dialog(
         })
         .collect();
 
-    let start_node = if commander_facing == 1. {
-        menu_nodes.reverse();
-        menu_nodes.len() - 1
-    } else {
-        0
-    };
+    let entry_scale = commander_facing * (1. / 5.);
 
     commands.spawn((
         Visibility::default(),
@@ -186,8 +181,7 @@ fn open_slots_dialog(
             .with_layer(Layers::Item),
         Menu::new(menu_nodes)
             .with_gap(15.)
-            .with_entry_scale(1. / 5.)
-            .with_start_node(start_node),
+            .with_entry_scale(entry_scale),
     ));
 }
 
