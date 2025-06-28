@@ -209,15 +209,18 @@ fn cleanup_menu_extras(
     active: Res<ActiveCommander>,
     mut commands: Commands,
 ) {
-    child.iter_descendants(active.unwrap()).for_each(|each| {
-        commands
-            .entity(each)
-            .remove::<(Mesh2d, MeshMaterial2d<ColorMaterial>)>();
-    });
+    if let Some(active_commander) = **active {
+        child.iter_descendants(active_commander).for_each(|each| {
+            commands
+                .entity(each)
+                .remove::<(Mesh2d, MeshMaterial2d<ColorMaterial>)>();
+        });
+    }
 
     let Ok(current) = current_hover.single() else {
         return;
     };
+
     commands.entity(current).despawn();
 }
 
