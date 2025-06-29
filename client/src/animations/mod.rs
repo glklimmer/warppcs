@@ -4,6 +4,7 @@ use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
 use bevy_replicon::client::ClientSet;
+use buildings::{BuildingSpriteSheets, update_building_sprite};
 use colored_sprite_loader::{SpriteVariantLoader, SpriteVariants};
 use king::{
     KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
@@ -27,6 +28,7 @@ use units::{
 };
 
 pub mod animals;
+pub mod buildings;
 pub mod colored_sprite_loader;
 pub mod king;
 pub mod objects;
@@ -135,6 +137,8 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<ItemInfoSpriteSheet>();
         app.init_resource::<MapIconSpriteSheet>();
 
+        app.init_resource::<BuildingSpriteSheets>();
+
         app.add_systems(
             PreUpdate,
             (
@@ -155,11 +159,16 @@ impl Plugin for AnimationPlugin {
         app.add_systems(
             Update,
             (
-                (set_unit_sprite_animation),
-                (set_king_sprite_animation),
-                (set_horse_sprite_animation, next_horse_animation),
+                (
+                    set_unit_sprite_animation,
+                    set_king_sprite_animation,
+                    set_horse_sprite_animation,
+                    next_horse_animation,
+                    update_building_sprite,
+                ),
                 advance_animation,
-            ),
+            )
+                .chain(),
         );
     }
 }

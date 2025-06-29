@@ -1,3 +1,4 @@
+use crate::enum_map::EnumIter;
 use bevy::prelude::*;
 
 use bevy::{
@@ -255,7 +256,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
 
     let mut army_formation: Vec<Entity> = vec![];
 
-    CommanderFormation::ALL.iter().for_each(|_| {
+    CommanderFormation::all_variants().iter().for_each(|_| {
         formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
         let formation = world
             .spawn((

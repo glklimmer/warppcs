@@ -84,6 +84,7 @@ impl Plugin for SharedPlugin {
         .replicate::<AttachedTo>()
         .replicate::<ArmyFlagAssignments>()
         .replicate::<FlagHolder>()
+        .replicate::<PlayerColor>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
@@ -215,7 +216,9 @@ pub struct Player {
     pub color: PlayerColor,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Mappable, Serialize, Deserialize)]
+#[derive(
+    Component, Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Mappable, Serialize, Deserialize,
+)]
 pub enum PlayerColor {
     #[default]
     Blue,

@@ -1,3 +1,4 @@
+use crate::enum_map::EnumIter;
 use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
@@ -329,7 +330,7 @@ pub fn recruit_commander(
 
     let mut army_formation: Vec<Entity> = vec![];
 
-    CommanderFormation::ALL.iter().for_each(|_| {
+    CommanderFormation::all_variants().iter().for_each(|_| {
         formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
         let formation = commands
             .spawn((

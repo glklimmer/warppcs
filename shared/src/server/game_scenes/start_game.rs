@@ -36,7 +36,7 @@ impl Plugin for StartGamePlugin {
 
 fn start_game(
     trigger: Trigger<LoadMap>,
-    mut players: Query<&mut Transform, With<Player>>,
+    mut players: Query<(&mut Transform, &Player), With<Player>>,
     mut commands: Commands,
 ) {
     let map = &**trigger.event();
@@ -48,9 +48,10 @@ fn start_game(
                 left,
                 right,
             } => {
-                player_base(commands.reborrow(), offset, player, left, right);
-                let mut transform = players.get_mut(player).unwrap();
+                let (mut transform, Player { color }) = players.get_mut(player).unwrap();
                 transform.translation = offset.with_z(Layers::Player.as_f32());
+
+                player_base(commands.reborrow(), offset, player, *color, left, right);
 
                 for item_type in ItemType::all_variants() {
                     let translation = transform.translation;
@@ -132,6 +133,7 @@ fn player_base(
     mut commands: Commands,
     offset: Vec3,
     player: Entity,
+    color: PlayerColor,
     left_portal: Entity,
     right_portal: Entity,
 ) {
@@ -147,6 +149,7 @@ fn player_base(
         BuildStatus::Built,
         offset.with_layer(Layers::Building),
         owner,
+        color,
         RecruitBuilding,
         Interactable {
             kind: InteractionType::Recruit,

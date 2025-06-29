@@ -3,16 +3,16 @@ use bevy::{prelude::*, sprite::Anchor};
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, networking::UnitType, server::entities::health::Health};
+use crate::{BoxCollider, enum_map::*, networking::UnitType, server::entities::health::Health};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Mappable)]
 pub enum MainBuildingLevels {
     Tent,
     Hall,
     Castle,
 }
 
-#[derive(Component, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Component, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Mappable)]
 pub enum BuildStatus {
     Marker,
     Built,
@@ -70,7 +70,7 @@ pub fn respawn_timer(mut recruit_buildings: Query<&mut RespawnZone>, time: Res<T
     }
 }
 
-#[derive(Component, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, Copy, Clone, Serialize, Deserialize, Mappable)]
 #[require(
     Replicated,
     BoxCollider = marker_collider(),
@@ -95,7 +95,7 @@ impl MainBuildingLevels {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Mappable)]
 pub enum WallLevels {
     Basic,
     Wood,
