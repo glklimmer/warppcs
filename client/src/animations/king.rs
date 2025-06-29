@@ -9,7 +9,7 @@ use crate::animations::AnimationDirection;
 
 use super::{
     AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, AnimationTrigger, PlayOnce,
-    SpriteSheetAnimation, colored_sprite_loader::SpriteVariants,
+    SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
 };
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]

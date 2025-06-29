@@ -4,7 +4,7 @@ use shared::enum_map::*;
 
 use crate::animations::{
     AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, SpriteSheetAnimation,
-    colored_sprite_loader::SpriteVariants,
+    sprite_variant_loader::SpriteVariants,
 };
 
 use super::super::UnitAnimation;

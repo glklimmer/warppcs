@@ -16,7 +16,7 @@ use shared::{
 
 use super::{
     AnimationSound, AnimationSpriteSheet, AnimationTrigger, PlayOnce, SpriteSheetAnimation,
-    colored_sprite_loader::SpriteVariants,
+    sprite_variant_loader::SpriteVariants,
 };
 
 pub mod bandits;

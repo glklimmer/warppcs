@@ -16,7 +16,6 @@ use shared::{
 use crate::{
     animations::{
         animals::horse::{HorseAnimation, HorseSpriteSheet},
-        colored_sprite_loader::SpriteVariants,
         king::{KingAnimation, KingSpriteSheet},
         objects::{
             chest::ChestSpriteSheet,
@@ -24,6 +23,7 @@ use crate::{
             portal::{PortalAnimation, PortalSpriteSheet},
             projectiles::{ProjectileSpriteSheet, Projectiles},
         },
+        sprite_variant_loader::SpriteVariants,
         units::UnitSpriteSheets,
     },
     networking::ControlledPlayer,

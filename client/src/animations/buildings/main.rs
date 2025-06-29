@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use shared::{enum_map::*, map::buildings::BuildStatus};
 
 use crate::animations::{
-    AnimationSpriteSheet, SpriteSheetAnimation, colored_sprite_loader::SpriteVariants,
+    AnimationSpriteSheet, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
 };
 
 pub fn tent(world: &mut World) -> AnimationSpriteSheet<BuildStatus, SpriteVariants> {

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use shared::enum_map::*;
 
 use crate::animations::{
-    AnimationSpriteSheet, SpriteSheetAnimation, colored_sprite_loader::SpriteVariants,
+    AnimationSpriteSheet, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
 };
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]

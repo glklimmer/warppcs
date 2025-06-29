@@ -13,7 +13,7 @@ use crate::{
     sound::CRAFTING_SOUND_PATH,
 };
 
-use super::{AnimationSpriteSheet, colored_sprite_loader::SpriteVariants};
+use super::{AnimationSpriteSheet, sprite_variant_loader::SpriteVariants};
 
 mod main;
 

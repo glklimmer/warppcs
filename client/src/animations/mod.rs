@@ -5,7 +5,6 @@ use animals::horse::{
 };
 use bevy_replicon::client::ClientSet;
 use buildings::{BuildingSpriteSheets, update_building_sprite};
-use colored_sprite_loader::{SpriteVariantLoader, SpriteVariants};
 use king::{
     KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
     set_king_sprite_animation, set_king_walking, trigger_king_animation,
@@ -21,6 +20,7 @@ use objects::{
     projectiles::ProjectileSpriteSheet,
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
+use sprite_variant_loader::{SpriteVariantLoader, SpriteVariants};
 use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
 use units::{
     UnitSpriteSheets, set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation,
@@ -29,9 +29,9 @@ use units::{
 
 pub mod animals;
 pub mod buildings;
-pub mod colored_sprite_loader;
 pub mod king;
 pub mod objects;
+pub mod sprite_variant_loader;
 pub mod ui;
 pub mod units;
 
