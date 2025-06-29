@@ -137,7 +137,7 @@ fn open_slots_dialog(
 
     let entry_position = transform.get(trigger.entry).unwrap().translation();
     let army_flag_assignments = army_flag_assignments.get(active.unwrap()).unwrap();
-    let commander_facing = transform.get(active.unwrap()).unwrap().scale().x.signum() * -1.;
+    let commander_facing = transform.get(active.unwrap()).unwrap().scale().x.signum();
 
     let menu_nodes: Vec<MenuNode<CommanderFormation>> = army_flag_assignments
         .flags
@@ -154,15 +154,23 @@ fn open_slots_dialog(
             let has_unit_weapon = maybe_flag.map(|flag_entity| {
                 let flag = flag.get(flag_entity).unwrap();
                 let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
-                let flag_sprite = commands
-                    .spawn((weapon_sprite, Transform::from_xyz(0., 0., 1.)))
-                    .id();
-                flag_sprite
+                commands
+                    .spawn((
+                        weapon_sprite,
+                        Transform::from_xyz(0., 0., 1.).with_scale(Vec3::splat(4.)),
+                    ))
+                    .id()
             });
 
             MenuNode::with_fn(formation, move |commands, entry| {
                 let mut entry = commands.entity(entry);
-                entry.insert(Sprite::from_atlas_image(texture.clone(), atlas.clone()));
+
+                entry.insert(Sprite {
+                    image: texture.clone(),
+                    texture_atlas: Some(atlas.clone()),
+                    flip_x: commander_facing.is_sign_positive(),
+                    ..Default::default()
+                });
 
                 if let Some(flag_weapon) = has_unit_weapon {
                     entry.add_child(flag_weapon);
@@ -170,8 +178,6 @@ fn open_slots_dialog(
             })
         })
         .collect();
-
-    let entry_scale = commander_facing * (1. / 5.);
 
     commands.spawn((
         Visibility::default(),
@@ -181,7 +187,7 @@ fn open_slots_dialog(
             .with_layer(Layers::Item),
         Menu::new(menu_nodes)
             .with_gap(15.)
-            .with_entry_scale(entry_scale),
+            .with_entry_scale(1. / 5.),
     ));
 }
 
@@ -220,7 +226,6 @@ fn cleanup_menu_extras(
     let Ok(current) = current_hover.single() else {
         return;
     };
-
     commands.entity(current).despawn();
 }
 
@@ -346,7 +351,10 @@ fn update_flag_assignment(
     let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
 
     let flag_weapon_slot = commands
-        .spawn((weapon_sprite, Transform::from_xyz(0., 0., 1.)))
+        .spawn((
+            weapon_sprite,
+            Transform::from_xyz(0., 0., 1.).with_scale(Vec3::splat(4.)),
+        ))
         .id();
 
     commands
