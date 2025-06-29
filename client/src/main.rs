@@ -149,7 +149,7 @@ fn setup_background(
     // Plain
     commands.spawn((
         Mesh2d(meshes.add(Rectangle::new(60000.0, 2000.0))),
-        MeshMaterial2d(materials.add(Color::hsl(109., 0.97, 0.88))),
-        Transform::from_xyz(0.0, -1000.0, 0.0),
+        MeshMaterial2d(materials.add(Color::hsl(332., 0.30, 0.17))),
+        Transform::from_xyz(0.0, -1000.0, -1.0),
     ));
 }
