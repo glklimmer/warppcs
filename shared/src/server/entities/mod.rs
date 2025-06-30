@@ -6,7 +6,7 @@ use enum_mappable::Mappable;
 use health::{Health, HealthPlugin};
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, enum_map::EnumIter, networking::UnitType, unit_collider};
+use crate::{BoxCollider, PlayerColor, enum_map::EnumIter, networking::UnitType, unit_collider};
 
 use super::physics::{
     PushBack,
@@ -39,6 +39,7 @@ pub enum UnitAnimation {
 pub struct Unit {
     pub unit_type: UnitType,
     pub swing_timer: Timer,
+    pub color: PlayerColor,
 }
 
 #[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]

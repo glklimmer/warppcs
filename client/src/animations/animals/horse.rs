@@ -15,7 +15,7 @@ pub enum HorseAnimation {
 
 #[derive(Resource)]
 pub struct HorseSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<HorseAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<HorseAnimation, Image>,
 }
 
 impl FromWorld for HorseSpriteSheet {

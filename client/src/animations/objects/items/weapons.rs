@@ -27,7 +27,7 @@ impl From<UnitType> for Weapons {
 
 #[derive(Resource)]
 pub struct WeaponsSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<Weapons>,
+    pub sprite_sheet: AnimationSpriteSheet<Weapons, Image>,
 }
 
 impl WeaponsSpriteSheet {
@@ -39,7 +39,7 @@ impl WeaponsSpriteSheet {
 impl FromWorld for WeaponsSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture: Handle<Image> = asset_server.load("sprites/objects/weapons.png");
+        let texture = asset_server.load("sprites/objects/weapons.png");
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(

@@ -1,3 +1,4 @@
+use crate::enum_map::EnumIter;
 use bevy::prelude::*;
 
 use bevy::{
@@ -14,6 +15,7 @@ use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
     server::entities::commander::ArmyFormation,
 };
+use crate::{Player, PlayerColor};
 
 use super::buildings::item_assignment::{ItemAssignment, ItemSlot};
 use super::{
@@ -185,6 +187,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     let brp: BrpSpawnFullCommander = serde_json::from_value(value)
         .map_err(|e| BrpError::internal(format!("invalid commander parameters: {}", e)))?;
     let player = brp.player_entity(world)?;
+    let color = world.entity(player).get::<Player>().unwrap().color;
 
     let owner = Owner::Player(player);
     let flag_commander = world
@@ -192,6 +195,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             Flag {
                 original_building: player,
                 unit_type: UnitType::Commander,
+                color,
             },
             AttachedTo(player),
             Interactable {
@@ -212,6 +216,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     let unit = Unit {
         swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
         unit_type: UnitType::Commander,
+        color,
     };
 
     let hitpoints = 100.;
@@ -251,7 +256,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
 
     let mut army_formation: Vec<Entity> = vec![];
 
-    CommanderFormation::ALL.iter().for_each(|_| {
+    CommanderFormation::all_variants().iter().for_each(|_| {
         formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
         let formation = world
             .spawn((
@@ -269,6 +274,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         army_formation[0],
         UnitType::Shieldwarrior,
         player_translation,
+        color,
     );
     let middle = spawn_unit(
         world,
@@ -276,6 +282,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         army_formation[1],
         UnitType::Pikeman,
         player_translation,
+        color,
     );
     let back = spawn_unit(
         world,
@@ -283,6 +290,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         army_formation[2],
         UnitType::Archer,
         player_translation,
+        color,
     );
 
     world.entity_mut(commander).insert((
@@ -311,6 +319,7 @@ fn spawn_unit(
     commander: Entity,
     unit_type: UnitType,
     player_translation: Vec3,
+    color: PlayerColor,
 ) -> Entity {
     let owner = Owner::Player(player);
     let flag_entity = world
@@ -318,6 +327,7 @@ fn spawn_unit(
             Flag {
                 original_building: player,
                 unit_type,
+                color,
             },
             AttachedTo(commander),
             owner,
@@ -328,6 +338,7 @@ fn spawn_unit(
     let unit = Unit {
         swing_timer: Timer::from_seconds(1., TimerMode::Repeating),
         unit_type,
+        color,
     };
 
     let hitpoints = 200.;

@@ -84,6 +84,7 @@ impl Plugin for SharedPlugin {
         .replicate::<AttachedTo>()
         .replicate::<ArmyFlagAssignments>()
         .replicate::<FlagHolder>()
+        .replicate::<PlayerColor>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
@@ -177,7 +178,9 @@ fn spawn_clients(
     let player = commands
         .entity(trigger.target())
         .insert((
-            Player,
+            Player {
+                color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
+            },
             Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
         ))
         .id();
@@ -207,9 +210,30 @@ impl MapEntities for SetLocalPlayer {
     Speed,
     Velocity,
     Sprite{anchor: Anchor::BottomCenter, ..default()},
-    Inventory
+    Inventory,
 )]
-pub struct Player;
+pub struct Player {
+    pub color: PlayerColor,
+}
+
+#[derive(
+    Component, Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Mappable, Serialize, Deserialize,
+)]
+pub enum PlayerColor {
+    #[default]
+    Blue,
+    Red,
+    Green,
+    Yellow,
+    Purple,
+    Orange,
+    Cyan,
+    Magenta,
+    Pink,
+    Brown,
+    Teal,
+    Gray,
+}
 
 #[derive(Component, Copy, Clone, Default, Deserialize, Serialize)]
 pub struct BoxCollider {

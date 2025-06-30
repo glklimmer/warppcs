@@ -4,13 +4,14 @@ use shared::enum_map::*;
 
 use crate::animations::{
     AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, SpriteSheetAnimation,
+    sprite_variant_loader::SpriteVariants,
 };
 
 use super::super::UnitAnimation;
 
-pub fn shieldwarrior(world: &mut World) -> AnimationSpriteSheet<UnitAnimation> {
+pub fn shieldwarrior(world: &mut World) -> AnimationSpriteSheet<UnitAnimation, SpriteVariants> {
     let asset_server = world.resource::<AssetServer>();
-    let texture: Handle<Image> = asset_server.load("sprites/humans/MiniShieldMan.png");
+    let texture = asset_server.load("sprites/humans/MiniShieldMan.png");
 
     let attack_sound = asset_server.load("animation_sound/shieldwarrior/sword_hit.ogg");
 

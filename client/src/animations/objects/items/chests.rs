@@ -16,13 +16,13 @@ pub enum Chests {
 
 #[derive(Resource)]
 pub struct ChestsSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<Chests>,
+    pub sprite_sheet: AnimationSpriteSheet<Chests, Image>,
 }
 
 impl FromWorld for ChestsSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture: Handle<Image> = asset_server.load("sprites/objects/chest_armor.png");
+        let texture = asset_server.load("sprites/objects/chest_armor.png");
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(

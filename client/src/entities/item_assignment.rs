@@ -110,10 +110,10 @@ fn slot_selected(
 }
 
 struct SpriteSheets<'a> {
-    weapons: &'a AnimationSpriteSheet<Weapons>,
-    chests: &'a AnimationSpriteSheet<Chests>,
-    heads: &'a AnimationSpriteSheet<Heads>,
-    feet: &'a AnimationSpriteSheet<Feet>,
+    weapons: &'a AnimationSpriteSheet<Weapons, Image>,
+    chests: &'a AnimationSpriteSheet<Chests, Image>,
+    heads: &'a AnimationSpriteSheet<Heads, Image>,
+    feet: &'a AnimationSpriteSheet<Feet, Image>,
 }
 
 fn build_node(item: &Item, sheets: &SpriteSheets) -> MenuNode<Item> {
