@@ -60,9 +60,6 @@ pub fn update_building_sprite(
     variants: Res<Assets<SpriteVariants>>,
 ) {
     for (entity, mut sprite, building, status, color, maybe_highlight) in buildings.iter_mut() {
-        info!("update: {:?}, {:?}", building, status);
-        info!("color: {:?}", color);
-
         let sprite_sheet = building_sprite_sheet.sprite_sheets.get(*building);
         let handle = &sprite_sheet.texture;
         let sprite_variants = variants.get(handle).unwrap();

@@ -33,6 +33,46 @@ impl From<&PlayerColor> for ColorPalette {
                 primary: Rgba([172, 50, 50, 255]),
                 secondary: Rgba([217, 87, 99, 255]),
             },
+            PlayerColor::Green => ColorPalette {
+                primary: Rgba([50, 172, 50, 255]),
+                secondary: Rgba([99, 217, 99, 255]),
+            },
+            PlayerColor::Yellow => ColorPalette {
+                primary: Rgba([255, 215, 0, 255]),
+                secondary: Rgba([255, 235, 59, 255]),
+            },
+            PlayerColor::Purple => ColorPalette {
+                primary: Rgba([155, 89, 182, 255]),
+                secondary: Rgba([189, 142, 212, 255]),
+            },
+            PlayerColor::Orange => ColorPalette {
+                primary: Rgba([255, 165, 0, 255]),
+                secondary: Rgba([255, 193, 7, 255]),
+            },
+            PlayerColor::Cyan => ColorPalette {
+                primary: Rgba([0, 180, 180, 255]),
+                secondary: Rgba([87, 219, 219, 255]),
+            },
+            PlayerColor::Magenta => ColorPalette {
+                primary: Rgba([180, 0, 180, 255]),
+                secondary: Rgba([219, 87, 219, 255]),
+            },
+            PlayerColor::Pink => ColorPalette {
+                primary: Rgba([255, 105, 180, 255]),
+                secondary: Rgba([255, 182, 193, 255]),
+            },
+            PlayerColor::Brown => ColorPalette {
+                primary: Rgba([150, 75, 0, 255]),
+                secondary: Rgba([181, 101, 29, 255]),
+            },
+            PlayerColor::Teal => ColorPalette {
+                primary: Rgba([0, 128, 128, 255]),
+                secondary: Rgba([72, 209, 204, 255]),
+            },
+            PlayerColor::Gray => ColorPalette {
+                primary: Rgba([128, 128, 128, 255]),
+                secondary: Rgba([192, 192, 192, 255]),
+            },
         }
     }
 }

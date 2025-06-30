@@ -179,7 +179,7 @@ fn spawn_clients(
         .entity(trigger.target())
         .insert((
             Player {
-                color: PlayerColor::Red,
+                color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
             },
             Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
         ))
@@ -223,6 +223,16 @@ pub enum PlayerColor {
     #[default]
     Blue,
     Red,
+    Green,
+    Yellow,
+    Purple,
+    Orange,
+    Cyan,
+    Magenta,
+    Pink,
+    Brown,
+    Teal,
+    Gray,
 }
 
 #[derive(Component, Copy, Clone, Default, Deserialize, Serialize)]

@@ -35,7 +35,6 @@ impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_player_sprite)
             .add_observer(init_recruit_building_sprite)
-            // .add_observer(init_building_sprite)
             .add_observer(init_camp_sprite)
             .add_observer(init_unit_sprite)
             .add_observer(init_flag_sprite)
@@ -103,35 +102,6 @@ fn init_recruit_building_sprite(
         sprite.image = asset_server.load::<Image>(Building::marker_texture());
     }
 }
-
-// fn init_building_sprite(
-//     trigger: Trigger<OnAdd, Sprite>,
-//     mut buildings: Query<(&mut Sprite, &Building, &BuildStatus, &Owner)>,
-//     player_color: Query<&Player>,
-//     building_sprite_sheets: Res<BuildingSpriteSheets>,
-//     variants: Res<Assets<SpriteVariants>>,
-// ) {
-//     let Ok((mut sprite, building, status, owner)) = buildings.get_mut(trigger.target()) else {
-//         return;
-//     };
-//
-//     let color = match owner {
-//         Owner::Player(entity) => player_color.get(*entity).unwrap().color,
-//         Owner::Bandits => PlayerColor::Blue,
-//     };
-//     info!("color: {:?}", color);
-//
-//     let sprite_sheet = building_sprite_sheets.sprite_sheets.get(*building);
-//     let handle = &sprite_sheet.texture;
-//     let sprite_variants = variants.get(handle).unwrap();
-//     let animation = sprite_sheet.animations.get(*status);
-//
-//     sprite.texture_atlas = Some(TextureAtlas {
-//         layout: sprite_sheet.layout.clone(),
-//         index: animation.first_sprite_index,
-//     });
-//     sprite.image = sprite_variants.variants.get(color).clone();
-// }
 
 fn init_camp_sprite(
     trigger: Trigger<OnAdd, SiegeCamp>,
