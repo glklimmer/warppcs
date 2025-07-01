@@ -1,11 +1,19 @@
 use bevy::prelude::*;
 
-use main::tent;
+use archer::archer_building;
+use gold_farm::gold_farm_building;
+use pikeman::pikeman_building;
 use shared::{
     PlayerColor,
     enum_map::*,
-    map::buildings::{BuildStatus, Building, MainBuildingLevels},
+    map::buildings::{BuildStatus, Building, MainBuildingLevels, WallLevels},
+    networking::UnitType,
 };
+use shieldwarrior::shieldwarrior_building;
+use tent::tent_building;
+use wall_basic::wall_basic_building;
+use wall_tower::wall_tower_building;
+use wall_wood::wall_wood_building;
 
 use crate::{
     animations::{AnimationSound, AnimationSoundTrigger},
@@ -15,7 +23,14 @@ use crate::{
 
 use super::{AnimationSpriteSheet, sprite_variant_loader::SpriteVariants};
 
-mod main;
+mod archer;
+mod gold_farm;
+mod pikeman;
+mod shieldwarrior;
+mod tent;
+mod wall_basic;
+mod wall_tower;
+mod wall_wood;
 
 #[derive(Resource)]
 pub struct BuildingSpriteSheets {
@@ -24,7 +39,14 @@ pub struct BuildingSpriteSheets {
 
 impl FromWorld for BuildingSpriteSheets {
     fn from_world(world: &mut World) -> Self {
-        let tent = tent(world);
+        let tent = tent_building(world);
+        let archer = archer_building(world);
+        let shieldwarrior = shieldwarrior_building(world);
+        let pikeman = pikeman_building(world);
+        let wall_basic = wall_basic_building(world);
+        let wall_wood = wall_wood_building(world);
+        let wall_tower = wall_tower_building(world);
+        let gold_farm = gold_farm_building(world);
 
         let sprite_sheets = EnumMap::new(|c| match c {
             Building::MainBuilding { level } => match level {
@@ -32,10 +54,20 @@ impl FromWorld for BuildingSpriteSheets {
                 MainBuildingLevels::Hall => tent.clone(),
                 MainBuildingLevels::Castle => tent.clone(),
             },
-            Building::Unit { weapon: _ } => tent.clone(),
-            Building::Wall { level: _ } => tent.clone(),
+            Building::Unit { weapon } => match weapon {
+                UnitType::Archer => archer.clone(),
+                UnitType::Shieldwarrior => shieldwarrior.clone(),
+                UnitType::Pikeman => pikeman.clone(),
+                UnitType::Bandit => tent.clone(),
+                UnitType::Commander => tent.clone(),
+            },
+            Building::Wall { level } => match level {
+                WallLevels::Basic => wall_basic.clone(),
+                WallLevels::Wood => wall_wood.clone(),
+                WallLevels::Tower => wall_tower.clone(),
+            },
             Building::Tower => tent.clone(),
-            Building::GoldFarm => tent.clone(),
+            Building::GoldFarm => gold_farm.clone(),
         });
 
         BuildingSpriteSheets { sprite_sheets }
@@ -69,7 +101,8 @@ pub fn update_building_sprite(
             layout: sprite_sheet.layout.clone(),
             index: animation.first_sprite_index,
         });
-        sprite.image = sprite_variants.variants.get(*color).clone();
+        let handle = sprite_variants.variants.get(*color).clone();
+        sprite.image = handle.clone();
 
         // TODO: add animations
         // commands.entity(trigger.target()).insert(animation.clone());
@@ -79,7 +112,7 @@ pub fn update_building_sprite(
         }
 
         if let Some(mut highlight) = maybe_highlight {
-            highlight.original_handle = asset_server.load(building.texture(*status));
+            highlight.original_handle = handle.clone();
         }
 
         if status.eq(&BuildStatus::Built) {

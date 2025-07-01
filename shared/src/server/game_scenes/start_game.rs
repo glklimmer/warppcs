@@ -171,6 +171,7 @@ fn player_base(
         ItemAssignment::default(),
         offset.offset_x(135.).with_layer(Layers::Building),
         owner,
+        color,
         Interactable {
             kind: InteractionType::ItemAssignment,
             restricted_to: Some(player),
@@ -181,6 +182,7 @@ fn player_base(
         ItemAssignment::default(),
         offset.offset_x(-135.).with_layer(Layers::Building),
         owner,
+        color,
         Interactable {
             kind: InteractionType::ItemAssignment,
             restricted_to: Some(player),
@@ -191,6 +193,7 @@ fn player_base(
         ItemAssignment::default(),
         offset.offset_x(235.).with_layer(Layers::Building),
         owner,
+        color,
         Interactable {
             kind: InteractionType::ItemAssignment,
             restricted_to: Some(player),
@@ -213,6 +216,7 @@ fn player_base(
         },
         offset.offset_x(-345.).with_layer(Layers::Wall),
         owner,
+        color,
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),
@@ -222,6 +226,7 @@ fn player_base(
         Building::GoldFarm,
         offset.offset_x(320.).with_layer(Layers::Building),
         owner,
+        color,
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),
@@ -231,6 +236,7 @@ fn player_base(
         Building::GoldFarm,
         offset.offset_x(-265.).with_layer(Layers::Building),
         owner,
+        color,
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),

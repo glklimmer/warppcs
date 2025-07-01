@@ -6,7 +6,7 @@ use crate::animations::{
     AnimationSpriteSheet, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
 };
 
-pub fn tent(world: &mut World) -> AnimationSpriteSheet<BuildStatus, SpriteVariants> {
+pub fn tent_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus, SpriteVariants> {
     let asset_server = world.resource::<AssetServer>();
     let texture = asset_server.load("sprites/buildings/main_house_blue.png");
 

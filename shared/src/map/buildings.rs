@@ -190,40 +190,6 @@ impl Building {
         "sprites/buildings/sign.png"
     }
 
-    pub fn texture(&self, status: BuildStatus) -> &'static str {
-        match status {
-            BuildStatus::Marker => match self {
-                Building::MainBuilding { level: _ } => "sprites/buildings/main_house_blue.png",
-                Building::Unit { weapon: _ } => "sprites/buildings/sign.png",
-                Building::Wall { level: _ } => "sprites/buildings/sign.png",
-                Building::Tower => "",
-                Building::GoldFarm => "sprites/buildings/sign.png",
-            },
-            BuildStatus::Built => match self {
-                Building::MainBuilding { level } => match level {
-                    MainBuildingLevels::Tent => "sprites/buildings/main_house_blue.png",
-                    MainBuildingLevels::Hall => "sprites/buildings/main_hall.png",
-                    MainBuildingLevels::Castle => "sprites/buildings/main_castle.png",
-                },
-                Building::Unit { weapon } => match weapon {
-                    UnitType::Archer => "sprites/buildings/archer_house.png",
-                    UnitType::Shieldwarrior => "sprites/buildings/warrior_house.png",
-                    UnitType::Pikeman => "sprites/buildings/pike_man_house.png",
-                    UnitType::Bandit => todo!(),
-                    UnitType::Commander => todo!(),
-                },
-                Building::Wall { level } => match level {
-                    WallLevels::Basic => "sprites/buildings/wall_1.png",
-                    WallLevels::Wood => "sprites/buildings/wall_2.png",
-                    WallLevels::Tower => "sprites/buildings/wall_3.png",
-                },
-                Building::Tower => "sprites/buildings/archer_house.png",
-                Building::GoldFarm => "sprites/buildings/warrior_house.png",
-            },
-            BuildStatus::Destroyed => "",
-        }
-    }
-
     pub fn health(&self) -> Health {
         let hitpoints = match self {
             Building::MainBuilding { level } => match level {

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_parallax::CameraFollow;
 use shared::{
     ChestAnimation, Player, SetLocalPlayer,
-    map::buildings::{BuildStatus, Building, RecruitBuilding},
+    map::buildings::{Building, RecruitBuilding},
     server::{
         buildings::{recruiting::Flag, siege_camp::SiegeCamp},
         entities::{Unit, UnitAnimation},
@@ -89,18 +89,14 @@ fn init_player_sprite(
 
 fn init_recruit_building_sprite(
     trigger: Trigger<OnAdd, RecruitBuilding>,
-    mut slots: Query<(&mut Sprite, &BuildStatus, Option<&Building>)>,
+    mut slots: Query<&mut Sprite>,
     asset_server: Res<AssetServer>,
 ) {
-    let Ok((mut sprite, status, maybe_building)) = slots.get_mut(trigger.target()) else {
+    let Ok(mut sprite) = slots.get_mut(trigger.target()) else {
         return;
     };
 
-    if let Some(building) = maybe_building {
-        sprite.image = asset_server.load::<Image>(building.texture(*status));
-    } else {
-        sprite.image = asset_server.load::<Image>(Building::marker_texture());
-    }
+    sprite.image = asset_server.load::<Image>(Building::marker_texture());
 }
 
 fn init_camp_sprite(
