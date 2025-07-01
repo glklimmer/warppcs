@@ -41,10 +41,5 @@ pub fn tent_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus, Spr
         BuildStatus::Destroyed => None,
     });
 
-    AnimationSpriteSheet {
-        texture,
-        layout,
-        animations,
-        animations_sound,
-    }
+    AnimationSpriteSheet::new(world, texture, layout, animations, animations_sound)
 }

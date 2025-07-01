@@ -41,10 +41,5 @@ pub fn wall_tower_building(world: &mut World) -> AnimationSpriteSheet<BuildStatu
         BuildStatus::Destroyed => None,
     });
 
-    AnimationSpriteSheet {
-        texture,
-        layout,
-        animations,
-        animations_sound,
-    }
+    AnimationSpriteSheet::new(world, texture, layout, animations, animations_sound)
 }

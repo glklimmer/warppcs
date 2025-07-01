@@ -32,11 +32,7 @@ impl FromWorld for ProjectileSpriteSheet {
         });
 
         Self {
-            sprite_sheet: StaticSpriteSheet {
-                texture,
-                layout,
-                parts,
-            },
+            sprite_sheet: StaticSpriteSheet::new(world, texture, layout, parts),
         }
     }
 }

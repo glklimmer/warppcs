@@ -70,12 +70,13 @@ impl FromWorld for HeadsSpriteSheet {
         });
 
         HeadsSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }

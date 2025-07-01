@@ -41,10 +41,5 @@ pub fn gold_farm_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus
         BuildStatus::Destroyed => None,
     });
 
-    AnimationSpriteSheet {
-        texture,
-        layout,
-        animations,
-        animations_sound,
-    }
+    AnimationSpriteSheet::new(world, texture, layout, animations, animations_sound)
 }

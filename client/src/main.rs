@@ -13,12 +13,14 @@ use ui::UiPlugin;
 use widgets::WidgetsPlugin;
 
 use animations::AnimationPlugin;
+use asset_loader::AssetLoaderPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
 use sound::SoundPlugin;
 
 pub mod animations;
+pub mod asset_loader;
 pub mod camera;
 pub mod entities;
 pub mod gizmos;
@@ -80,7 +82,8 @@ fn main() {
 
     client.add_plugins(SharedPlugin);
 
-    client.insert_state(GameState::MainMenu).add_plugins((
+    client.insert_state(GameState::Loading).add_plugins((
+        AssetLoaderPlugin,
         ParallaxPlugin,
         CameraPlugin,
         InputPlugin,
@@ -150,3 +153,4 @@ fn setup_background(
         Transform::from_xyz(0.0, -1000.0, 0.0),
     ));
 }
+

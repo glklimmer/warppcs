@@ -42,11 +42,7 @@ impl FromWorld for ItemInfoSpriteSheet {
         });
 
         Self {
-            sprite_sheet: StaticSpriteSheet {
-                texture,
-                layout,
-                parts,
-            },
+            sprite_sheet: StaticSpriteSheet::new(world, texture, layout, parts),
         }
     }
 }

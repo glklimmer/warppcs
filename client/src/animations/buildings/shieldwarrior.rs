@@ -43,10 +43,5 @@ pub fn shieldwarrior_building(
         BuildStatus::Destroyed => None,
     });
 
-    AnimationSpriteSheet {
-        texture,
-        layout,
-        animations,
-        animations_sound,
-    }
+    AnimationSpriteSheet::new(world, texture, layout, animations, animations_sound)
 }

@@ -49,12 +49,13 @@ impl FromWorld for ChestSpriteSheet {
         });
 
         ChestSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }

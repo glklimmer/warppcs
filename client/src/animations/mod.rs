@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::asset_loader::AssetsToLoad;
 use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
@@ -43,6 +44,22 @@ pub struct StaticSpriteSheet<E: EnumIter> {
 }
 
 impl<E: EnumIter> StaticSpriteSheet<E> {
+    pub fn new(
+        world: &mut World,
+        texture: Handle<Image>,
+        layout: Handle<TextureAtlasLayout>,
+        parts: EnumMap<E, usize>,
+    ) -> Self {
+        let mut assets_to_load = world.resource_mut::<AssetsToLoad>();
+        assets_to_load.push(texture.clone().untyped());
+
+        Self {
+            texture,
+            layout,
+            parts,
+        }
+    }
+
     pub fn texture_atlas(&self, part: E) -> TextureAtlas {
         TextureAtlas {
             layout: self.layout.clone(),
@@ -57,6 +74,34 @@ pub struct AnimationSpriteSheet<E: EnumIter, T: Asset> {
     pub layout: Handle<TextureAtlasLayout>,
     pub animations: EnumMap<E, SpriteSheetAnimation>,
     pub animations_sound: EnumMap<E, Option<AnimationSound>>,
+}
+
+impl<E: EnumIter, T: Asset> AnimationSpriteSheet<E, T> {
+    pub fn new(
+        world: &mut World,
+        texture: Handle<T>,
+        layout: Handle<TextureAtlasLayout>,
+        animations: EnumMap<E, SpriteSheetAnimation>,
+        animations_sound: EnumMap<E, Option<AnimationSound>>,
+    ) -> Self {
+        let mut assets_to_load = world.resource_mut::<AssetsToLoad>();
+        assets_to_load.push(texture.clone().untyped());
+
+        for sound_option in animations_sound.iter() {
+            if let Some(sound) = sound_option {
+                for handle in &sound.sound_handles {
+                    assets_to_load.push(handle.clone().untyped());
+                }
+            }
+        }
+
+        Self {
+            texture,
+            layout,
+            animations,
+            animations_sound,
+        }
+    }
 }
 
 #[derive(Clone)]

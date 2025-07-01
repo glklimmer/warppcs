@@ -45,12 +45,13 @@ impl FromWorld for FlagSpriteSheet {
         });
 
         FlagSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }

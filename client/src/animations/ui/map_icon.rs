@@ -36,11 +36,7 @@ impl FromWorld for MapIconSpriteSheet {
         });
 
         Self {
-            sprite_sheet: StaticSpriteSheet {
-                texture,
-                layout,
-                parts,
-            },
+            sprite_sheet: StaticSpriteSheet::new(world, texture, layout, parts),
         }
     }
 }
