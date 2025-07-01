@@ -97,7 +97,7 @@ fn main() {
         GizmosPlugin,
     ));
 
-    client.add_systems(Startup, setup_background);
+    client.add_systems(OnEnter(GameState::MainMenu), setup_background);
 
     if args.contains(&String::from("server")) {
         client.add_plugins(ServerNetworkPlugin);
@@ -110,14 +110,14 @@ fn main() {
 
             client
                 .add_plugins(SteamNetServerPlugin::<ClientManager>::default())
-                .add_systems(Startup, create_steam_server);
+                .add_systems(OnEnter(GameState::MainMenu), create_steam_server);
         }
 
         #[cfg(feature = "netcode")]
         {
             use shared::server::create_server::create_web_transport_server;
 
-            client.add_systems(Startup, create_web_transport_server);
+            client.add_systems(OnEnter(GameState::MainMenu), create_web_transport_server);
         }
     } else {
         client.add_plugins((NetworkRegistry, JoinServerPlugin));
@@ -134,7 +134,7 @@ fn main() {
         {
             use networking::join_server::join_web_transport_server;
 
-            client.add_systems(Startup, join_web_transport_server);
+            client.add_systems(OnEnter(GameState::MainMenu), join_web_transport_server);
         }
     }
 
@@ -153,4 +153,3 @@ fn setup_background(
         Transform::from_xyz(0.0, -1000.0, 0.0),
     ));
 }
-
