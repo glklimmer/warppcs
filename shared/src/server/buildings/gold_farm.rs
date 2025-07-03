@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{Owner, map::buildings::Building, networking::Inventory};
+use crate::{Owner, map::buildings::BuildingType, networking::Inventory};
 
 use super::BuildingConstruction;
 
@@ -22,7 +22,7 @@ impl Default for GoldFarmTimer {
 
 pub fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingConstruction>) {
     for build in builds.read() {
-        let Building::GoldFarm = build.0.building_type else {
+        let BuildingType::GoldFarm = build.0.building.building_type else {
             continue;
         };
 

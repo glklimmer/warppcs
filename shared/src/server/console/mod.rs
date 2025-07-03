@@ -10,17 +10,23 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
-use crate::map::buildings::{BuildStatus, Building, RecruitBuilding, RespawnZone};
 use crate::{
-    ClientPlayerMap, Owner, Vec3LayerExt, enum_map::EnumMap, map::Layers, networking::UnitType,
+    ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
+    enum_map::EnumMap,
+    map::{
+        Layers,
+        buildings::{BuildStatus, Building, BuildingType, RecruitBuilding, RespawnZone},
+    },
+    networking::UnitType,
     server::entities::commander::ArmyFormation,
 };
-use crate::{Player, PlayerColor};
 
-use super::buildings::item_assignment::{ItemAssignment, ItemSlot};
 use super::{
     ai::{FollowOffset, UnitBehaviour},
-    buildings::recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
+    buildings::{
+        item_assignment::{ItemAssignment, ItemSlot},
+        recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
+    },
     entities::{
         Damage, Range, Unit,
         commander::{
@@ -101,11 +107,10 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
         }
     };
 
-    let player = unit_req.player_entity(world)?;
-    let player_pos = {
-        let mut query: QueryState<&Transform> = QueryState::new(world);
-        let transform = query.get(world, player).unwrap();
-        transform.translation
+    let player_entity = unit_req.player_entity(world)?;
+    let (player_transform, player) = {
+        let mut query: QueryState<(&Transform, &Player)> = QueryState::new(world);
+        query.get(world, player_entity).unwrap()
     };
 
     let weapon_type = match unit_type {
@@ -123,7 +128,10 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
 
     let building = world
         .spawn((
-            Building::Unit { weapon: unit_type },
+            Building {
+                building_type: BuildingType::Unit { weapon: unit_type },
+                color: player.color,
+            },
             RecruitBuilding,
             RespawnZone::default(),
             ItemAssignment {
@@ -135,13 +143,13 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
                 }),
             },
             BuildStatus::Built,
-            player_pos.with_layer(Layers::Building),
-            Owner::Player(player),
+            player_transform.translation.with_layer(Layers::Building),
+            Owner::Player(player_entity),
         ))
         .id();
 
     world.trigger(RecruitEvent::new(
-        player,
+        player_entity,
         unit_type,
         Some(vec![weapon, head, chest, feet]),
         building,

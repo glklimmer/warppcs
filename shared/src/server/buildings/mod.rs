@@ -25,7 +25,7 @@ pub mod siege_camp;
 pub struct CommonBuildingInfo {
     pub player_entity: Entity,
     pub entity: Entity,
-    pub building_type: Building,
+    pub building: Building,
 }
 
 #[derive(Event)]
@@ -87,7 +87,7 @@ fn check_building_interaction(
         let info = CommonBuildingInfo {
             player_entity: event.player,
             entity,
-            building_type: *building,
+            building: *building,
         };
 
         match status {
@@ -123,7 +123,7 @@ fn construct_building(
 ) {
     for build in builds.read() {
         let mut building_entity = commands.entity(build.0.entity);
-        let building = &build.0.building_type;
+        let building = &build.0.building;
 
         info!("Constructing building: {:?}", building);
 
@@ -158,7 +158,7 @@ fn upgrade_building(
 
         let upgraded_building = &upgrade
             .0
-            .building_type
+            .building
             .upgrade_building()
             .expect("No Upgrade specified.");
 

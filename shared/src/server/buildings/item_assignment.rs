@@ -5,15 +5,14 @@ use bevy::ecs::entity::MapEntities;
 use bevy_replicon::prelude::{FromClient, Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
-use crate::map::buildings::{Building, RespawnZone};
-use crate::networking::Inventory;
-use crate::server::players::items::ItemType;
 use crate::{
-    ClientPlayerMap,
+    ClientPlayerMap, Player,
     enum_map::*,
+    map::buildings::{Building, BuildingType, RespawnZone},
+    networking::Inventory,
     server::players::{
         interaction::{InteractionTriggeredEvent, InteractionType},
-        items::Item,
+        items::{Item, ItemType},
     },
 };
 
@@ -94,10 +93,11 @@ fn check_start_building(
     assignment: Query<&ItemAssignment>,
     active: Res<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
+    players: Query<&Player>,
 ) {
-    let player = *client_player_map.get(&trigger.client_entity).unwrap();
-
-    let active_building = *active.get(&player).unwrap();
+    let player_entity = *client_player_map.get(&trigger.client_entity).unwrap();
+    let player = players.get(player_entity).unwrap();
+    let active_building = *active.get(&player_entity).unwrap();
 
     let assignment = assignment.get(active_building).unwrap();
     let items: Vec<_> = match assignment
@@ -120,15 +120,19 @@ fn check_start_building(
             None
         }
     }) {
-        commands
-            .entity(active_building)
-            .insert((Building::Unit { weapon }, RespawnZone::default()));
+        commands.entity(active_building).insert((
+            Building {
+                building_type: BuildingType::Unit { weapon },
+                color: player.color,
+            },
+            RespawnZone::default(),
+        ));
     } else {
         info!("No weapon in assigned items!");
     }
 
     interactions.write(InteractionTriggeredEvent {
-        player,
+        player: player_entity,
         interactable: active_building,
         interaction: InteractionType::Building,
     });

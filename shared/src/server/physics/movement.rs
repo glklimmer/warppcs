@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     BoxCollider, GRAVITY_G, Owner, Player,
-    map::buildings::{BuildStatus, Building},
+    map::buildings::{BuildStatus, Building, BuildingType},
     server::entities::health::Health,
 };
 use bevy::math::bounding::IntersectsVolume;
@@ -189,7 +189,7 @@ fn wall_collision(
             if building_status.ne(&BuildStatus::Built) {
                 continue;
             }
-            if let Building::Wall { level: _ } = building {
+            if let BuildingType::Wall { level: _ } = building.building_type {
                 let building_bounds = building_collider.at(building_transform);
 
                 if building_bounds.intersects(&future_bounds) {

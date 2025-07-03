@@ -4,9 +4,8 @@ use archer::archer_building;
 use gold_farm::gold_farm_building;
 use pikeman::pikeman_building;
 use shared::{
-    PlayerColor,
     enum_map::*,
-    map::buildings::{BuildStatus, Building, MainBuildingLevels, WallLevels},
+    map::buildings::{BuildStatus, Building, BuildingType, MainBuildingLevels, WallLevels},
     networking::UnitType,
 };
 use shieldwarrior::shieldwarrior_building;
@@ -34,7 +33,7 @@ mod wall_wood;
 
 #[derive(Resource)]
 pub struct BuildingSpriteSheets {
-    pub sprite_sheets: EnumMap<Building, AnimationSpriteSheet<BuildStatus, SpriteVariants>>,
+    pub sprite_sheets: EnumMap<BuildingType, AnimationSpriteSheet<BuildStatus, SpriteVariants>>,
 }
 
 impl FromWorld for BuildingSpriteSheets {
@@ -49,25 +48,25 @@ impl FromWorld for BuildingSpriteSheets {
         let gold_farm = gold_farm_building(world);
 
         let sprite_sheets = EnumMap::new(|c| match c {
-            Building::MainBuilding { level } => match level {
+            BuildingType::MainBuilding { level } => match level {
                 MainBuildingLevels::Tent => tent.clone(),
                 MainBuildingLevels::Hall => tent.clone(),
                 MainBuildingLevels::Castle => tent.clone(),
             },
-            Building::Unit { weapon } => match weapon {
+            BuildingType::Unit { weapon } => match weapon {
                 UnitType::Archer => archer.clone(),
                 UnitType::Shieldwarrior => shieldwarrior.clone(),
                 UnitType::Pikeman => pikeman.clone(),
                 UnitType::Bandit => tent.clone(),
                 UnitType::Commander => tent.clone(),
             },
-            Building::Wall { level } => match level {
+            BuildingType::Wall { level } => match level {
                 WallLevels::Basic => wall_basic.clone(),
                 WallLevels::Wood => wall_wood.clone(),
                 WallLevels::Tower => wall_tower.clone(),
             },
-            Building::Tower => tent.clone(),
-            Building::GoldFarm => gold_farm.clone(),
+            BuildingType::Tower => tent.clone(),
+            BuildingType::GoldFarm => gold_farm.clone(),
         });
 
         BuildingSpriteSheets { sprite_sheets }
@@ -81,7 +80,6 @@ pub fn update_building_sprite(
             &mut Sprite,
             &Building,
             &BuildStatus,
-            &PlayerColor,
             Option<&mut Highlighted>,
         ),
         Or<(Changed<Building>, Changed<BuildStatus>)>,
@@ -91,8 +89,10 @@ pub fn update_building_sprite(
     building_sprite_sheet: Res<BuildingSpriteSheets>,
     variants: Res<Assets<SpriteVariants>>,
 ) {
-    for (entity, mut sprite, building, status, color, maybe_highlight) in buildings.iter_mut() {
-        let sprite_sheet = building_sprite_sheet.sprite_sheets.get(*building);
+    for (entity, mut sprite, building, status, maybe_highlight) in buildings.iter_mut() {
+        let sprite_sheet = building_sprite_sheet
+            .sprite_sheets
+            .get(building.building_type);
         let handle = &sprite_sheet.texture;
         let sprite_variants = variants.get(handle).unwrap();
         let animation = sprite_sheet.animations.get(*status);
@@ -101,12 +101,12 @@ pub fn update_building_sprite(
             layout: sprite_sheet.layout.clone(),
             index: animation.first_sprite_index,
         });
-        let handle = sprite_variants.variants.get(*color).clone();
+        let handle = sprite_variants.variants.get(building.color).clone();
         info!(
             "Updating sprite: {:?}, {:?}, {:?}, {:?}",
             building,
             status,
-            color,
+            building.color,
             handle.path()
         );
         sprite.image = handle.clone();

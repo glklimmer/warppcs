@@ -5,7 +5,9 @@ use crate::{
     Owner, Player, PlayerColor, Vec3LayerExt,
     map::{
         Layers,
-        buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
+        buildings::{
+            BuildStatus, Building, BuildingType, MainBuildingLevels, RecruitBuilding, WallLevels,
+        },
     },
     networking::{MountType, UnitType},
     server::{
@@ -139,17 +141,19 @@ fn player_base(
 ) {
     let owner = Owner::Player(player);
     commands.spawn((
-        Building::MainBuilding {
-            level: MainBuildingLevels::Tent,
+        Building {
+            building_type: BuildingType::MainBuilding {
+                level: MainBuildingLevels::Tent,
+            },
+            color,
         },
-        Building::MainBuilding {
+        BuildingType::MainBuilding {
             level: MainBuildingLevels::Tent,
         }
         .collider(),
         BuildStatus::Built,
         offset.with_layer(Layers::Building),
         owner,
-        color,
         RecruitBuilding,
         Interactable {
             kind: InteractionType::Recruit,
@@ -171,7 +175,6 @@ fn player_base(
         ItemAssignment::default(),
         offset.offset_x(135.).with_layer(Layers::Building),
         owner,
-        color,
         Interactable {
             kind: InteractionType::ItemAssignment,
             restricted_to: Some(player),
@@ -182,7 +185,6 @@ fn player_base(
         ItemAssignment::default(),
         offset.offset_x(-135.).with_layer(Layers::Building),
         owner,
-        color,
         Interactable {
             kind: InteractionType::ItemAssignment,
             restricted_to: Some(player),
@@ -193,15 +195,17 @@ fn player_base(
         ItemAssignment::default(),
         offset.offset_x(235.).with_layer(Layers::Building),
         owner,
-        color,
         Interactable {
             kind: InteractionType::ItemAssignment,
             restricted_to: Some(player),
         },
     ));
     commands.spawn((
-        Building::Wall {
-            level: WallLevels::Basic,
+        Building {
+            building_type: BuildingType::Wall {
+                level: WallLevels::Basic,
+            },
+            color,
         },
         offset.offset_x(390.).with_layer(Layers::Wall),
         owner,
@@ -211,32 +215,38 @@ fn player_base(
         },
     ));
     commands.spawn((
-        Building::Wall {
-            level: WallLevels::Basic,
+        Building {
+            building_type: BuildingType::Wall {
+                level: WallLevels::Basic,
+            },
+            color,
         },
         offset.offset_x(-345.).with_layer(Layers::Wall),
         owner,
-        color,
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),
         },
     ));
     commands.spawn((
-        Building::GoldFarm,
+        Building {
+            building_type: BuildingType::GoldFarm,
+            color,
+        },
         offset.offset_x(320.).with_layer(Layers::Building),
         owner,
-        color,
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),
         },
     ));
     commands.spawn((
-        Building::GoldFarm,
+        Building {
+            building_type: BuildingType::GoldFarm,
+            color,
+        },
         offset.offset_x(-265.).with_layer(Layers::Building),
         owner,
-        color,
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),
