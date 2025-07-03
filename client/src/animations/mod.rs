@@ -87,11 +87,9 @@ impl<E: EnumIter, T: Asset> AnimationSpriteSheet<E, T> {
         let mut assets_to_load = world.resource_mut::<AssetsToLoad>();
         assets_to_load.push(texture.clone().untyped());
 
-        for sound_option in animations_sound.iter() {
-            if let Some(sound) = sound_option {
-                for handle in &sound.sound_handles {
-                    assets_to_load.push(handle.clone().untyped());
-                }
+        for sound in animations_sound.iter().flatten() {
+            for handle in &sound.sound_handles {
+                assets_to_load.push(handle.clone().untyped());
             }
         }
 
