@@ -6,6 +6,7 @@ use bevy::{
     math::bounding::IntersectsVolume,
 };
 use image::{GenericImage, GenericImageView, Rgba};
+use shared::Player;
 use shared::server::physics::attachment::AttachedTo;
 use shared::{BoxCollider, server::players::interaction::Interactable};
 use std::cmp::Ordering;
@@ -168,7 +169,7 @@ fn init_highlightable(
     trigger: Trigger<OnAdd, Interactable>,
     mut commands: Commands,
     controlled_player: Query<Entity, With<ControlledPlayer>>,
-    interactable: Query<(&Interactable, Option<&AttachedTo>)>,
+    interactable: Query<(&Interactable, Option<&AttachedTo>), Without<Player>>,
 ) {
     let Ok((interactable, maybe_attached)) = interactable.get(trigger.target()) else {
         return;

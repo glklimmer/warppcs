@@ -12,7 +12,7 @@ use super::super::{AnimationSpriteSheet, SpriteSheetAnimation};
 
 #[derive(Resource)]
 pub struct ChestSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<ChestAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<ChestAnimation, Image>,
 }
 
 impl FromWorld for ChestSpriteSheet {
@@ -49,12 +49,13 @@ impl FromWorld for ChestSpriteSheet {
         });
 
         ChestSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }

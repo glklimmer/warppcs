@@ -1,9 +1,10 @@
-use aeronet::io::{Session, SessionEndpoint, connection::Disconnected, server::Server};
-use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
-use crate::{ClientPlayerMap, Player, SetLocalPlayer};
+use aeronet::io::{Session, SessionEndpoint, connection::Disconnected, server::Server};
+use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
+
+use crate::{ClientPlayerMap, Player, PlayerColor, SetLocalPlayer, enum_map::*};
 
 pub struct CreateServerPlugin;
 
@@ -112,7 +113,11 @@ fn on_created(
 ) {
     info!("Successfully created server");
 
-    let server_player = commands.spawn(Player).id();
+    let server_player = commands
+        .spawn(Player {
+            color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
+        })
+        .id();
 
     client_player_map.insert(SERVER, server_player);
 

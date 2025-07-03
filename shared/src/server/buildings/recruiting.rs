@@ -1,3 +1,4 @@
+use crate::enum_map::EnumIter;
 use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
@@ -28,6 +29,7 @@ use crate::{
         },
     },
 };
+use crate::{Player, PlayerColor};
 
 use super::item_assignment::ItemAssignment;
 
@@ -42,6 +44,7 @@ pub struct Flag {
     #[entities]
     pub original_building: Entity,
     pub unit_type: UnitType,
+    pub color: PlayerColor,
 }
 
 /// This component is added on Player. Tuple entity is flag.
@@ -120,7 +123,7 @@ impl RecruitEvent {
 pub fn recruit_units(
     trigger: Trigger<RecruitEvent>,
     mut commands: Commands,
-    mut player_query: Query<(&Transform, &mut Inventory)>,
+    mut player_query: Query<(&Transform, &mut Inventory, &Player)>,
 ) {
     let RecruitEvent {
         player,
@@ -138,7 +141,7 @@ pub fn recruit_units(
         return;
     };
 
-    let (player_transform, mut inventory) = player_query.get_mut(player).unwrap();
+    let (player_transform, mut inventory, Player { color }) = player_query.get_mut(player).unwrap();
     let player_translation = player_transform.translation;
 
     let cost = &unit_type.recruitment_cost();
@@ -150,6 +153,7 @@ pub fn recruit_units(
             Flag {
                 original_building: *original_building,
                 unit_type,
+                color: *color,
             },
             AttachedTo(player),
             Interactable {
@@ -169,6 +173,7 @@ pub fn recruit_units(
         player_translation,
         owner,
         flag_entity,
+        *color,
     );
 
     commands.server_trigger(ToClients {
@@ -187,10 +192,11 @@ fn spawn_units(
     position: Vec3,
     owner: Owner,
     flag_entity: Entity,
+    color: PlayerColor,
 ) {
     let unit_amount = items.calculated(Effect::UnitAmount) as i32;
 
-    let (unit, health, speed, damage, range) = unit_stats(unit_type, items);
+    let (unit, health, speed, damage, range) = unit_stats(unit_type, items, color);
 
     for _ in 1..=unit_amount {
         commands.spawn((
@@ -202,16 +208,21 @@ fn spawn_units(
             range,
             owner,
             FlagAssignment(flag_entity),
-            UnitBehaviour::FollowFlag(flag_entity),
+            UnitBehaviour::default(),
         ));
     }
 }
 
-pub fn unit_stats(unit_type: UnitType, items: &[Item]) -> (Unit, Health, Speed, Damage, Range) {
+pub fn unit_stats(
+    unit_type: UnitType,
+    items: &[Item],
+    color: PlayerColor,
+) -> (Unit, Health, Speed, Damage, Range) {
     let time = items.calculated(Effect::AttackSpeed) / 2.;
     let unit = Unit {
-        swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
+        swing_timer: Timer::from_seconds(time, TimerMode::Once),
         unit_type,
+        color,
     };
 
     let hitpoints = items.calculated(Effect::Health);
@@ -236,7 +247,7 @@ pub fn unit_stats(unit_type: UnitType, items: &[Item]) -> (Unit, Health, Speed, 
 pub fn recruit_commander(
     trigger: Trigger<RecruitEvent>,
     mut commands: Commands,
-    mut player_query: Query<(&Transform, &mut Inventory)>,
+    mut player_query: Query<(&Transform, &mut Inventory, &Player)>,
 ) {
     let RecruitEvent {
         player,
@@ -250,7 +261,7 @@ pub fn recruit_commander(
     };
 
     let player = *player;
-    let (player_transform, mut inventory) = player_query.get_mut(player).unwrap();
+    let (player_transform, mut inventory, Player { color }) = player_query.get_mut(player).unwrap();
     let player_translation = player_transform.translation;
 
     let cost = &unit_type.recruitment_cost();
@@ -262,6 +273,7 @@ pub fn recruit_commander(
             Flag {
                 original_building: *original_building,
                 unit_type: *unit_type,
+                color: *color,
             },
             AttachedTo(player),
             Interactable {
@@ -274,22 +286,23 @@ pub fn recruit_commander(
 
     commands.entity(player).insert(FlagHolder(flag_entity));
 
-    let time = 50.;
+    let time = 2.;
     let unit = Unit {
-        swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
+        swing_timer: Timer::from_seconds(time, TimerMode::Once),
         unit_type: UnitType::Commander,
+        color: *color,
     };
 
     let hitpoints = 100.;
     let health = Health { hitpoints };
 
-    let movement_speed = 50.;
+    let movement_speed = 35.;
     let speed = Speed(movement_speed);
 
     let damage = 20.;
     let damage = Damage(damage);
 
-    let range = 50.;
+    let range = 10.;
     let range = Range(range);
 
     let offset = Vec2::new(-18., 0.);
@@ -304,9 +317,9 @@ pub fn recruit_commander(
             owner,
             FlagAssignment(flag_entity),
             FollowOffset(offset),
-            UnitBehaviour::FollowFlag(flag_entity),
+            UnitBehaviour::default(),
             Interactable {
-                kind: InteractionType::CommanderInteraction,
+                kind: InteractionType::Commander,
                 restricted_to: Some(player),
             },
             ArmyFlagAssignments::default(),
@@ -317,7 +330,7 @@ pub fn recruit_commander(
 
     let mut army_formation: Vec<Entity> = vec![];
 
-    CommanderFormation::ALL.iter().for_each(|_| {
+    CommanderFormation::all_variants().iter().for_each(|_| {
         formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
         let formation = commands
             .spawn((

@@ -3,10 +3,10 @@ use bevy::{prelude::*, sprite::Anchor};
 use bevy_replicon::prelude::Replicated;
 use commander::CommanderPlugin;
 use enum_mappable::Mappable;
-use health::HealthPlugin;
+use health::{Health, HealthPlugin};
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, enum_map::EnumIter, networking::UnitType, unit_collider};
+use crate::{BoxCollider, PlayerColor, enum_map::EnumIter, networking::UnitType, unit_collider};
 
 use super::physics::{
     PushBack,
@@ -33,12 +33,13 @@ pub enum UnitAnimation {
     Velocity,
     PushBack,
     UnitAnimation,
-Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
     RandomVelocityMul
 )]
 pub struct Unit {
     pub unit_type: UnitType,
     pub swing_timer: Timer,
+    pub color: PlayerColor,
 }
 
 #[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]
@@ -53,5 +54,13 @@ impl Plugin for EntityPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(HealthPlugin);
         app.add_plugins(CommanderPlugin);
+
+        app.add_systems(FixedUpdate, unit_swing_timer);
+    }
+}
+
+fn unit_swing_timer(mut query: Query<&mut Unit, With<Health>>, time: Res<Time>) {
+    for mut unit in query.iter_mut() {
+        unit.swing_timer.tick(time.delta());
     }
 }

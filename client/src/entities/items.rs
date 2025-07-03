@@ -53,7 +53,7 @@ pub trait BuildSprite<K> {
     fn sprite_for<T: Into<K>>(&self, kind: T) -> Sprite;
 }
 
-impl<K> BuildSprite<K> for AnimationSpriteSheet<K>
+impl<K> BuildSprite<K> for AnimationSpriteSheet<K, Image>
 where
     K: EnumIter,
 {

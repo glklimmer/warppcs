@@ -16,13 +16,13 @@ pub enum Heads {
 
 #[derive(Resource)]
 pub struct HeadsSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<Heads>,
+    pub sprite_sheet: AnimationSpriteSheet<Heads, Image>,
 }
 
 impl FromWorld for HeadsSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture: Handle<Image> = asset_server.load("sprites/objects/head_armor.png");
+        let texture = asset_server.load("sprites/objects/head_armor.png");
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
@@ -70,12 +70,13 @@ impl FromWorld for HeadsSpriteSheet {
         });
 
         HeadsSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }

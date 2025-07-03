@@ -5,15 +5,16 @@ use shared::enum_map::*;
 use crate::{
     animations::{
         AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, SpriteSheetAnimation,
+        sprite_variant_loader::SpriteVariants,
     },
     sound::DIRT_FOOTSTEPS_SOUND_PATH,
 };
 
 use super::super::UnitAnimation;
 
-pub fn pikeman(world: &mut World) -> AnimationSpriteSheet<UnitAnimation> {
+pub fn pikeman(world: &mut World) -> AnimationSpriteSheet<UnitAnimation, SpriteVariants> {
     let asset_server = world.resource::<AssetServer>();
-    let texture: Handle<Image> = asset_server.load("sprites/humans/MiniSpearMan.png");
+    let texture = asset_server.load("sprites/humans/MiniSpearMan.png");
 
     let footstep1 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_1.ogg"));
     let footstep2 = asset_server.load(format!("{DIRT_FOOTSTEPS_SOUND_PATH}/dirt_footstep_2.ogg"));

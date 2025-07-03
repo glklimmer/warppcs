@@ -5,15 +5,16 @@ use shared::enum_map::*;
 use crate::{
     animations::{
         AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, SpriteSheetAnimation,
+        sprite_variant_loader::SpriteVariants,
     },
     sound::GRASS_FOOTSTEPS_SOUND_PATH,
 };
 
 use super::super::UnitAnimation;
 
-pub fn commander(world: &mut World) -> AnimationSpriteSheet<UnitAnimation> {
+pub fn commander(world: &mut World) -> AnimationSpriteSheet<UnitAnimation, SpriteVariants> {
     let asset_server = world.resource::<AssetServer>();
-    let texture: Handle<Image> = asset_server.load("sprites/humans/MiniPrinceMan.png");
+    let texture = asset_server.load("sprites/humans/MiniPrinceMan.png");
 
     let footstep1 = asset_server.load(format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_1.ogg"));
     let footstep2 = asset_server.load(format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_2.ogg"));
@@ -26,8 +27,8 @@ pub fn commander(world: &mut World) -> AnimationSpriteSheet<UnitAnimation> {
 
     let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
         UVec2::splat(32),
-        11,
-        7,
+        6,
+        6,
         None,
         None,
     ));
@@ -40,23 +41,23 @@ pub fn commander(world: &mut World) -> AnimationSpriteSheet<UnitAnimation> {
         },
 
         UnitAnimation::Walk => SpriteSheetAnimation {
-            first_sprite_index: 11,
-            last_sprite_index: 16,
+            first_sprite_index: 6,
+            last_sprite_index: 11,
             ..default()
         },
         UnitAnimation::Attack => SpriteSheetAnimation {
-            first_sprite_index: 33,
-            last_sprite_index: 42,
+            first_sprite_index: 18,
+            last_sprite_index: 23,
             ..default()
         },
         UnitAnimation::Hit => SpriteSheetAnimation {
-            first_sprite_index: 55,
-            last_sprite_index: 57,
+            first_sprite_index: 24,
+            last_sprite_index: 26,
             ..default()
         },
         UnitAnimation::Death => SpriteSheetAnimation {
-            first_sprite_index: 66,
-            last_sprite_index: 69,
+            first_sprite_index: 30,
+            last_sprite_index: 35,
             ..default()
         },
     });

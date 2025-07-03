@@ -12,13 +12,13 @@ pub enum PortalAnimation {
 
 #[derive(Resource)]
 pub struct PortalSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<PortalAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<PortalAnimation, Image>,
 }
 
 impl FromWorld for PortalSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture: Handle<Image> = asset_server.load("sprites/objects/portal.png");
+        let texture = asset_server.load("sprites/objects/portal.png");
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
@@ -42,12 +42,13 @@ impl FromWorld for PortalSpriteSheet {
         });
 
         PortalSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }

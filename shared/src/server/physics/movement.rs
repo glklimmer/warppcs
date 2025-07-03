@@ -4,15 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     BoxCollider, GRAVITY_G, Owner, Player,
-    map::buildings::{BuildStatus, Building},
-    server::{
-        ai::{FollowOffset, UnitBehaviour},
-        entities::{Unit, health::Health},
-    },
+    map::buildings::{BuildStatus, Building, BuildingType},
+    server::{entities::health::Health, players::items::Item},
 };
 use bevy::math::bounding::IntersectsVolume;
 
-use super::{PushBack, projectile::ProjectileType};
+use super::projectile::ProjectileType;
 
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);
@@ -32,7 +29,7 @@ impl Default for Speed {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Deref)]
 pub struct RandomVelocityMul(f32);
 
 impl Default for RandomVelocityMul {
@@ -49,11 +46,11 @@ impl Plugin for MovementPlugin {
             FixedUpdate,
             (
                 (
-                    set_unit_velocity,
                     set_grounded,
                     set_walking,
                     set_king_walking,
                     apply_friction,
+                    apply_drag,
                     set_projectile_rotation,
                 ),
                 wall_collision,
@@ -63,7 +60,7 @@ impl Plugin for MovementPlugin {
         );
         app.add_systems(
             FixedPostUpdate,
-            (apply_gravity, apply_velocity)
+            (apply_gravity, (apply_velocity, apply_direction))
                 .chain()
                 .run_if(server_or_singleplayer),
         );
@@ -93,6 +90,16 @@ fn apply_velocity(
     }
 }
 
+fn apply_direction(
+    mut query: Query<(&Velocity, &mut Transform), (Changed<Velocity>, Without<Item>)>,
+) {
+    for (velocity, mut transform) in query.iter_mut() {
+        if velocity.0.x != 0. {
+            transform.scale.x = velocity.0.x.signum();
+        }
+    }
+}
+
 fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Time>) {
     let friction_force = 400.0 * time.delta_secs();
     for mut velocity in query.iter_mut() {
@@ -101,6 +108,14 @@ fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Tim
         } else {
             velocity.0.x -= velocity.0.x.signum() * friction_force;
         }
+    }
+}
+
+fn apply_drag(mut query: Query<&mut Velocity>, time: Res<Time>) {
+    let drag_coeff = 3.0;
+    for mut vel in query.iter_mut() {
+        let old = vel.0;
+        vel.0 = old - old * drag_coeff * time.delta_secs();
     }
 }
 
@@ -118,6 +133,7 @@ fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn set_walking(
     mut commands: Commands,
     entities: Query<(Entity, &Velocity, Option<&Grounded>, Option<&Health>), Without<Player>>,
@@ -180,67 +196,13 @@ fn wall_collision(
             if building_status.ne(&BuildStatus::Built) {
                 continue;
             }
-            if let Building::Wall { level: _ } = building {
+            if let BuildingType::Wall { level: _ } = building.building_type {
                 let building_bounds = building_collider.at(building_transform);
 
                 if building_bounds.intersects(&future_bounds) {
                     velocity.0.x = 0.;
                     break;
                 }
-            }
-        }
-    }
-}
-
-const MOVE_EPSILON: f32 = 1.;
-
-#[allow(clippy::type_complexity)]
-fn set_unit_velocity(
-    mut query: Query<
-        (
-            &mut Velocity,
-            &mut Transform,
-            &UnitBehaviour,
-            &FollowOffset,
-            &PushBack,
-            &RandomVelocityMul,
-            &Speed,
-        ),
-        (With<Unit>, With<Health>),
-    >,
-    transform_query: Query<&Transform, Without<Unit>>,
-) {
-    for (
-        mut velocity,
-        mut transform,
-        behaviour,
-        follow_offset,
-        push_back,
-        rand_velocity_mul,
-        speed,
-    ) in &mut query
-    {
-        match behaviour {
-            UnitBehaviour::Idle => {}
-            UnitBehaviour::AttackTarget(_) => {
-                if !push_back.timer.finished() {
-                    continue;
-                }
-                velocity.0.x = 0.;
-            }
-            UnitBehaviour::FollowFlag(flag) => {
-                let target = transform_query.get(*flag).unwrap().translation.truncate();
-
-                let target = target + **follow_offset;
-                let direction = (target.x - transform.translation.x).signum();
-
-                if (transform.translation.x - target.x).abs() <= MOVE_EPSILON {
-                    velocity.0.x = 0.;
-                    continue;
-                }
-
-                velocity.0.x = direction * **speed * rand_velocity_mul.0;
-                transform.scale.x = direction;
             }
         }
     }

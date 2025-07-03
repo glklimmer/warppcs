@@ -5,9 +5,11 @@ use shared::{
     server::physics::movement::Moving,
 };
 
+use crate::animations::AnimationDirection;
+
 use super::{
     AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, AnimationTrigger, PlayOnce,
-    SpriteSheetAnimation,
+    SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
 };
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
@@ -20,19 +22,21 @@ pub enum KingAnimation {
     Hit,
     Death,
     Mount,
+    Unmount,
     HorseIdle,
     HorseWalk,
 }
 
 #[derive(Resource)]
 pub struct KingSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<KingAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<KingAnimation, SpriteVariants>,
 }
 
 impl FromWorld for KingSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture: Handle<Image> = asset_server.load("sprites/humans/MiniKingMan.png");
+
+        let texture = asset_server.load("sprites/humans/MiniKingMan.png");
 
         let walk_sound = asset_server.load("animation_sound/king/walk.ogg");
         let horse_sound = asset_server.load("animation_sound/horse/horse_sound.ogg");
@@ -83,6 +87,12 @@ impl FromWorld for KingSpriteSheet {
                 last_sprite_index: 76,
                 ..default()
             },
+            KingAnimation::Unmount => SpriteSheetAnimation {
+                first_sprite_index: 76,
+                last_sprite_index: 70,
+                direction: AnimationDirection::Backward,
+                ..default()
+            },
             KingAnimation::HorseIdle => SpriteSheetAnimation {
                 first_sprite_index: 80,
                 last_sprite_index: 87,
@@ -109,6 +119,10 @@ impl FromWorld for KingSpriteSheet {
                 sound_handles: vec![horse_sound.clone()],
                 sound_trigger: AnimationSoundTrigger::OnEnter,
             }),
+            KingAnimation::Unmount => Some(AnimationSound {
+                sound_handles: vec![horse_sound.clone()],
+                sound_trigger: AnimationSoundTrigger::OnEnter,
+            }),
             KingAnimation::HorseIdle => None,
             KingAnimation::HorseWalk => Some(AnimationSound {
                 sound_handles: vec![horse_gallop.clone()],
@@ -117,12 +131,13 @@ impl FromWorld for KingSpriteSheet {
         });
 
         KingSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }
@@ -141,12 +156,14 @@ pub fn trigger_king_animation(
                     AnimationChange::Hit(_) => todo!(),
                     AnimationChange::Death => todo!(),
                     AnimationChange::Mount => KingAnimation::Mount,
+                    AnimationChange::Unmount => KingAnimation::Unmount,
                 },
                 None => match &event.change {
                     AnimationChange::Attack => KingAnimation::Attack,
                     AnimationChange::Hit(_) => KingAnimation::Hit,
                     AnimationChange::Death => KingAnimation::Death,
                     AnimationChange::Mount => KingAnimation::Mount,
+                    AnimationChange::Unmount => KingAnimation::Unmount,
                 },
             };
 
@@ -185,10 +202,12 @@ pub fn set_king_after_play_once(
 ) {
     if let Ok((animation, maybe_mounted)) = mounted.get(trigger.target()) {
         let new_animation = match animation {
-            KingAnimation::Attack | KingAnimation::Mount => match maybe_mounted {
-                Some(_) => KingAnimation::HorseIdle,
-                None => KingAnimation::Idle,
-            },
+            KingAnimation::Attack | KingAnimation::Mount | KingAnimation::Unmount => {
+                match maybe_mounted {
+                    Some(_) => KingAnimation::HorseIdle,
+                    None => KingAnimation::Idle,
+                }
+            }
             _ => *animation,
         };
 

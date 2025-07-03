@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+
 use bevy_replicon::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use super::enum_map::*;
-use serde::{Deserialize, Serialize};
 
 use crate::{BoxCollider, horse_collider, map::buildings::Cost, server::players::items::Item};
 
@@ -69,9 +70,26 @@ pub struct Mounted {
     pub mount_type: MountType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub enum Facing {
-    #[default]
+#[derive(Debug, Clone, Copy)]
+pub enum WorldDirection {
     Left,
     Right,
+}
+
+impl From<f32> for WorldDirection {
+    fn from(value: f32) -> Self {
+        match value > 0. {
+            true => WorldDirection::Right,
+            false => WorldDirection::Left,
+        }
+    }
+}
+
+impl From<WorldDirection> for f32 {
+    fn from(value: WorldDirection) -> Self {
+        match value {
+            WorldDirection::Left => -1.,
+            WorldDirection::Right => 1.,
+        }
+    }
 }
