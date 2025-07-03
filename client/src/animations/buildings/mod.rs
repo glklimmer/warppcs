@@ -102,6 +102,13 @@ pub fn update_building_sprite(
             index: animation.first_sprite_index,
         });
         let handle = sprite_variants.variants.get(*color).clone();
+        info!(
+            "Updating sprite: {:?}, {:?}, {:?}, {:?}",
+            building,
+            status,
+            color,
+            handle.path()
+        );
         sprite.image = handle.clone();
 
         // TODO: add animations
