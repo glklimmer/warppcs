@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     BoxCollider, GRAVITY_G, Owner, Player,
     map::buildings::{BuildStatus, Building, BuildingType},
-    server::entities::health::Health,
+    server::{entities::health::Health, players::items::Item},
 };
 use bevy::math::bounding::IntersectsVolume;
 
@@ -60,7 +60,7 @@ impl Plugin for MovementPlugin {
         );
         app.add_systems(
             FixedPostUpdate,
-            (apply_gravity, apply_velocity)
+            (apply_gravity, (apply_velocity, apply_direction))
                 .chain()
                 .run_if(server_or_singleplayer),
         );
@@ -87,6 +87,13 @@ fn apply_velocity(
 ) {
     for (velocity, mut transform) in query.iter_mut() {
         transform.translation += velocity.0.extend(0.) * time.delta_secs();
+    }
+}
+
+fn apply_direction(
+    mut query: Query<(&Velocity, &mut Transform), (Changed<Velocity>, Without<Item>)>,
+) {
+    for (velocity, mut transform) in query.iter_mut() {
         if velocity.0.x != 0. {
             transform.scale.x = velocity.0.x.signum();
         }
