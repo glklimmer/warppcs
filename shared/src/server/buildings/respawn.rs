@@ -73,7 +73,7 @@ pub fn respawn_units(
 
         if num_alive < max_allowed {
             let (unit, health, speed, damage, range) =
-                unit_stats(building.unit_type().unwrap(), &items);
+                unit_stats(building.unit_type().unwrap(), &items, flag.color);
 
             commands.spawn((
                 respawn_transform.translation.with_layer(Layers::Unit),

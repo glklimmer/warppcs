@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 
+use crate::asset_loader::AssetsToLoad;
 use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
 use bevy_replicon::client::ClientSet;
+use buildings::{BuildingSpriteSheets, update_building_sprite};
 use king::{
     KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
     set_king_sprite_animation, set_king_walking, trigger_king_animation,
@@ -19,6 +21,7 @@ use objects::{
     projectiles::ProjectileSpriteSheet,
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
+use sprite_variant_loader::{SpriteVariantLoader, SpriteVariants};
 use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
 use units::{
     UnitSpriteSheets, set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation,
@@ -26,18 +29,12 @@ use units::{
 };
 
 pub mod animals;
+pub mod buildings;
 pub mod king;
 pub mod objects;
+pub mod sprite_variant_loader;
 pub mod ui;
 pub mod units;
-
-#[derive(Clone)]
-pub struct AnimationSpriteSheet<E: EnumIter> {
-    pub texture: Handle<Image>,
-    pub layout: Handle<TextureAtlasLayout>,
-    pub animations: EnumMap<E, SpriteSheetAnimation>,
-    pub animations_sound: EnumMap<E, Option<AnimationSound>>,
-}
 
 #[derive(Clone)]
 pub struct StaticSpriteSheet<E: EnumIter> {
@@ -47,10 +44,62 @@ pub struct StaticSpriteSheet<E: EnumIter> {
 }
 
 impl<E: EnumIter> StaticSpriteSheet<E> {
+    pub fn new(
+        world: &mut World,
+        texture: Handle<Image>,
+        layout: Handle<TextureAtlasLayout>,
+        parts: EnumMap<E, usize>,
+    ) -> Self {
+        let mut assets_to_load = world.resource_mut::<AssetsToLoad>();
+        assets_to_load.push(texture.clone().untyped());
+
+        Self {
+            texture,
+            layout,
+            parts,
+        }
+    }
+
     pub fn texture_atlas(&self, part: E) -> TextureAtlas {
         TextureAtlas {
             layout: self.layout.clone(),
             index: *self.parts.get(part),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct AnimationSpriteSheet<E: EnumIter, T: Asset> {
+    pub texture: Handle<T>,
+    pub layout: Handle<TextureAtlasLayout>,
+    pub animations: EnumMap<E, SpriteSheetAnimation>,
+    pub animations_sound: EnumMap<E, Option<AnimationSound>>,
+}
+
+impl<E: EnumIter, T: Asset> AnimationSpriteSheet<E, T> {
+    pub fn new(
+        world: &mut World,
+        texture: Handle<T>,
+        layout: Handle<TextureAtlasLayout>,
+        animations: EnumMap<E, SpriteSheetAnimation>,
+        animations_sound: EnumMap<E, Option<AnimationSound>>,
+    ) -> Self {
+        let mut assets_to_load = world.resource_mut::<AssetsToLoad>();
+        assets_to_load.push(texture.clone().untyped());
+
+        for sound_option in animations_sound.iter() {
+            if let Some(sound) = sound_option {
+                for handle in &sound.sound_handles {
+                    assets_to_load.push(handle.clone().untyped());
+                }
+            }
+        }
+
+        Self {
+            texture,
+            layout,
+            animations,
+            animations_sound,
         }
     }
 }
@@ -109,6 +158,9 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
+        app.init_asset::<SpriteVariants>();
+        app.init_asset_loader::<SpriteVariantLoader>();
+
         app.init_resource::<UnitSpriteSheets>();
         app.add_event::<AnimationTrigger<UnitAnimation>>();
 
@@ -130,6 +182,8 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<ItemInfoSpriteSheet>();
         app.init_resource::<MapIconSpriteSheet>();
 
+        app.init_resource::<BuildingSpriteSheets>();
+
         app.add_systems(
             PreUpdate,
             (
@@ -150,11 +204,16 @@ impl Plugin for AnimationPlugin {
         app.add_systems(
             Update,
             (
-                (set_unit_sprite_animation),
-                (set_king_sprite_animation),
-                (set_horse_sprite_animation, next_horse_animation),
+                (
+                    set_unit_sprite_animation,
+                    set_king_sprite_animation,
+                    set_horse_sprite_animation,
+                    next_horse_animation,
+                    update_building_sprite,
+                ),
                 advance_animation,
-            ),
+            )
+                .chain(),
         );
     }
 }

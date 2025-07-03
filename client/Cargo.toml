@@ -58,3 +58,4 @@ aeronet_steam = { version = "0.14.0", features = [
   "server",
 ], optional = true }
 bevy-steamworks = { git = "https://github.com/glklimmer/bevy_steamworks", optional = true }
+thiserror = "2.0.12"

@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{AnimationSpriteSheet, SpriteSheetAnimation};
+use crate::animations::{
+    AnimationSpriteSheet, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
+};
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum FlagAnimation {
@@ -12,13 +14,14 @@ pub enum FlagAnimation {
 
 #[derive(Resource)]
 pub struct FlagSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<FlagAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<FlagAnimation, SpriteVariants>,
 }
 
 impl FromWorld for FlagSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture: Handle<Image> = asset_server.load("sprites/objects/flag.png");
+        let texture = asset_server.load("sprites/objects/flag.png");
+
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
@@ -42,12 +45,13 @@ impl FromWorld for FlagSpriteSheet {
         });
 
         FlagSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }

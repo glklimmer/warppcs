@@ -5,9 +5,11 @@ use shared::{
     server::physics::movement::Moving,
 };
 
+use crate::animations::AnimationDirection;
+
 use super::{
-    AnimationDirection, AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet,
-    AnimationTrigger, PlayOnce, SpriteSheetAnimation,
+    AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, AnimationTrigger, PlayOnce,
+    SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
 };
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
@@ -27,13 +29,14 @@ pub enum KingAnimation {
 
 #[derive(Resource)]
 pub struct KingSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<KingAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<KingAnimation, SpriteVariants>,
 }
 
 impl FromWorld for KingSpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let texture: Handle<Image> = asset_server.load("sprites/humans/MiniKingMan.png");
+
+        let texture = asset_server.load("sprites/humans/MiniKingMan.png");
 
         let walk_sound = asset_server.load("animation_sound/king/walk.ogg");
         let horse_sound = asset_server.load("animation_sound/horse/horse_sound.ogg");
@@ -128,12 +131,13 @@ impl FromWorld for KingSpriteSheet {
         });
 
         KingSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }

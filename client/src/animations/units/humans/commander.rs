@@ -5,15 +5,16 @@ use shared::enum_map::*;
 use crate::{
     animations::{
         AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, SpriteSheetAnimation,
+        sprite_variant_loader::SpriteVariants,
     },
     sound::GRASS_FOOTSTEPS_SOUND_PATH,
 };
 
 use super::super::UnitAnimation;
 
-pub fn commander(world: &mut World) -> AnimationSpriteSheet<UnitAnimation> {
+pub fn commander(world: &mut World) -> AnimationSpriteSheet<UnitAnimation, SpriteVariants> {
     let asset_server = world.resource::<AssetServer>();
-    let texture: Handle<Image> = asset_server.load("sprites/humans/MiniPrinceMan.png");
+    let texture = asset_server.load("sprites/humans/MiniPrinceMan.png");
 
     let footstep1 = asset_server.load(format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_1.ogg"));
     let footstep2 = asset_server.load(format!("{GRASS_FOOTSTEPS_SOUND_PATH}/grass_footstep_2.ogg"));

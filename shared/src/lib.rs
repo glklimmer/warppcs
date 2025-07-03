@@ -177,7 +177,9 @@ fn spawn_clients(
     let player = commands
         .entity(trigger.target())
         .insert((
-            Player,
+            Player {
+                color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
+            },
             Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
         ))
         .id();
@@ -207,9 +209,28 @@ impl MapEntities for SetLocalPlayer {
     Speed,
     Velocity,
     Sprite{anchor: Anchor::BottomCenter, ..default()},
-    Inventory
+    Inventory,
 )]
-pub struct Player;
+pub struct Player {
+    pub color: PlayerColor,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Mappable, Serialize, Deserialize)]
+pub enum PlayerColor {
+    #[default]
+    Blue,
+    Red,
+    Green,
+    Yellow,
+    Purple,
+    Orange,
+    Cyan,
+    Magenta,
+    Pink,
+    Brown,
+    Teal,
+    Gray,
+}
 
 #[derive(Component, Copy, Clone, Default, Deserialize, Serialize)]
 pub struct BoxCollider {
@@ -313,6 +334,7 @@ struct DelayedDespawn(Timer);
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
     #[default]
+    Loading,
     MainMenu,
     GameSession,
 }

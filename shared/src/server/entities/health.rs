@@ -2,15 +2,7 @@ use bevy::prelude::*;
 
 use bevy_replicon::prelude::{SendMode, ToClients};
 
-use crate::{
-    AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner,
-    map::buildings::Building,
-    networking::{UnitType, WorldDirection},
-    server::{
-        ai::{Target, TargetedBy},
-        buildings::recruiting::FlagAssignment,
-    },
-};
+use crate::{map::buildings::{Building, BuildingType}, networking::{UnitType, WorldDirection}, server::{ai::{Target, TargetedBy}, buildings::recruiting::FlagAssignment}, AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner};
 
 use super::Unit;
 
@@ -145,7 +137,7 @@ fn on_building_destroy(mut commands: Commands, query: Query<(Entity, &Health, &B
         if health.hitpoints <= 0. {
             commands.entity(entity).despawn();
 
-            if let Building::MainBuilding { level: _ } = building {
+            if let BuildingType::MainBuilding { level: _ } = building.building_type {
                 // TODO: handle player dead
             }
         }

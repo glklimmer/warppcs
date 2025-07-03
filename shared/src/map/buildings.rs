@@ -3,16 +3,18 @@ use bevy::{prelude::*, sprite::Anchor};
 use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, networking::UnitType, server::entities::health::Health};
+use crate::{
+    BoxCollider, PlayerColor, enum_map::*, networking::UnitType, server::entities::health::Health,
+};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Mappable)]
 pub enum MainBuildingLevels {
     Tent,
     Hall,
     Castle,
 }
 
-#[derive(Component, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Component, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Mappable)]
 pub enum BuildStatus {
     Marker,
     Built,
@@ -77,7 +79,13 @@ pub fn respawn_timer(mut recruit_buildings: Query<&mut RespawnZone>, time: Res<T
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     BuildStatus = BuildStatus::Marker,
 )]
-pub enum Building {
+pub struct Building {
+    pub building_type: BuildingType,
+    pub color: PlayerColor,
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Mappable)]
+pub enum BuildingType {
     MainBuilding { level: MainBuildingLevels },
     Unit { weapon: UnitType },
     Wall { level: WallLevels },
@@ -95,7 +103,7 @@ impl MainBuildingLevels {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Mappable)]
 pub enum WallLevels {
     Basic,
     Wood,
@@ -114,24 +122,63 @@ impl WallLevels {
 
 impl Building {
     pub fn upgrade_building(&self) -> Option<Self> {
+        self.building_type.upgrade().map(|bt| Self {
+            building_type: bt,
+            color: self.color,
+        })
+    }
+
+    pub fn can_upgrade(&self) -> bool {
+        self.building_type.upgrade().is_some()
+    }
+
+    pub fn collider(&self) -> BoxCollider {
+        self.building_type.collider()
+    }
+
+    pub fn marker_texture() -> &'static str {
+        "sprites/buildings/sign.png"
+    }
+
+    pub fn health(&self) -> Health {
+        self.building_type.health()
+    }
+
+    pub fn cost(&self) -> Cost {
+        self.building_type.cost()
+    }
+
+    pub fn is_recruit_building(&self) -> bool {
+        self.building_type.is_recruit_building()
+    }
+
+    pub fn unit_type(&self) -> Option<UnitType> {
+        self.building_type.unit_type()
+    }
+}
+
+impl BuildingType {
+    pub fn upgrade(&self) -> Option<Self> {
         match *self {
-            Building::MainBuilding { level } => level
+            BuildingType::MainBuilding { level } => level
                 .next_level()
-                .map(|level| (Building::MainBuilding { level })),
-            Building::Wall { level } => level.next_level().map(|level| (Building::Wall { level })),
-            Building::Unit { weapon: _ } => None,
-            Building::Tower => None,
-            Building::GoldFarm => None,
+                .map(|level| (BuildingType::MainBuilding { level })),
+            BuildingType::Wall { level } => level
+                .next_level()
+                .map(|level| (BuildingType::Wall { level })),
+            BuildingType::Unit { weapon: _ } => None,
+            BuildingType::Tower => None,
+            BuildingType::GoldFarm => None,
         }
     }
 
     pub fn can_upgrade(&self) -> bool {
-        self.upgrade_building().is_some()
+        self.upgrade().is_some()
     }
 
     pub fn collider(&self) -> BoxCollider {
         match self {
-            Building::MainBuilding { level } => match level {
+            BuildingType::MainBuilding { level } => match level {
                 MainBuildingLevels::Tent => BoxCollider {
                     dimension: Vec2::new(44., 35.),
                     offset: Some(Vec2::new(0., 17.5)),
@@ -145,7 +192,7 @@ impl Building {
                     offset: Some(Vec2::new(0., 24.)),
                 },
             },
-            Building::Unit { weapon } => match weapon {
+            BuildingType::Unit { weapon } => match weapon {
                 UnitType::Shieldwarrior => BoxCollider {
                     dimension: Vec2::new(80., 40.),
                     offset: Some(Vec2::new(0., 20.)),
@@ -161,7 +208,7 @@ impl Building {
                 UnitType::Bandit => todo!(),
                 UnitType::Commander => todo!(),
             },
-            Building::Wall { level } => match level {
+            BuildingType::Wall { level } => match level {
                 WallLevels::Basic => BoxCollider {
                     dimension: Vec2::new(20., 11.),
                     offset: Some(Vec2::new(0., 5.5)),
@@ -175,108 +222,70 @@ impl Building {
                     offset: Some(Vec2::new(0., -45.)),
                 },
             },
-            Building::Tower => BoxCollider {
+            BuildingType::Tower => BoxCollider {
                 dimension: Vec2::new(200., 100.),
                 offset: None,
             },
-            Building::GoldFarm => BoxCollider {
+            BuildingType::GoldFarm => BoxCollider {
                 dimension: Vec2::new(80., 40.),
                 offset: Some(Vec2::new(0., 20.)),
             },
         }
     }
 
-    pub fn marker_texture() -> &'static str {
-        "sprites/buildings/sign.png"
-    }
-
-    pub fn texture(&self, status: BuildStatus) -> &'static str {
-        match status {
-            BuildStatus::Marker => match self {
-                Building::MainBuilding { level: _ } => "sprites/buildings/main_house_blue.png",
-                Building::Unit { weapon: _ } => "sprites/buildings/sign.png",
-                Building::Wall { level: _ } => "sprites/buildings/sign.png",
-                Building::Tower => "",
-                Building::GoldFarm => "sprites/buildings/sign.png",
-            },
-            BuildStatus::Built => match self {
-                Building::MainBuilding { level } => match level {
-                    MainBuildingLevels::Tent => "sprites/buildings/main_house_blue.png",
-                    MainBuildingLevels::Hall => "sprites/buildings/main_hall.png",
-                    MainBuildingLevels::Castle => "sprites/buildings/main_castle.png",
-                },
-                Building::Unit { weapon } => match weapon {
-                    UnitType::Archer => "sprites/buildings/archer_house.png",
-                    UnitType::Shieldwarrior => "sprites/buildings/warrior_house.png",
-                    UnitType::Pikeman => "sprites/buildings/pike_man_house.png",
-                    UnitType::Bandit => todo!(),
-                    UnitType::Commander => todo!(),
-                },
-                Building::Wall { level } => match level {
-                    WallLevels::Basic => "sprites/buildings/wall_1.png",
-                    WallLevels::Wood => "sprites/buildings/wall_2.png",
-                    WallLevels::Tower => "sprites/buildings/wall_3.png",
-                },
-                Building::Tower => "sprites/buildings/archer_house.png",
-                Building::GoldFarm => "sprites/buildings/warrior_house.png",
-            },
-            BuildStatus::Destroyed => "",
-        }
-    }
-
     pub fn health(&self) -> Health {
         let hitpoints = match self {
-            Building::MainBuilding { level } => match level {
+            BuildingType::MainBuilding { level } => match level {
                 MainBuildingLevels::Tent => 1200.,
                 MainBuildingLevels::Hall => 3600.,
                 MainBuildingLevels::Castle => 6400.,
             },
-            Building::Unit { weapon: _ } => 800.,
-            Building::Wall { level } => match level {
+            BuildingType::Unit { weapon: _ } => 800.,
+            BuildingType::Wall { level } => match level {
                 WallLevels::Basic => 600.,
                 WallLevels::Wood => 1200.,
                 WallLevels::Tower => 2400.,
             },
-            Building::Tower => 400.,
-            Building::GoldFarm => 600.,
+            BuildingType::Tower => 400.,
+            BuildingType::GoldFarm => 600.,
         };
         Health { hitpoints }
     }
 
     pub fn cost(&self) -> Cost {
         let gold = match self {
-            Building::MainBuilding { level } => match level {
+            BuildingType::MainBuilding { level } => match level {
                 MainBuildingLevels::Tent => 0,
                 MainBuildingLevels::Hall => 1000,
                 MainBuildingLevels::Castle => 4000,
             },
-            Building::Unit { weapon: _ } => 200,
-            Building::Wall { level } => match level {
+            BuildingType::Unit { weapon: _ } => 200,
+            BuildingType::Wall { level } => match level {
                 WallLevels::Basic => 100,
                 WallLevels::Wood => 300,
                 WallLevels::Tower => 900,
             },
-            Building::Tower => 150,
-            Building::GoldFarm => 200,
+            BuildingType::Tower => 150,
+            BuildingType::GoldFarm => 200,
         };
         Cost { gold }
     }
 
     pub fn is_recruit_building(&self) -> bool {
         match self {
-            Building::MainBuilding { level: _ } => true,
-            Building::Unit { weapon: _ } => true,
-            Building::Wall { level: _ } => false,
-            Building::Tower => false,
-            Building::GoldFarm => false,
+            BuildingType::MainBuilding { level: _ } => true,
+            BuildingType::Unit { weapon: _ } => true,
+            BuildingType::Wall { level: _ } => false,
+            BuildingType::Tower => false,
+            BuildingType::GoldFarm => false,
         }
     }
 
     pub fn unit_type(&self) -> Option<UnitType> {
         match *self {
-            Building::MainBuilding { level: _ } => Some(UnitType::Commander),
-            Building::Unit { weapon: unit_type } => Some(unit_type),
-            Building::Wall { level: _ } | Building::Tower | Building::GoldFarm => None,
+            BuildingType::MainBuilding { level: _ } => Some(UnitType::Commander),
+            BuildingType::Unit { weapon: unit_type } => Some(unit_type),
+            BuildingType::Wall { level: _ } | BuildingType::Tower | BuildingType::GoldFarm => None,
         }
     }
 }

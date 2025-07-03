@@ -2,10 +2,12 @@ use bevy::prelude::*;
 use petgraph::visit::{EdgeRef, IntoNodeReferences};
 
 use crate::{
-    Owner, Player, Vec3LayerExt,
+    Owner, Player, PlayerColor, Vec3LayerExt,
     map::{
         Layers,
-        buildings::{BuildStatus, Building, MainBuildingLevels, RecruitBuilding, WallLevels},
+        buildings::{
+            BuildStatus, Building, BuildingType, MainBuildingLevels, RecruitBuilding, WallLevels,
+        },
     },
     networking::{MountType, UnitType},
     server::{
@@ -36,7 +38,7 @@ impl Plugin for StartGamePlugin {
 
 fn start_game(
     trigger: Trigger<LoadMap>,
-    mut players: Query<&mut Transform, With<Player>>,
+    mut players: Query<(&mut Transform, &Player), With<Player>>,
     mut commands: Commands,
 ) {
     let map = &**trigger.event();
@@ -48,9 +50,10 @@ fn start_game(
                 left,
                 right,
             } => {
-                player_base(commands.reborrow(), offset, player, left, right);
-                let mut transform = players.get_mut(player).unwrap();
+                let (mut transform, Player { color }) = players.get_mut(player).unwrap();
                 transform.translation = offset.with_z(Layers::Player.as_f32());
+
+                player_base(commands.reborrow(), offset, player, *color, left, right);
 
                 for item_type in ItemType::all_variants() {
                     let translation = transform.translation;
@@ -112,6 +115,7 @@ fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_rig
             Unit {
                 unit_type: UnitType::Bandit,
                 swing_timer: Timer::default(),
+                color: PlayerColor::default(),
             },
             Health { hitpoints: 25. },
             offset
@@ -131,15 +135,19 @@ fn player_base(
     mut commands: Commands,
     offset: Vec3,
     player: Entity,
+    color: PlayerColor,
     left_portal: Entity,
     right_portal: Entity,
 ) {
     let owner = Owner::Player(player);
     commands.spawn((
-        Building::MainBuilding {
-            level: MainBuildingLevels::Tent,
+        Building {
+            building_type: BuildingType::MainBuilding {
+                level: MainBuildingLevels::Tent,
+            },
+            color,
         },
-        Building::MainBuilding {
+        BuildingType::MainBuilding {
             level: MainBuildingLevels::Tent,
         }
         .collider(),
@@ -193,8 +201,11 @@ fn player_base(
         },
     ));
     commands.spawn((
-        Building::Wall {
-            level: WallLevels::Basic,
+        Building {
+            building_type: BuildingType::Wall {
+                level: WallLevels::Basic,
+            },
+            color,
         },
         offset.offset_x(390.).with_layer(Layers::Wall),
         owner,
@@ -204,8 +215,11 @@ fn player_base(
         },
     ));
     commands.spawn((
-        Building::Wall {
-            level: WallLevels::Basic,
+        Building {
+            building_type: BuildingType::Wall {
+                level: WallLevels::Basic,
+            },
+            color,
         },
         offset.offset_x(-345.).with_layer(Layers::Wall),
         owner,
@@ -215,7 +229,10 @@ fn player_base(
         },
     ));
     commands.spawn((
-        Building::GoldFarm,
+        Building {
+            building_type: BuildingType::GoldFarm,
+            color,
+        },
         offset.offset_x(320.).with_layer(Layers::Building),
         owner,
         Interactable {
@@ -224,7 +241,10 @@ fn player_base(
         },
     ));
     commands.spawn((
-        Building::GoldFarm,
+        Building {
+            building_type: BuildingType::GoldFarm,
+            color,
+        },
         offset.offset_x(-265.).with_layer(Layers::Building),
         owner,
         Interactable {

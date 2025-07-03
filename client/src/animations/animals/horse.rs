@@ -15,7 +15,7 @@ pub enum HorseAnimation {
 
 #[derive(Resource)]
 pub struct HorseSpriteSheet {
-    pub sprite_sheet: AnimationSpriteSheet<HorseAnimation>,
+    pub sprite_sheet: AnimationSpriteSheet<HorseAnimation, Image>,
 }
 
 impl FromWorld for HorseSpriteSheet {
@@ -51,12 +51,13 @@ impl FromWorld for HorseSpriteSheet {
         });
 
         HorseSpriteSheet {
-            sprite_sheet: AnimationSpriteSheet {
+            sprite_sheet: AnimationSpriteSheet::new(
+                world,
                 texture,
                 layout,
                 animations,
                 animations_sound,
-            },
+            ),
         }
     }
 }

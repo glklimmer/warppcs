@@ -13,12 +13,14 @@ use ui::UiPlugin;
 use widgets::WidgetsPlugin;
 
 use animations::AnimationPlugin;
+use asset_loader::AssetLoaderPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
 use sound::SoundPlugin;
 
 pub mod animations;
+pub mod asset_loader;
 pub mod camera;
 pub mod entities;
 pub mod gizmos;
@@ -80,7 +82,8 @@ fn main() {
 
     client.add_plugins(SharedPlugin);
 
-    client.insert_state(GameState::MainMenu).add_plugins((
+    client.insert_state(GameState::Loading).add_plugins((
+        AssetLoaderPlugin,
         ParallaxPlugin,
         CameraPlugin,
         InputPlugin,
@@ -94,7 +97,7 @@ fn main() {
         GizmosPlugin,
     ));
 
-    client.add_systems(Startup, setup_background);
+    client.add_systems(OnEnter(GameState::MainMenu), setup_background);
 
     if args.contains(&String::from("server")) {
         client.add_plugins(ServerNetworkPlugin);
@@ -107,14 +110,14 @@ fn main() {
 
             client
                 .add_plugins(SteamNetServerPlugin::<ClientManager>::default())
-                .add_systems(Startup, create_steam_server);
+                .add_systems(OnEnter(GameState::MainMenu), create_steam_server);
         }
 
         #[cfg(feature = "netcode")]
         {
             use shared::server::create_server::create_web_transport_server;
 
-            client.add_systems(Startup, create_web_transport_server);
+            client.add_systems(OnEnter(GameState::MainMenu), create_web_transport_server);
         }
     } else {
         client.add_plugins((NetworkRegistry, JoinServerPlugin));
@@ -131,7 +134,7 @@ fn main() {
         {
             use networking::join_server::join_web_transport_server;
 
-            client.add_systems(Startup, join_web_transport_server);
+            client.add_systems(OnEnter(GameState::MainMenu), join_web_transport_server);
         }
     }
 
