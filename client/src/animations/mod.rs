@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
-use crate::asset_loader::AssetsToLoad;
+use crate::{
+    animations::ui::army_formations::FormationIconSpriteSheet, asset_loader::AssetsToLoad,
+};
 use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
@@ -21,6 +23,7 @@ use objects::{
     projectiles::ProjectileSpriteSheet,
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
+
 use sprite_variant_loader::{SpriteVariantLoader, SpriteVariants};
 use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
 use units::{
@@ -179,6 +182,7 @@ impl Plugin for AnimationPlugin {
 
         app.init_resource::<ItemInfoSpriteSheet>();
         app.init_resource::<MapIconSpriteSheet>();
+        app.init_resource::<FormationIconSpriteSheet>();
 
         app.init_resource::<BuildingSpriteSheets>();
 

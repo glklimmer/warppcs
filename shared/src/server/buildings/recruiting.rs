@@ -336,7 +336,8 @@ pub fn recruit_commander(
             .spawn((
                 ChildOf(commander),
                 Velocity::default(),
-                Transform::from_translation(Vec3::new(-formation_offset, 0., 0.)),
+                Transform::from_translation(Vec3::new(-formation_offset, 0., 0.))
+                    .with_scale(Vec3::new(BASE_FORMATION_WIDTH, 1., 1.)),
             ))
             .id();
         army_formation.push(formation);

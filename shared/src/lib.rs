@@ -49,6 +49,8 @@ use server::{
     },
 };
 
+use crate::server::entities::commander::ArmyFormation;
+
 pub mod enum_map;
 pub mod map;
 pub mod networking;
@@ -83,6 +85,7 @@ impl Plugin for SharedPlugin {
         .replicate::<Interactable>()
         .replicate::<AttachedTo>()
         .replicate::<ArmyFlagAssignments>()
+        .replicate::<ArmyFormation>()
         .replicate::<FlagHolder>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
