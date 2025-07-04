@@ -1,5 +1,5 @@
 use bevy::ecs::component::HookContext;
-use bevy::{prelude::*, transform};
+use bevy::prelude::*;
 
 use bevy::{
     color::palettes::css::GREY, ecs::world::DeferredWorld,
