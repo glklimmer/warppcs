@@ -2,8 +2,7 @@ use bevy::ecs::component::HookContext;
 use bevy::prelude::*;
 
 use bevy::{
-    color::palettes::css::GREY,
-    ecs::world::DeferredWorld,
+    color::palettes::css::GREY, ecs::world::DeferredWorld,
     input::common_conditions::input_just_pressed,
 };
 use shared::{PlayerState, Vec3LayerExt, map::Layers};
@@ -23,7 +22,7 @@ impl<T: Clone + Send + Sync + 'static> Default for MenuPlugin<T> {
 
 impl<T: Clone + Send + Sync + 'static> Plugin for MenuPlugin<T> {
     fn build(&self, app: &mut App) {
-        if let None = app.world().get_resource::<MenuSingleton>() {
+        if app.world().get_resource::<MenuSingleton>().is_none() {
             app.add_systems(
                 Update,
                 close_menu.run_if(in_state(PlayerState::Interaction)),
@@ -39,7 +38,7 @@ impl<T: Clone + Send + Sync + 'static> Plugin for MenuPlugin<T> {
                 Update,
                 (
                     selection_callback::<T>.run_if(input_just_pressed(KeyCode::KeyF)),
-                    cycle_commands::<T>,
+                    cycle_commands,
                     close_menu_trigger::<T>,
                 )
                     .run_if(in_state(PlayerState::Interaction)),
@@ -186,7 +185,7 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
 #[derive(Event)]
 pub struct NodeSelected<T>(PhantomData<T>);
 
-fn cycle_commands<T: Clone + Send + Sync + 'static>(
+fn cycle_commands(
     input: Res<ButtonInput<KeyCode>>,
     active_menu: Res<ActiveMenus>,
     active: Query<Entity, With<Selected>>,

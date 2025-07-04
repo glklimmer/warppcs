@@ -61,7 +61,7 @@ fn handle_multiple_animation_sound(
     mut sound_events: EventReader<PlayAnimationSoundEvent>,
 ) {
     for event in sound_events.read() {
-        if event.sound_handles.len() < 1 {
+        if event.sound_handles.is_empty() {
             continue;
         }
 
