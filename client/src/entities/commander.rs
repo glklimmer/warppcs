@@ -216,9 +216,9 @@ fn cleanup_menu_extras(
     mut commands: Commands,
 ) {
     if let Some(active_commander) = **active {
-        child.iter_descendants(active_commander).for_each(|each| {
+        child.iter_descendants(active_commander).for_each(|entity| {
             commands
-                .entity(each)
+                .entity(entity)
                 .remove::<(Mesh2d, MeshMaterial2d<ColorMaterial>)>();
         });
     }
