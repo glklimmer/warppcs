@@ -19,8 +19,11 @@ use entities::EntitiesPlugin;
 use input::InputPlugin;
 use sound::SoundPlugin;
 
+use crate::background::BackgroundPlugin;
+
 pub mod animations;
 pub mod asset_loader;
+pub mod background;
 pub mod camera;
 pub mod entities;
 pub mod gizmos;
@@ -88,6 +91,7 @@ fn main() {
         CameraPlugin,
         InputPlugin,
         AnimationPlugin,
+        BackgroundPlugin,
         // MenuPlugin,
         EntitiesPlugin,
         WidgetsPlugin,
@@ -148,8 +152,8 @@ fn setup_background(
 ) {
     // Plain
     commands.spawn((
-        Mesh2d(meshes.add(Rectangle::new(60000.0, 2000.0))),
-        MeshMaterial2d(materials.add(Color::hsl(109., 0.97, 0.88))),
-        Transform::from_xyz(0.0, -1000.0, 0.0),
+        Mesh2d(meshes.add(Rectangle::new(90000.0, 2000.0))),
+        MeshMaterial2d(materials.add(Color::hsl(332., 0.30, 0.17))),
+        Transform::from_xyz(0.0, -1000.0, -1.0),
     ));
 }
