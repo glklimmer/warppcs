@@ -5,12 +5,12 @@ edition = "2024"
 
 [dependencies]
 bevy = { version = "0.16", default-features = false, features = [
-  "bevy_asset",
-  "bevy_core_pipeline",
-  "bevy_scene",
-  "bevy_state",
-  "multi_threaded",
-  "sysinfo_plugin",
+    "bevy_asset",
+    "bevy_core_pipeline",
+    "bevy_scene",
+    "bevy_state",
+    "multi_threaded",
+    "sysinfo_plugin",
 ] }
 bincode = "2.0.1"
 fastrand = "2.3.0"

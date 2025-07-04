@@ -2,7 +2,15 @@ use bevy::prelude::*;
 
 use bevy_replicon::prelude::{SendMode, ToClients};
 
-use crate::{map::buildings::{Building, BuildingType}, networking::{UnitType, WorldDirection}, server::{ai::{Target, TargetedBy}, buildings::recruiting::FlagAssignment}, AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner};
+use crate::{
+    AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner,
+    map::buildings::{Building, BuildingType},
+    networking::{UnitType, WorldDirection},
+    server::{
+        ai::{BehaveSources, Target, TargetedBy, UnitBehaviour},
+        buildings::recruiting::FlagAssignment,
+    },
+};
 
 use super::Unit;
 
@@ -118,6 +126,8 @@ fn on_unit_death(
                 .entity(entity)
                 .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
                 .remove::<FlagAssignment>()
+                .despawn_related::<BehaveSources>()
+                .remove::<UnitBehaviour>()
                 .remove_related::<Target>(targeted_by)
                 .remove::<Health>();
 

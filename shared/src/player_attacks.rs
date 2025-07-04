@@ -8,6 +8,7 @@ use crate::{
     server::{
         ai::UnitBehaviour,
         buildings::recruiting::{FlagHolder, FlagUnits},
+        entities::commander::ArmyFlagAssignments,
     },
 };
 
@@ -36,6 +37,7 @@ fn attack(
     mut commands: Commands,
     flag_holder: Query<(Option<&FlagHolder>, &Transform)>,
     units: Query<&FlagUnits>,
+    army: Query<&ArmyFlagAssignments>,
     behaviour: Query<&UnitBehaviour>,
     client_player_map: Res<ClientPlayerMap>,
 ) {
@@ -55,9 +57,11 @@ fn attack(
     };
 
     let flag = **flag_holder;
-    let units = units.get(flag).unwrap();
+    let Ok(flag_units) = units.get(flag) else {
+        return;
+    };
 
-    let first_unit = units.iter().next();
+    let first_unit = flag_units.iter().next();
     let Some(unit) = first_unit else {
         return;
     };
@@ -69,7 +73,16 @@ fn attack(
         }
     };
 
-    for unit in units.iter() {
-        commands.entity(unit).insert(new_behaviour.clone());
+    let mut all_units: Vec<Entity> = flag_units.iter().collect();
+    if let Ok(army) = army.get(unit) {
+        for formation_flag in army.flags.iter().flatten() {
+            let formation_units = units.get(*formation_flag).unwrap();
+            let units: Vec<Entity> = formation_units.iter().collect();
+            all_units.append(&mut units.clone());
+        }
+    }
+
+    for unit in all_units.iter() {
+        commands.entity(*unit).insert(new_behaviour.clone());
     }
 }

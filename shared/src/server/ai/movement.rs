@@ -78,7 +78,7 @@ fn walk_into_range(
             unit.get_mut(ctx.target_entity()).unwrap();
 
         let Some(target) = maybe_target else {
-            commands.trigger(ctx.failure());
+            commands.trigger(ctx.success());
             continue;
         };
 

@@ -37,7 +37,7 @@ impl Plugin for AIPlugin {
             .add_observer(on_insert_unit_behaviour)
             .add_observer(push_back_check)
             .add_observer(determine_target)
-            .add_observer(has_enemy_in_range)
+            .add_observer(check_target_in_range)
             .add_systems(FixedPostUpdate, remove_target_if_out_of_sight);
     }
 }
@@ -70,12 +70,12 @@ fn on_insert_unit_behaviour(
                 Behave::IfThen => {
                     Behave::trigger(DetermineTarget),
                     Behave::IfThen => {
-                        Behave::trigger(CheckHasEnemyInRange),
+                        Behave::trigger(TargetInRange),
                         Behave::spawn_named(
                             "Attack nearest enemy",
                             (
                                 AttackingInRange,
-                                BehaveInterrupt::by_not(CheckHasEnemyInRange),
+                                BehaveInterrupt::by_not(TargetInRange),
                                 BehaveTarget(entity)
                             )
                         )
@@ -88,17 +88,17 @@ fn on_insert_unit_behaviour(
                 Behave::IfThen => {
                     Behave::trigger(DetermineTarget),
                     Behave::IfThen => {
-                        Behave::trigger(CheckHasEnemyInRange),
+                        Behave::trigger(TargetInRange),
                         Behave::spawn_named(
                             "Attack nearest enemy",
                             (
                                 AttackingInRange,
-                                BehaveInterrupt::by_not(CheckHasEnemyInRange),
+                                BehaveInterrupt::by_not(TargetInRange),
                                 BehaveTarget(entity)
                             )
                         ),
                         Behave::spawn_named(
-                            "Walk to nearest enemy in sight",
+                            "Walking to target",
                             (WalkIntoRange, BehaveTarget(entity))
                         )
                     }
@@ -112,15 +112,15 @@ fn on_insert_unit_behaviour(
             "Following flag",
             (
                 FollowFlag,
-                BehaveInterrupt::by(CheckHasEnemyInRange).or_not(PushBackCheck),
+                BehaveInterrupt::by(TargetInRange).or(BeingPushed),
                 BehaveTarget(entity)
             )
         )),
         UnitBehaviour::Attack(direction) => behave!(Behave::spawn_named(
-            "Walking in attack direction",
+            "Attacking direction",
             (
                 WalkingInDirection(*direction),
-                BehaveInterrupt::by(CheckHasEnemyInRange),
+                BehaveInterrupt::by(DetermineTarget).or(BeingPushed),
                 BehaveTarget(entity)
             )
         )),
@@ -128,8 +128,8 @@ fn on_insert_unit_behaviour(
 
     let tree = behave!(
         Behave::Forever => {
-            Behave::Sequence => {
-                Behave::trigger(PushBackCheck),
+            Behave::Fallback => {
+                // Behave::trigger(BeingPushed),
                 Behave::Fallback => {
                     @ attack_nearby,
                     @ stance
@@ -157,13 +157,13 @@ pub struct BehaveTarget(Entity);
 pub struct BehaveSources(Vec<Entity>);
 
 #[derive(Clone)]
-struct PushBackCheck;
+struct BeingPushed;
 
 #[derive(Clone)]
 struct DetermineTarget;
 
 #[derive(Clone)]
-struct CheckHasEnemyInRange;
+struct TargetInRange;
 
 #[derive(Component, Deref)]
 #[relationship(relationship_target = TargetedBy)]
@@ -174,7 +174,7 @@ pub struct Target(Entity);
 pub struct TargetedBy(Vec<Entity>);
 
 fn push_back_check(
-    trigger: Trigger<BehaveTrigger<PushBackCheck>>,
+    trigger: Trigger<BehaveTrigger<BeingPushed>>,
     mut commands: Commands,
     query: Query<Option<&PushBack>>,
 ) {
@@ -184,12 +184,12 @@ fn push_back_check(
     match maybe_pushback {
         Some(push_back) => {
             if push_back.timer.finished() {
-                commands.trigger(ctx.success());
-            } else {
                 commands.trigger(ctx.failure());
+            } else {
+                commands.trigger(ctx.success());
             }
         }
-        None => commands.trigger(ctx.success()),
+        None => commands.trigger(ctx.failure()),
     }
 }
 
@@ -232,8 +232,8 @@ fn determine_target(
     }
 }
 
-fn has_enemy_in_range(
-    trigger: Trigger<BehaveTrigger<CheckHasEnemyInRange>>,
+fn check_target_in_range(
+    trigger: Trigger<BehaveTrigger<TargetInRange>>,
     mut commands: Commands,
     query: Query<(&Transform, &Range, Option<&Target>)>,
     transform_query: Query<&Transform>,
