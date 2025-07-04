@@ -157,7 +157,7 @@ fn open_slots_dialog(
                 commands
                     .spawn((
                         weapon_sprite,
-                        Transform::from_xyz(0., 0., 1.).with_scale(Vec3::splat(4.)),
+                        Transform::from_xyz(0., 0., 1.).with_scale(Vec3::new(4., 4., 1.)),
                     ))
                     .id()
             });
@@ -353,7 +353,7 @@ fn update_flag_assignment(
     let flag_weapon_slot = commands
         .spawn((
             weapon_sprite,
-            Transform::from_xyz(0., 0., 1.).with_scale(Vec3::splat(4.)),
+            Transform::from_xyz(0., 0., 1.).with_scale(Vec3::new(4., 4., 1.)),
         ))
         .id();
 
