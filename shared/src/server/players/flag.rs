@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
-use crate::server::{ai::UnitBehaviour, buildings::recruiting::FlagUnits};
+use crate::server::{
+    ai::UnitBehaviour, buildings::recruiting::FlagUnits, entities::commander::ArmyFlagAssignments,
+};
 
 use super::{
     super::{buildings::recruiting::FlagHolder, physics::attachment::AttachedTo},
@@ -55,6 +57,7 @@ pub fn pick_flag(
     mut pick_flag: EventReader<PickFlagEvent>,
     mut flag_query: Query<&mut Transform>,
     units: Query<&FlagUnits>,
+    army: Query<&ArmyFlagAssignments>,
 ) {
     for event in pick_flag.read() {
         let mut transform = flag_query.get_mut(event.flag).unwrap();
@@ -64,9 +67,24 @@ pub fn pick_flag(
         commands.entity(event.flag).insert(AttachedTo(event.player));
         commands.entity(event.player).insert(FlagHolder(event.flag));
 
-        let units = units.get(event.flag).unwrap();
-        for unit in units.iter() {
-            commands.entity(unit).insert(UnitBehaviour::FollowFlag);
+        let Ok(flag_units) = units.get(event.flag) else {
+            continue;
+        };
+
+        let mut all_units: Vec<Entity> = flag_units.iter().collect();
+        let first_unit = flag_units.iter().next();
+        if let Some(commander) = first_unit {
+            if let Ok(army) = army.get(commander) {
+                for formation_flag in army.flags.iter().flatten() {
+                    let formation_units = units.get(*formation_flag).unwrap();
+                    let units: Vec<Entity> = formation_units.iter().collect();
+                    all_units.append(&mut units.clone());
+                }
+            }
+        };
+
+        for unit in all_units.iter() {
+            commands.entity(*unit).insert(UnitBehaviour::FollowFlag);
         }
     }
 }
@@ -76,6 +94,7 @@ pub fn drop_flag(
     mut commands: Commands,
     mut flag_query: Query<&mut Transform>,
     units: Query<&FlagUnits>,
+    army: Query<&ArmyFlagAssignments>,
 ) {
     for event in drop_flag.read() {
         let mut transform = flag_query.get_mut(event.flag).unwrap();
@@ -85,9 +104,24 @@ pub fn drop_flag(
         commands.entity(event.flag).remove::<AttachedTo>();
         commands.entity(event.player).remove::<FlagHolder>();
 
-        let units = units.get(event.flag).unwrap();
-        for unit in units.iter() {
-            commands.entity(unit).insert(UnitBehaviour::Idle);
+        let Ok(flag_units) = units.get(event.flag) else {
+            continue;
+        };
+
+        let mut all_units: Vec<Entity> = flag_units.iter().collect();
+        let first_unit = flag_units.iter().next();
+        if let Some(commander) = first_unit {
+            if let Ok(army) = army.get(commander) {
+                for formation_flag in army.flags.iter().flatten() {
+                    let formation_units = units.get(*formation_flag).unwrap();
+                    let units: Vec<Entity> = formation_units.iter().collect();
+                    all_units.append(&mut units.clone());
+                }
+            }
+        };
+
+        for unit in all_units.iter() {
+            commands.entity(*unit).insert(UnitBehaviour::Idle);
         }
     }
 }

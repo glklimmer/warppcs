@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+
+use bevy::color::palettes::css::PURPLE;
 use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
     PlayerState, Vec3LayerExt,
@@ -6,13 +8,17 @@ use shared::{
     server::{
         buildings::recruiting::{Flag, FlagHolder},
         entities::commander::{
-            ArmyFlagAssignments, CommanderCampInteraction, CommanderFormation, CommanderInteraction,
+            ArmyFlagAssignments, ArmyFormation, CommanderCampInteraction, CommanderFormation,
+            CommanderInteraction,
         },
     },
 };
 
 use crate::{
-    animations::objects::items::weapons::WeaponsSpriteSheet,
+    animations::{
+        objects::items::weapons::WeaponsSpriteSheet,
+        ui::army_formations::{FormationIconSpriteSheet, FormationIcons},
+    },
     networking::ControlledPlayer,
     widgets::menu::{
         ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
@@ -41,10 +47,11 @@ impl Plugin for CommanderInteractionPlugin {
         app.init_resource::<ActiveCommander>()
             .add_event::<DrawHoverFlag>()
             .add_observer(open_commander_dialog)
+            .add_observer(highligh_formation)
             .add_observer(open_create_camp)
             .add_observer(open_slots_dialog)
             .add_observer(send_selected)
-            .add_observer(despawn_hover_weapon)
+            .add_observer(cleanup_menu_extras)
             .add_observer(draw_hovering_flag)
             .add_systems(
                 Update,
@@ -119,10 +126,10 @@ fn open_slots_dialog(
     mut commands: Commands,
     army_flag_assignments: Query<&ArmyFlagAssignments>,
     transform: Query<&GlobalTransform>,
-    asset_server: Res<AssetServer>,
     flag: Query<&Flag>,
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
+    formations: Res<FormationIconSpriteSheet>,
 ) {
     let MainMenuEntries::Slots = trigger.selection else {
         return;
@@ -130,26 +137,38 @@ fn open_slots_dialog(
 
     let entry_position = transform.get(trigger.entry).unwrap().translation();
     let army_flag_assignments = army_flag_assignments.get(active.unwrap()).unwrap();
+    let commander_facing = transform.get(active.unwrap()).unwrap().scale().x.signum();
 
-    let menu_nodes = army_flag_assignments
+    let menu_nodes: Vec<MenuNode<CommanderFormation>> = army_flag_assignments
         .flags
         .iter_enums()
         .map(|(formation, maybe_flag)| {
-            let empty_slot = asset_server.load::<Image>("ui/commander/slot_empty.png");
+            let icon = match formation {
+                CommanderFormation::Front => FormationIcons::Front,
+                CommanderFormation::Middle => FormationIcons::Middle,
+                CommanderFormation::Back => FormationIcons::Back,
+            };
+            let atlas = formations.sprite_sheet.texture_atlas(icon);
+            let texture = formations.sprite_sheet.texture.clone();
+
             let has_unit_weapon = maybe_flag.map(|flag_entity| {
                 let flag = flag.get(flag_entity).unwrap();
                 let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
-                let flag_sprite = commands
-                    .spawn((weapon_sprite, Transform::from_xyz(0., 0., 1.)))
-                    .id();
-                flag_sprite
+                commands
+                    .spawn((
+                        weapon_sprite,
+                        Transform::from_xyz(0., 0., 1.).with_scale(Vec3::new(4., 4., 1.)),
+                    ))
+                    .id()
             });
 
             MenuNode::with_fn(formation, move |commands, entry| {
                 let mut entry = commands.entity(entry);
+
                 entry.insert(Sprite {
-                    image: empty_slot.clone(),
-                    custom_size: Some(Vec2::splat(10.)),
+                    image: texture.clone(),
+                    texture_atlas: Some(atlas.clone()),
+                    flip_x: commander_facing.is_sign_positive(),
                     ..Default::default()
                 });
 
@@ -166,7 +185,9 @@ fn open_slots_dialog(
             .offset_x(-5.5)
             .offset_y(15.)
             .with_layer(Layers::Item),
-        Menu::new(menu_nodes).with_gap(10.),
+        Menu::new(menu_nodes)
+            .with_gap(15.)
+            .with_entry_scale(1. / 5.),
     ));
 }
 
@@ -187,15 +208,59 @@ fn send_selected(
     };
 }
 
-fn despawn_hover_weapon(
+fn cleanup_menu_extras(
     _: Trigger<ClosedMenu<CommanderFormation>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
+    child: Query<&Children>,
+    active: Res<ActiveCommander>,
     mut commands: Commands,
 ) {
+    if let Some(active_commander) = **active {
+        child.iter_descendants(active_commander).for_each(|entity| {
+            commands
+                .entity(entity)
+                .remove::<(Mesh2d, MeshMaterial2d<ColorMaterial>)>();
+        });
+    }
+
     let Ok(current) = current_hover.single() else {
         return;
     };
     commands.entity(current).despawn();
+}
+
+fn highligh_formation(
+    trigger: Trigger<DrawHoverFlag>,
+    menu_entries_add: Query<&NodePayload<CommanderFormation>>,
+    army_formation: Query<&ArmyFormation>,
+    active: Res<ActiveCommander>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut commands: Commands,
+) {
+    let Ok(selected_formation) = menu_entries_add.get(**trigger) else {
+        return;
+    };
+
+    let Ok(army_formations) = army_formation.get(active.unwrap()) else {
+        return;
+    };
+
+    army_formations
+        .positions
+        .iter_enums()
+        .for_each(|(formation, entity)| {
+            if formation == **selected_formation {
+                commands.entity(*entity).insert((
+                    Mesh2d(meshes.add(Rectangle::default())),
+                    MeshMaterial2d(materials.add(Color::from(PURPLE))),
+                ));
+            } else {
+                commands
+                    .entity(*entity)
+                    .remove::<(Mesh2d, MeshMaterial2d<ColorMaterial>)>();
+            }
+        });
 }
 
 fn draw_hovering_flag(
@@ -286,7 +351,10 @@ fn update_flag_assignment(
     let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
 
     let flag_weapon_slot = commands
-        .spawn((weapon_sprite, Transform::from_xyz(0., 0., 1.)))
+        .spawn((
+            weapon_sprite,
+            Transform::from_xyz(0., 0., 1.).with_scale(Vec3::new(4., 4., 1.)),
+        ))
         .id();
 
     commands

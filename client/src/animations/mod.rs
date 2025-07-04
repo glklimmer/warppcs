@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
-use crate::asset_loader::AssetsToLoad;
+use crate::{
+    animations::ui::army_formations::FormationIconSpriteSheet, asset_loader::AssetsToLoad,
+};
 use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
@@ -21,6 +23,7 @@ use objects::{
     projectiles::ProjectileSpriteSheet,
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
+
 use sprite_variant_loader::{SpriteVariantLoader, SpriteVariants};
 use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
 use units::{
@@ -87,11 +90,9 @@ impl<E: EnumIter, T: Asset> AnimationSpriteSheet<E, T> {
         let mut assets_to_load = world.resource_mut::<AssetsToLoad>();
         assets_to_load.push(texture.clone().untyped());
 
-        for sound_option in animations_sound.iter() {
-            if let Some(sound) = sound_option {
-                for handle in &sound.sound_handles {
-                    assets_to_load.push(handle.clone().untyped());
-                }
+        for sound in animations_sound.iter().flatten() {
+            for handle in &sound.sound_handles {
+                assets_to_load.push(handle.clone().untyped());
             }
         }
 
@@ -181,6 +182,7 @@ impl Plugin for AnimationPlugin {
 
         app.init_resource::<ItemInfoSpriteSheet>();
         app.init_resource::<MapIconSpriteSheet>();
+        app.init_resource::<FormationIconSpriteSheet>();
 
         app.init_resource::<BuildingSpriteSheets>();
 

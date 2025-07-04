@@ -111,7 +111,7 @@ fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Tim
     }
 }
 
-fn apply_drag(mut query: Query<&mut Velocity>, time: Res<Time>) {
+fn apply_drag(mut query: Query<&mut Velocity, Without<ProjectileType>>, time: Res<Time>) {
     let drag_coeff = 3.0;
     for mut vel in query.iter_mut() {
         let old = vel.0;

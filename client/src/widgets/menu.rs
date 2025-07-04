@@ -2,8 +2,7 @@ use bevy::ecs::component::HookContext;
 use bevy::prelude::*;
 
 use bevy::{
-    color::palettes::css::GREY,
-    ecs::world::DeferredWorld,
+    color::palettes::css::GREY, ecs::world::DeferredWorld,
     input::common_conditions::input_just_pressed,
 };
 use shared::{PlayerState, Vec3LayerExt, map::Layers};
@@ -23,7 +22,7 @@ impl<T: Clone + Send + Sync + 'static> Default for MenuPlugin<T> {
 
 impl<T: Clone + Send + Sync + 'static> Plugin for MenuPlugin<T> {
     fn build(&self, app: &mut App) {
-        if let None = app.world().get_resource::<MenuSingleton>() {
+        if app.world().get_resource::<MenuSingleton>().is_none() {
             app.add_systems(
                 Update,
                 close_menu.run_if(in_state(PlayerState::Interaction)),
@@ -39,7 +38,7 @@ impl<T: Clone + Send + Sync + 'static> Plugin for MenuPlugin<T> {
                 Update,
                 (
                     selection_callback::<T>.run_if(input_just_pressed(KeyCode::KeyF)),
-                    cycle_commands::<T>,
+                    cycle_commands,
                     close_menu_trigger::<T>,
                 )
                     .run_if(in_state(PlayerState::Interaction)),
@@ -75,6 +74,14 @@ fn color_tree(world: &mut DeferredWorld, root: Entity, color: Color) {
             sprite.color = color;
         }
 
+        if let Some(mut text_color) = world.entity_mut(entity).get_mut::<TextColor>() {
+            text_color.0 = color;
+        }
+
+        if let Some(mut text_color) = world.entity_mut(entity).get_mut::<ImageNode>() {
+            text_color.color = color;
+        }
+
         let Some(children) = world.entity(entity).get::<Children>() else {
             continue;
         };
@@ -103,15 +110,31 @@ impl<T: Clone + 'static> Menu<T> {
         self.config.gap = gap;
         self
     }
+
+    pub fn with_entry_scale(mut self, scale: f32) -> Self {
+        self.config.node_scale = scale;
+        self
+    }
+
+    pub fn with_start_node(mut self, selected_node: usize) -> Self {
+        self.config.selected_node = selected_node;
+        self
+    }
 }
 
 struct MenuConfig {
     gap: f32,
+    selected_node: usize,
+    node_scale: f32,
 }
 
 impl Default for MenuConfig {
     fn default() -> Self {
-        Self { gap: 25. }
+        Self {
+            gap: 25.,
+            selected_node: 0,
+            node_scale: 1.,
+        }
     }
 }
 
@@ -161,13 +184,14 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
     }
 
     for (i, node) in menu.nodes.iter().enumerate() {
+        let mut transform = Vec3::ZERO
+            .offset_x(offset + menu.config.gap * i as f32)
+            .with_layer(Layers::UI);
+
+        transform.scale = Vec3::splat(menu.config.node_scale);
+
         let entry = commands
-            .spawn((
-                NodePayload(node.payload.clone()),
-                Vec3::ZERO
-                    .offset_x(offset + menu.config.gap * i as f32)
-                    .with_layer(Layers::UI),
-            ))
+            .spawn((NodePayload(node.payload.clone()), transform))
             .id();
 
         (node.spawn_fn)(&mut commands, entry);
@@ -175,7 +199,7 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
         commands
             .entity(entry)
             .insert(GrayOnSpawn)
-            .insert_if(Selected, || i == 0);
+            .insert_if(Selected, || i == menu.config.selected_node);
 
         commands.entity(menu_entity).add_child(entry);
     }
@@ -186,7 +210,7 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
 #[derive(Event)]
 pub struct NodeSelected<T>(PhantomData<T>);
 
-fn cycle_commands<T: Clone + Send + Sync + 'static>(
+fn cycle_commands(
     input: Res<ButtonInput<KeyCode>>,
     active_menu: Res<ActiveMenus>,
     active: Query<Entity, With<Selected>>,
