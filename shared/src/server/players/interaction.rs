@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, ClientPlayerMap, PlayerState};
+use crate::{BoxCollider, ClientPlayerMap, PlayerState, server::physics::movement::Velocity};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {
@@ -54,6 +54,10 @@ impl Plugin for InteractPlugin {
                 send_interact
                     .before(ClientSet::Send)
                     .run_if(in_state(PlayerState::World)),
+            )
+            .add_systems(
+                Update,
+                interaction_enabled_toggling.run_if(server_or_singleplayer),
             );
     }
 }
@@ -64,6 +68,14 @@ struct Interact;
 fn send_interact(mut commands: Commands, keyboard_input: Res<ButtonInput<KeyCode>>) {
     if keyboard_input.just_pressed(KeyCode::KeyF) {
         commands.client_trigger(Interact);
+    }
+}
+
+fn interaction_enabled_toggling(
+    mut query: Query<(&Velocity, &mut Interactable), Changed<Velocity>>,
+) {
+    for (velocity, mut interactable) in &mut query {
+        interactable.enabled = velocity.0 == Vec2::ZERO;
     }
 }
 
@@ -81,6 +93,7 @@ fn interact(
 
     let priority_interaction = interactables
         .iter()
+        .filter(|(.., interactable)| interactable.enabled)
         .filter(|(.., transform, collider, _)| player_bounds.intersects(&collider.at(transform)))
         .filter(|(.., interactable)| match interactable.restricted_to {
             Some(owner) => owner.eq(&player),

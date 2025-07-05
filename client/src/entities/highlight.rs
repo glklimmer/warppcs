@@ -115,6 +115,10 @@ fn check_highlight(
 
     let candidate_entity = outline
         .iter()
+        .filter(|(.., interactable)| match interactable {
+            Some(i) => i.enabled,
+            None => true,
+        })
         .filter(|(_, transform, collider, ..)| collider.at(transform).intersects(&player_bounds))
         .max_by(
             |(_, a_transform, .., interactable_a), (_, b_transform, .., interactable_b)| match (
