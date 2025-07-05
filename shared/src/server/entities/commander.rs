@@ -259,29 +259,29 @@ fn swap_flag_from_formation(
     let SlotCommand::Swap = trigger.command else {
         return;
     };
+
     let (mut army_flag_assignments, army_formation) =
         commanders.get_mut(trigger.commander).unwrap();
 
-    let new_commander_flag = trigger.flag.unwrap();
-
-    let new_player_flag = army_flag_assignments
+    let new_flag = trigger.flag.unwrap();
+    let old_flag = army_flag_assignments
         .flags
         .get(trigger.selected_slot)
         .unwrap();
 
     army_flag_assignments
         .flags
-        .set(trigger.selected_slot, Some(new_commander_flag))
+        .set(trigger.selected_slot, Some(new_flag))
         .unwrap();
 
     let formation = army_formation.positions.get(trigger.selected_slot);
 
     commands
-        .entity(new_commander_flag)
+        .entity(new_flag)
         .insert((AttachedTo(*formation), Visibility::Hidden))
         .remove::<Interactable>();
 
-    commands.entity(new_player_flag).insert((
+    commands.entity(old_flag).insert((
         AttachedTo(trigger.player),
         Visibility::Visible,
         Interactable {
@@ -289,8 +289,5 @@ fn swap_flag_from_formation(
             restricted_to: Some(trigger.player),
         },
     ));
-
-    commands
-        .entity(trigger.player)
-        .insert(FlagHolder(new_player_flag));
+    commands.entity(trigger.player).insert(FlagHolder(old_flag));
 }
