@@ -1,6 +1,6 @@
-use bevy::{color::palettes::css::YELLOW, prelude::*};
+use bevy::prelude::*;
 
-use bevy::color::palettes::css::PURPLE;
+use bevy::color::palettes::css::YELLOW;
 use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
     PlayerState, Vec3LayerExt,
