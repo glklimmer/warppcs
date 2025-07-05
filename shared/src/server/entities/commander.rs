@@ -245,6 +245,7 @@ fn remove_flag_from_formation(
         Interactable {
             kind: InteractionType::Flag,
             restricted_to: Some(trigger.player),
+            enabled: true,
         },
     ));
 
@@ -287,6 +288,7 @@ fn swap_flag_from_formation(
         Interactable {
             kind: InteractionType::Flag,
             restricted_to: Some(trigger.player),
+            enabled: true,
         },
     ));
     commands.entity(trigger.player).insert(FlagHolder(old_flag));

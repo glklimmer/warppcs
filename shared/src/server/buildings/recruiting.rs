@@ -159,6 +159,7 @@ pub fn recruit_units(
             Interactable {
                 kind: InteractionType::Flag,
                 restricted_to: Some(player),
+                enabled: true,
             },
             owner,
         ))
@@ -279,6 +280,7 @@ pub fn recruit_commander(
             Interactable {
                 kind: InteractionType::Flag,
                 restricted_to: Some(player),
+                enabled: true,
             },
             owner,
         ))
@@ -321,6 +323,7 @@ pub fn recruit_commander(
             Interactable {
                 kind: InteractionType::Commander,
                 restricted_to: Some(player),
+                enabled: true,
             },
             ArmyFlagAssignments::default(),
         ))

@@ -23,6 +23,7 @@ use super::interaction::{Interactable, InteractionTriggeredEvent, InteractionTyp
     Interactable{
         kind: InteractionType::Item,
         restricted_to: None,
+        enabled:true
     },
 )]
 pub struct Item {

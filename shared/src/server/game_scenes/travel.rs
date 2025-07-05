@@ -65,6 +65,7 @@ impl TravelDestination {
     Interactable{
         kind: InteractionType::Travel,
         restricted_to: None,
+        enabled: true
     },
 )]
 pub struct Portal;

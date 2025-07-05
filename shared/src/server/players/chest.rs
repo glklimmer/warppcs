@@ -24,6 +24,7 @@ use super::{
     Interactable {
         kind: InteractionType::Mount,
         restricted_to: None,
+        enabled:true
     },
 )]
 pub struct Mount {
@@ -39,6 +40,7 @@ pub struct Mount {
     Interactable{
         kind: InteractionType::Chest,
         restricted_to: None,
+        enabled:true
     },
 )]
 pub enum Chest {

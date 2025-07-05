@@ -39,6 +39,7 @@ impl Plugin for MountPlugin {
     Interactable{
         kind: InteractionType::Mount,
         restricted_to: None,
+        enabled:true
     },
 )]
 pub struct Mount {
@@ -85,6 +86,7 @@ fn mount(
             Interactable {
                 kind: InteractionType::Unmount,
                 restricted_to: Some(event.player),
+                enabled: true,
             },
         ));
 
