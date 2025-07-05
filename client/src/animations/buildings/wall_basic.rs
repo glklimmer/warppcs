@@ -25,19 +25,19 @@ pub fn wall_basic_building(world: &mut World) -> AnimationSpriteSheet<BuildStatu
 
     let animations = EnumMap::new(|c| match c {
         BuildStatus::Marker => SpriteSheetAnimation {
-            first_sprite_index: 7 * 5 + 0,
-            last_sprite_index: 7 * 5 + 0,
+            first_sprite_index: 7 * 0 + 0,
+            last_sprite_index: 7 * 0 + 0,
             ..default()
         },
         BuildStatus::Constructing => SpriteSheetAnimation {
-            first_sprite_index: 7 * 6 + 0,
-            last_sprite_index: 7 * 6 + 3,
+            first_sprite_index: 7 * 2 + 0,
+            last_sprite_index: 7 * 2 + 3,
             ..default()
         },
         BuildStatus::Built { indicator: damage } => match damage {
             HealthIndicator::Healthy => SpriteSheetAnimation {
-                first_sprite_index: 7 * 4 + 0,
-                last_sprite_index: 7 * 4 + 0,
+                first_sprite_index: 7 * 1 + 0,
+                last_sprite_index: 7 * 1 + 0,
                 ..default()
             },
             HealthIndicator::Light => SpriteSheetAnimation {
@@ -46,19 +46,19 @@ pub fn wall_basic_building(world: &mut World) -> AnimationSpriteSheet<BuildStatu
                 ..default()
             },
             HealthIndicator::Medium => SpriteSheetAnimation {
-                first_sprite_index: 7 * 2 + 0,
-                last_sprite_index: 7 * 2 + 4,
+                first_sprite_index: 7 * 4 + 0,
+                last_sprite_index: 7 * 4 + 4,
                 ..default()
             },
             HealthIndicator::Heavy => SpriteSheetAnimation {
-                first_sprite_index: 7 * 1 + 0,
-                last_sprite_index: 7 * 1 + 5,
+                first_sprite_index: 7 * 5 + 0,
+                last_sprite_index: 7 * 5 + 5,
                 ..default()
             },
         },
         BuildStatus::Destroyed => SpriteSheetAnimation {
-            first_sprite_index: 7 * 0 + 0,
-            last_sprite_index: 7 * 0 + 6,
+            first_sprite_index: 7 * 6 + 0,
+            last_sprite_index: 7 * 6 + 6,
             ..default()
         },
     });
