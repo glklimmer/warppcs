@@ -4,7 +4,7 @@ use bevy::sprite::Anchor;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    map::buildings::{BuildStatus, RespawnZone},
+    map::buildings::{BuildStatus, HealthIndicator, RespawnZone},
     server::entities::health::Health,
 };
 
@@ -12,7 +12,7 @@ use crate::{
 #[require(
     Transform,
     RespawnZone,
-    BuildStatus = BuildStatus::Built,
+    BuildStatus = BuildStatus::Built{indicator: HealthIndicator::Healthy},
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     Health
 )]

@@ -8,7 +8,7 @@ use siege_camp::siege_camp_lifetime;
 
 use crate::{
     Owner,
-    map::buildings::{BuildStatus, Building, respawn_timer},
+    map::buildings::{BuildStatus, Building, HealthIndicator, respawn_timer},
     networking::Inventory,
     server::players::interaction::Interactable,
 };
@@ -91,13 +91,16 @@ fn check_building_interaction(
         };
 
         match status {
+            BuildStatus::Constructing => {
+                continue;
+            }
             BuildStatus::Marker => {
                 if !inventory.gold.ge(&building.cost().gold) {
                     continue;
                 }
                 build.write(BuildingConstruction(info));
             }
-            BuildStatus::Built => {
+            BuildStatus::Built { indicator: _ } => {
                 if building.can_upgrade() {
                     if !inventory
                         .gold
@@ -127,7 +130,13 @@ fn construct_building(
 
         info!("Constructing building: {:?}", building);
 
-        building_entity.insert((building.health(), building.collider(), BuildStatus::Built));
+        building_entity.insert((
+            building.health(),
+            building.collider(),
+            BuildStatus::Built {
+                indicator: HealthIndicator::Healthy,
+            },
+        ));
 
         if !building.can_upgrade() {
             building_entity.remove::<Interactable>();
