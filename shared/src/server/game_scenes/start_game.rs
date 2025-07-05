@@ -6,7 +6,8 @@ use crate::{
     map::{
         Layers,
         buildings::{
-            BuildStatus, Building, BuildingType, MainBuildingLevels, RecruitBuilding, WallLevels,
+            BuildStatus, Building, BuildingType, HealthIndicator, MainBuildingLevels,
+            RecruitBuilding, WallLevels,
         },
     },
     networking::{MountType, UnitType},
@@ -151,7 +152,9 @@ fn player_base(
             level: MainBuildingLevels::Tent,
         }
         .collider(),
-        BuildStatus::Built,
+        BuildStatus::Built {
+            indicator: HealthIndicator::Healthy,
+        },
         offset.with_layer(Layers::Building),
         owner,
         RecruitBuilding,

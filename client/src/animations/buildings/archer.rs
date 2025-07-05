@@ -25,7 +25,11 @@ pub fn archer_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus, S
             first_sprite_index: 0,
             ..default()
         },
-        BuildStatus::Built => SpriteSheetAnimation {
+        BuildStatus::Constructing => SpriteSheetAnimation {
+            first_sprite_index: 0,
+            ..default()
+        },
+        BuildStatus::Built { indicator: _ } => SpriteSheetAnimation {
             first_sprite_index: 0,
             ..default()
         },
@@ -37,7 +41,8 @@ pub fn archer_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus, S
 
     let animations_sound = EnumMap::new(|c| match c {
         BuildStatus::Marker => None,
-        BuildStatus::Built => None,
+        BuildStatus::Constructing => None,
+        BuildStatus::Built { indicator: _ } => None,
         BuildStatus::Destroyed => None,
     });
 

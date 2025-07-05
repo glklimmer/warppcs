@@ -1,4 +1,5 @@
 use crate::enum_map::EnumIter;
+use crate::map::buildings::HealthIndicator;
 use bevy::prelude::*;
 
 use bevy::{
@@ -142,7 +143,9 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
                     ItemSlot::Feet => Some(feet.clone()),
                 }),
             },
-            BuildStatus::Built,
+            BuildStatus::Built {
+                indicator: HealthIndicator::Healthy,
+            },
             player_transform.translation.with_layer(Layers::Building),
             Owner::Player(player_entity),
         ))

@@ -17,8 +17,17 @@ pub enum MainBuildingLevels {
 #[derive(Component, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Mappable)]
 pub enum BuildStatus {
     Marker,
-    Built,
+    Constructing,
+    Built { indicator: HealthIndicator },
     Destroyed,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Mappable)]
+pub enum HealthIndicator {
+    Healthy,
+    Light,
+    Medium,
+    Heavy,
 }
 
 pub struct Cost {

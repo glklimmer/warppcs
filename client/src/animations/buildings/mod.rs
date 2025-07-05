@@ -122,7 +122,7 @@ pub fn update_building_sprite(
             highlight.original_handle = handle.clone();
         }
 
-        if status.eq(&BuildStatus::Built) {
+        if let BuildStatus::Built { indicator: _ } = status {
             commands.entity(entity).insert(AnimationSound {
                 sound_handles: vec![
                     asset_server.load(format!(
