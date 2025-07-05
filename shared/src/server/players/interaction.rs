@@ -26,6 +26,7 @@ pub struct Interactable {
     pub kind: InteractionType,
     #[entities]
     pub restricted_to: Option<Entity>,
+    pub enabled: bool,
 }
 
 #[derive(Event, Clone, Copy, Serialize, Deserialize)]

@@ -209,6 +209,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             Interactable {
                 kind: InteractionType::Flag,
                 restricted_to: Some(player),
+                enabled: true,
             },
             owner,
         ))
@@ -256,6 +257,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             Interactable {
                 kind: InteractionType::Commander,
                 restricted_to: Some(player),
+                enabled: true,
             },
         ))
         .id();

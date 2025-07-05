@@ -158,6 +158,7 @@ fn player_base(
         Interactable {
             kind: InteractionType::Recruit,
             restricted_to: Some(player),
+            enabled: true,
         },
     ));
     commands.spawn((
@@ -178,6 +179,7 @@ fn player_base(
         Interactable {
             kind: InteractionType::ItemAssignment,
             restricted_to: Some(player),
+            enabled: true,
         },
     ));
     commands.spawn((
@@ -188,6 +190,7 @@ fn player_base(
         Interactable {
             kind: InteractionType::ItemAssignment,
             restricted_to: Some(player),
+            enabled: true,
         },
     ));
     commands.spawn((
@@ -198,6 +201,7 @@ fn player_base(
         Interactable {
             kind: InteractionType::ItemAssignment,
             restricted_to: Some(player),
+            enabled: true,
         },
     ));
     commands.spawn((
@@ -212,6 +216,7 @@ fn player_base(
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),
+            enabled: true,
         },
     ));
     commands.spawn((
@@ -226,6 +231,7 @@ fn player_base(
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),
+            enabled: true,
         },
     ));
     commands.spawn((
@@ -238,6 +244,7 @@ fn player_base(
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),
+            enabled: true,
         },
     ));
     commands.spawn((
@@ -250,6 +257,7 @@ fn player_base(
         Interactable {
             kind: InteractionType::Building,
             restricted_to: Some(player),
+            enabled: true,
         },
     ));
 

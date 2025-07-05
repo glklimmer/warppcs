@@ -139,6 +139,7 @@ fn construct_building(
             building_entity.insert(Interactable {
                 kind: InteractionType::Recruit,
                 restricted_to: Some(owner.entity().unwrap()),
+                enabled: true,
             });
         }
 
