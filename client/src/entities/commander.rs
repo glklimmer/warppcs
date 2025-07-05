@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy::color::palettes::css::PURPLE;
+use bevy::color::palettes::css::YELLOW;
 use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
     PlayerState, Vec3LayerExt,
@@ -253,7 +253,7 @@ fn highligh_formation(
             if formation == **selected_formation {
                 commands.entity(*entity).insert((
                     Mesh2d(meshes.add(Rectangle::default())),
-                    MeshMaterial2d(materials.add(Color::from(PURPLE))),
+                    MeshMaterial2d(materials.add(Color::from(YELLOW))),
                 ));
             } else {
                 commands

@@ -262,21 +262,26 @@ fn swap_flag_from_formation(
 
     let (mut army_flag_assignments, army_formation) =
         commanders.get_mut(trigger.commander).unwrap();
-    let flag = trigger.flag.unwrap();
 
-    let flag = army_flag_assignments
+    let new_flag = trigger.flag.unwrap();
+    let old_flag = army_flag_assignments
         .flags
-        .set(trigger.selected_slot, Some(flag))
+        .get(trigger.selected_slot)
+        .unwrap();
+
+    army_flag_assignments
+        .flags
+        .set(trigger.selected_slot, Some(new_flag))
         .unwrap();
 
     let formation = army_formation.positions.get(trigger.selected_slot);
 
     commands
-        .entity(flag)
+        .entity(new_flag)
         .insert((AttachedTo(*formation), Visibility::Hidden))
         .remove::<Interactable>();
 
-    commands.entity(flag).insert((
+    commands.entity(old_flag).insert((
         AttachedTo(trigger.player),
         Visibility::Visible,
         Interactable {
@@ -284,5 +289,5 @@ fn swap_flag_from_formation(
             restricted_to: Some(trigger.player),
         },
     ));
-    commands.entity(trigger.player).insert(FlagHolder(flag));
+    commands.entity(trigger.player).insert(FlagHolder(old_flag));
 }
