@@ -22,17 +22,24 @@ pub mod item_assignment;
 pub mod recruiting;
 pub mod siege_camp;
 
-pub struct CommonBuildingInfo {
+#[derive(Clone)]
+pub struct BuildingEventInfo {
     pub player_entity: Entity,
-    pub entity: Entity,
+    pub building_entity: Entity,
     pub building: Building,
 }
 
-#[derive(Event)]
-struct BuildingConstruction(pub CommonBuildingInfo);
+#[derive(Event, Deref)]
+struct BuildingChangeStart(pub BuildingEventInfo);
 
-#[derive(Event)]
-pub struct BuildingUpgrade(pub CommonBuildingInfo);
+#[derive(Component)]
+struct BuildingConstructing {
+    timer: Timer,
+    change: BuildingEventInfo,
+}
+
+#[derive(Event, Deref)]
+struct BuildingChangeEnd(pub BuildingEventInfo);
 
 pub struct BuildingsPlugins;
 
@@ -40,8 +47,8 @@ impl Plugin for BuildingsPlugins {
     fn build(&self, app: &mut App) {
         app.add_plugins(ItemAssignmentPlugins)
             .add_event::<RecruitEvent>()
-            .add_event::<BuildingConstruction>()
-            .add_event::<BuildingUpgrade>();
+            .add_event::<BuildingChangeStart>()
+            .add_event::<BuildingChangeEnd>();
 
         app.add_observer(recruit_units);
         app.add_observer(recruit_commander);
@@ -52,13 +59,13 @@ impl Plugin for BuildingsPlugins {
                 gold_farm_output,
                 (respawn_timer, respawn_units).chain(),
                 siege_camp_lifetime,
+                progess_construction,
                 (
                     (check_recruit, check_building_interaction)
                         .run_if(on_event::<InteractionTriggeredEvent>),
                     (
-                        (construct_building, enable_goldfarm)
-                            .run_if(on_event::<BuildingConstruction>),
-                        (upgrade_building,).run_if(on_event::<BuildingUpgrade>),
+                        (start_construction).run_if(on_event::<BuildingChangeStart>),
+                        (end_construction, enable_goldfarm).run_if(on_event::<BuildingChangeEnd>),
                     ),
                 )
                     .chain(),
@@ -69,8 +76,7 @@ impl Plugin for BuildingsPlugins {
 
 fn check_building_interaction(
     mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut build: EventWriter<BuildingConstruction>,
-    mut upgrade: EventWriter<BuildingUpgrade>,
+    mut writer: EventWriter<BuildingChangeStart>,
     player: Query<&Inventory>,
     building: Query<(Entity, &Building, &BuildStatus)>,
 ) {
@@ -84,12 +90,6 @@ fn check_building_interaction(
 
         let (entity, building, status) = building.get(event.interactable).unwrap();
 
-        let info = CommonBuildingInfo {
-            player_entity: event.player,
-            entity,
-            building: *building,
-        };
-
         match status {
             BuildStatus::Constructing => {
                 continue;
@@ -98,7 +98,11 @@ fn check_building_interaction(
                 if !inventory.gold.ge(&building.cost().gold) {
                     continue;
                 }
-                build.write(BuildingConstruction(info));
+                writer.write(BuildingChangeStart(BuildingEventInfo {
+                    player_entity: event.player,
+                    building_entity: entity,
+                    building: *building,
+                }));
             }
             BuildStatus::Built { indicator: _ } => {
                 if building.can_upgrade() {
@@ -108,29 +112,82 @@ fn check_building_interaction(
                     {
                         continue;
                     }
-                    upgrade.write(BuildingUpgrade(info));
+                    writer.write(BuildingChangeStart(BuildingEventInfo {
+                        player_entity: event.player,
+                        building_entity: entity,
+                        building: building.upgrade_building().unwrap_or(*building),
+                    }));
                 }
             }
             BuildStatus::Destroyed => {
-                build.write(BuildingConstruction(info));
+                writer.write(BuildingChangeStart(BuildingEventInfo {
+                    player_entity: event.player,
+                    building_entity: entity,
+                    building: *building,
+                }));
             }
         }
     }
 }
 
-fn construct_building(
+fn start_construction(
     mut commands: Commands,
-    mut builds: EventReader<BuildingConstruction>,
-    building_query: Query<(&Owner, &Building)>,
+    mut events: EventReader<BuildingChangeStart>,
     mut inventory: Query<&mut Inventory>,
+    mut building_query: Query<&mut Building>,
 ) {
-    for build in builds.read() {
-        let mut building_entity = commands.entity(build.0.entity);
-        let building = &build.0.building;
+    for event in events.read() {
+        let mut building_entity = commands.entity(event.building_entity);
+        let building = event.building;
 
-        info!("Constructing building: {:?}", building);
+        let mut building_state = building_query.get_mut(event.building_entity).unwrap();
+        *building_state = building;
 
-        building_entity.insert((
+        info!("Start constructing: {:?}", building);
+
+        building_entity
+            .insert((
+                BuildingConstructing {
+                    timer: Timer::from_seconds(building.time(), TimerMode::Once),
+                    change: (**event).clone(),
+                },
+                BuildStatus::Constructing,
+            ))
+            .remove::<Interactable>();
+
+        let mut inventory = inventory.get_mut(event.player_entity).unwrap();
+        inventory.gold -= building.cost().gold;
+    }
+}
+
+fn progess_construction(
+    mut query: Query<(Entity, &mut BuildingConstructing)>,
+    time: Res<Time>,
+    mut writer: EventWriter<BuildingChangeEnd>,
+    mut commands: Commands,
+) {
+    for (entity, mut building) in &mut query {
+        building.timer.tick(time.delta());
+
+        if building.timer.finished() {
+            writer.write(BuildingChangeEnd(building.change.clone()));
+            commands.entity(entity).remove::<BuildingConstructing>();
+        }
+    }
+}
+
+fn end_construction(
+    mut commands: Commands,
+    mut events: EventReader<BuildingChangeEnd>,
+    owner_query: Query<&Owner>,
+) {
+    for event in events.read() {
+        let building = event.building;
+
+        info!("End constructing: {:?}", building);
+
+        let mut building_commands = commands.entity(event.building_entity);
+        building_commands.insert((
             building.health(),
             building.collider(),
             BuildStatus::Built {
@@ -138,49 +195,24 @@ fn construct_building(
             },
         ));
 
-        if !building.can_upgrade() {
-            building_entity.remove::<Interactable>();
-        }
+        let owner = owner_query
+            .get(event.building_entity)
+            .unwrap()
+            .entity()
+            .unwrap();
 
-        let (owner, building) = building_query.get(build.0.entity).unwrap();
-
-        if building.is_recruit_building() {
-            building_entity.insert(Interactable {
-                kind: InteractionType::Recruit,
-                restricted_to: Some(owner.entity().unwrap()),
+        if building.can_upgrade() {
+            building_commands.insert(Interactable {
+                kind: InteractionType::Building,
+                restricted_to: Some(owner),
             });
         }
 
-        let mut inventory = inventory.get_mut(build.0.player_entity).unwrap();
-        inventory.gold -= building.cost().gold;
-    }
-}
-
-fn upgrade_building(
-    mut commands: Commands,
-    mut upgrade: EventReader<BuildingUpgrade>,
-    mut building: Query<&mut Building>,
-    mut inventory: Query<&mut Inventory>,
-) {
-    for upgrade in upgrade.read() {
-        let mut building = building.get_mut(upgrade.0.entity).unwrap();
-
-        let upgraded_building = &upgrade
-            .0
-            .building
-            .upgrade_building()
-            .expect("No Upgrade specified.");
-
-        println!("Upgraded building: {:?}", upgraded_building);
-
-        *building = *upgraded_building;
-
-        commands
-            .entity(upgrade.0.entity)
-            .insert(upgraded_building.health())
-            .insert(upgraded_building.collider());
-
-        let mut inventory = inventory.get_mut(upgrade.0.player_entity).unwrap();
-        inventory.gold -= upgraded_building.cost().gold;
+        if building.is_recruit_building() {
+            building_commands.insert(Interactable {
+                kind: InteractionType::Recruit,
+                restricted_to: Some(owner),
+            });
+        }
     }
 }
