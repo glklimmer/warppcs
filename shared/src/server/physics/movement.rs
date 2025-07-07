@@ -72,7 +72,6 @@ fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, ti
         let bottom = transform.translation.truncate() - collider.half_size()
             + collider.offset.unwrap_or_default();
         let next_bottom = bottom.y + velocity.0.y * time.delta_secs();
-
         if next_bottom > 0. {
             velocity.0.y -= GRAVITY_G * time.delta_secs();
         } else if velocity.0.y < 0. {
@@ -119,13 +118,16 @@ fn apply_drag(mut query: Query<&mut Velocity, Without<ProjectileType>>, time: Re
     }
 }
 
-fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
-    for (entity, transform) in &entities {
+fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform, &BoxCollider)>) {
+    for (entity, transform, collider) in &entities {
         let Ok(mut entity) = commands.get_entity(entity) else {
             continue;
         };
 
-        if transform.translation.y == 0. {
+        let bottom = transform.translation.truncate() - collider.half_size()
+            + collider.offset.unwrap_or_default();
+
+        if bottom.y <= 0. {
             entity.try_insert(Grounded);
         } else {
             entity.try_remove::<Grounded>();
