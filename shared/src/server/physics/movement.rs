@@ -119,13 +119,16 @@ fn apply_drag(mut query: Query<&mut Velocity, Without<ProjectileType>>, time: Re
     }
 }
 
-fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform)>) {
-    for (entity, transform) in &entities {
+fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform, &BoxCollider)>) {
+    for (entity, transform, collider) in &entities {
         let Ok(mut entity) = commands.get_entity(entity) else {
             continue;
         };
 
-        if transform.translation.y == 0. {
+        let bottom = transform.translation.truncate() - collider.half_size()
+            + collider.offset.unwrap_or_default();
+
+        if bottom.y == 0. {
             entity.try_insert(Grounded);
         } else {
             entity.try_remove::<Grounded>();
