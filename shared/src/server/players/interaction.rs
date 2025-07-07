@@ -1,4 +1,4 @@
-use bevy::{math::VectorSpace, prelude::*};
+use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
