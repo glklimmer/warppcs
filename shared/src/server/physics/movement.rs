@@ -72,6 +72,7 @@ fn apply_gravity(mut query: Query<(&mut Velocity, &Transform, &BoxCollider)>, ti
         let bottom = transform.translation.truncate() - collider.half_size()
             + collider.offset.unwrap_or_default();
         let next_bottom = bottom.y + velocity.0.y * time.delta_secs();
+
         if next_bottom > 0. {
             velocity.0.y -= GRAVITY_G * time.delta_secs();
         } else if velocity.0.y < 0. {
