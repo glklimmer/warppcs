@@ -164,6 +164,10 @@ impl Building {
     pub fn unit_type(&self) -> Option<UnitType> {
         self.building_type.unit_type()
     }
+
+    pub fn time(&self) -> f32 {
+        self.building_type.time()
+    }
 }
 
 impl BuildingType {
@@ -295,6 +299,24 @@ impl BuildingType {
             BuildingType::MainBuilding { level: _ } => Some(UnitType::Commander),
             BuildingType::Unit { weapon: unit_type } => Some(unit_type),
             BuildingType::Wall { level: _ } | BuildingType::Tower | BuildingType::GoldFarm => None,
+        }
+    }
+
+    fn time(&self) -> f32 {
+        match self {
+            BuildingType::MainBuilding { level } => match level {
+                MainBuildingLevels::Tent => 10.,
+                MainBuildingLevels::Hall => 50.,
+                MainBuildingLevels::Castle => 200.,
+            },
+            BuildingType::Unit { weapon: _ } => 0.1,
+            BuildingType::Wall { level } => match level {
+                WallLevels::Basic => 5.,
+                WallLevels::Wood => 20.,
+                WallLevels::Tower => 50.,
+            },
+            BuildingType::Tower => todo!(),
+            BuildingType::GoldFarm => 0.1,
         }
     }
 }

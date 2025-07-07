@@ -95,24 +95,17 @@ pub fn update_building_sprite(
             .get(building.building_type);
         let handle = &sprite_sheet.texture;
         let sprite_variants = variants.get(handle).unwrap();
-        let animation = sprite_sheet.animations.get(*status);
+        let animation = sprite_sheet.animations.get(*status).clone();
 
         sprite.texture_atlas = Some(TextureAtlas {
             layout: sprite_sheet.layout.clone(),
             index: animation.first_sprite_index,
         });
         let handle = sprite_variants.variants.get(building.color).clone();
-        info!(
-            "Updating sprite: {:?}, {:?}, {:?}, {:?}",
-            building,
-            status,
-            building.color,
-            handle.path()
-        );
         sprite.image = handle.clone();
 
-        // TODO: add animations
-        // commands.entity(trigger.target()).insert(animation.clone());
+        let animation = animation.with_total_duration(building.time());
+        commands.entity(entity).insert(animation.clone());
 
         if let Some(atlas) = &mut sprite.texture_atlas {
             atlas.index = animation.first_sprite_index;

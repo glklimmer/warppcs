@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{Owner, map::buildings::BuildingType, networking::Inventory};
 
-use super::BuildingConstruction;
+use super::BuildingChangeEnd;
 
 const GOLD_PER_TICK: u16 = 10;
 const GOLD_TIMER: f32 = 2.;
@@ -20,16 +20,16 @@ impl Default for GoldFarmTimer {
     }
 }
 
-pub fn enable_goldfarm(mut commands: Commands, mut builds: EventReader<BuildingConstruction>) {
-    for build in builds.read() {
-        let BuildingType::GoldFarm = build.0.building.building_type else {
+pub fn enable_goldfarm(mut commands: Commands, mut events: EventReader<BuildingChangeEnd>) {
+    for event in events.read() {
+        let BuildingType::GoldFarm = (**event).building.building_type else {
             continue;
         };
 
         println!("Bought Gold Farm");
 
         commands
-            .entity(build.0.entity)
+            .entity(event.0.building_entity)
             .insert(GoldFarmTimer::default());
     }
 }

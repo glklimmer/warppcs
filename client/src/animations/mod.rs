@@ -134,6 +134,15 @@ pub struct SpriteSheetAnimation {
     pub direction: AnimationDirection,
 }
 
+impl SpriteSheetAnimation {
+    pub fn with_total_duration(mut self, total_seconds: f32) -> Self {
+        let frame_count = (self.last_sprite_index - self.first_sprite_index + 1) as f32;
+        let per_frame = total_seconds / frame_count;
+        self.frame_timer = Timer::from_seconds(per_frame, TimerMode::Repeating);
+        self
+    }
+}
+
 impl Default for SpriteSheetAnimation {
     fn default() -> Self {
         SpriteSheetAnimation {
