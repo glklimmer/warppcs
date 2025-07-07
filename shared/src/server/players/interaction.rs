@@ -1,10 +1,10 @@
-use bevy::prelude::*;
+use bevy::{math::VectorSpace, prelude::*};
 use bevy_replicon::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
 use serde::{Deserialize, Serialize};
 
-use crate::{BoxCollider, ClientPlayerMap, PlayerState};
+use crate::{BoxCollider, ClientPlayerMap, PlayerState, server::physics::movement::Velocity};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {
@@ -70,7 +70,13 @@ fn interact(
     trigger: Trigger<FromClient<Interact>>,
     mut triggered_events: EventWriter<InteractionTriggeredEvent>,
     players: Query<(&Transform, &BoxCollider)>,
-    interactables: Query<(Entity, &Transform, &BoxCollider, &Interactable)>,
+    interactables: Query<(
+        Entity,
+        Option<&Velocity>,
+        &Transform,
+        &BoxCollider,
+        &Interactable,
+    )>,
     client_player_map: Res<ClientPlayerMap>,
 ) {
     let player = *client_player_map.get(&trigger.client_entity).unwrap();
@@ -80,6 +86,10 @@ fn interact(
 
     let priority_interaction = interactables
         .iter()
+        .filter(|(_, velocity, ..)| match velocity {
+            Some(velocity) => velocity.0 == Vec2::ZERO,
+            None => true,
+        })
         .filter(|(.., transform, collider, _)| player_bounds.intersects(&collider.at(transform)))
         .filter(|(.., interactable)| match interactable.restricted_to {
             Some(owner) => owner.eq(&player),
@@ -104,7 +114,7 @@ fn interact(
             },
         );
 
-    if let Some((interactable, _, _, interaction)) = priority_interaction {
+    if let Some((interactable, .., interaction)) = priority_interaction {
         triggered_events.write(InteractionTriggeredEvent {
             player,
             interactable,
