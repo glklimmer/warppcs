@@ -316,7 +316,7 @@ impl BuildingType {
                 WallLevels::Tower => 50.,
             },
             BuildingType::Tower => todo!(),
-            BuildingType::GoldFarm => 0.1,
+            BuildingType::GoldFarm => 5.,
         }
     }
 }
