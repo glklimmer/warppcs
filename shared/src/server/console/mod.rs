@@ -97,14 +97,14 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
     let value = params.ok_or_else(|| BrpError::internal("spawn-units requires parameters"))?;
 
     let unit_req: BrpSpawnUnit = serde_json::from_value(value)
-        .map_err(|e| BrpError::internal(format!("invalid spawn parameters: {}", e)))?;
+        .map_err(|e| BrpError::internal(format!("invalid spawn parameters: {e}")))?;
 
     let unit_type = match unit_req.unit.as_str() {
         "archer" => UnitType::Archer,
         "pikemen" => UnitType::Pikeman,
         "shield" => UnitType::Shieldwarrior,
         other => {
-            return Err(BrpError::internal(format!("unknown unit type `{}`", other)));
+            return Err(BrpError::internal(format!("unknown unit type `{other}`")));
         }
     };
 
@@ -196,7 +196,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         params.ok_or_else(|| BrpError::internal("spawn-full-commander requires parameters"))?;
 
     let brp: BrpSpawnFullCommander = serde_json::from_value(value)
-        .map_err(|e| BrpError::internal(format!("invalid commander parameters: {}", e)))?;
+        .map_err(|e| BrpError::internal(format!("invalid commander parameters: {e}")))?;
     let player = brp.player_entity(world)?;
     let color = world.entity(player).get::<Player>().unwrap().color;
 

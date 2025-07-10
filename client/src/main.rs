@@ -64,7 +64,7 @@ fn main() {
     }
 
     let primary_window = Window {
-        title: format!("WARPPC {}", user),
+        title: format!("WARPPC {user}"),
         resolution: (1280.0, 720.0).into(),
         resizable: false,
         ..default()
