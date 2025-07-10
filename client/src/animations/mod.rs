@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    animations::ui::army_formations::FormationIconSpriteSheet, asset_loader::AssetsToLoad,
+    animations::ui::{animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet},
+    asset_loader::AssetsToLoad,
 };
 use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
@@ -168,6 +169,7 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(UIAnimationsPlugin);
         app.init_asset::<SpriteVariants>();
         app.init_asset_loader::<SpriteVariantLoader>();
 

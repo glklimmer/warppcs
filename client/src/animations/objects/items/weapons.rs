@@ -11,6 +11,7 @@ pub enum Weapons {
     SwordAndShield,
     Pike,
     Bow,
+    Lance,
 }
 
 impl From<UnitType> for Weapons {
@@ -20,7 +21,7 @@ impl From<UnitType> for Weapons {
             UnitType::Pikeman => Weapons::Pike,
             UnitType::Archer => Weapons::Bow,
             UnitType::Bandit => todo!(),
-            UnitType::Commander => todo!(),
+            UnitType::Commander => Weapons::Lance,
         }
     }
 }
@@ -63,12 +64,17 @@ impl FromWorld for WeaponsSpriteSheet {
                 first_sprite_index: 5,
                 ..default()
             },
+            Weapons::Lance => SpriteSheetAnimation {
+                first_sprite_index: 0,
+                ..default()
+            },
         });
 
         let animations_sound = EnumMap::new(|c| match c {
             Weapons::SwordAndShield => None,
             Weapons::Pike => None,
             Weapons::Bow => None,
+            Weapons::Lance => None,
         });
 
         WeaponsSpriteSheet {
