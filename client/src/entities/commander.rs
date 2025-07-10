@@ -233,7 +233,7 @@ fn assignment_reject(
 fn assigment_warning(
     trigger: Trigger<OnAdd, HoverWeapon>,
     unit_type: Query<&HoverWeapon>,
-    hover_disabled_assignment_query: Query<Entity, With<HoverDisabledWeapon>>,
+    hover_disabled_assignment: Query<Entity, With<HoverDisabledWeapon>>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
 ) {
@@ -241,7 +241,7 @@ fn assigment_warning(
         .single()
         .is_ok_and(|flag| flag.0.eq(&UnitType::Commander))
     {
-        match hover_disabled_assignment_query.single() {
+        match hover_disabled_assignment.single() {
             Ok(entity_to_despawn) => {
                 commands.entity(entity_to_despawn).despawn();
             }
