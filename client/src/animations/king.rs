@@ -5,15 +5,14 @@ use shared::{
     server::physics::movement::Moving,
 };
 
-use crate::anim;
-use crate::animations::AnimationDirection;
+use crate::{anim, anim_reverse};
 
 use super::{
     AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, AnimationTrigger, PlayOnce,
     SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
 };
 
-const ATLAS_COLUMNS: usize = 10;
+const ATLAS_COLUMNS: usize = 11;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum KingAnimation {
@@ -56,13 +55,13 @@ impl FromWorld for KingSpriteSheet {
 
         let animations = EnumMap::new(|c| match c {
             KingAnimation::Idle => anim!(0, 3),
-            KingAnimation::Drink => anim!(1, 4),
+            KingAnimation::Drink => anim!(1, 5),
             KingAnimation::Walk => anim!(2, 5),
-            KingAnimation::Attack => anim!(4, 9),
-            KingAnimation::Hit => anim!(5, 2),
-            KingAnimation::Death => anim!(6, 5),
+            KingAnimation::Attack => anim!(4, 10),
+            KingAnimation::Hit => anim!(5, 3),
+            KingAnimation::Death => anim!(6, 6),
             KingAnimation::Mount => anim!(7, 6),
-            KingAnimation::Unmount => anim!(7, 6, AnimationDirection::Backward),
+            KingAnimation::Unmount => anim_reverse!(7, 6),
             KingAnimation::HorseIdle => anim!(8, 7),
             KingAnimation::HorseWalk => anim!(9, 5),
         });
