@@ -200,8 +200,8 @@ impl ModifierAmount {
 impl fmt::Display for ModifierAmount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ModifierAmount::Amount(amount) => write!(f, "{}", amount),
-            ModifierAmount::Multiplier(multiplier) => write!(f, "{}", multiplier),
+            ModifierAmount::Amount(amount) => write!(f, "{amount}"),
+            ModifierAmount::Multiplier(multiplier) => write!(f, "{multiplier}"),
         }
     }
 }
@@ -305,7 +305,7 @@ impl fmt::Display for Effect {
             Effect::MovementSpeed => "MovementSpeed",
             Effect::UnitAmount => "UnitAmount",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

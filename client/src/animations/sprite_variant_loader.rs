@@ -114,7 +114,7 @@ impl AssetLoader for SpriteVariantLoader {
                 Image::from_dynamic(recolored_image, true, RenderAssetUsages::default());
 
             let image_handle =
-                load_context.add_labeled_asset(format!("variant_{:?}", color), bevy_image);
+                load_context.add_labeled_asset(format!("variant_{color:?}"), bevy_image);
             variants.insert(color, image_handle);
         }
         let variants = EnumMap::new(|color: PlayerColor| variants.get(&color).unwrap().clone());

@@ -39,8 +39,8 @@ pub enum PPCSubCommands {
 fn main() {
     let cli = PPC::parse();
 
-    let host_part = format!("{}:{}", DEFAULT_ADDR, DEFAULT_PORT);
-    let url = format!("http://{}/", host_part);
+    let host_part = format!("{DEFAULT_ADDR}:{DEFAULT_PORT}");
+    let url = format!("http://{host_part}/");
 
     let request = match cli.command {
         PPCSubCommands::RandomItems { player } => BrpRequest {
@@ -96,7 +96,7 @@ fn main() {
     match maybe_response {
         Ok(mut body) => {
             let response = body.body_mut().read_json::<Value>().unwrap();
-            println!("{:#}", response);
+            println!("{response:#}");
         }
         Err(_) => println!("No running bevy application found."),
     }
