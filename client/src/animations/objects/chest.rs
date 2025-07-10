@@ -5,10 +5,11 @@ use shared::ChestAnimation;
 use shared::ChestAnimationEvent;
 use shared::server::players::chest::Chest;
 
+use crate::anim_reverse;
 use crate::animations::SpriteSheetAnimation;
 use crate::{
     anim,
-    animations::{AnimationDirection, AnimationSpriteSheet, PlayOnce},
+    animations::{AnimationSpriteSheet, PlayOnce},
 };
 
 const ATLAS_COLUMNS: usize = 3;
@@ -34,7 +35,7 @@ impl FromWorld for ChestSpriteSheet {
 
         let animations = EnumMap::new(|c| match c {
             ChestAnimation::Open => anim!(0, 2),
-            ChestAnimation::Close => anim!(0, 2, AnimationDirection::Backward),
+            ChestAnimation::Close => anim_reverse!(0, 2),
         });
 
         let animations_sound = EnumMap::new(|c| match c {
