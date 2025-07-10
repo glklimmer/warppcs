@@ -7,7 +7,7 @@ use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
 use bevy_replicon::client::ClientSet;
-use buildings::{BuildingSpriteSheets, update_building_sprite};
+use buildings::{BuildingSpriteSheets, remove_animation_after_play_once, update_building_sprite};
 use king::{
     KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
     set_king_sprite_animation, set_king_walking, trigger_king_animation,
@@ -34,11 +34,11 @@ use units::{
 pub mod animals;
 pub mod buildings;
 pub mod king;
+pub mod macros;
 pub mod objects;
 pub mod sprite_variant_loader;
 pub mod ui;
 pub mod units;
-pub mod macros;
 
 #[derive(Clone)]
 pub struct StaticSpriteSheet<E: EnumIter> {
@@ -136,11 +136,10 @@ pub struct SpriteSheetAnimation {
 }
 
 impl SpriteSheetAnimation {
-    pub fn with_total_duration(mut self, total_seconds: f32) -> Self {
+    pub fn with_total_duration(&mut self, total_seconds: f32) {
         let frame_count = (self.last_sprite_index - self.first_sprite_index + 1) as f32;
         let per_frame = total_seconds / frame_count;
         self.frame_timer = Timer::from_seconds(per_frame, TimerMode::Repeating);
-        self
     }
 }
 
@@ -211,7 +210,8 @@ impl Plugin for AnimationPlugin {
         .add_observer(set_unit_walking)
         .add_observer(set_unit_idle)
         .add_observer(set_unit_after_play_once)
-        .add_observer(set_chest_after_play_once);
+        .add_observer(set_chest_after_play_once)
+        .add_observer(remove_animation_after_play_once);
 
         app.add_systems(
             Update,
