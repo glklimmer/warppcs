@@ -5,10 +5,13 @@ use shared::ChestAnimation;
 use shared::ChestAnimationEvent;
 use shared::server::players::chest::Chest;
 
-use crate::animations::AnimationDirection;
-use crate::animations::PlayOnce;
+use crate::animations::SpriteSheetAnimation;
+use crate::{
+    anim,
+    animations::{AnimationDirection, AnimationSpriteSheet, PlayOnce},
+};
 
-use super::super::{AnimationSpriteSheet, SpriteSheetAnimation};
+const ATLAS_COLUMNS: usize = 3;
 
 #[derive(Resource)]
 pub struct ChestSpriteSheet {
@@ -23,24 +26,15 @@ impl FromWorld for ChestSpriteSheet {
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::new(32, 32),
-            3,
+            ATLAS_COLUMNS as u32,
             2,
             None,
             None,
         ));
 
         let animations = EnumMap::new(|c| match c {
-            ChestAnimation::Open => SpriteSheetAnimation {
-                first_sprite_index: 0,
-                last_sprite_index: 2,
-                ..default()
-            },
-            ChestAnimation::Close => SpriteSheetAnimation {
-                first_sprite_index: 2,
-                last_sprite_index: 0,
-                direction: AnimationDirection::Backward,
-                ..default()
-            },
+            ChestAnimation::Open => anim!(0, 2),
+            ChestAnimation::Close => anim!(0, 2, AnimationDirection::Backward),
         });
 
         let animations_sound = EnumMap::new(|c| match c {

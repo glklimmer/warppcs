@@ -5,9 +5,12 @@ use shared::{
     map::buildings::{BuildStatus, HealthIndicator},
 };
 
+use crate::anim;
 use crate::animations::{
-    AnimationSpriteSheet, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
+    AnimationSpriteSheet, sprite_variant_loader::SpriteVariants,
 };
+
+const ATLAS_COLUMNS: usize = 15;
 
 pub fn wall_wood_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus, SpriteVariants> {
     let asset_server = world.resource::<AssetServer>();
@@ -17,46 +20,22 @@ pub fn wall_wood_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus
 
     let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
         UVec2::new(32, 48),
-        15,
+        ATLAS_COLUMNS as u32,
         6,
         Some(UVec2::splat(1)),
         None,
     ));
 
     let animations = EnumMap::new(|c| match c {
-        BuildStatus::Marker => SpriteSheetAnimation::default(),
-        BuildStatus::Constructing => SpriteSheetAnimation {
-            first_sprite_index: 15 * 1 + 0,
-            last_sprite_index: 15 * 1 + 14,
-            ..default()
-        },
+        BuildStatus::Marker => anim!(0, 0),
+        BuildStatus::Constructing => anim!(1, 14),
         BuildStatus::Built { indicator } => match indicator {
-            HealthIndicator::Healthy => SpriteSheetAnimation {
-                first_sprite_index: 15 * 0 + 0,
-                last_sprite_index: 15 * 0 + 0,
-                ..default()
-            },
-            HealthIndicator::Light => SpriteSheetAnimation {
-                first_sprite_index: 15 * 2 + 0,
-                last_sprite_index: 15 * 2 + 0,
-                ..default()
-            },
-            HealthIndicator::Medium => SpriteSheetAnimation {
-                first_sprite_index: 15 * 3 + 0,
-                last_sprite_index: 15 * 3 + 0,
-                ..default()
-            },
-            HealthIndicator::Heavy => SpriteSheetAnimation {
-                first_sprite_index: 15 * 4 + 0,
-                last_sprite_index: 15 * 4 + 6,
-                ..default()
-            },
+            HealthIndicator::Healthy => anim!(0, 0),
+            HealthIndicator::Light => anim!(2, 0),
+            HealthIndicator::Medium => anim!(3, 0),
+            HealthIndicator::Heavy => anim!(4, 6),
         },
-        BuildStatus::Destroyed => SpriteSheetAnimation {
-            first_sprite_index: 15 * 5 + 0,
-            last_sprite_index: 15 * 5 + 0,
-            ..default()
-        },
+        BuildStatus::Destroyed => anim!(5, 0),
     });
 
     let animations_sound = EnumMap::new(|c| match c {

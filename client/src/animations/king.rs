@@ -5,12 +5,15 @@ use shared::{
     server::physics::movement::Moving,
 };
 
+use crate::anim;
 use crate::animations::AnimationDirection;
 
 use super::{
     AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, AnimationTrigger, PlayOnce,
     SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
 };
+
+const ATLAS_COLUMNS: usize = 10;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum KingAnimation {
@@ -45,64 +48,23 @@ impl FromWorld for KingSpriteSheet {
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::splat(32),
-            10,
+            ATLAS_COLUMNS as u32,
             10,
             None,
             None,
         ));
 
         let animations = EnumMap::new(|c| match c {
-            KingAnimation::Idle => SpriteSheetAnimation {
-                first_sprite_index: 0,
-                last_sprite_index: 3,
-                ..default()
-            },
-            KingAnimation::Drink => SpriteSheetAnimation {
-                first_sprite_index: 10,
-                last_sprite_index: 14,
-                ..default()
-            },
-            KingAnimation::Walk => SpriteSheetAnimation {
-                first_sprite_index: 20,
-                last_sprite_index: 25,
-                ..default()
-            },
-            KingAnimation::Attack => SpriteSheetAnimation {
-                first_sprite_index: 40,
-                last_sprite_index: 49,
-                ..default()
-            },
-            KingAnimation::Hit => SpriteSheetAnimation {
-                first_sprite_index: 50,
-                last_sprite_index: 52,
-                ..default()
-            },
-            KingAnimation::Death => SpriteSheetAnimation {
-                first_sprite_index: 60,
-                last_sprite_index: 65,
-                ..default()
-            },
-            KingAnimation::Mount => SpriteSheetAnimation {
-                first_sprite_index: 70,
-                last_sprite_index: 76,
-                ..default()
-            },
-            KingAnimation::Unmount => SpriteSheetAnimation {
-                first_sprite_index: 76,
-                last_sprite_index: 70,
-                direction: AnimationDirection::Backward,
-                ..default()
-            },
-            KingAnimation::HorseIdle => SpriteSheetAnimation {
-                first_sprite_index: 80,
-                last_sprite_index: 87,
-                ..default()
-            },
-            KingAnimation::HorseWalk => SpriteSheetAnimation {
-                first_sprite_index: 90,
-                last_sprite_index: 95,
-                ..default()
-            },
+            KingAnimation::Idle => anim!(0, 3),
+            KingAnimation::Drink => anim!(1, 4),
+            KingAnimation::Walk => anim!(2, 5),
+            KingAnimation::Attack => anim!(4, 9),
+            KingAnimation::Hit => anim!(5, 2),
+            KingAnimation::Death => anim!(6, 5),
+            KingAnimation::Mount => anim!(7, 6),
+            KingAnimation::Unmount => anim!(7, 6, AnimationDirection::Backward),
+            KingAnimation::HorseIdle => anim!(8, 7),
+            KingAnimation::HorseWalk => anim!(9, 5),
         });
 
         let animations_sound = EnumMap::new(move |c| match c {

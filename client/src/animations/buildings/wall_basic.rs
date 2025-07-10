@@ -5,70 +5,38 @@ use shared::{
     map::buildings::{BuildStatus, HealthIndicator},
 };
 
-use crate::animations::{
-    AnimationSpriteSheet, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
-};
+use crate::anim;
+use crate::animations::{AnimationSpriteSheet, sprite_variant_loader::SpriteVariants};
+
+const ATLAS_COLUMNS: usize = 7;
 
 pub fn wall_basic_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus, SpriteVariants> {
     let asset_server = world.resource::<AssetServer>();
     let texture = asset_server.load("sprites/buildings/wall_1.png");
 
-    let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
+    let mut layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
-    let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
+    let layout = layouts.add(TextureAtlasLayout::from_grid(
         UVec2::new(32, 16),
-        7,
+        ATLAS_COLUMNS as u32,
         7,
         Some(UVec2::splat(1)),
         None,
     ));
 
-    let animations = EnumMap::new(|c| match c {
-        BuildStatus::Marker => SpriteSheetAnimation {
-            first_sprite_index: 7 * 0 + 0,
-            last_sprite_index: 7 * 0 + 0,
-            ..default()
+    let animations = EnumMap::new(|status| match status {
+        BuildStatus::Marker => anim!(0, 0),
+        BuildStatus::Constructing => anim!(2, 3),
+        BuildStatus::Built { indicator } => match indicator {
+            HealthIndicator::Healthy => anim!(1, 0),
+            HealthIndicator::Light => anim!(3, 5),
+            HealthIndicator::Medium => anim!(4, 4),
+            HealthIndicator::Heavy => anim!(5, 5),
         },
-        BuildStatus::Constructing => SpriteSheetAnimation {
-            first_sprite_index: 7 * 2 + 0,
-            last_sprite_index: 7 * 2 + 3,
-            ..default()
-        },
-        BuildStatus::Built { indicator: damage } => match damage {
-            HealthIndicator::Healthy => SpriteSheetAnimation {
-                first_sprite_index: 7 * 1 + 0,
-                last_sprite_index: 7 * 1 + 0,
-                ..default()
-            },
-            HealthIndicator::Light => SpriteSheetAnimation {
-                first_sprite_index: 7 * 3 + 0,
-                last_sprite_index: 7 * 3 + 5,
-                ..default()
-            },
-            HealthIndicator::Medium => SpriteSheetAnimation {
-                first_sprite_index: 7 * 4 + 0,
-                last_sprite_index: 7 * 4 + 4,
-                ..default()
-            },
-            HealthIndicator::Heavy => SpriteSheetAnimation {
-                first_sprite_index: 7 * 5 + 0,
-                last_sprite_index: 7 * 5 + 5,
-                ..default()
-            },
-        },
-        BuildStatus::Destroyed => SpriteSheetAnimation {
-            first_sprite_index: 7 * 6 + 0,
-            last_sprite_index: 7 * 6 + 6,
-            ..default()
-        },
+        BuildStatus::Destroyed => anim!(6, 6),
     });
 
-    let animations_sound = EnumMap::new(|c| match c {
-        BuildStatus::Marker => None,
-        BuildStatus::Constructing => None,
-        BuildStatus::Built { indicator: _ } => None,
-        BuildStatus::Destroyed => None,
-    });
+    let animations_sound = EnumMap::new(|_| None);
 
     AnimationSpriteSheet::new(world, texture, layout, animations, animations_sound)
 }
