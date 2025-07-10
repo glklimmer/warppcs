@@ -3,14 +3,14 @@ use bevy::prelude::*;
 use shared::enum_map::*;
 
 use crate::{
-    animations::{
-        AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, SpriteSheetAnimation,
-        sprite_variant_loader::SpriteVariants,
-    },
+    anim,
+    animations::{AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, sprite_variant_loader::SpriteVariants},
     sound::GRASS_FOOTSTEPS_SOUND_PATH,
 };
 
 use super::super::UnitAnimation;
+
+const ATLAS_COLUMNS: usize = 11;
 
 pub fn archer(world: &mut World) -> AnimationSpriteSheet<UnitAnimation, SpriteVariants> {
     let asset_server = world.resource::<AssetServer>();
@@ -27,39 +27,18 @@ pub fn archer(world: &mut World) -> AnimationSpriteSheet<UnitAnimation, SpriteVa
 
     let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
         UVec2::splat(32),
-        11,
+        ATLAS_COLUMNS as u32,
         7,
         None,
         None,
     ));
 
     let animations = EnumMap::new(|c| match c {
-        UnitAnimation::Idle => SpriteSheetAnimation {
-            first_sprite_index: 0,
-            last_sprite_index: 3,
-            ..default()
-        },
-
-        UnitAnimation::Walk => SpriteSheetAnimation {
-            first_sprite_index: 11,
-            last_sprite_index: 16,
-            ..default()
-        },
-        UnitAnimation::Attack => SpriteSheetAnimation {
-            first_sprite_index: 33,
-            last_sprite_index: 42,
-            ..default()
-        },
-        UnitAnimation::Hit => SpriteSheetAnimation {
-            first_sprite_index: 55,
-            last_sprite_index: 57,
-            ..default()
-        },
-        UnitAnimation::Death => SpriteSheetAnimation {
-            first_sprite_index: 66,
-            last_sprite_index: 69,
-            ..default()
-        },
+        UnitAnimation::Idle => anim!(0, 3),
+        UnitAnimation::Walk => anim!(1, 5),
+        UnitAnimation::Attack => anim!(3, 9),
+        UnitAnimation::Hit => anim!(5, 2),
+        UnitAnimation::Death => anim!(6, 3),
     });
 
     let animations_sound = EnumMap::new(|c| match c {

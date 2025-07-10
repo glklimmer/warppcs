@@ -2,9 +2,12 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{
-    AnimationSpriteSheet, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
+use crate::{
+    anim,
+    animations::{AnimationSpriteSheet, sprite_variant_loader::SpriteVariants},
 };
+
+const ATLAS_COLUMNS: usize = 8;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum FlagAnimation {
@@ -26,18 +29,14 @@ impl FromWorld for FlagSpriteSheet {
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::new(48, 64),
-            8,
+            ATLAS_COLUMNS as u32,
             1,
             None,
             None,
         ));
 
         let animations = EnumMap::new(|c| match c {
-            FlagAnimation::Wave => SpriteSheetAnimation {
-                first_sprite_index: 0,
-                last_sprite_index: 7,
-                ..default()
-            },
+            FlagAnimation::Wave => anim!(0, 7),
         });
 
         let animations_sound = EnumMap::new(|c| match c {

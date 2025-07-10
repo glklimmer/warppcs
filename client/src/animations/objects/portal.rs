@@ -2,7 +2,10 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
-use crate::animations::{AnimationSpriteSheet, SpriteSheetAnimation};
+use crate::anim;
+use crate::animations::AnimationSpriteSheet;
+
+const ATLAS_COLUMNS: usize = 12;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum PortalAnimation {
@@ -23,18 +26,14 @@ impl FromWorld for PortalSpriteSheet {
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::new(32, 32),
-            12,
+            ATLAS_COLUMNS as u32,
             1,
             None,
             None,
         ));
 
         let animations = EnumMap::new(|c| match c {
-            PortalAnimation::Swirle => SpriteSheetAnimation {
-                first_sprite_index: 0,
-                last_sprite_index: 11,
-                ..default()
-            },
+            PortalAnimation::Swirle => anim!(0, 11),
         });
 
         let animations_sound = EnumMap::new(|c| match c {

@@ -2,9 +2,12 @@ use bevy::prelude::*;
 
 use shared::{AnimationChange, AnimationChangeEvent, enum_map::*};
 
+use crate::anim;
 use crate::animations::{
     AnimationSound, AnimationSpriteSheet, AnimationTrigger, SpriteSheetAnimation,
 };
+
+const ATLAS_COLUMNS: usize = 8;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
 pub enum HorseAnimation {
@@ -26,23 +29,15 @@ impl FromWorld for HorseSpriteSheet {
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::splat(32),
-            8,
+            ATLAS_COLUMNS as u32,
             2,
             None,
             None,
         ));
 
         let animations = EnumMap::new(|c| match c {
-            HorseAnimation::Idle => SpriteSheetAnimation {
-                first_sprite_index: 0,
-                last_sprite_index: 7,
-                ..default()
-            },
-            HorseAnimation::Walk => SpriteSheetAnimation {
-                first_sprite_index: 8,
-                last_sprite_index: 13,
-                ..default()
-            },
+            HorseAnimation::Idle => anim!(0, 7),
+            HorseAnimation::Walk => anim!(1, 5),
         });
 
         let animations_sound = EnumMap::new(|c| match c {

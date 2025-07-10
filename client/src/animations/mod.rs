@@ -38,6 +38,7 @@ pub mod objects;
 pub mod sprite_variant_loader;
 pub mod ui;
 pub mod units;
+pub mod macros;
 
 #[derive(Clone)]
 pub struct StaticSpriteSheet<E: EnumIter> {
