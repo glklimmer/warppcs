@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner,
-    map::buildings::{Building, BuildingType},
+    AnimationChange, AnimationChangeEvent, BoxCollider, DelayedDespawn, Hitby,
+    map::buildings::{BuildStatus, Building, BuildingType, HealthIndicator},
     networking::{UnitType, WorldDirection},
     server::{
         ai::{BehaveSources, Target, TargetedBy, UnitBehaviour},
@@ -70,6 +70,7 @@ impl Plugin for HealthPlugin {
                 (
                     delayed_damage,
                     (apply_damage).run_if(on_event::<TakeDamage>),
+                    update_build_status,
                 )
                     .chain(),
                 on_unit_death,
@@ -115,6 +116,28 @@ fn apply_damage(
     }
 }
 
+fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), Changed<Health>>) {
+    for (health, mut status, building) in query.iter_mut() {
+        let percentage = health.hitpoints / building.health().hitpoints * 100.0;
+        let percentage_i32 = percentage.clamp(0.0, 100.0) as i32;
+
+        let severity = match percentage_i32 {
+            90..=100 => HealthIndicator::Healthy,
+            70..90 => HealthIndicator::Light,
+            30..70 => HealthIndicator::Medium,
+            _ => HealthIndicator::Heavy,
+        };
+
+        if let BuildStatus::Built { indicator } = *status {
+            if indicator != severity {
+                *status = BuildStatus::Built {
+                    indicator: severity,
+                };
+            }
+        }
+    }
+}
+
 fn on_unit_death(
     mut commands: Commands,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
@@ -142,10 +165,19 @@ fn on_unit_death(
     }
 }
 
-fn on_building_destroy(mut commands: Commands, query: Query<(Entity, &Health, &Building, &Owner)>) {
-    for (entity, health, building, _) in query.iter() {
+fn on_building_destroy(
+    mut commands: Commands,
+    mut query: Query<(Entity, &Health, &Building, &mut BuildStatus, &TargetedBy)>,
+) {
+    for (entity, health, building, mut status, targeted_by) in query.iter_mut() {
         if health.hitpoints <= 0. {
-            commands.entity(entity).despawn();
+            *status = BuildStatus::Destroyed;
+
+            commands
+                .entity(entity)
+                .remove::<Health>()
+                .remove::<BoxCollider>()
+                .remove_related::<Target>(targeted_by);
 
             if let BuildingType::MainBuilding { level: _ } = building.building_type {
                 // TODO: handle player dead

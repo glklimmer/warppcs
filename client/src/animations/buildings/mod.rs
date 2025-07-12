@@ -5,7 +5,9 @@ use gold_farm::gold_farm_building;
 use pikeman::pikeman_building;
 use shared::{
     enum_map::*,
-    map::buildings::{BuildStatus, Building, BuildingType, MainBuildingLevels, WallLevels},
+    map::buildings::{
+        BuildStatus, Building, BuildingType, HealthIndicator, MainBuildingLevels, WallLevels,
+    },
     networking::UnitType,
 };
 use shieldwarrior::shieldwarrior_building;
@@ -20,7 +22,9 @@ use crate::{
     sound::CRAFTING_SOUND_PATH,
 };
 
-use super::{AnimationSpriteSheet, sprite_variant_loader::SpriteVariants};
+use super::{
+    AnimationSpriteSheet, PlayOnce, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
+};
 
 mod archer;
 mod gold_farm;
@@ -95,7 +99,7 @@ pub fn update_building_sprite(
             .get(building.building_type);
         let handle = &sprite_sheet.texture;
         let sprite_variants = variants.get(handle).unwrap();
-        let animation = sprite_sheet.animations.get(*status).clone();
+        let mut animation = sprite_sheet.animations.get(*status).clone();
 
         sprite.texture_atlas = Some(TextureAtlas {
             layout: sprite_sheet.layout.clone(),
@@ -104,8 +108,21 @@ pub fn update_building_sprite(
         let handle = sprite_variants.variants.get(building.color).clone();
         sprite.image = handle.clone();
 
-        let animation = animation.with_total_duration(building.time());
-        commands.entity(entity).insert(animation.clone());
+        if let BuildStatus::Constructing = status {
+            animation.with_total_duration(building.time());
+        }
+
+        let mut entity_commands = commands.entity(entity);
+        entity_commands.insert(animation.clone());
+
+        if let BuildStatus::Built {
+            indicator: HealthIndicator::Light | HealthIndicator::Medium,
+        } = status
+        {
+            entity_commands.insert(PlayOnce);
+        } else {
+            entity_commands.remove::<PlayOnce>();
+        }
 
         if let Some(atlas) = &mut sprite.texture_atlas {
             atlas.index = animation.first_sprite_index;
@@ -139,6 +156,26 @@ pub fn update_building_sprite(
                 ],
                 sound_trigger: AnimationSoundTrigger::OnEnter,
             });
+        }
+    }
+}
+
+pub fn remove_animation_after_play_once(
+    trigger: Trigger<OnRemove, PlayOnce>,
+    mut commands: Commands,
+    building: Query<&BuildStatus>,
+) {
+    if let Ok(status) = building.get(trigger.target()) {
+        let should_remove = match status {
+            BuildStatus::Built { indicator } => {
+                matches!(indicator, HealthIndicator::Light | HealthIndicator::Medium)
+            }
+            _ => true,
+        };
+        if should_remove {
+            commands
+                .entity(trigger.target())
+                .remove::<SpriteSheetAnimation>();
         }
     }
 }
