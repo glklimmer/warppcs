@@ -9,7 +9,7 @@ steam = ["bevy-steamworks", "aeronet_steam"]
 netcode = ["aeronet_webtransport"]
 
 [dependencies]
-bevy = { version = "0.16", default-features = false, features = [
+bevy = { workspace = true, default-features = false, features = [
     "std",
     "serialize",
     "animation",
@@ -19,7 +19,6 @@ bevy = { version = "0.16", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_gizmos",
     "bevy_mesh_picking_backend",
-    "bevy_picking",
     "bevy_render",
     "bevy_scene",
     "bevy_sprite",
@@ -39,25 +38,26 @@ bevy = { version = "0.16", default-features = false, features = [
     "vorbis",
     "wayland",
 ] }
-bevy_replicon = { version = "0.33.0", features = ["client"] }
-bincode = "2.0.1"
-fastrand = "2.3.0"
-serde = { version = "1.0.219", features = ["derive"] }
 shared = { path = "../shared" }
-arboard = "3.5.0"
-bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax" }
-image = { version = "0.25.6", features = ["png"] }
-aeronet = "0.14.0"
-aeronet_webtransport = { version = "0.14.0", features = [
+bevy-steamworks = { workspace = true, optional = true }
+bevy_replicon = { workspace = true, features = ["client"] }
+bincode = { workspace = true }
+fastrand = { workspace = true }
+serde = { workspace = true }
+aeronet = { workspace = true }
+aeronet_webtransport = { workspace = true, features = [
     "client",
     "dangerous-configuration",
 ], optional = true }
-aeronet_replicon = { version = "0.14.0", features = ["client"] }
-aeronet_steam = { version = "0.14.0", features = [
+aeronet_replicon = { workspace = true, features = ["client"] }
+aeronet_steam = { workspace = true, features = [
     "client",
     "server",
 ], optional = true }
-bevy-steamworks = { git = "https://github.com/glklimmer/bevy_steamworks", optional = true }
+
+bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax" }
+arboard = "3.5.0"
+image = { version = "0.25.6", features = ["png"] }
 thiserror = "2.0.12"
 
 [lints.clippy]

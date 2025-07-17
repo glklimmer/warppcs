@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { version = "0.16", default-features = false, features = [
+bevy = { workspace = true, default-features = false, features = [
     "bevy_asset",
     "bevy_core_pipeline",
     "bevy_scene",
@@ -12,9 +12,9 @@ bevy = { version = "0.16", default-features = false, features = [
     "multi_threaded",
     "sysinfo_plugin",
 ] }
-bincode = "2.0.1"
-fastrand = "2.3.0"
-serde = { version = "1.0.219", features = ["derive"] }
-renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }
 shared = { path = "../shared" }
-bevy-steamworks = { git = "https://github.com/glklimmer/bevy_steamworks" }
+bevy-steamworks = { workspace = true, optional = true }
+bincode = { workspace = true }
+fastrand = { workspace = true }
+serde = { workspace = true }
+renet_steam = { version = "1.0.0", features = ["bevy"], optional = true }

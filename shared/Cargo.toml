@@ -9,8 +9,7 @@ steam = ["bevy-steamworks", "aeronet_steam"]
 netcode = ["aeronet_webtransport"]
 
 [dependencies]
-bevy-steamworks = { git = "https://github.com/glklimmer/bevy_steamworks", optional = true }
-bevy = { version = "0.16", default-features = false, features = [
+bevy = { workspace = true, features = [
     "std",
     "animation",
     "bevy_asset",
@@ -19,7 +18,6 @@ bevy = { version = "0.16", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_gizmos",
     "bevy_mesh_picking_backend",
-    "bevy_picking",
     "bevy_render",
     "bevy_scene",
     "bevy_sprite",
@@ -42,26 +40,29 @@ bevy = { version = "0.16", default-features = false, features = [
     "bevy_log",
     "serialize",
 ] }
-bevy_replicon = { version = "0.33", features = ["server"] }
+bevy-steamworks = { workspace = true, optional = true }
+bevy_replicon = { workspace = true, features = ["server"] }
+bincode = { workspace = true }
+fastrand = { workspace = true }
+serde = { workspace = true }
+aeronet = { workspace = true }
+aeronet_webtransport = { workspace = true, features = [
+    "client",
+    "server",
+], optional = true }
+aeronet_replicon = { workspace = true, features = ["client", "server"] }
+aeronet_steam = { workspace = true, features = [
+    "client",
+    "server",
+], optional = true }
+
 enum_as_f32_macro = { path = "../enum_as_f32_macro" }
 enum_mappable = { path = "../enum_mappable" }
-bincode = "2.0.1"
-fastrand = "2.3.0"
-serde = { version = "1.0.219", features = ["derive"] }
+console_protocol = { version = "0.1.0", path = "../console_protocol" }
+
+bevy_behave = { git = "https://github.com/glklimmer/bevy_behave" }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
 serde_json = "1.0.140"
-console_protocol = { version = "0.1.0", path = "../console_protocol" }
-aeronet = "0.14.0"
-aeronet_webtransport = { version = "0.14.0", features = [
-    "client",
-    "server",
-], optional = true }
-aeronet_replicon = { version = "0.14.0", features = ["client", "server"] }
-aeronet_steam = { version = "0.14.0", features = [
-    "client",
-    "server",
-], optional = true }
-bevy_behave = { git = "https://github.com/glklimmer/bevy_behave" }
 
 [lints.clippy]
 type_complexity = "allow"
