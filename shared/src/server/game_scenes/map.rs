@@ -7,7 +7,7 @@ use bevy_replicon::{
 use petgraph::{Graph, Undirected};
 use serde::{Deserialize, Serialize};
 
-use crate::{Player, networking::LobbyEvent};
+use crate::{GameState, Player, networking::LobbyEvent};
 
 pub struct MapPlugin;
 
@@ -17,7 +17,8 @@ impl Plugin for MapPlugin {
             PreUpdate,
             init_map
                 .after(ServerSet::Receive)
-                .run_if(server_or_singleplayer),
+                .run_if(server_or_singleplayer)
+                .run_if(in_state(GameState::MainMenu)),
         );
     }
 }
@@ -95,6 +96,7 @@ impl MapGraph {
 fn init_map(
     mut lobby_events: EventReader<FromClient<LobbyEvent>>,
     mut commands: Commands,
+    mut next_game_state: ResMut<NextState<GameState>>,
     players: Query<Entity, With<Player>>,
 ) {
     let Some(FromClient { event, .. }) = lobby_events.read().next() else {
@@ -105,6 +107,8 @@ fn init_map(
     let LobbyEvent::StartGame = event else {
         return;
     };
+
+    next_game_state.set(GameState::GameSession);
 
     let players: Vec<Entity> = players.iter().collect();
     let num_players = players.len();
