@@ -8,7 +8,7 @@ use bevy_replicon::prelude::{
 use serde::{Deserialize, Serialize};
 
 use crate::networking::UnitType;
-use crate::server::buildings::recruiting::Flag;
+use crate::server::buildings::recruiting::{Flag, FlagAssignment};
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt,
     enum_map::*,
@@ -59,6 +59,9 @@ pub enum CommanderFormation {
 
 #[derive(Event, Serialize, Deserialize)]
 pub struct CommanderCampInteraction;
+
+#[derive(Event, Serialize, Deserialize)]
+pub struct CommanderPickFlag;
 
 #[derive(Event, Serialize, Deserialize)]
 pub struct CommanderAssignmentRequest;
@@ -112,12 +115,14 @@ impl Plugin for CommanderPlugin {
             .add_event::<Assignment>()
             .add_server_trigger::<CommanderAssignmentResponse>(Channel::Unordered)
             .add_client_trigger::<CommanderAssignmentRequest>(Channel::Unordered)
-            .add_observer(commander_assignment_valdiation)
+            .add_client_trigger::<CommanderPickFlag>(Channel::Unordered)
+            .add_observer(commander_assignment_validation)
             .add_observer(handle_slot_selection)
             .add_observer(handle_camp_interaction)
             .add_observer(assign_flag_to_formation)
             .add_observer(remove_flag_from_formation)
             .add_observer(swap_flag_from_formation)
+            .add_observer(handle_pick_flag)
             .add_systems(
                 FixedUpdate,
                 commander_interaction.run_if(on_event::<InteractionTriggeredEvent>),
@@ -146,6 +151,24 @@ fn commander_interaction(
     }
 }
 
+fn handle_pick_flag(
+    trigger: Trigger<FromClient<CommanderPickFlag>>,
+    active: Res<ActiveCommander>,
+    client_player_map: ResMut<ClientPlayerMap>,
+    mut commands: Commands,
+    flag_holder: Query<&FlagAssignment>,
+
+    flag: Query<Entity, With<Flag>>,
+) {
+    let player = client_player_map.get(&trigger.client_entity).unwrap();
+    let commander = active.0.get(player).unwrap();
+    let commander_flag = flag_holder.get(*commander).unwrap();
+    let flag = flag.get(**commander_flag).unwrap();
+
+    commands.entity(flag).insert(AttachedTo(*player));
+    commands.entity(*player).insert(FlagHolder(flag));
+}
+
 fn handle_camp_interaction(
     trigger: Trigger<FromClient<CommanderCampInteraction>>,
     active: Res<ActiveCommander>,
@@ -165,7 +188,7 @@ fn handle_camp_interaction(
     ));
 }
 
-fn commander_assignment_valdiation(
+fn commander_assignment_validation(
     trigger: Trigger<FromClient<CommanderFormation>>,
     client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
@@ -175,22 +198,21 @@ fn commander_assignment_valdiation(
     let player = client_player_map.get(&trigger.client_entity).unwrap();
     let player_flag = flag_holder.get(*player);
 
-    let Ok(unit_flag) = player_flag else {
-        return;
+    if let Ok(unit_flag) = player_flag {
+        let Ok(unit) = flag.get(**unit_flag) else {
+            return;
+        };
+        if unit.unit_type == UnitType::Commander {
+            commands.server_trigger(ToClients {
+                mode: SendMode::Direct(trigger.client_entity),
+                event: CommanderAssignmentResponse::Reject,
+            });
+            print!("adsf");
+            return;
+        }
     };
 
-    let Ok(unit) = flag.get(**unit_flag) else {
-        return;
-    };
-
-    if unit.unit_type == UnitType::Commander {
-        commands.server_trigger(ToClients {
-            mode: SendMode::Direct(trigger.client_entity),
-            event: CommanderAssignmentResponse::Reject,
-        });
-        return;
-    }
-
+    println!("Commander assignment validation passed");
     commands.trigger(Assignment {
         player: *player,
         slot: trigger.event,
@@ -212,6 +234,9 @@ fn handle_slot_selection(
     let is_slot_occupied = formation.flags.get(selected_slot).is_some();
 
     let player_flag = flag_holder.get(*player).map(|flag| **flag).ok();
+
+    println!("Player flag: {:?}", player_flag);
+    println!("slot: {:?}", is_slot_occupied);
 
     match (is_slot_occupied, player_flag.is_some()) {
         (true, true) => {

@@ -305,7 +305,7 @@ pub fn recruit_commander(
     let range = 10.;
     let range = Range(range);
 
-    let offset = Vec2::new(-10., 0.);
+    let offset = Vec2::new(-18., 0.);
     let commander = commands
         .spawn((
             player_translation.with_layer(Layers::Flag),
