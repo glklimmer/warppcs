@@ -11,7 +11,7 @@ use shared::{
         entities::commander::{
             ArmyFlagAssignments, ArmyFormation, CommanderAssignmentRequest,
             CommanderAssignmentResponse, CommanderCampInteraction, CommanderFormation,
-            CommanderInteraction,
+            CommanderInteraction, CommanderPickFlag,
         },
     },
 };
@@ -22,11 +22,12 @@ use crate::{
         ui::{
             animations::SpriteShaking,
             army_formations::{FormationIconSpriteSheet, FormationIcons},
+            commander_menu::{CommanderMenuNodes, CommanderMenuSpriteSheet},
         },
     },
     networking::ControlledPlayer,
     widgets::menu::{
-        ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
+        CloseEvent, ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
     },
 };
 
@@ -35,7 +36,8 @@ pub struct CommanderInteractionPlugin;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum MainMenuEntries {
     Camp,
-    Slots,
+    Formation,
+    Flag,
 }
 
 #[derive(Event, Deref)]
@@ -63,6 +65,7 @@ impl Plugin for CommanderInteractionPlugin {
             .add_observer(cleanup_menu_extras)
             .add_observer(draw_hovering_flag)
             .add_observer(assigment_warning)
+            .add_observer(pick_commander_flag)
             .add_systems(
                 Update,
                 (formation_selected, update_flag_assignment)
@@ -79,16 +82,14 @@ fn open_commander_dialog(
     trigger: Trigger<CommanderInteraction>,
     mut commands: Commands,
     transform: Query<&Transform>,
-    asset_server: Res<AssetServer>,
     mut next_state: ResMut<NextState<PlayerState>>,
     mut active: ResMut<ActiveCommander>,
+    menu_sprite_sheet: Res<CommanderMenuSpriteSheet>,
 ) {
     let commander = trigger.commander;
 
-    let map: Handle<Image> = asset_server.load("ui/commander/map.png");
-    let slots: Handle<Image> = asset_server.load("ui/commander/slots.png");
-
     let commander_position = transform.get(commander).unwrap();
+    let texture = menu_sprite_sheet.sprite_sheet.texture.clone();
 
     next_state.set(PlayerState::Interaction);
 
@@ -101,17 +102,40 @@ fn open_commander_dialog(
             .with_layer(Layers::Item),
         Menu::new(vec![
             MenuNode::bundle(
-                MainMenuEntries::Camp,
+                MainMenuEntries::Flag,
                 Sprite {
-                    image: map,
+                    image: texture.clone(),
+                    texture_atlas: Some(
+                        menu_sprite_sheet
+                            .sprite_sheet
+                            .texture_atlas(CommanderMenuNodes::Flag),
+                    ),
                     custom_size: Some(Vec2::splat(15.)),
                     ..Default::default()
                 },
             ),
             MenuNode::bundle(
-                MainMenuEntries::Slots,
+                MainMenuEntries::Camp,
                 Sprite {
-                    image: slots,
+                    image: texture.clone(),
+                    texture_atlas: Some(
+                        menu_sprite_sheet
+                            .sprite_sheet
+                            .texture_atlas(CommanderMenuNodes::Camp),
+                    ),
+                    custom_size: Some(Vec2::splat(15.)),
+                    ..Default::default()
+                },
+            ),
+            MenuNode::bundle(
+                MainMenuEntries::Formation,
+                Sprite {
+                    image: texture.clone(),
+                    texture_atlas: Some(
+                        menu_sprite_sheet
+                            .sprite_sheet
+                            .texture_atlas(CommanderMenuNodes::Formation),
+                    ),
                     custom_size: Some(Vec2::splat(15.)),
                     ..Default::default()
                 },
@@ -131,6 +155,19 @@ fn open_create_camp(trigger: Trigger<SelectionEvent<MainMenuEntries>>, mut comma
     commands.client_trigger(CommanderCampInteraction);
 }
 
+fn pick_commander_flag(
+    trigger: Trigger<SelectionEvent<MainMenuEntries>>,
+    mut commands: Commands,
+    mut close_menu: EventWriter<CloseEvent>,
+) {
+    let MainMenuEntries::Flag = trigger.selection else {
+        return;
+    };
+
+    commands.client_trigger(CommanderPickFlag);
+    close_menu.write(CloseEvent);
+}
+
 fn open_slots_dialog(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
     mut commands: Commands,
@@ -141,7 +178,7 @@ fn open_slots_dialog(
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     formations: Res<FormationIconSpriteSheet>,
 ) {
-    let MainMenuEntries::Slots = trigger.selection else {
+    let MainMenuEntries::Formation = trigger.selection else {
         return;
     };
 
@@ -207,6 +244,7 @@ fn send_selected(trigger: Trigger<SelectionEvent<CommanderFormation>>, mut comma
         menu: _,
         entry: _,
     } = *trigger;
+    println!("Selected commander formation");
 
     commands.client_trigger(slot);
 }
