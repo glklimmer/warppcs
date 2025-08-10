@@ -8,14 +8,18 @@ use crate::{
         Layers,
         buildings::{Building, RespawnZone},
     },
+    networking::UnitType,
     server::{
-        ai::UnitBehaviour,
-        players::items::{CalculatedStats, Effect, Item},
+        ai::{FollowOffset, UnitBehaviour},
+        players::{
+            interaction::{Interactable, InteractionType},
+            items::{Item, ItemType},
+        },
     },
 };
 
 use super::{
-    item_assignment::ItemAssignment,
+    item_assignment::{ItemAssignment, ItemSlot},
     recruiting::{Flag, FlagAssignment, FlagUnits, unit_stats},
 };
 
@@ -59,7 +63,6 @@ pub fn respawn_units(
         recruit_component.respawn_timer_reset();
 
         let Ok((building, assignment)) = original_building.get(flag.original_building) else {
-            // commander
             continue;
         };
 
@@ -69,23 +72,42 @@ pub fn respawn_units(
             Some(units) => (**units).len() as i32,
             None => 0,
         };
-        let max_allowed = items.calculated(Effect::UnitAmount) as i32;
+        let weapon = assignment.items.get(ItemSlot::Weapon).as_ref().unwrap();
+        let ItemType::Weapon(weapon_type) = weapon.item_type else {
+            continue;
+        };
+        let unit_type = weapon_type.unit_type();
+        let max_allowed = unit_type.unit_amount();
 
         if num_alive < max_allowed {
             let (unit, health, speed, damage, range) =
                 unit_stats(building.unit_type().unwrap(), &items, flag.color);
 
-            commands.spawn((
-                respawn_transform.translation.with_layer(Layers::Unit),
-                unit.clone(),
-                health,
-                speed,
-                damage,
-                range,
-                *flag_owner,
-                FlagAssignment(flag_entity),
-                UnitBehaviour::default(),
-            ));
+            commands
+                .spawn((
+                    respawn_transform.translation.with_layer(Layers::Unit),
+                    unit.clone(),
+                    health,
+                    speed,
+                    damage,
+                    range,
+                    *flag_owner,
+                    FlagAssignment(flag_entity),
+                    UnitBehaviour::default(),
+                ))
+                .insert_if(
+                    (
+                        FollowOffset(Vec2::new(-18., 0.)),
+                        Interactable {
+                            kind: InteractionType::Commander,
+                            restricted_to: Some(flag_owner.entity().unwrap()),
+                        },
+                        // TODO: ArmyFlagAssignments from flag
+                    ),
+                    || unit_type.eq(&UnitType::Commander),
+                );
+
+            // TODO: if commander we need to have CommanderFormation to be able to assign flags.
         }
     }
 }

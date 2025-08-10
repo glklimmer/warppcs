@@ -12,7 +12,7 @@ use crate::{
     networking::Inventory,
     server::players::{
         interaction::{InteractionTriggeredEvent, InteractionType},
-        items::{Item, ItemType},
+        items::{Item, ItemType, MeleeWeapon, WeaponType},
     },
 };
 
@@ -52,6 +52,23 @@ impl Default for ItemAssignment {
                 ItemSlot::Chest => None,
                 ItemSlot::Head => None,
                 ItemSlot::Feet => None,
+            }),
+        }
+    }
+}
+
+impl ItemAssignment {
+    pub fn commander() -> Self {
+        Self {
+            items: EnumMap::new(|slot| match slot {
+                ItemSlot::Weapon => Some(
+                    Item::builder()
+                        .with_type(ItemType::Weapon(WeaponType::Melee(MeleeWeapon::Rapier)))
+                        .build(),
+                ),
+                ItemSlot::Chest => Some(Item::builder().with_type(ItemType::Chest).build()),
+                ItemSlot::Head => Some(Item::builder().with_type(ItemType::Head).build()),
+                ItemSlot::Feet => Some(Item::builder().with_type(ItemType::Feet).build()),
             }),
         }
     }

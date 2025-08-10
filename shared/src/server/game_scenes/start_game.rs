@@ -155,6 +155,7 @@ fn player_base(
         BuildStatus::Built {
             indicator: HealthIndicator::Healthy,
         },
+        ItemAssignment::commander(),
         offset.with_layer(Layers::Building),
         owner,
         RecruitBuilding,

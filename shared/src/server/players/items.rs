@@ -108,6 +108,10 @@ impl Item {
                         dimension: Vec2::new(5., 15.),
                         offset: None,
                     },
+                    MeleeWeapon::Rapier => BoxCollider {
+                        dimension: Vec2::new(5., 15.),
+                        offset: None,
+                    },
                 },
                 WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
                     ProjectileWeapon::Bow => BoxCollider {
@@ -250,7 +254,6 @@ pub enum Effect {
     Range(WeaponType),
     AttackSpeed,
     MovementSpeed,
-    UnitAmount,
 }
 
 impl Effect {
@@ -260,6 +263,7 @@ impl Effect {
             Effect::Health => 60..=120,
             Effect::Range(weapon) => match weapon {
                 WeaponType::Melee(meele) => match meele {
+                    MeleeWeapon::Rapier => 10..=10,
                     MeleeWeapon::SwordAndShield => 20..=30,
                     MeleeWeapon::Pike => 40..=50,
                 },
@@ -267,7 +271,6 @@ impl Effect {
             },
             Effect::AttackSpeed => 1..=4,
             Effect::MovementSpeed => 25..=45,
-            Effect::UnitAmount => 3..=5,
         };
         let amount = fastrand::i32(range);
         BaseEffect {
@@ -303,7 +306,6 @@ impl fmt::Display for Effect {
             Effect::Range(_) => "Range",
             Effect::AttackSpeed => "AttackSpeed",
             Effect::MovementSpeed => "MovementSpeed",
-            Effect::UnitAmount => "UnitAmount",
         };
         write!(f, "{s}")
     }
@@ -350,7 +352,7 @@ impl ItemType {
             }
             ItemType::Chest => vec![Effect::Health],
             ItemType::Feet => vec![Effect::MovementSpeed],
-            ItemType::Head => vec![Effect::UnitAmount],
+            ItemType::Head => vec![],
         };
 
         effects.iter().map(|effect| effect.base()).collect()
@@ -376,7 +378,8 @@ impl ItemType {
         let mut item_types = vec![ItemType::Chest, ItemType::Feet, ItemType::Head];
 
         let weapon = if fastrand::bool() {
-            let use_weapon = fastrand::choice(MeleeWeapon::all_variants()).unwrap();
+            let use_weapon =
+                fastrand::choice(MeleeWeapon::all_except(&MeleeWeapon::Rapier)).unwrap();
             WeaponType::Melee(*use_weapon)
         } else {
             let proj_weapon = fastrand::choice(ProjectileWeapon::all_variants()).unwrap();
@@ -399,8 +402,18 @@ pub enum WeaponType {
 
 #[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug, Eq, PartialEq)]
 pub enum MeleeWeapon {
+    Rapier,
     SwordAndShield,
     Pike,
+}
+
+impl MeleeWeapon {
+    fn all_except(exclude: &Self) -> Vec<&Self> {
+        Self::all_variants()
+            .iter()
+            .filter(|variant| !exclude.eq(variant))
+            .collect()
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug, Eq, PartialEq)]
@@ -412,6 +425,7 @@ impl WeaponType {
     pub fn unit_type(&self) -> UnitType {
         match self {
             WeaponType::Melee(use_weapon) => match use_weapon {
+                MeleeWeapon::Rapier => UnitType::Commander,
                 MeleeWeapon::SwordAndShield => UnitType::Shieldwarrior,
                 MeleeWeapon::Pike => UnitType::Pikeman,
             },

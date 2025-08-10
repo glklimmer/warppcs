@@ -41,6 +41,16 @@ impl UnitType {
         };
         Cost { gold }
     }
+
+    pub(crate) fn unit_amount(&self) -> i32 {
+        match self {
+            UnitType::Shieldwarrior => 2,
+            UnitType::Pikeman => 3,
+            UnitType::Archer => 4,
+            UnitType::Bandit => 4,
+            UnitType::Commander => 1,
+        }
+    }
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
