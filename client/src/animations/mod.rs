@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
-    animations::ui::{animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet},
+    animations::ui::{
+        animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
+        commander_menu::CommanderMenuSpriteSheet,
+    },
     asset_loader::AssetsToLoad,
 };
 use animals::horse::{
@@ -187,6 +190,7 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<HeadsSpriteSheet>();
         app.init_resource::<FeetSpriteSheet>();
         app.init_resource::<ProjectileSpriteSheet>();
+        app.init_resource::<CommanderMenuSpriteSheet>();
 
         app.init_resource::<HorseSpriteSheet>();
         app.add_event::<AnimationTrigger<HorseAnimation>>();
