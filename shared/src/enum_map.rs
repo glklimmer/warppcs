@@ -5,7 +5,7 @@ pub use enum_mappable::Mappable;
 use serde::{Deserialize, Serialize};
 
 /// A generic EnumMap for any enum that implements `EnumIter`.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct EnumMap<E, T>
 where
     E: EnumIter,

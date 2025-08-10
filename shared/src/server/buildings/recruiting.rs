@@ -100,7 +100,7 @@ pub fn assign_offset(
 pub struct RecruitEvent {
     player: Entity,
     unit_type: UnitType,
-    items: Option<Vec<Item>>,
+    items: Vec<Item>,
     original_building: Entity,
 }
 
@@ -108,7 +108,7 @@ impl RecruitEvent {
     pub fn new(
         player: Entity,
         unit_type: UnitType,
-        items: Option<Vec<Item>>,
+        items: Vec<Item>,
         original_building: Entity,
     ) -> Self {
         Self {
@@ -137,9 +137,6 @@ pub fn recruit_units(
     }
     let player = *player;
     let unit_type = *unit_type;
-    let Some(items) = items else {
-        return;
-    };
 
     let (player_transform, mut inventory, Player { color }) = player_query.get_mut(player).unwrap();
     let player_translation = player_transform.translation;
@@ -166,41 +163,12 @@ pub fn recruit_units(
 
     commands.entity(player).insert(FlagHolder(flag_entity));
 
-    spawn_units(
-        commands.reborrow(),
-        unit_type,
-        items,
-        player_translation,
-        owner,
-        flag_entity,
-        *color,
-    );
-
-    commands.server_trigger(ToClients {
-        mode: SendMode::Broadcast,
-        event: InteractableSound {
-            kind: InteractionType::Recruit,
-            spatial_position: player_transform.translation,
-        },
-    });
-}
-
-fn spawn_units(
-    mut commands: Commands,
-    unit_type: UnitType,
-    items: &[Item],
-    position: Vec3,
-    owner: Owner,
-    flag_entity: Entity,
-    color: PlayerColor,
-) {
-    let unit_amount = items.calculated(Effect::UnitAmount) as i32;
-
-    let (unit, health, speed, damage, range) = unit_stats(unit_type, items, color);
+    let unit_amount = unit_type.unit_amount();
+    let (unit, health, speed, damage, range) = unit_stats(unit_type, items, *color);
 
     for _ in 1..=unit_amount {
         commands.spawn((
-            position.with_layer(Layers::Unit),
+            player_translation.with_layer(Layers::Unit),
             unit.clone(),
             health,
             speed,
@@ -211,6 +179,14 @@ fn spawn_units(
             UnitBehaviour::default(),
         ));
     }
+
+    commands.server_trigger(ToClients {
+        mode: SendMode::Broadcast,
+        event: InteractableSound {
+            kind: InteractionType::Recruit,
+            spatial_position: player_transform.translation,
+        },
+    });
 }
 
 pub fn unit_stats(
@@ -252,7 +228,7 @@ pub fn recruit_commander(
     let RecruitEvent {
         player,
         unit_type,
-        items: _,
+        items,
         original_building,
     } = &*trigger;
 
@@ -286,24 +262,7 @@ pub fn recruit_commander(
 
     commands.entity(player).insert(FlagHolder(flag_entity));
 
-    let time = 2.;
-    let unit = Unit {
-        swing_timer: Timer::from_seconds(time, TimerMode::Once),
-        unit_type: UnitType::Commander,
-        color: *color,
-    };
-
-    let hitpoints = 100.;
-    let health = Health { hitpoints };
-
-    let movement_speed = 35.;
-    let speed = Speed(movement_speed);
-
-    let damage = 20.;
-    let damage = Damage(damage);
-
-    let range = 10.;
-    let range = Range(range);
+    let (unit, health, speed, damage, range) = unit_stats(*unit_type, items, *color);
 
     let offset = Vec2::new(-18., 0.);
     let commander = commands
@@ -363,7 +322,7 @@ pub fn check_recruit(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut commands: Commands,
     player: Query<&Inventory>,
-    building: Query<(&Building, Option<&ItemAssignment>), With<RecruitBuilding>>,
+    building: Query<(&Building, &ItemAssignment), With<RecruitBuilding>>,
 ) {
     for event in interactions.read() {
         let InteractionType::Recruit = &event.interaction else {
@@ -382,8 +341,12 @@ pub fn check_recruit(
             continue;
         }
 
-        let items: Option<Vec<_>> = item_assignment
-            .map(|assignment| assignment.items.clone().into_iter().flatten().collect());
+        let items: Vec<_> = item_assignment
+            .items
+            .clone()
+            .into_iter()
+            .flatten()
+            .collect();
 
         commands.trigger(RecruitEvent {
             player: event.player,

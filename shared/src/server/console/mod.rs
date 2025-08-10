@@ -154,7 +154,7 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
     world.trigger(RecruitEvent::new(
         player_entity,
         unit_type,
-        Some(vec![weapon, head, chest, feet]),
+        vec![weapon, head, chest, feet],
         building,
     ));
 

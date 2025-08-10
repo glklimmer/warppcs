@@ -75,6 +75,7 @@ impl From<WeaponType> for Weapons {
     fn from(wt: WeaponType) -> Self {
         match wt {
             WeaponType::Melee(m) => match m {
+                MeleeWeapon::Rapier => Weapons::Rapier,
                 MeleeWeapon::SwordAndShield => Weapons::SwordAndShield,
                 MeleeWeapon::Pike => Weapons::Pike,
             },

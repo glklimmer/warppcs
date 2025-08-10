@@ -8,6 +8,7 @@ use crate::entities::items::BuildSprite;
 
 #[derive(Debug, Clone, Copy, Mappable)]
 pub enum Weapons {
+    Rapier,
     SwordAndShield,
     Pike,
     Bow,
@@ -52,6 +53,10 @@ impl FromWorld for WeaponsSpriteSheet {
         ));
 
         let animations = EnumMap::new(|c| match c {
+            Weapons::Rapier => SpriteSheetAnimation {
+                first_sprite_index: 0,
+                ..default()
+            },
             Weapons::SwordAndShield => SpriteSheetAnimation {
                 first_sprite_index: 7,
                 ..default()
@@ -71,6 +76,7 @@ impl FromWorld for WeaponsSpriteSheet {
         });
 
         let animations_sound = EnumMap::new(|c| match c {
+            Weapons::Rapier => None,
             Weapons::SwordAndShield => None,
             Weapons::Pike => None,
             Weapons::Bow => None,

@@ -93,7 +93,7 @@ impl Default for ArmyFlagAssignments {
     }
 }
 
-#[derive(Component, Serialize, Deserialize, Clone)]
+#[derive(Component, Serialize, Deserialize, Clone, Debug)]
 pub struct ArmyFormation {
     #[entities]
     pub positions: EnumMap<CommanderFormation, Entity>,
