@@ -49,7 +49,9 @@ use server::{
     },
 };
 
-use crate::server::entities::commander::ArmyFormation;
+use crate::server::entities::commander::{
+    ArmyFormation, CommanderAssignmentRequest, CommanderAssignmentResponse, CommanderPickFlag,
+};
 
 pub mod enum_map;
 pub mod map;
@@ -104,6 +106,9 @@ impl Plugin for SharedPlugin {
         .add_client_trigger::<CommanderCampInteraction>(Channel::Ordered)
         .add_client_trigger::<AssignItem>(Channel::Ordered)
         .add_client_trigger::<StartBuild>(Channel::Ordered)
+        .add_client_trigger::<CommanderAssignmentResponse>(Channel::Unordered)
+        .add_client_trigger::<CommanderAssignmentRequest>(Channel::Unordered)
+        .add_client_trigger::<CommanderPickFlag>(Channel::Unordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
         .add_server_trigger::<LoadMap>(Channel::Ordered)

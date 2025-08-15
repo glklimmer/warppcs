@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 
 use bevy::{ecs::entity::MapEntities, platform::collections::HashMap};
-use bevy_replicon::prelude::{
-    Channel, ClientTriggerAppExt, FromClient, SendMode, ServerTriggerAppExt, ServerTriggerExt,
-    ToClients,
-};
+use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::networking::UnitType;
@@ -113,9 +110,6 @@ impl Plugin for CommanderPlugin {
             .add_event::<SlotInteraction>()
             .add_event::<CommanderCampInteraction>()
             .add_event::<Assignment>()
-            .add_server_trigger::<CommanderAssignmentResponse>(Channel::Unordered)
-            .add_client_trigger::<CommanderAssignmentRequest>(Channel::Unordered)
-            .add_client_trigger::<CommanderPickFlag>(Channel::Unordered)
             .add_observer(commander_assignment_validation)
             .add_observer(handle_slot_selection)
             .add_observer(handle_camp_interaction)
@@ -156,17 +150,39 @@ fn handle_pick_flag(
     active: Res<ActiveCommander>,
     client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
-    flag_holder: Query<&FlagAssignment>,
-
+    formations: Query<&ArmyFlagAssignments>,
+    commander_flag_assignment: Query<&FlagAssignment>,
+    flag_holder: Query<Option<&FlagHolder>>,
     flag: Query<Entity, With<Flag>>,
 ) {
     let player = client_player_map.get(&trigger.client_entity).unwrap();
     let commander = active.0.get(player).unwrap();
-    let commander_flag = flag_holder.get(*commander).unwrap();
-    let flag = flag.get(**commander_flag).unwrap();
+    let commander_flag = commander_flag_assignment.get(*commander).unwrap();
+    let army_flag_assignments = formations.get(*commander).unwrap();
+    if let Ok(Some(current_flag)) = flag_holder.get(*player) {
+        let all_army_flags_assigned = army_flag_assignments.flags.iter().all(Option::is_some);
 
-    commands.entity(flag).insert(AttachedTo(*player));
+        if all_army_flags_assigned {
+            // Player has flag and all army flags are assigned - detach current flag
+            commands.entity(**current_flag).remove::<AttachedTo>();
+        } else {
+            // Assign player to any empty formation slots
+            army_flag_assignments
+                .flags
+                .iter_enums()
+                .filter(|(_, flag)| flag.is_none())
+                .for_each(|(formation, _)| {
+                    commands.trigger(Assignment {
+                        player: *player,
+                        slot: formation,
+                    });
+                });
+        }
+    }
+
+    let flag = flag.get(**commander_flag).unwrap();
     commands.entity(*player).insert(FlagHolder(flag));
+    commands.entity(flag).insert(AttachedTo(*player));
 }
 
 fn handle_camp_interaction(
@@ -207,12 +223,10 @@ fn commander_assignment_validation(
                 mode: SendMode::Direct(trigger.client_entity),
                 event: CommanderAssignmentResponse::Reject,
             });
-            print!("adsf");
             return;
         }
     };
 
-    println!("Commander assignment validation passed");
     commands.trigger(Assignment {
         player: *player,
         slot: trigger.event,
@@ -234,9 +248,6 @@ fn handle_slot_selection(
     let is_slot_occupied = formation.flags.get(selected_slot).is_some();
 
     let player_flag = flag_holder.get(*player).map(|flag| **flag).ok();
-
-    println!("Player flag: {:?}", player_flag);
-    println!("slot: {:?}", is_slot_occupied);
 
     match (is_slot_occupied, player_flag.is_some()) {
         (true, true) => {
@@ -350,12 +361,11 @@ fn swap_flag_from_formation(
 
     commands
         .entity(new_flag)
-        .insert((AttachedTo(*formation), Visibility::Hidden))
+        .insert(AttachedTo(*formation))
         .remove::<Interactable>();
 
     commands.entity(old_flag).insert((
         AttachedTo(trigger.player),
-        Visibility::Visible,
         Interactable {
             kind: InteractionType::Flag,
             restricted_to: Some(trigger.player),
