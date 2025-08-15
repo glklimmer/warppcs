@@ -4,12 +4,15 @@ use bevy_behave::prelude::BehaveCtx;
 
 use super::{FollowFlag, FollowOffset, Target, WalkIntoRange, WalkingInDirection};
 
-use crate::server::{
-    buildings::recruiting::FlagAssignment,
-    entities::Range,
-    physics::{
-        attachment::AttachedTo,
-        movement::{RandomVelocityMul, Speed, Velocity},
+use crate::{
+    networking::UnitType,
+    server::{
+        buildings::recruiting::FlagAssignment,
+        entities::{Range, Unit},
+        physics::{
+            attachment::AttachedTo,
+            movement::{RandomVelocityMul, Speed, Velocity},
+        },
     },
 };
 
@@ -35,13 +38,21 @@ fn follow_flag(
         &RandomVelocityMul,
         &Speed,
         &FlagAssignment,
+        &Unit,
     )>,
     is_attached: Query<&AttachedTo>,
     transform_query: Query<&Transform>,
 ) {
     for ctx in query.iter() {
-        let Ok((mut velocity, transform, follow_offset, rand_velocity_mul, speed, flag_assignment)) =
-            unit.get_mut(ctx.target_entity())
+        let Ok((
+            mut velocity,
+            transform,
+            follow_offset,
+            rand_velocity_mul,
+            speed,
+            flag_assignment,
+            unit,
+        )) = unit.get_mut(ctx.target_entity())
         else {
             continue;
         };
@@ -51,9 +62,12 @@ fn follow_flag(
             .translation
             .truncate();
 
-        let target = match is_attached.get(**flag_assignment).is_ok() {
-            true => flag_pos + **follow_offset,
-            false => flag_pos,
+        let target = match (
+            is_attached.get(**flag_assignment).is_ok(),
+            unit.unit_type.eq(&UnitType::Commander),
+        ) {
+            (true, true) | (true, false) | (false, false) => flag_pos + **follow_offset,
+            (false, true) => flag_pos,
         };
 
         let direction = (target.x - transform.translation.x).signum();
