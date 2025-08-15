@@ -288,6 +288,12 @@ fn close_menu(
 #[derive(Event)]
 pub struct ClosedMenu<T>(PhantomData<T>);
 
+impl<T> Default for ClosedMenu<T> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
 fn close_menu_trigger<T: Clone + Send + Sync + 'static>(
     mut close_events: EventReader<ClosedMenu<T>>,
     input: Res<ButtonInput<KeyCode>>,
