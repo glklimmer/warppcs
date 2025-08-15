@@ -244,7 +244,6 @@ fn send_selected(trigger: Trigger<SelectionEvent<CommanderFormation>>, mut comma
         menu: _,
         entry: _,
     } = *trigger;
-    println!("Selected commander formation");
 
     commands.client_trigger(slot);
 }
@@ -428,6 +427,12 @@ fn update_flag_assignment(
         return;
     };
 
+    army_flag_assigment.flags.iter().for_each(|flag| {
+        if let Some(flag) = flag {
+            commands.entity(*flag).insert(Visibility::Hidden);
+        }
+    });
+
     let Ok((entry, selected_slot)) = menu_entries.single() else {
         return;
     };
@@ -436,17 +441,17 @@ fn update_flag_assignment(
         commands.entity(current).despawn();
     };
 
+    if let Ok(player_flag) = player.single() {
+        commands.entity(**player_flag).insert(Visibility::Visible);
+    }
+
     let maybe_flag_assigned = army_flag_assigment.flags.get(**selected_slot);
+
     let Some(flag_assigned) = maybe_flag_assigned else {
-        let flag_holder = player.single().unwrap();
-        let player_flag = **flag_holder;
-        commands.entity(player_flag).insert(Visibility::Visible);
         commands.entity(entry).despawn_related::<Children>();
         commands.trigger(DrawHoverFlag(entry));
         return;
     };
-
-    commands.entity(*flag_assigned).insert(Visibility::Hidden);
 
     let flag = flag.get(*flag_assigned).unwrap();
     let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
