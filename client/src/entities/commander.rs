@@ -410,7 +410,7 @@ fn formation_selected(
 }
 
 fn update_flag_assignment(
-    army_flag_assigments: Query<&ArmyFlagAssignments>,
+    army_flag_assigments: Query<&ArmyFlagAssignments, Changed<ArmyFlagAssignments>>,
     menu_entries: Query<(Entity, &NodePayload<CommanderFormation>), With<Selected>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
     active: Res<ActiveCommander>,

@@ -153,20 +153,22 @@ fn handle_pick_flag(
     formations: Query<&ArmyFlagAssignments>,
     commander_flag_assignment: Query<&FlagAssignment>,
     flag_holder: Query<Option<&FlagHolder>>,
-    flag: Query<Entity, With<Flag>>,
+    flag: Query<(Entity, &Flag)>,
 ) {
     let player = client_player_map.get(&trigger.client_entity).unwrap();
     let commander = active.0.get(player).unwrap();
     let commander_flag = commander_flag_assignment.get(*commander).unwrap();
     let army_flag_assignments = formations.get(*commander).unwrap();
+    let (flag_entity, _) = flag.get(**commander_flag).unwrap();
+
     if let Ok(Some(current_flag)) = flag_holder.get(*player) {
         let all_army_flags_assigned = army_flag_assignments.flags.iter().all(Option::is_some);
+        let unit_type = flag.get(**current_flag).unwrap().1.unit_type;
 
-        if all_army_flags_assigned {
-            // Player has flag and all army flags are assigned - detach current flag
+        if all_army_flags_assigned || unit_type.eq(&UnitType::Commander) {
             commands.entity(**current_flag).remove::<AttachedTo>();
         } else {
-            // Assign player to any empty formation slots
+            // Assign player flag to any empty formation slots
             army_flag_assignments
                 .flags
                 .iter_enums()
@@ -180,9 +182,8 @@ fn handle_pick_flag(
         }
     }
 
-    let flag = flag.get(**commander_flag).unwrap();
-    commands.entity(*player).insert(FlagHolder(flag));
-    commands.entity(flag).insert(AttachedTo(*player));
+    commands.entity(*player).insert(FlagHolder(flag_entity));
+    commands.entity(flag_entity).insert(AttachedTo(*player));
 }
 
 fn handle_camp_interaction(
