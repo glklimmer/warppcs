@@ -4,6 +4,7 @@ use bevy::{ecs::entity::MapEntities, platform::collections::HashMap};
 use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
+use crate::networking::UnitType;
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt,
     enum_map::*,
@@ -38,7 +39,7 @@ struct SlotInteraction {
     player: Entity,
     commander: Entity,
     flag: Option<Entity>,
-    selected_slot: CommanderFormation,
+    selected_slot: ArmyPosition,
 }
 
 #[derive(PartialEq, Eq)]
@@ -49,7 +50,7 @@ enum SlotCommand {
 }
 
 #[derive(Event, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq, Debug)]
-pub enum CommanderFormation {
+pub enum ArmyPosition {
     Front,
     Middle,
     Back,
@@ -64,25 +65,25 @@ pub const BASE_FORMATION_OFFSET: f32 = 5.;
 #[derive(Component, Serialize, Deserialize, Clone)]
 pub struct ArmyFlagAssignments {
     #[entities]
-    pub flags: EnumMap<CommanderFormation, Option<Entity>>,
+    pub flags: EnumMap<ArmyPosition, Option<Entity>>,
 }
 
 impl Default for ArmyFlagAssignments {
     fn default() -> Self {
         Self {
             flags: EnumMap::new(|slot| match slot {
-                CommanderFormation::Front => None,
-                CommanderFormation::Middle => None,
-                CommanderFormation::Back => None,
+                ArmyPosition::Front => None,
+                ArmyPosition::Middle => None,
+                ArmyPosition::Back => None,
             }),
         }
     }
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug)]
-pub struct ArmyFormation {
+pub struct ArmyFormationPositions {
     #[entities]
-    pub positions: EnumMap<CommanderFormation, Entity>,
+    pub positions: EnumMap<ArmyPosition, Entity>,
 }
 
 pub struct CommanderPlugin;
@@ -97,6 +98,7 @@ impl Plugin for CommanderPlugin {
             .add_observer(assign_flag_to_formation)
             .add_observer(remove_flag_from_formation)
             .add_observer(swap_flag_from_formation)
+            .add_observer(add_army_formation_positions)
             .add_systems(
                 FixedUpdate,
                 commander_interaction.run_if(on_event::<InteractionTriggeredEvent>),
@@ -145,7 +147,7 @@ fn handle_camp_interaction(
 }
 
 fn handle_slot_selection(
-    trigger: Trigger<FromClient<CommanderFormation>>,
+    trigger: Trigger<FromClient<ArmyPosition>>,
     active: Res<ActiveCommander>,
     formations: Query<&ArmyFlagAssignments>,
     client_player_map: ResMut<ClientPlayerMap>,
@@ -196,7 +198,11 @@ fn handle_slot_selection(
 fn assign_flag_to_formation(
     trigger: Trigger<SlotInteraction>,
     mut commands: Commands,
-    mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation, &FlagAssignment)>,
+    mut commanders: Query<(
+        &mut ArmyFlagAssignments,
+        &ArmyFormationPositions,
+        &FlagAssignment,
+    )>,
 ) {
     let SlotCommand::Assign = trigger.command else {
         return;
@@ -254,7 +260,7 @@ fn remove_flag_from_formation(
 fn swap_flag_from_formation(
     trigger: Trigger<SlotInteraction>,
     mut commands: Commands,
-    mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation)>,
+    mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormationPositions)>,
 ) {
     let SlotCommand::Swap = trigger.command else {
         return;
@@ -290,4 +296,14 @@ fn swap_flag_from_formation(
         },
     ));
     commands.entity(trigger.player).insert(FlagHolder(old_flag));
+}
+
+fn add_army_formation_positions(
+    trigger: Trigger<OnAdd<UnitType>>,
+    mut commands: Commands,
+    mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormationPositions)>,
+) {
+    let UnitType::Commander = trigger.event() else {
+        return;
+    };
 }

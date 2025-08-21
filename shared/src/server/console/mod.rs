@@ -19,7 +19,7 @@ use crate::{
         buildings::{BuildStatus, Building, BuildingType, RecruitBuilding, RespawnZone},
     },
     networking::UnitType,
-    server::entities::commander::ArmyFormation,
+    server::entities::commander::ArmyFormationPositions,
 };
 
 use super::{
@@ -31,7 +31,7 @@ use super::{
     entities::{
         Damage, Range, Unit,
         commander::{
-            ArmyFlagAssignments, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH, CommanderFormation,
+            ArmyFlagAssignments, ArmyPosition, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH,
         },
         health::Health,
     },
@@ -267,7 +267,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
 
     let mut army_formation: Vec<Entity> = vec![];
 
-    CommanderFormation::all_variants().iter().for_each(|_| {
+    ArmyPosition::all_variants().iter().for_each(|_| {
         formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
         let formation = world
             .spawn((
@@ -307,16 +307,16 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     world.entity_mut(commander).insert((
         ArmyFlagAssignments {
             flags: EnumMap::new(|c| match c {
-                CommanderFormation::Front => Some(front),
-                CommanderFormation::Middle => Some(middle),
-                CommanderFormation::Back => Some(back),
+                ArmyPosition::Front => Some(front),
+                ArmyPosition::Middle => Some(middle),
+                ArmyPosition::Back => Some(back),
             }),
         },
-        ArmyFormation {
+        ArmyFormationPositions {
             positions: EnumMap::new(|c| match c {
-                CommanderFormation::Front => army_formation[0],
-                CommanderFormation::Middle => army_formation[1],
-                CommanderFormation::Back => army_formation[2],
+                ArmyPosition::Front => army_formation[0],
+                ArmyPosition::Middle => army_formation[1],
+                ArmyPosition::Back => army_formation[2],
             }),
         },
     ));

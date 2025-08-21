@@ -29,7 +29,7 @@ use server::{
     entities::{
         Unit,
         commander::{
-            ArmyFlagAssignments, CommanderCampInteraction, CommanderFormation, CommanderInteraction,
+            ArmyFlagAssignments, ArmyPosition, CommanderCampInteraction, CommanderInteraction,
         },
     },
     game_scenes::{
@@ -49,7 +49,7 @@ use server::{
     },
 };
 
-use crate::server::entities::commander::ArmyFormation;
+use crate::server::entities::commander::ArmyFormationPositions;
 
 pub mod enum_map;
 pub mod map;
@@ -85,7 +85,7 @@ impl Plugin for SharedPlugin {
         .replicate::<Interactable>()
         .replicate::<AttachedTo>()
         .replicate::<ArmyFlagAssignments>()
-        .replicate::<ArmyFormation>()
+        .replicate::<ArmyFormationPositions>()
         .replicate::<FlagHolder>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
@@ -100,7 +100,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Chest, Transform)>()
         .replicate_group::<(Item, Transform)>()
         .sync_related_entities::<FlagAssignment>()
-        .add_client_trigger::<CommanderFormation>(Channel::Ordered)
+        .add_client_trigger::<ArmyPosition>(Channel::Ordered)
         .add_client_trigger::<CommanderCampInteraction>(Channel::Ordered)
         .add_client_trigger::<AssignItem>(Channel::Ordered)
         .add_client_trigger::<StartBuild>(Channel::Ordered)
