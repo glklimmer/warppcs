@@ -279,7 +279,7 @@ fn assigment_warning(
                 commands.entity(entity_to_despawn).despawn();
             }
             Err(_) => {
-                let disabled_flag_entity = commands
+                let disabled_sprite_entity = commands
                     .spawn((
                         Sprite::from_image(asset_server.load("ui/commander/disabled.png")),
                         Transform::from_scale(Vec3::splat(1. / 3.)),
@@ -289,7 +289,7 @@ fn assigment_warning(
 
                 commands
                     .entity(trigger.target())
-                    .add_child(disabled_flag_entity);
+                    .add_child(disabled_sprite_entity);
             }
         }
     };
