@@ -9,8 +9,8 @@ use shared::{
     server::{
         buildings::recruiting::{Flag, FlagHolder},
         entities::commander::{
-            ArmyFlagAssignments, ArmyFormation, CommanderAssignmentRequest,
-            CommanderAssignmentResponse, CommanderCampInteraction, CommanderFormation,
+            ArmyFlagAssignments, ArmyFormation, CommanderAssignmentReject,
+            CommanderAssignmentRequest, CommanderCampInteraction, CommanderFormation,
             CommanderInteraction, CommanderPickFlag,
         },
     },
@@ -249,14 +249,10 @@ fn send_selected(trigger: Trigger<SelectionEvent<CommanderFormation>>, mut comma
 }
 
 fn assignment_reject(
-    trigger: Trigger<CommanderAssignmentResponse>,
+    _: Trigger<CommanderAssignmentReject>,
     mut current_hover: Query<(Entity, &Transform), With<HoverWeapon>>,
     mut commands: Commands,
 ) {
-    if CommanderAssignmentResponse::Reject != *trigger {
-        return;
-    }
-
     let Ok((hover_entity, transform)) = current_hover.single_mut() else {
         return;
     };

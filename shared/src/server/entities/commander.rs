@@ -63,11 +63,8 @@ pub struct CommanderPickFlag;
 #[derive(Event, Serialize, Deserialize)]
 pub struct CommanderAssignmentRequest;
 
-#[derive(Event, Serialize, Deserialize, Eq, PartialEq)]
-pub enum CommanderAssignmentResponse {
-    Warning,
-    Reject,
-}
+#[derive(Event, Serialize, Deserialize)]
+pub struct CommanderAssignmentReject;
 
 #[derive(Event, Serialize, Deserialize)]
 pub struct Assignment {
@@ -222,7 +219,7 @@ fn commander_assignment_validation(
         if unit.unit_type == UnitType::Commander {
             commands.server_trigger(ToClients {
                 mode: SendMode::Direct(trigger.client_entity),
-                event: CommanderAssignmentResponse::Reject,
+                event: CommanderAssignmentReject,
             });
             return;
         }
