@@ -4,15 +4,14 @@ use bevy::{ecs::entity::MapEntities, platform::collections::HashMap};
 use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
+use crate::networking::UnitType;
+use crate::server::buildings::recruiting::{Flag, FlagAssignment};
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt,
     enum_map::*,
     map::Layers,
     server::{
-        buildings::{
-            recruiting::{FlagAssignment, FlagHolder},
-            siege_camp::SiegeCamp,
-        },
+        buildings::{recruiting::FlagHolder, siege_camp::SiegeCamp},
         physics::attachment::AttachedTo,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
@@ -55,8 +54,23 @@ pub enum CommanderFormation {
     Back,
 }
 
-#[derive(Event, Serialize, Deserialize, Copy, Clone)]
+#[derive(Event, Serialize, Deserialize)]
 pub struct CommanderCampInteraction;
+
+#[derive(Event, Serialize, Deserialize)]
+pub struct CommanderPickFlag;
+
+#[derive(Event, Serialize, Deserialize)]
+pub struct CommanderAssignmentRequest;
+
+#[derive(Event, Serialize, Deserialize)]
+pub struct CommanderAssignmentReject;
+
+#[derive(Event, Serialize, Deserialize)]
+pub struct Assignment {
+    player: Entity,
+    slot: CommanderFormation,
+}
 
 pub const BASE_FORMATION_WIDTH: f32 = 50.;
 pub const BASE_FORMATION_OFFSET: f32 = 5.;
@@ -92,11 +106,14 @@ impl Plugin for CommanderPlugin {
         app.init_resource::<ActiveCommander>()
             .add_event::<SlotInteraction>()
             .add_event::<CommanderCampInteraction>()
+            .add_event::<Assignment>()
+            .add_observer(commander_assignment_validation)
             .add_observer(handle_slot_selection)
             .add_observer(handle_camp_interaction)
             .add_observer(assign_flag_to_formation)
             .add_observer(remove_flag_from_formation)
             .add_observer(swap_flag_from_formation)
+            .add_observer(handle_pick_flag)
             .add_systems(
                 FixedUpdate,
                 commander_interaction.run_if(on_event::<InteractionTriggeredEvent>),
@@ -125,6 +142,47 @@ fn commander_interaction(
     }
 }
 
+fn handle_pick_flag(
+    trigger: Trigger<FromClient<CommanderPickFlag>>,
+    active: Res<ActiveCommander>,
+    client_player_map: ResMut<ClientPlayerMap>,
+    mut commands: Commands,
+    formations: Query<&ArmyFlagAssignments>,
+    commander_flag_assignment: Query<&FlagAssignment>,
+    flag_holder: Query<Option<&FlagHolder>>,
+    flag: Query<(Entity, &Flag)>,
+) {
+    let player = client_player_map.get(&trigger.client_entity).unwrap();
+    let commander = active.0.get(player).unwrap();
+    let commander_flag = commander_flag_assignment.get(*commander).unwrap();
+    let army_flag_assignments = formations.get(*commander).unwrap();
+    let (flag_entity, _) = flag.get(**commander_flag).unwrap();
+
+    if let Ok(Some(current_flag)) = flag_holder.get(*player) {
+        let all_army_flags_assigned = army_flag_assignments.flags.iter().all(Option::is_some);
+        let unit_type = flag.get(**current_flag).unwrap().1.unit_type;
+
+        if all_army_flags_assigned || unit_type.eq(&UnitType::Commander) {
+            commands.entity(**current_flag).remove::<AttachedTo>();
+        } else {
+            // Assign player flag to any empty formation slots
+            army_flag_assignments
+                .flags
+                .iter_enums()
+                .filter(|(_, flag)| flag.is_none())
+                .for_each(|(formation, _)| {
+                    commands.trigger(Assignment {
+                        player: *player,
+                        slot: formation,
+                    });
+                });
+        }
+    }
+
+    commands.entity(*player).insert(FlagHolder(flag_entity));
+    commands.entity(flag_entity).insert(AttachedTo(*player));
+}
+
 fn handle_camp_interaction(
     trigger: Trigger<FromClient<CommanderCampInteraction>>,
     active: Res<ActiveCommander>,
@@ -144,19 +202,47 @@ fn handle_camp_interaction(
     ));
 }
 
-fn handle_slot_selection(
+fn commander_assignment_validation(
     trigger: Trigger<FromClient<CommanderFormation>>,
-    active: Res<ActiveCommander>,
-    formations: Query<&ArmyFlagAssignments>,
     client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
     flag_holder: Query<&FlagHolder>,
+    flag: Query<&Flag>,
 ) {
     let player = client_player_map.get(&trigger.client_entity).unwrap();
+    let player_flag = flag_holder.get(*player);
+
+    if let Ok(unit_flag) = player_flag {
+        let Ok(unit) = flag.get(**unit_flag) else {
+            return;
+        };
+        if let UnitType::Commander = unit.unit_type {
+            commands.server_trigger(ToClients {
+                mode: SendMode::Direct(trigger.client_entity),
+                event: CommanderAssignmentReject,
+            });
+            return;
+        }
+    };
+
+    commands.trigger(Assignment {
+        player: *player,
+        slot: trigger.event,
+    });
+}
+
+fn handle_slot_selection(
+    trigger: Trigger<Assignment>,
+    active: Res<ActiveCommander>,
+    formations: Query<&ArmyFlagAssignments>,
+    mut commands: Commands,
+    flag_holder: Query<&FlagHolder>,
+) {
+    let player = &trigger.player;
     let commander = active.0.get(player).unwrap();
     let formation = formations.get(*commander).unwrap();
 
-    let selected_slot = trigger.event;
+    let selected_slot = trigger.slot;
     let is_slot_occupied = formation.flags.get(selected_slot).is_some();
 
     let player_flag = flag_holder.get(*player).map(|flag| **flag).ok();
@@ -196,20 +282,14 @@ fn handle_slot_selection(
 fn assign_flag_to_formation(
     trigger: Trigger<SlotInteraction>,
     mut commands: Commands,
-    mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation, &FlagAssignment)>,
+    mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation)>,
 ) {
     let SlotCommand::Assign = trigger.command else {
         return;
     };
 
-    let (mut units_assignments, army_formation, flag_assignment) =
-        commanders.get_mut(trigger.commander).unwrap();
+    let (mut units_assignments, army_formation) = commanders.get_mut(trigger.commander).unwrap();
     let flag = trigger.flag.unwrap();
-
-    // Prevent assigning commander flag to formation
-    if **flag_assignment == flag {
-        return;
-    }
 
     units_assignments
         .flags
@@ -264,6 +344,7 @@ fn swap_flag_from_formation(
         commanders.get_mut(trigger.commander).unwrap();
 
     let new_flag = trigger.flag.unwrap();
+
     let old_flag = army_flag_assignments
         .flags
         .get(trigger.selected_slot)
@@ -278,12 +359,11 @@ fn swap_flag_from_formation(
 
     commands
         .entity(new_flag)
-        .insert((AttachedTo(*formation), Visibility::Hidden))
+        .insert(AttachedTo(*formation))
         .remove::<Interactable>();
 
     commands.entity(old_flag).insert((
         AttachedTo(trigger.player),
-        Visibility::Visible,
         Interactable {
             kind: InteractionType::Flag,
             restricted_to: Some(trigger.player),

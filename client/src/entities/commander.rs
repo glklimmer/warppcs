@@ -5,11 +5,13 @@ use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
     PlayerState, Vec3LayerExt,
     map::Layers,
+    networking::UnitType,
     server::{
         buildings::recruiting::{Flag, FlagHolder},
         entities::commander::{
-            ArmyFlagAssignments, ArmyFormation, CommanderCampInteraction, CommanderFormation,
-            CommanderInteraction,
+            ArmyFlagAssignments, ArmyFormation, CommanderAssignmentReject,
+            CommanderAssignmentRequest, CommanderCampInteraction, CommanderFormation,
+            CommanderInteraction, CommanderPickFlag,
         },
     },
 };
@@ -17,11 +19,15 @@ use shared::{
 use crate::{
     animations::{
         objects::items::weapons::WeaponsSpriteSheet,
-        ui::army_formations::{FormationIconSpriteSheet, FormationIcons},
+        ui::{
+            animations::SpriteShaking,
+            army_formations::{FormationIconSpriteSheet, FormationIcons},
+            commander_menu::{CommanderMenuNodes, CommanderMenuSpriteSheet},
+        },
     },
     networking::ControlledPlayer,
     widgets::menu::{
-        ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
+        CloseEvent, ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
     },
 };
 
@@ -30,14 +36,18 @@ pub struct CommanderInteractionPlugin;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum MainMenuEntries {
     Camp,
-    Slots,
+    Formation,
+    Flag,
 }
 
 #[derive(Event, Deref)]
 struct DrawHoverFlag(Entity);
 
 #[derive(Component)]
-struct HoverWeapon;
+struct HoverWeapon(UnitType);
+
+#[derive(Component)]
+struct HoverDisabledWeapon;
 
 #[derive(Resource, Default, DerefMut, Deref)]
 struct ActiveCommander(Option<Entity>);
@@ -46,6 +56,7 @@ impl Plugin for CommanderInteractionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveCommander>()
             .add_event::<DrawHoverFlag>()
+            .add_observer(assignment_reject)
             .add_observer(open_commander_dialog)
             .add_observer(highligh_formation)
             .add_observer(open_create_camp)
@@ -53,9 +64,11 @@ impl Plugin for CommanderInteractionPlugin {
             .add_observer(send_selected)
             .add_observer(cleanup_menu_extras)
             .add_observer(draw_hovering_flag)
+            .add_observer(assigment_warning)
+            .add_observer(pick_commander_flag)
             .add_systems(
                 Update,
-                (update_flag_assignment, draw_flag_on_selected)
+                (formation_selected, update_flag_assignment)
                     .run_if(in_state(PlayerState::Interaction)),
             )
             .add_plugins((
@@ -69,16 +82,14 @@ fn open_commander_dialog(
     trigger: Trigger<CommanderInteraction>,
     mut commands: Commands,
     transform: Query<&Transform>,
-    asset_server: Res<AssetServer>,
     mut next_state: ResMut<NextState<PlayerState>>,
     mut active: ResMut<ActiveCommander>,
+    menu_sprite_sheet: Res<CommanderMenuSpriteSheet>,
 ) {
     let commander = trigger.commander;
 
-    let map: Handle<Image> = asset_server.load("ui/commander/map.png");
-    let slots: Handle<Image> = asset_server.load("ui/commander/slots.png");
-
     let commander_position = transform.get(commander).unwrap();
+    let texture = menu_sprite_sheet.sprite_sheet.texture.clone();
 
     next_state.set(PlayerState::Interaction);
 
@@ -91,17 +102,40 @@ fn open_commander_dialog(
             .with_layer(Layers::Item),
         Menu::new(vec![
             MenuNode::bundle(
-                MainMenuEntries::Camp,
+                MainMenuEntries::Flag,
                 Sprite {
-                    image: map,
+                    image: texture.clone(),
+                    texture_atlas: Some(
+                        menu_sprite_sheet
+                            .sprite_sheet
+                            .texture_atlas(CommanderMenuNodes::Flag),
+                    ),
                     custom_size: Some(Vec2::splat(15.)),
                     ..Default::default()
                 },
             ),
             MenuNode::bundle(
-                MainMenuEntries::Slots,
+                MainMenuEntries::Camp,
                 Sprite {
-                    image: slots,
+                    image: texture.clone(),
+                    texture_atlas: Some(
+                        menu_sprite_sheet
+                            .sprite_sheet
+                            .texture_atlas(CommanderMenuNodes::Camp),
+                    ),
+                    custom_size: Some(Vec2::splat(15.)),
+                    ..Default::default()
+                },
+            ),
+            MenuNode::bundle(
+                MainMenuEntries::Formation,
+                Sprite {
+                    image: texture.clone(),
+                    texture_atlas: Some(
+                        menu_sprite_sheet
+                            .sprite_sheet
+                            .texture_atlas(CommanderMenuNodes::Formation),
+                    ),
                     custom_size: Some(Vec2::splat(15.)),
                     ..Default::default()
                 },
@@ -121,6 +155,19 @@ fn open_create_camp(trigger: Trigger<SelectionEvent<MainMenuEntries>>, mut comma
     commands.client_trigger(CommanderCampInteraction);
 }
 
+fn pick_commander_flag(
+    trigger: Trigger<SelectionEvent<MainMenuEntries>>,
+    mut commands: Commands,
+    mut close_menu: EventWriter<CloseEvent>,
+) {
+    let MainMenuEntries::Flag = trigger.selection else {
+        return;
+    };
+
+    commands.client_trigger(CommanderPickFlag);
+    close_menu.write(CloseEvent);
+}
+
 fn open_slots_dialog(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
     mut commands: Commands,
@@ -131,7 +178,7 @@ fn open_slots_dialog(
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     formations: Res<FormationIconSpriteSheet>,
 ) {
-    let MainMenuEntries::Slots = trigger.selection else {
+    let MainMenuEntries::Formation = trigger.selection else {
         return;
     };
 
@@ -191,11 +238,7 @@ fn open_slots_dialog(
     ));
 }
 
-fn send_selected(
-    trigger: Trigger<SelectionEvent<CommanderFormation>>,
-    current_hover: Query<Entity, With<HoverWeapon>>,
-    mut commands: Commands,
-) {
+fn send_selected(trigger: Trigger<SelectionEvent<CommanderFormation>>, mut commands: Commands) {
     let SelectionEvent {
         selection: slot,
         menu: _,
@@ -203,8 +246,52 @@ fn send_selected(
     } = *trigger;
 
     commands.client_trigger(slot);
-    if let Ok(current) = current_hover.single() {
-        commands.entity(current).despawn();
+}
+
+fn assignment_reject(
+    _: Trigger<CommanderAssignmentReject>,
+    mut current_hover: Query<(Entity, &Transform), With<HoverWeapon>>,
+    mut commands: Commands,
+) {
+    let Ok((hover_entity, transform)) = current_hover.single_mut() else {
+        return;
+    };
+
+    let original_translation = transform.translation;
+    commands
+        .entity(hover_entity)
+        .insert(SpriteShaking::new(0.1, 1.5, original_translation));
+}
+
+fn assigment_warning(
+    trigger: Trigger<OnAdd, HoverWeapon>,
+    unit_type: Query<&HoverWeapon>,
+    hover_disabled_assignment: Query<Entity, With<HoverDisabledWeapon>>,
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+) {
+    if unit_type
+        .single()
+        .is_ok_and(|flag| flag.0.eq(&UnitType::Commander))
+    {
+        match hover_disabled_assignment.single() {
+            Ok(entity_to_despawn) => {
+                commands.entity(entity_to_despawn).despawn();
+            }
+            Err(_) => {
+                let disabled_sprite_entity = commands
+                    .spawn((
+                        Sprite::from_image(asset_server.load("ui/commander/disabled.png")),
+                        Transform::from_scale(Vec3::splat(1. / 3.)),
+                    ))
+                    .insert(HoverDisabledWeapon)
+                    .id();
+
+                commands
+                    .entity(trigger.target())
+                    .add_child(disabled_sprite_entity);
+            }
+        }
     };
 }
 
@@ -265,8 +352,8 @@ fn highligh_formation(
 
 fn draw_hovering_flag(
     trigger: Trigger<DrawHoverFlag>,
+    menu_entries_add: Query<&GlobalTransform>,
     mut current_hover: Query<&mut Transform, With<HoverWeapon>>,
-    menu_entries_add: Query<&GlobalTransform, With<NodePayload<CommanderFormation>>>,
     player: Query<Option<&FlagHolder>, With<ControlledPlayer>>,
     flag: Query<&Flag>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
@@ -278,32 +365,35 @@ fn draw_hovering_flag(
     let Some(flag_holder) = maybe_flag_holder else {
         return;
     };
-    let player_flag = **flag_holder;
-    let flag = flag.get(player_flag).unwrap();
-    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
 
-    let Ok(entry_position) = menu_entries_add.get(**trigger) else {
+    let Ok(entry_position) = menu_entries_add.get(trigger.0) else {
         return;
     };
+
+    let player_flag = **flag_holder;
+    let flag = flag.get(player_flag).unwrap();
+
+    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
 
     match current_hover.single_mut() {
         Ok(mut flag_position) => {
             flag_position.translation.x = entry_position.translation().x;
         }
         Err(_) => {
-            commands.spawn((
-                weapon_sprite,
+            let weapon_node_hover = commands.spawn(weapon_sprite).id();
+
+            commands.entity(weapon_node_hover).insert((
                 entry_position
                     .translation()
                     .offset_y(20.)
                     .with_layer(Layers::UI),
-                HoverWeapon,
+                HoverWeapon(flag.unit_type),
             ));
         }
     }
 }
 
-fn draw_flag_on_selected(
+fn formation_selected(
     menu_entries_add: Query<Entity, (Added<Selected>, With<NodePayload<CommanderFormation>>)>,
     mut commands: Commands,
 ) {
@@ -311,12 +401,14 @@ fn draw_flag_on_selected(
         return;
     };
 
+    commands.client_trigger(CommanderAssignmentRequest);
     commands.trigger(DrawHoverFlag(entry));
 }
 
 fn update_flag_assignment(
     army_flag_assigments: Query<&ArmyFlagAssignments, Changed<ArmyFlagAssignments>>,
     menu_entries: Query<(Entity, &NodePayload<CommanderFormation>), With<Selected>>,
+    current_hover: Query<Entity, With<HoverWeapon>>,
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     flag: Query<&Flag>,
@@ -331,21 +423,31 @@ fn update_flag_assignment(
         return;
     };
 
+    army_flag_assigment.flags.iter().for_each(|flag| {
+        if let Some(flag) = flag {
+            commands.entity(*flag).insert(Visibility::Hidden);
+        }
+    });
+
     let Ok((entry, selected_slot)) = menu_entries.single() else {
         return;
     };
 
+    if let Ok(current) = current_hover.single() {
+        commands.entity(current).despawn();
+    };
+
+    if let Ok(player_flag) = player.single() {
+        commands.entity(**player_flag).insert(Visibility::Visible);
+    }
+
     let maybe_flag_assigned = army_flag_assigment.flags.get(**selected_slot);
+
     let Some(flag_assigned) = maybe_flag_assigned else {
-        let flag_holder = player.single().unwrap();
-        let player_flag = **flag_holder;
-        commands.entity(player_flag).insert(Visibility::Visible);
         commands.entity(entry).despawn_related::<Children>();
         commands.trigger(DrawHoverFlag(entry));
         return;
     };
-
-    commands.entity(*flag_assigned).insert(Visibility::Hidden);
 
     let flag = flag.get(*flag_assigned).unwrap();
     let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
