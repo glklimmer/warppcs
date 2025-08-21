@@ -9,9 +9,10 @@ use shared::{
     server::{
         buildings::recruiting::{Flag, FlagHolder},
         entities::commander::{
-            ArmyFlagAssignments, ArmyFormation, CommanderAssignmentReject,
-            CommanderAssignmentRequest, CommanderCampInteraction, CommanderFormation,
+            ArmyFlagAssignments, ArmyFormationPositions, CommanderAssignmentReject,
+            CommanderAssignmentRequest, CommanderCampInteraction, ArmyPosition,
             CommanderInteraction, CommanderPickFlag,
+            
         },
     },
 };
@@ -73,7 +74,7 @@ impl Plugin for CommanderInteractionPlugin {
             )
             .add_plugins((
                 MenuPlugin::<MainMenuEntries>::default(),
-                MenuPlugin::<CommanderFormation>::default(),
+                MenuPlugin::<ArmyPosition>::default(),
             ));
     }
 }
@@ -186,14 +187,14 @@ fn open_slots_dialog(
     let army_flag_assignments = army_flag_assignments.get(active.unwrap()).unwrap();
     let commander_facing = transform.get(active.unwrap()).unwrap().scale().x.signum();
 
-    let menu_nodes: Vec<MenuNode<CommanderFormation>> = army_flag_assignments
+    let menu_nodes: Vec<MenuNode<ArmyPosition>> = army_flag_assignments
         .flags
         .iter_enums()
         .map(|(formation, maybe_flag)| {
             let icon = match formation {
-                CommanderFormation::Front => FormationIcons::Front,
-                CommanderFormation::Middle => FormationIcons::Middle,
-                CommanderFormation::Back => FormationIcons::Back,
+                ArmyPosition::Front => FormationIcons::Front,
+                ArmyPosition::Middle => FormationIcons::Middle,
+                ArmyPosition::Back => FormationIcons::Back,
             };
             let atlas = formations.sprite_sheet.texture_atlas(icon);
             let texture = formations.sprite_sheet.texture.clone();
@@ -238,7 +239,11 @@ fn open_slots_dialog(
     ));
 }
 
-fn send_selected(trigger: Trigger<SelectionEvent<CommanderFormation>>, mut commands: Commands) {
+fn send_selected(
+    trigger: Trigger<SelectionEvent<ArmyPosition>>,
+    current_hover: Query<Entity, With<HoverWeapon>>,
+    mut commands: Commands,
+) {
     let SelectionEvent {
         selection: slot,
         menu: _,
@@ -296,7 +301,7 @@ fn assigment_warning(
 }
 
 fn cleanup_menu_extras(
-    _: Trigger<ClosedMenu<CommanderFormation>>,
+    _: Trigger<ClosedMenu<ArmyPosition>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
     child: Query<&Children>,
     active: Res<ActiveCommander>,
@@ -318,8 +323,8 @@ fn cleanup_menu_extras(
 
 fn highligh_formation(
     trigger: Trigger<DrawHoverFlag>,
-    menu_entries_add: Query<&NodePayload<CommanderFormation>>,
-    army_formation: Query<&ArmyFormation>,
+    menu_entries_add: Query<&NodePayload<ArmyPosition>>,
+    army_formation: Query<&ArmyFormationPositions>,
     active: Res<ActiveCommander>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -354,6 +359,7 @@ fn draw_hovering_flag(
     trigger: Trigger<DrawHoverFlag>,
     menu_entries_add: Query<&GlobalTransform>,
     mut current_hover: Query<&mut Transform, With<HoverWeapon>>,
+    menu_entries_add: Query<&GlobalTransform, With<NodePayload<ArmyPosition>>>,
     player: Query<Option<&FlagHolder>, With<ControlledPlayer>>,
     flag: Query<&Flag>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
@@ -393,8 +399,8 @@ fn draw_hovering_flag(
     }
 }
 
-fn formation_selected(
-    menu_entries_add: Query<Entity, (Added<Selected>, With<NodePayload<CommanderFormation>>)>,
+fn draw_flag_on_selected(
+    menu_entries_add: Query<Entity, (Added<Selected>, With<NodePayload<ArmyPosition>>)>,
     mut commands: Commands,
 ) {
     let Ok(entry) = menu_entries_add.single() else {
@@ -406,8 +412,7 @@ fn formation_selected(
 }
 
 fn update_flag_assignment(
-    army_flag_assigments: Query<&ArmyFlagAssignments, Changed<ArmyFlagAssignments>>,
-    menu_entries: Query<(Entity, &NodePayload<CommanderFormation>), With<Selected>>,
+    menu_entries: Query<(Entity, &NodePayload<ArmyPosition>), With<Selected>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,

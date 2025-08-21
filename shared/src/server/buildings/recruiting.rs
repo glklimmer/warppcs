@@ -9,8 +9,8 @@ use crate::enum_map::EnumMap;
 use crate::map::buildings::RecruitBuilding;
 use crate::server::ai::FollowOffset;
 use crate::server::entities::commander::{
-    ArmyFlagAssignments, ArmyFormation, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH,
-    CommanderFormation,
+    ArmyFlagAssignments, ArmyFormationPositions, ArmyPosition, BASE_FORMATION_OFFSET,
+    BASE_FORMATION_WIDTH,
 };
 use crate::server::physics::movement::Velocity;
 use crate::{
@@ -289,7 +289,7 @@ pub fn recruit_commander(
 
     let mut army_formation: Vec<Entity> = vec![];
 
-    CommanderFormation::all_variants().iter().for_each(|_| {
+    ArmyPosition::all_variants().iter().for_each(|_| {
         formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
         let formation = commands
             .spawn((
@@ -301,11 +301,11 @@ pub fn recruit_commander(
             .id();
         army_formation.push(formation);
     });
-    commands.entity(commander).insert(ArmyFormation {
+    commands.entity(commander).insert(ArmyFormationPositions {
         positions: EnumMap::new(|c| match c {
-            CommanderFormation::Front => army_formation[0],
-            CommanderFormation::Middle => army_formation[1],
-            CommanderFormation::Back => army_formation[2],
+            ArmyPosition::Front => army_formation[0],
+            ArmyPosition::Middle => army_formation[1],
+            ArmyPosition::Back => army_formation[2],
         }),
     });
 
