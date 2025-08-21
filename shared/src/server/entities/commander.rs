@@ -216,7 +216,7 @@ fn commander_assignment_validation(
         let Ok(unit) = flag.get(**unit_flag) else {
             return;
         };
-        if unit.unit_type == UnitType::Commander {
+        if let UnitType::Commander = unit.unit_type {
             commands.server_trigger(ToClients {
                 mode: SendMode::Direct(trigger.client_entity),
                 event: CommanderAssignmentReject,
