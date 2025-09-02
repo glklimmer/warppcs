@@ -37,7 +37,7 @@ struct SlotInteraction {
     player: Entity,
     commander: Entity,
     flag: Option<Entity>,
-    selected_slot: CommanderFormation,
+    selected_slot: ArmyPosition,
 }
 
 #[derive(PartialEq, Eq)]
@@ -48,7 +48,7 @@ enum SlotCommand {
 }
 
 #[derive(Event, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq, Debug)]
-pub enum CommanderFormation {
+pub enum ArmyPosition {
     Front,
     Middle,
     Back,
@@ -69,7 +69,7 @@ pub struct CommanderAssignmentReject;
 #[derive(Event, Serialize, Deserialize)]
 pub struct Assignment {
     player: Entity,
-    slot: CommanderFormation,
+    slot: ArmyPosition,
 }
 
 pub const BASE_FORMATION_WIDTH: f32 = 50.;
@@ -78,16 +78,16 @@ pub const BASE_FORMATION_OFFSET: f32 = 5.;
 #[derive(Component, Serialize, Deserialize, Clone)]
 pub struct ArmyFlagAssignments {
     #[entities]
-    pub flags: EnumMap<CommanderFormation, Option<Entity>>,
+    pub flags: EnumMap<ArmyPosition, Option<Entity>>,
 }
 
 impl Default for ArmyFlagAssignments {
     fn default() -> Self {
         Self {
             flags: EnumMap::new(|slot| match slot {
-                CommanderFormation::Front => None,
-                CommanderFormation::Middle => None,
-                CommanderFormation::Back => None,
+                ArmyPosition::Front => None,
+                ArmyPosition::Middle => None,
+                ArmyPosition::Back => None,
             }),
         }
     }
@@ -96,7 +96,7 @@ impl Default for ArmyFlagAssignments {
 #[derive(Component, Serialize, Deserialize, Clone)]
 pub struct ArmyFormation {
     #[entities]
-    pub positions: EnumMap<CommanderFormation, Entity>,
+    pub positions: EnumMap<ArmyPosition, Entity>,
 }
 
 pub struct CommanderPlugin;
@@ -203,7 +203,7 @@ fn handle_camp_interaction(
 }
 
 fn commander_assignment_validation(
-    trigger: Trigger<FromClient<CommanderFormation>>,
+    trigger: Trigger<FromClient<ArmyPosition>>,
     client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
     flag_holder: Query<&FlagHolder>,
