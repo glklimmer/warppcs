@@ -3,12 +3,15 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, BoxCollider, DelayedDespawn, Hitby,
+    AnimationChange, AnimationChangeEvent, BoxCollider, DelayedDespawn, FlagAnimation,
+    FlagAnimationEvent, Hitby,
     map::buildings::{BuildStatus, Building, BuildingType, HealthIndicator},
     networking::{UnitType, WorldDirection},
     server::{
         ai::{BehaveSources, Target, TargetedBy, UnitBehaviour},
-        buildings::recruiting::FlagAssignment,
+        buildings::recruiting::{FlagAssignment, FlagUnits},
+        physics::attachment::AttachedTo,
+        players::interaction::Interactable,
     },
 };
 
@@ -140,25 +143,51 @@ fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), 
 
 fn on_unit_death(
     mut commands: Commands,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
-    query: Query<(Entity, &Health, &TargetedBy), With<Unit>>,
+    mut unit_animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut flag_animation: EventWriter<ToClients<FlagAnimationEvent>>,
+    units: Query<(Entity, &Health, &TargetedBy, &FlagAssignment), With<Unit>>,
+    group: Query<&FlagUnits>,
 ) {
-    for (entity, health, targeted_by) in query.iter() {
-        if health.hitpoints <= 0. {
-            commands
-                .entity(entity)
-                .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
-                .remove::<FlagAssignment>()
-                .despawn_related::<BehaveSources>()
-                .remove::<UnitBehaviour>()
-                .remove_related::<Target>(targeted_by)
-                .remove::<Health>();
+    for (entity, health, targeted_by, flag_assignment) in units.iter() {
+        if health.hitpoints > 0. {
+            continue;
+        }
 
-            animation.write(ToClients {
+        commands
+            .entity(entity)
+            .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
+            .remove::<FlagAssignment>()
+            .despawn_related::<BehaveSources>()
+            .remove::<UnitBehaviour>()
+            .remove_related::<Target>(targeted_by)
+            .remove::<Health>();
+
+        unit_animation.write(ToClients {
+            mode: SendMode::Broadcast,
+            event: AnimationChangeEvent {
+                entity,
+                change: AnimationChange::Death,
+            },
+        });
+
+        let flag = flag_assignment.entity();
+        let group = group.get(flag).unwrap();
+        let num_alive = group.len();
+
+        info!(num_alive);
+
+        if num_alive == 1 {
+            commands
+                .entity(flag)
+                .insert(DelayedDespawn(Timer::from_seconds(620., TimerMode::Once)))
+                .remove::<AttachedTo>()
+                .remove::<Interactable>();
+
+            flag_animation.write(ToClients {
                 mode: SendMode::Broadcast,
-                event: AnimationChangeEvent {
-                    entity,
-                    change: AnimationChange::Death,
+                event: FlagAnimationEvent {
+                    entity: flag,
+                    animation: FlagAnimation::Destroyed,
                 },
             });
         }

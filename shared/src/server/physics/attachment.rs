@@ -14,7 +14,8 @@ impl Plugin for AttachmentPlugin {
     }
 }
 
-const BASE_OFFSET: f32 = 5.0;
+const X_OFFSET: f32 = 2.0;
+const Y_OFFSET: f32 = 5.0;
 
 fn attachment_follow(
     mut query: Query<(&AttachedTo, &mut Transform)>,
@@ -29,8 +30,8 @@ fn attachment_follow(
                 0.0
             };
 
-            transform.translation.x = target_transform.translation().x;
-            transform.translation.y = target_transform.translation().y + BASE_OFFSET + sin_offset;
+            transform.translation.x = target_transform.translation().x + X_OFFSET;
+            transform.translation.y = target_transform.translation().y + Y_OFFSET + sin_offset;
 
             let signum = velocity.0.x.signum();
             if signum != 0. {

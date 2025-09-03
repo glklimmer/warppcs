@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy_parallax::CameraFollow;
 use shared::{
-    ChestAnimation, Player, SetLocalPlayer,
+    ChestAnimation, FlagAnimation, Player, SetLocalPlayer,
     map::buildings::{Building, RecruitBuilding},
     server::{
         buildings::{recruiting::Flag, siege_camp::SiegeCamp},
@@ -19,7 +19,7 @@ use crate::{
         king::{KingAnimation, KingSpriteSheet},
         objects::{
             chest::ChestSpriteSheet,
-            flag::{FlagAnimation, FlagSpriteSheet},
+            flag::FlagSpriteSheet,
             portal::{PortalAnimation, PortalSpriteSheet},
             projectiles::{ProjectileSpriteSheet, Projectiles},
         },
