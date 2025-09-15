@@ -20,11 +20,13 @@ use input::InputPlugin;
 use sound::SoundPlugin;
 
 use crate::background::BackgroundPlugin;
+use crate::defeat::DefeatPlugin;
 
 pub mod animations;
 pub mod asset_loader;
 pub mod background;
 pub mod camera;
+pub mod defeat;
 pub mod entities;
 pub mod gizmos;
 pub mod input;
@@ -99,6 +101,7 @@ fn main() {
         MapPlugin,
         SoundPlugin,
         GizmosPlugin,
+        DefeatPlugin,
     ));
 
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);

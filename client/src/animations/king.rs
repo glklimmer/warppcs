@@ -5,7 +5,7 @@ use shared::{
     server::physics::movement::Moving,
 };
 
-use crate::{anim, anim_reverse};
+use crate::{anim, anim_reverse, networking::ControlledPlayer};
 
 use super::{
     AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, AnimationTrigger, PlayOnce,
@@ -153,6 +153,32 @@ pub fn set_king_walking(
             entity: trigger.target(),
             state: new_animation,
         });
+    }
+}
+
+pub fn set_king_defeat(
+    player: Query<Entity, With<ControlledPlayer>>,
+    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    mut commands: Commands,
+) {
+    if let Ok(player) = player.single() {
+        commands.entity(player).insert(PlayOnce);
+        animation_trigger.write(AnimationTrigger {
+            entity: player,
+            state: KingAnimation::Death,
+        });
+    }
+}
+
+pub fn set_king_defeat_play_once(
+    trigger: Trigger<OnRemove, PlayOnce>,
+    mut commands: Commands,
+    player: Query<Entity, With<ControlledPlayer>>,
+) {
+    if player.get(trigger.target()).is_ok() {
+        commands
+            .entity(trigger.target())
+            .remove::<SpriteSheetAnimation>();
     }
 }
 

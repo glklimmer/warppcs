@@ -1,9 +1,12 @@
 use bevy::prelude::*;
 
 use crate::{
-    animations::ui::{
-        animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
-        commander_menu::CommanderMenuSpriteSheet,
+    animations::{
+        king::{set_king_defeat, set_king_defeat_play_once},
+        ui::{
+            animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
+            commander_menu::CommanderMenuSpriteSheet,
+        },
     },
     asset_loader::AssetsToLoad,
 };
@@ -26,7 +29,7 @@ use objects::{
     portal::PortalSpriteSheet,
     projectiles::ProjectileSpriteSheet,
 };
-use shared::{enum_map::*, server::entities::UnitAnimation};
+use shared::{PlayerState, enum_map::*, server::entities::UnitAnimation};
 
 use sprite_variant_loader::{SpriteVariantLoader, SpriteVariants};
 use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
@@ -168,6 +171,9 @@ pub struct AnimationTrigger<E> {
 #[derive(Component)]
 pub struct PlayOnce;
 
+#[derive(Component)]
+pub struct LastFrame;
+
 pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
@@ -211,6 +217,8 @@ impl Plugin for AnimationPlugin {
             )
                 .after(ClientSet::Receive),
         )
+        .add_systems(OnEnter(PlayerState::Defeated), set_king_defeat)
+        .add_observer(set_king_defeat_play_once)
         .add_observer(set_king_walking)
         .add_observer(set_king_idle)
         .add_observer(set_king_after_play_once)

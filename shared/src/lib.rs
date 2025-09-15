@@ -50,8 +50,9 @@ use server::{
     },
 };
 
-use crate::server::entities::commander::{
-    ArmyFormation, CommanderAssignmentReject, CommanderPickFlag,
+use crate::server::entities::{
+    commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
+    health::Defeat,
 };
 
 pub mod enum_map;
@@ -113,6 +114,7 @@ impl Plugin for SharedPlugin {
         .add_server_trigger::<CommanderAssignmentReject>(Channel::Unordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
         .add_server_trigger::<LoadMap>(Channel::Ordered)
+        .add_server_trigger::<Defeat>(Channel::Unordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
         .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)
@@ -375,6 +377,7 @@ pub enum PlayerState {
     World,
     Interaction,
     Traveling,
+    Defeated,
 }
 
 pub trait Vec3LayerExt {
