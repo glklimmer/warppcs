@@ -1,20 +1,15 @@
 use bevy::prelude::*;
-use shared::{PlayerState, server::entities::health::Defeat};
+use shared::PlayerState;
 
 pub struct DefeatPlugin;
 
 impl Plugin for DefeatPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(defeat);
+        app.add_systems(OnEnter(PlayerState::Defeated), defeat);
     }
 }
 
-fn defeat(
-    _: Trigger<Defeat>,
-    mut commands: Commands,
-    mut next_state: ResMut<NextState<PlayerState>>,
-    assets: Res<AssetServer>,
-) {
+fn defeat(mut commands: Commands, assets: Res<AssetServer>) {
     let defeat_texture = assets.load::<Image>("sprites/ui/defeat.png");
 
     commands.spawn((
@@ -36,5 +31,4 @@ fn defeat(
             TextFont::from_font_size(60.)
         )],
     ));
-    next_state.set(PlayerState::Defeated);
 }

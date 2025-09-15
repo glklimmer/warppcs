@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 
 use shared::{
-    AnimationChange, AnimationChangeEvent, enum_map::*, networking::Mounted,
-    server::physics::movement::Moving,
+    AnimationChange, AnimationChangeEvent, PlayerState,
+    enum_map::*,
+    networking::Mounted,
+    server::{entities::health::DefeatedPlayer, physics::movement::Moving},
 };
 
 use crate::{anim, anim_reverse, networking::ControlledPlayer};
@@ -157,14 +159,19 @@ pub fn set_king_walking(
 }
 
 pub fn set_king_defeat(
+    trigger: Trigger<DefeatedPlayer>,
     player: Query<Entity, With<ControlledPlayer>>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    mut next_state: ResMut<NextState<PlayerState>>,
     mut commands: Commands,
 ) {
     if let Ok(player) = player.single() {
-        commands.entity(player).insert(PlayOnce);
+        if player == **trigger {
+            next_state.set(PlayerState::Defeated);
+        }
+        commands.entity(**trigger).insert(PlayOnce);
         animation_trigger.write(AnimationTrigger {
-            entity: player,
+            entity: **trigger,
             state: KingAnimation::Death,
         });
     }
@@ -173,9 +180,9 @@ pub fn set_king_defeat(
 pub fn set_king_defeat_play_once(
     trigger: Trigger<OnRemove, PlayOnce>,
     mut commands: Commands,
-    player: Query<Entity, With<ControlledPlayer>>,
+    current_animation: Query<&KingAnimation>,
 ) {
-    if player.get(trigger.target()).is_ok() {
+    if let Ok(KingAnimation::Death) = current_animation.get(trigger.target()) {
         commands
             .entity(trigger.target())
             .remove::<SpriteSheetAnimation>();

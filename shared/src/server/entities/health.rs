@@ -1,6 +1,6 @@
-use bevy::prelude::*;
+use bevy::{ecs::entity::MapEntities, prelude::*};
 
-use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
+use bevy_replicon::prelude::{SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,9 +8,9 @@ use crate::{
     FlagAnimationEvent, Hitby, Owner,
     AnimationChange, AnimationChangeEvent, BoxCollider, ClientPlayerMap, DelayedDespawn, Hitby,
     Owner,
+    AnimationChange, AnimationChangeEvent, BoxCollider, DelayedDespawn, Hitby, Owner,
     map::buildings::{BuildStatus, Building, BuildingType, HealthIndicator},
     networking::{UnitType, WorldDirection},
-    player_attacks::Attack,
     server::{
         ai::{BehaveSources, Target, TargetedBy, UnitBehaviour},
         buildings::recruiting::{FlagAssignment, FlagHolder, FlagUnits},
@@ -235,8 +235,14 @@ fn on_unit_death(
     }
 }
 
-#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct Defeat;
+#[derive(Event, Clone, Copy, Deserialize, Serialize, Deref)]
+pub struct DefeatedPlayer(Entity);
+
+impl MapEntities for DefeatedPlayer {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.get_mapped(self.0);
+    }
+}
 
 fn on_building_destroy(
     mut commands: Commands,
@@ -248,7 +254,6 @@ fn on_building_destroy(
         &TargetedBy,
         &Owner,
     )>,
-    client_player_map: Res<ClientPlayerMap>,
 ) {
     for (entity, health, building, mut status, targeted_by, owner) in query.iter_mut() {
         if health.hitpoints <= 0. {
@@ -261,12 +266,9 @@ fn on_building_destroy(
                 .remove_related::<Target>(targeted_by);
 
             if let BuildingType::MainBuilding { level: _ } = building.building_type {
-                let player_id = client_player_map
-                    .get_network_entity(&owner.entity().unwrap())
-                    .unwrap();
                 commands.server_trigger(ToClients {
-                    mode: SendMode::Direct(*player_id),
-                    event: Defeat,
+                    mode: SendMode::Broadcast,
+                    event: DefeatedPlayer(owner.entity().unwrap()),
                 });
             }
         }
