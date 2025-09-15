@@ -210,7 +210,15 @@ fn remove_highlightable_on_attached(trigger: Trigger<OnAdd, AttachedTo>, mut com
         .try_remove::<Highlighted>();
 }
 
-fn add_highlightable_on_attached(trigger: Trigger<OnRemove, AttachedTo>, mut commands: Commands) {
+fn add_highlightable_on_attached(
+    trigger: Trigger<OnRemove, AttachedTo>,
+    mut commands: Commands,
+    query: Query<&Interactable>,
+) {
+    if query.get(trigger.target()).is_err() {
+        return;
+    }
+
     commands
         .entity(trigger.target())
         .insert(Highlightable::default());
