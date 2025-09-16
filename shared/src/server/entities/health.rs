@@ -205,9 +205,6 @@ fn on_unit_death(
                 }
             }
 
-            // TODO: after armies fight, can not drop picked up flag that was dropped from dead
-            // commander
-
             if let Some(army) = maybe_army {
                 for formation_flag in army.flags.iter().flatten() {
                     commands.entity(*formation_flag).remove::<AttachedTo>();

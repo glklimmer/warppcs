@@ -6,10 +6,10 @@ use bevy::{
     math::bounding::IntersectsVolume,
 };
 use image::{GenericImage, GenericImageView, Rgba};
-use shared::Player;
-use shared::server::physics::attachment::AttachedTo;
-use shared::server::physics::movement::Velocity;
-use shared::{BoxCollider, server::players::interaction::Interactable};
+use shared::{
+    BoxCollider, Player,
+    server::{physics::attachment::AttachedTo, players::interaction::Interactable},
+};
 use std::cmp::Ordering;
 
 use crate::networking::ControlledPlayer;
@@ -98,7 +98,6 @@ fn check_highlight(
     mut outline: Query<
         (
             Entity,
-            Option<&Velocity>,
             &Transform,
             &BoxCollider,
             &Sprite,
@@ -117,47 +116,44 @@ fn check_highlight(
 
     let candidate_entity = outline
         .iter()
-        .filter(|(_, velocity, ..)| match velocity {
-            Some(velocity) => velocity.0 == Vec2::ZERO,
-            None => true,
-        })
-        .filter(|(_, _, transform, collider, ..)| collider.at(transform).intersects(&player_bounds))
+        .filter(|(_, transform, collider, ..)| collider.at(transform).intersects(&player_bounds))
         .max_by(
-            |(_, _, a_transform, .., interactable_a), (_, _, b_transform, .., interactable_b)| {
-                match (interactable_a, interactable_b) {
-                    (Some(a), Some(b)) => {
-                        let priority_a = a.kind as i32;
-                        let priority_b = b.kind as i32;
+            |(_, a_transform, .., interactable_a), (_, b_transform, .., interactable_b)| match (
+                interactable_a,
+                interactable_b,
+            ) {
+                (Some(a), Some(b)) => {
+                    let priority_a = a.kind as i32;
+                    let priority_b = b.kind as i32;
 
-                        if priority_a != priority_b {
-                            return priority_a.cmp(&priority_b);
-                        }
+                    if priority_a != priority_b {
+                        return priority_a.cmp(&priority_b);
+                    }
 
-                        let distance_a = player_transform
-                            .translation
-                            .distance(a_transform.translation);
-                        let distance_b = player_transform
-                            .translation
-                            .distance(b_transform.translation);
-                        distance_b.total_cmp(&distance_a)
-                    }
-                    (None, None) => {
-                        let distance_a = player_transform
-                            .translation
-                            .distance(a_transform.translation);
-                        let distance_b = player_transform
-                            .translation
-                            .distance(b_transform.translation);
-                        distance_b.total_cmp(&distance_a)
-                    }
-                    (None, Some(_)) => Ordering::Less,
-                    (Some(_), None) => Ordering::Greater,
+                    let distance_a = player_transform
+                        .translation
+                        .distance(a_transform.translation);
+                    let distance_b = player_transform
+                        .translation
+                        .distance(b_transform.translation);
+                    distance_b.total_cmp(&distance_a)
                 }
+                (None, None) => {
+                    let distance_a = player_transform
+                        .translation
+                        .distance(a_transform.translation);
+                    let distance_b = player_transform
+                        .translation
+                        .distance(b_transform.translation);
+                    distance_b.total_cmp(&distance_a)
+                }
+                (None, Some(_)) => Ordering::Less,
+                (Some(_), None) => Ordering::Greater,
             },
         )
         .map(|(entity, ..)| entity);
 
-    for (entity, _, _, _, sprite, maybe_highlight, _) in outline.iter_mut() {
+    for (entity, _, _, sprite, maybe_highlight, _) in outline.iter_mut() {
         if Some(entity) == candidate_entity {
             if maybe_highlight.is_none() {
                 commands.entity(entity).insert(Highlighted {
