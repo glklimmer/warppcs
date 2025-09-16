@@ -4,7 +4,7 @@ use shared::{
     AnimationChange, AnimationChangeEvent, PlayerState,
     enum_map::*,
     networking::Mounted,
-    server::{entities::health::DefeatedPlayer, physics::movement::Moving},
+    server::{entities::health::PlayerDefeated, physics::movement::Moving},
 };
 
 use crate::{anim, anim_reverse, networking::ControlledPlayer};
@@ -159,7 +159,7 @@ pub fn set_king_walking(
 }
 
 pub fn set_king_defeat(
-    trigger: Trigger<DefeatedPlayer>,
+    trigger: Trigger<PlayerDefeated>,
     player: Query<Entity, With<ControlledPlayer>>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mut next_state: ResMut<NextState<PlayerState>>,

@@ -52,7 +52,7 @@ use server::{
 
 use crate::server::entities::{
     commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
-    health::DefeatedPlayer,
+    health::PlayerDefeated,
 };
 
 pub mod enum_map;
@@ -114,7 +114,7 @@ impl Plugin for SharedPlugin {
         .add_server_trigger::<CommanderAssignmentReject>(Channel::Unordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
         .add_server_trigger::<LoadMap>(Channel::Ordered)
-        .add_mapped_server_trigger::<DefeatedPlayer>(Channel::Unordered)
+        .add_mapped_server_trigger::<PlayerDefeated>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
         .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)

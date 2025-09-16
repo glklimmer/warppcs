@@ -234,9 +234,9 @@ fn on_unit_death(
 }
 
 #[derive(Event, Clone, Copy, Deserialize, Serialize, Deref)]
-pub struct DefeatedPlayer(Entity);
+pub struct PlayerDefeated(Entity);
 
-impl MapEntities for DefeatedPlayer {
+impl MapEntities for PlayerDefeated {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.0 = entity_mapper.get_mapped(self.0);
     }
@@ -266,7 +266,7 @@ fn on_building_destroy(
             if let BuildingType::MainBuilding { level: _ } = building.building_type {
                 commands.server_trigger(ToClients {
                     mode: SendMode::Broadcast,
-                    event: DefeatedPlayer(owner.entity().unwrap()),
+                    event: PlayerDefeated(owner.entity().unwrap()),
                 });
             }
         }
