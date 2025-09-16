@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 
 use shared::{
-    AnimationChange, AnimationChangeEvent, PlayerState,
+    AnimationChange, AnimationChangeEvent,
     enum_map::*,
     networking::Mounted,
     server::{entities::health::PlayerDefeated, physics::movement::Moving},
 };
 
-use crate::{anim, anim_reverse, networking::ControlledPlayer};
+use crate::{anim, anim_reverse};
 
 use super::{
     AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, AnimationTrigger, PlayOnce,
@@ -160,24 +160,17 @@ pub fn set_king_walking(
 
 pub fn set_king_defeat(
     trigger: Trigger<PlayerDefeated>,
-    player: Query<Entity, With<ControlledPlayer>>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
-    mut next_state: ResMut<NextState<PlayerState>>,
     mut commands: Commands,
 ) {
-    if let Ok(player) = player.single() {
-        if player == **trigger {
-            next_state.set(PlayerState::Defeated);
-        }
-        commands.entity(**trigger).insert(PlayOnce);
-        animation_trigger.write(AnimationTrigger {
-            entity: **trigger,
-            state: KingAnimation::Death,
-        });
-    }
+    commands.entity(**trigger).insert(PlayOnce);
+    animation_trigger.write(AnimationTrigger {
+        entity: **trigger,
+        state: KingAnimation::Death,
+    });
 }
 
-pub fn set_king_defeat_play_once(
+pub fn remove_animation(
     trigger: Trigger<OnRemove, PlayOnce>,
     mut commands: Commands,
     current_animation: Query<&KingAnimation>,

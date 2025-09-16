@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     animations::{
-        king::{set_king_defeat, set_king_defeat_play_once},
+        king::{remove_animation, set_king_defeat},
         ui::{
             animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
             commander_menu::CommanderMenuSpriteSheet,
@@ -215,7 +215,7 @@ impl Plugin for AnimationPlugin {
                 .after(ClientSet::Receive),
         )
         .add_observer(set_king_defeat)
-        .add_observer(set_king_defeat_play_once)
+        .add_observer(remove_animation)
         .add_observer(set_king_walking)
         .add_observer(set_king_idle)
         .add_observer(set_king_after_play_once)

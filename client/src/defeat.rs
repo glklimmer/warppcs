@@ -1,11 +1,26 @@
 use bevy::prelude::*;
-use shared::PlayerState;
+use shared::{PlayerState, server::entities::health::PlayerDefeated};
+
+use crate::networking::ControlledPlayer;
 
 pub struct DefeatPlugin;
 
 impl Plugin for DefeatPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(PlayerState::Defeated), defeat);
+        app.add_observer(set_defeated)
+            .add_systems(OnEnter(PlayerState::Defeated), defeat);
+    }
+}
+
+fn set_defeated(
+    trigger: Trigger<PlayerDefeated>,
+    player: Query<Entity, With<ControlledPlayer>>,
+    mut next_state: ResMut<NextState<PlayerState>>,
+) {
+    if let Ok(player) = player.single() {
+        if player == **trigger {
+            next_state.set(PlayerState::Defeated);
+        }
     }
 }
 
