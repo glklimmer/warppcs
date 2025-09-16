@@ -50,8 +50,9 @@ use server::{
     },
 };
 
-use crate::server::entities::commander::{
-    ArmyFormation, CommanderAssignmentReject, CommanderPickFlag,
+use crate::server::entities::{
+    commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
+    health::PlayerDefeated,
 };
 
 pub mod enum_map;
@@ -107,12 +108,13 @@ impl Plugin for SharedPlugin {
         .add_client_trigger::<CommanderCampInteraction>(Channel::Ordered)
         .add_client_trigger::<AssignItem>(Channel::Ordered)
         .add_client_trigger::<StartBuild>(Channel::Ordered)
-        .add_client_trigger::<CommanderAssignmentRequest>(Channel::Unordered)
-        .add_client_trigger::<CommanderPickFlag>(Channel::Unordered)
+        .add_client_trigger::<CommanderAssignmentRequest>(Channel::Ordered)
+        .add_client_trigger::<CommanderPickFlag>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
-        .add_server_trigger::<CommanderAssignmentReject>(Channel::Unordered)
+        .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
         .add_server_trigger::<LoadMap>(Channel::Ordered)
+        .add_mapped_server_trigger::<PlayerDefeated>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
         .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)
@@ -375,6 +377,7 @@ pub enum PlayerState {
     World,
     Interaction,
     Traveling,
+    Defeated,
 }
 
 pub trait Vec3LayerExt {

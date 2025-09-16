@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
-use bevy_replicon::prelude::{SendMode, ToClients};
+use bevy::ecs::entity::MapEntities;
+use bevy_replicon::prelude::{SendMode, ServerTriggerExt, ToClients};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     AnimationChange, AnimationChangeEvent, BoxCollider, DelayedDespawn, FlagAnimation,
@@ -231,11 +233,27 @@ fn on_unit_death(
     }
 }
 
+#[derive(Event, Clone, Copy, Deserialize, Serialize, Deref)]
+pub struct PlayerDefeated(Entity);
+
+impl MapEntities for PlayerDefeated {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.0 = entity_mapper.get_mapped(self.0);
+    }
+}
+
 fn on_building_destroy(
     mut commands: Commands,
-    mut query: Query<(Entity, &Health, &Building, &mut BuildStatus, &TargetedBy)>,
+    mut query: Query<(
+        Entity,
+        &Health,
+        &Building,
+        &mut BuildStatus,
+        &TargetedBy,
+        &Owner,
+    )>,
 ) {
-    for (entity, health, building, mut status, targeted_by) in query.iter_mut() {
+    for (entity, health, building, mut status, targeted_by, owner) in query.iter_mut() {
         if health.hitpoints <= 0. {
             *status = BuildStatus::Destroyed;
 
@@ -246,7 +264,10 @@ fn on_building_destroy(
                 .remove_related::<Target>(targeted_by);
 
             if let BuildingType::MainBuilding { level: _ } = building.building_type {
-                // TODO: handle player dead
+                commands.server_trigger(ToClients {
+                    mode: SendMode::Broadcast,
+                    event: PlayerDefeated(owner.entity().unwrap()),
+                });
             }
         }
     }
