@@ -37,7 +37,7 @@ use super::item_assignment::ItemAssignment;
     Replicated,
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     BoxCollider = flag_collider(),
-    Transform = (Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()) , scale: Vec3::splat(1./3.), ..default()})
+    Transform = (Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()), ..default()})
 )]
 pub struct Flag {
     #[entities]
@@ -304,7 +304,7 @@ pub fn recruit_commander(
     let range = 10.;
     let range = Range(range);
 
-    let offset = Vec2::new(-18., 0.);
+    let offset = Vec2::new(-22., 0.);
     let commander = commands
         .spawn((
             player_translation.with_layer(Layers::Flag),

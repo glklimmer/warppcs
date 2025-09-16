@@ -3,16 +3,19 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, BoxCollider, DelayedDespawn, Hitby,
+    AnimationChange, AnimationChangeEvent, BoxCollider, DelayedDespawn, FlagAnimation,
+    FlagAnimationEvent, Hitby, Owner,
     map::buildings::{BuildStatus, Building, BuildingType, HealthIndicator},
     networking::{UnitType, WorldDirection},
     server::{
         ai::{BehaveSources, Target, TargetedBy, UnitBehaviour},
-        buildings::recruiting::FlagAssignment,
+        buildings::recruiting::{FlagAssignment, FlagHolder, FlagUnits},
+        physics::{attachment::AttachedTo, movement::Velocity},
+        players::interaction::{Interactable, InteractionType},
     },
 };
 
-use super::Unit;
+use super::{Unit, commander::ArmyFlagAssignments};
 
 #[derive(Component, Clone, Copy)]
 pub struct Health {
@@ -140,25 +143,88 @@ fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), 
 
 fn on_unit_death(
     mut commands: Commands,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
-    query: Query<(Entity, &Health, &TargetedBy), With<Unit>>,
+    mut unit_animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut flag_animation: EventWriter<ToClients<FlagAnimationEvent>>,
+    units: Query<
+        (
+            Entity,
+            &Health,
+            &TargetedBy,
+            &FlagAssignment,
+            &Owner,
+            Option<&ArmyFlagAssignments>,
+        ),
+        With<Unit>,
+    >,
+    group: Query<&FlagUnits>,
+    transform: Query<&Transform>,
+    holder: Query<&FlagHolder>,
 ) {
-    for (entity, health, targeted_by) in query.iter() {
-        if health.hitpoints <= 0. {
-            commands
-                .entity(entity)
-                .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
-                .remove::<FlagAssignment>()
-                .despawn_related::<BehaveSources>()
-                .remove::<UnitBehaviour>()
-                .remove_related::<Target>(targeted_by)
-                .remove::<Health>();
+    for (entity, health, targeted_by, flag_assignment, owner, maybe_army) in units.iter() {
+        if health.hitpoints > 0. {
+            continue;
+        }
 
-            animation.write(ToClients {
+        commands
+            .entity(entity)
+            .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
+            .remove::<FlagAssignment>()
+            .despawn_related::<BehaveSources>()
+            .remove::<UnitBehaviour>()
+            .remove_related::<Target>(targeted_by)
+            .remove::<Interactable>()
+            .remove::<Health>();
+
+        unit_animation.write(ToClients {
+            mode: SendMode::Broadcast,
+            event: AnimationChangeEvent {
+                entity,
+                change: AnimationChange::Death,
+            },
+        });
+
+        let flag = flag_assignment.entity();
+        let group = group.get(flag).unwrap();
+        let num_alive = group.len();
+
+        // last unit from flag died
+        if num_alive == 1 {
+            let flag_transform = transform.get(flag).unwrap();
+
+            commands
+                .entity(flag)
+                .insert(DelayedDespawn(Timer::from_seconds(620., TimerMode::Once)))
+                .remove::<AttachedTo>()
+                .remove::<Interactable>();
+
+            if let Some(player) = owner.entity() {
+                if let Ok(holder) = holder.get(player) {
+                    if flag.eq(&**holder) {
+                        commands.entity(player).remove::<FlagHolder>();
+                    }
+                }
+            }
+
+            if let Some(army) = maybe_army {
+                for formation_flag in army.flags.iter().flatten() {
+                    commands.entity(*formation_flag).remove::<AttachedTo>();
+                    commands.entity(*formation_flag).insert((
+                        *flag_transform,
+                        Velocity(Vec2::new((fastrand::f32() - 0.5) * 150., 100.)),
+                        Visibility::Visible,
+                        Interactable {
+                            kind: InteractionType::Flag,
+                            restricted_to: owner.entity(),
+                        },
+                    ));
+                }
+            }
+
+            flag_animation.write(ToClients {
                 mode: SendMode::Broadcast,
-                event: AnimationChangeEvent {
-                    entity,
-                    change: AnimationChange::Death,
+                event: FlagAnimationEvent {
+                    entity: flag,
+                    animation: FlagAnimation::Destroyed,
                 },
             });
         }

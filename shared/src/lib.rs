@@ -118,6 +118,7 @@ impl Plugin for SharedPlugin {
         .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
+        .add_mapped_server_event::<FlagAnimationEvent>(Channel::Ordered)
         .add_observer(spawn_clients);
     }
 }
@@ -178,6 +179,27 @@ impl MapEntities for ChestAnimationEvent {
     }
 }
 
+#[derive(
+    Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default, Deserialize, Serialize,
+)]
+pub enum FlagAnimation {
+    #[default]
+    Wave,
+    Destroyed,
+}
+
+#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize)]
+pub struct FlagAnimationEvent {
+    pub entity: Entity,
+    pub animation: FlagAnimation,
+}
+
+impl MapEntities for FlagAnimationEvent {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.entity = entity_mapper.get_mapped(self.entity);
+    }
+}
+
 fn spawn_clients(
     trigger: Trigger<OnAdd, ConnectedClient>,
     mut commands: Commands,
@@ -189,7 +211,7 @@ fn spawn_clients(
             Player {
                 color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
             },
-            Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
+            Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
         ))
         .id();
 

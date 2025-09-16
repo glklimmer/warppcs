@@ -18,7 +18,7 @@ use king::{
 };
 use objects::{
     chest::{ChestSpriteSheet, play_chest_animation, set_chest_after_play_once},
-    flag::FlagSpriteSheet,
+    flag::{FlagSpriteSheet, play_flag_animation},
     items::{
         chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
         weapons::WeaponsSpriteSheet,
@@ -207,6 +207,7 @@ impl Plugin for AnimationPlugin {
                 trigger_king_animation,
                 trigger_unit_animation,
                 play_chest_animation,
+                play_flag_animation,
             )
                 .after(ClientSet::Receive),
         )

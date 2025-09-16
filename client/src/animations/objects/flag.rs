@@ -1,19 +1,14 @@
 use bevy::prelude::*;
 
-use shared::enum_map::*;
+use shared::{FlagAnimation, FlagAnimationEvent, enum_map::*};
 
 use crate::{
     anim,
     animations::{AnimationSpriteSheet, sprite_variant_loader::SpriteVariants},
+    entities::highlight::Highlighted,
 };
 
 const ATLAS_COLUMNS: usize = 8;
-
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
-pub enum FlagAnimation {
-    #[default]
-    Wave,
-}
 
 #[derive(Resource)]
 pub struct FlagSpriteSheet {
@@ -28,19 +23,21 @@ impl FromWorld for FlagSpriteSheet {
         let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-            UVec2::new(48, 64),
+            UVec2::new(24, 24),
             ATLAS_COLUMNS as u32,
-            1,
-            None,
+            2,
+            Some(UVec2::splat(1)),
             None,
         ));
 
         let animations = EnumMap::new(|c| match c {
             FlagAnimation::Wave => anim!(0, 7),
+            FlagAnimation::Destroyed => anim!(1, 7),
         });
 
         let animations_sound = EnumMap::new(|c| match c {
             FlagAnimation::Wave => None,
+            FlagAnimation::Destroyed => None,
         });
 
         FlagSpriteSheet {
@@ -51,6 +48,34 @@ impl FromWorld for FlagSpriteSheet {
                 animations,
                 animations_sound,
             ),
+        }
+    }
+}
+
+pub fn play_flag_animation(
+    mut animation_changes: EventReader<FlagAnimationEvent>,
+    mut commands: Commands,
+    mut query: Query<&mut Sprite>,
+    flag_sprite_sheet: Res<FlagSpriteSheet>,
+) {
+    for event in animation_changes.read() {
+        let Ok(mut sprite) = query.get_mut(event.entity) else {
+            continue;
+        };
+
+        let animation = flag_sprite_sheet
+            .sprite_sheet
+            .animations
+            .get(event.animation);
+
+        if let FlagAnimation::Destroyed = event.animation {
+            commands.entity(event.entity).remove::<Highlighted>();
+        }
+
+        commands.entity(event.entity).insert(animation.clone());
+
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            atlas.index = animation.first_sprite_index;
         }
     }
 }
