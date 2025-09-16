@@ -211,7 +211,7 @@ fn spawn_clients(
             Player {
                 color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
             },
-            Transform::from_xyz(50.0, 0.0, Layers::Player.as_f32()),
+            Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
         ))
         .id();
 
