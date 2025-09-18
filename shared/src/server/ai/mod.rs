@@ -5,7 +5,7 @@ use bevy_behave::{
     Behave, behave,
     prelude::{BehaveInterrupt, BehavePlugin, BehaveTree, BehaveTrigger},
 };
-use movement::AIMovementPlugin;
+use movement::{AIMovementPlugin, FollowFlag, Roam};
 
 use crate::{Owner, networking::WorldDirection};
 
@@ -29,12 +29,19 @@ pub enum UnitBehaviour {
     Attack(WorldDirection),
 }
 
+#[derive(Debug, Component, Default, Clone)]
+pub enum BanditBehaviour {
+    #[default]
+    Aggressive,
+}
+
 pub struct AIPlugin;
 
 impl Plugin for AIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((BehavePlugin::default(), AIAttackPlugin, AIMovementPlugin))
             .add_observer(on_insert_unit_behaviour)
+            .add_observer(on_insert_bandit_behaviour)
             .add_observer(push_back_check)
             .add_observer(determine_target)
             .add_observer(check_target_in_range)
@@ -47,9 +54,6 @@ struct AttackingInRange;
 
 #[derive(Component, Clone)]
 struct WalkIntoRange;
-
-#[derive(Component, Clone)]
-struct FollowFlag;
 
 #[derive(Component, Clone, Deref)]
 struct WalkingInDirection(WorldDirection);
@@ -65,46 +69,8 @@ fn on_insert_unit_behaviour(
     let behaviour = query.get(entity).unwrap();
 
     let attack_nearby = match behaviour {
-        UnitBehaviour::FollowFlag => {
-            behave!(
-                Behave::IfThen => {
-                    Behave::trigger(DetermineTarget),
-                    Behave::IfThen => {
-                        Behave::trigger(TargetInRange),
-                        Behave::spawn_named(
-                            "Attack nearest enemy",
-                            (
-                                AttackingInRange,
-                                BehaveInterrupt::by_not(TargetInRange),
-                                BehaveTarget(entity)
-                            )
-                        )
-                    }
-                }
-            )
-        }
-        _ => {
-            behave!(
-                Behave::IfThen => {
-                    Behave::trigger(DetermineTarget),
-                    Behave::IfThen => {
-                        Behave::trigger(TargetInRange),
-                        Behave::spawn_named(
-                            "Attack nearest enemy",
-                            (
-                                AttackingInRange,
-                                BehaveInterrupt::by_not(TargetInRange),
-                                BehaveTarget(entity)
-                            )
-                        ),
-                        Behave::spawn_named(
-                            "Walking to target",
-                            (WalkIntoRange, BehaveTarget(entity))
-                        )
-                    }
-                }
-            )
-        }
+        UnitBehaviour::FollowFlag => attack_in_range(entity),
+        _ => attack_and_walk_in_range(entity),
     };
 
     let stance = match behaviour {
@@ -138,7 +104,6 @@ fn on_insert_unit_behaviour(
         }
     );
 
-    info!("new behave: {:?}", behaviour);
     commands
         .entity(entity)
         .despawn_related::<BehaveSources>()
@@ -146,6 +111,85 @@ fn on_insert_unit_behaviour(
             BehaveTree::new(tree).with_logging(false),
             BehaveTarget(entity),
         ));
+}
+
+fn on_insert_bandit_behaviour(
+    trigger: Trigger<OnInsert, BanditBehaviour>,
+    mut commands: Commands,
+    query: Query<&BanditBehaviour>,
+) {
+    let entity = trigger.target();
+    let behaviour = query.get(entity).unwrap();
+
+    let stance = match behaviour {
+        BanditBehaviour::Aggressive => behave!(Behave::spawn_named(
+            "Roaming",
+            (
+                Roam,
+                BehaveInterrupt::by(DetermineTarget).or(BeingPushed),
+                BehaveTarget(entity)
+            )
+        )),
+    };
+
+    let tree = behave!(
+        Behave::Forever => {
+            Behave::Fallback => {
+                @ attack_and_walk_in_range(entity),
+                @ stance
+            }
+        }
+    );
+
+    commands
+        .entity(entity)
+        .despawn_related::<BehaveSources>()
+        .with_child((
+            BehaveTree::new(tree).with_logging(false),
+            BehaveTarget(entity),
+        ));
+}
+
+fn attack_and_walk_in_range(entity: Entity) -> bevy_behave::prelude::Tree<Behave> {
+    behave!(
+        Behave::IfThen => {
+            Behave::trigger(DetermineTarget),
+            Behave::IfThen => {
+                Behave::trigger(TargetInRange),
+                Behave::spawn_named(
+                    "Attack nearest enemy",
+                    (
+                        AttackingInRange,
+                        BehaveInterrupt::by_not(TargetInRange),
+                        BehaveTarget(entity)
+                    )
+                ),
+                Behave::spawn_named(
+                    "Walking to target",
+                    (WalkIntoRange, BehaveTarget(entity))
+                )
+            }
+        }
+    )
+}
+
+fn attack_in_range(entity: Entity) -> bevy_behave::prelude::Tree<Behave> {
+    behave!(
+        Behave::IfThen => {
+            Behave::trigger(DetermineTarget),
+            Behave::IfThen => {
+                Behave::trigger(TargetInRange),
+                Behave::spawn_named(
+                    "Attack nearest enemy",
+                    (
+                        AttackingInRange,
+                        BehaveInterrupt::by_not(TargetInRange),
+                        BehaveTarget(entity)
+                    )
+                )
+            }
+        }
+    )
 }
 
 #[derive(Component, Clone, Deref)]
