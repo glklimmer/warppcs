@@ -1,5 +1,6 @@
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::prelude::*;
 
+use bevy::sprite::Anchor;
 use bevy_replicon::prelude::Replicated;
 use commander::CommanderPlugin;
 use enum_mappable::Mappable;
@@ -10,8 +11,9 @@ use crate::{BoxCollider, PlayerColor, enum_map::EnumIter, networking::UnitType, 
 
 use super::physics::{
     PushBack,
-    movement::{RandomVelocityMul, Velocity},
+    movement::{RandomVelocityMul, Speed, Velocity},
 };
+
 pub mod commander;
 pub mod health;
 
@@ -34,7 +36,11 @@ pub enum UnitAnimation {
     PushBack,
     UnitAnimation,
     Sprite{anchor: Anchor::BottomCenter, ..default()},
-    RandomVelocityMul
+    RandomVelocityMul,
+    Health,
+    Range,
+    Speed,
+    Damage
 )]
 pub struct Unit {
     pub unit_type: UnitType,
@@ -45,8 +51,20 @@ pub struct Unit {
 #[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]
 pub struct Damage(pub f32);
 
+impl Default for Damage {
+    fn default() -> Self {
+        Self(10.)
+    }
+}
+
 #[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]
 pub struct Range(pub f32);
+
+impl Default for Range {
+    fn default() -> Self {
+        Self(10.)
+    }
+}
 
 pub struct EntityPlugin;
 

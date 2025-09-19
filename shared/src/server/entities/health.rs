@@ -10,14 +10,14 @@ use crate::{
     map::buildings::{BuildStatus, Building, BuildingType, HealthIndicator},
     networking::{UnitType, WorldDirection},
     server::{
-        ai::{BehaveSources, Target, TargetedBy, UnitBehaviour},
+        ai::{BanditBehaviour, BehaveSources, Target, TargetedBy, UnitBehaviour},
         buildings::recruiting::{FlagAssignment, FlagHolder, FlagUnits},
         physics::{attachment::AttachedTo, movement::Velocity},
         players::interaction::{Interactable, InteractionType},
     },
 };
 
-use super::{Unit, commander::ArmyFlagAssignments};
+use super::commander::ArmyFlagAssignments;
 
 #[derive(Component, Clone, Copy)]
 pub struct Health {
@@ -74,11 +74,10 @@ impl Plugin for HealthPlugin {
             (
                 (
                     delayed_damage,
-                    (apply_damage).run_if(on_event::<TakeDamage>),
+                    ((apply_damage, on_unit_death).chain()).run_if(on_event::<TakeDamage>),
                     update_build_status,
                 )
                     .chain(),
-                on_unit_death,
                 on_building_destroy,
                 delayed_despawn,
             ),
@@ -102,8 +101,8 @@ fn delayed_damage(
 }
 
 fn apply_damage(
-    mut query: Query<(Entity, &mut Health)>,
     mut attack_events: EventReader<TakeDamage>,
+    mut query: Query<(Entity, &mut Health)>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
 ) {
     for event in attack_events.read() {
@@ -144,25 +143,28 @@ fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), 
 }
 
 fn on_unit_death(
+    mut damage_events: EventReader<TakeDamage>,
     mut commands: Commands,
     mut unit_animation: EventWriter<ToClients<AnimationChangeEvent>>,
     mut flag_animation: EventWriter<ToClients<FlagAnimationEvent>>,
-    units: Query<
-        (
-            Entity,
-            &Health,
-            &TargetedBy,
-            &FlagAssignment,
-            &Owner,
-            Option<&ArmyFlagAssignments>,
-        ),
-        With<Unit>,
-    >,
+    units: Query<(
+        Entity,
+        &Health,
+        &Owner,
+        Option<&TargetedBy>,
+        Option<&FlagAssignment>,
+        Option<&ArmyFlagAssignments>,
+    )>,
     group: Query<&FlagUnits>,
     transform: Query<&Transform>,
     holder: Query<&FlagHolder>,
 ) {
-    for (entity, health, targeted_by, flag_assignment, owner, maybe_army) in units.iter() {
+    for damage_event in damage_events.read() {
+        let Ok((entity, health, owner, maybe_targeted_by, maybe_flag_assignment, maybe_army)) =
+            units.get(damage_event.target_entity)
+        else {
+            continue;
+        };
         if health.hitpoints > 0. {
             continue;
         }
@@ -170,12 +172,9 @@ fn on_unit_death(
         commands
             .entity(entity)
             .insert(DelayedDespawn(Timer::from_seconds(600., TimerMode::Once)))
-            .remove::<FlagAssignment>()
             .despawn_related::<BehaveSources>()
-            .remove::<UnitBehaviour>()
-            .remove_related::<Target>(targeted_by)
-            .remove::<Interactable>()
-            .remove::<Health>();
+            .remove::<Health>()
+            .try_remove::<Interactable>();
 
         unit_animation.write(ToClients {
             mode: SendMode::Broadcast,
@@ -184,6 +183,22 @@ fn on_unit_death(
                 change: AnimationChange::Death,
             },
         });
+
+        if let Some(targeted_by) = maybe_targeted_by {
+            commands
+                .entity(entity)
+                .remove_related::<Target>(targeted_by);
+        };
+
+        let Some(flag_assignment) = maybe_flag_assignment else {
+            commands.entity(entity).remove::<BanditBehaviour>();
+            continue;
+        };
+
+        commands
+            .entity(entity)
+            .remove::<FlagAssignment>()
+            .remove::<UnitBehaviour>();
 
         let flag = flag_assignment.entity();
         let group = group.get(flag).unwrap();
@@ -249,19 +264,24 @@ fn on_building_destroy(
         &Health,
         &Building,
         &mut BuildStatus,
-        &TargetedBy,
         &Owner,
+        Option<&TargetedBy>,
     )>,
 ) {
-    for (entity, health, building, mut status, targeted_by, owner) in query.iter_mut() {
+    for (entity, health, building, mut status, owner, maybe_targeted_by) in query.iter_mut() {
         if health.hitpoints <= 0. {
             *status = BuildStatus::Destroyed;
 
             commands
                 .entity(entity)
                 .remove::<Health>()
-                .remove::<BoxCollider>()
-                .remove_related::<Target>(targeted_by);
+                .remove::<BoxCollider>();
+
+            if let Some(targeted_by) = maybe_targeted_by {
+                commands
+                    .entity(entity)
+                    .remove_related::<Target>(targeted_by);
+            };
 
             if let BuildingType::MainBuilding { level: _ } = building.building_type {
                 commands.server_trigger(ToClients {

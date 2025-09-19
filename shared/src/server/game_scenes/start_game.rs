@@ -12,9 +12,10 @@ use crate::{
     },
     networking::{MountType, UnitType},
     server::{
+        ai::BanditBehaviour,
         buildings::item_assignment::ItemAssignment,
-        entities::{Unit, health::Health},
-        physics::movement::Velocity,
+        entities::{Damage, Range, Unit, health::Health},
+        physics::movement::{Speed, Velocity},
         players::{
             chest::Chest,
             interaction::{Interactable, InteractionType},
@@ -115,10 +116,14 @@ fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_rig
             Owner::Bandits,
             Unit {
                 unit_type: UnitType::Bandit,
-                swing_timer: Timer::default(),
+                swing_timer: Timer::from_seconds(4., TimerMode::Once),
                 color: PlayerColor::default(),
             },
+            BanditBehaviour::default(),
             Health { hitpoints: 25. },
+            Range(10.),
+            Speed(30.),
+            Damage(10.),
             offset
                 .offset_x(50. - 10. * i as f32)
                 .with_layer(Layers::Unit),
@@ -126,10 +131,10 @@ fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_rig
     }
     commands
         .entity(camp_left_portal)
-        .insert((Portal, offset.offset_x(-150.).with_layer(Layers::Building)));
+        .insert((Portal, offset.offset_x(-250.).with_layer(Layers::Building)));
     commands
         .entity(camp_right_portal)
-        .insert((Portal, offset.offset_x(150.).with_layer(Layers::Building)));
+        .insert((Portal, offset.offset_x(250.).with_layer(Layers::Building)));
 }
 
 fn player_base(

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy_behave::prelude::BehaveCtx;
 
-use super::{FollowFlag, FollowOffset, Target, WalkIntoRange, WalkingInDirection};
+use super::{FollowOffset, Target, WalkIntoRange, WalkingInDirection};
 
 use crate::{
     networking::UnitType,
@@ -16,13 +16,19 @@ use crate::{
     },
 };
 
+#[derive(Component, Clone)]
+pub struct FollowFlag;
+
+#[derive(Component, Clone)]
+pub struct Roam;
+
 pub struct AIMovementPlugin;
 
 impl Plugin for AIMovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (follow_flag, walk_into_range, walk_in_direction),
+            (follow_flag, roam, walk_into_range, walk_in_direction),
         );
     }
 }
@@ -78,6 +84,30 @@ fn follow_flag(
         }
 
         velocity.0.x = direction * **speed * **rand_velocity_mul;
+    }
+}
+
+fn roam(
+    query: Query<&BehaveCtx, With<Roam>>,
+    mut unit: Query<(&mut Velocity, &RandomVelocityMul, &Speed)>,
+) {
+    for ctx in query.iter() {
+        if let Ok((mut velocity, rand_velocity_mul, speed)) = unit.get_mut(ctx.target_entity()) {
+            if fastrand::f32() < 0.02 {
+                let choice = fastrand::u8(0..3);
+                match choice {
+                    0 => {
+                        velocity.0.x = 0.0;
+                    }
+                    1 => {
+                        velocity.0.x = -1.0 * **speed * **rand_velocity_mul;
+                    }
+                    _ => {
+                        velocity.0.x = 1.0 * **speed * **rand_velocity_mul;
+                    }
+                }
+            }
+        }
     }
 }
 
