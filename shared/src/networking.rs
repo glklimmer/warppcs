@@ -70,8 +70,9 @@ pub struct Mounted {
     pub mount_type: MountType,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub enum WorldDirection {
+    #[default]
     Left,
     Right,
 }

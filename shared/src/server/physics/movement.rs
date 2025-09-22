@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     BoxCollider, GRAVITY_G, Owner, Player,
     map::buildings::{BuildStatus, Building, BuildingType},
-    server::{entities::health::Health, players::items::Item},
+    server::{entities::health::Health, physics::army_slot::ArmySlot, players::items::Item},
 };
 use bevy::math::bounding::IntersectsVolume;
 
@@ -91,7 +91,10 @@ fn apply_velocity(
 }
 
 fn apply_direction(
-    mut query: Query<(&Velocity, &mut Transform), (Changed<Velocity>, Without<Item>)>,
+    mut query: Query<
+        (&Velocity, &mut Transform),
+        (Changed<Velocity>, Without<Item>, Without<ArmySlot>),
+    >,
 ) {
     for (velocity, mut transform) in query.iter_mut() {
         if velocity.0.x != 0. {

@@ -1,4 +1,5 @@
 use crate::enum_map::EnumIter;
+use crate::server::physics::army_slot::ArmySlot;
 use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
@@ -333,7 +334,10 @@ pub fn recruit_commander(
         formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
         let formation = commands
             .spawn((
-                ChildOf(commander),
+                ArmySlot {
+                    commander,
+                    offset: formation_offset,
+                },
                 Velocity::default(),
                 Transform::from_translation(Vec3::new(-formation_offset, 0., 0.))
                     .with_scale(Vec3::new(BASE_FORMATION_WIDTH, 1., 1.)),
