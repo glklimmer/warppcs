@@ -1,5 +1,3 @@
-use crate::enum_map::EnumIter;
-use crate::map::buildings::HealthIndicator;
 use bevy::prelude::*;
 
 use bevy::{
@@ -13,13 +11,15 @@ use serde_json::{Value, json};
 
 use crate::{
     ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
-    enum_map::EnumMap,
+    enum_map::{EnumIter, EnumMap},
     map::{
         Layers,
-        buildings::{BuildStatus, Building, BuildingType, RecruitBuilding, RespawnZone},
+        buildings::{
+            BuildStatus, Building, BuildingType, HealthIndicator, RecruitBuilding, RespawnZone,
+        },
     },
     networking::UnitType,
-    server::entities::commander::ArmyFormation,
+    server::{entities::commander::ArmyFormation, physics::army_slot::ArmySlot},
 };
 
 use super::{
@@ -271,9 +271,12 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
         let formation = world
             .spawn((
-                ChildOf(commander),
+                ArmySlot {
+                    commander,
+                    offset: formation_offset,
+                },
                 Velocity::default(),
-                Transform::from_translation(Vec3::new(-formation_offset, 0., 0.)),
+                Transform::default(),
             ))
             .id();
         army_formation.push(formation);
