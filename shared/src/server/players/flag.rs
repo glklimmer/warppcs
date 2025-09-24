@@ -73,13 +73,13 @@ pub fn pick_flag(
 
         let mut all_units: Vec<Entity> = flag_units.iter().collect();
         let first_unit = flag_units.iter().next();
-        if let Some(commander) = first_unit {
-            if let Ok(army) = army.get(commander) {
-                for formation_flag in army.flags.iter().flatten() {
-                    let formation_units = units.get(*formation_flag).unwrap();
-                    let units: Vec<Entity> = formation_units.iter().collect();
-                    all_units.append(&mut units.clone());
-                }
+        if let Some(commander) = first_unit
+            && let Ok(army) = army.get(commander)
+        {
+            for formation_flag in army.flags.iter().flatten() {
+                let formation_units = units.get(*formation_flag).unwrap();
+                let units: Vec<Entity> = formation_units.iter().collect();
+                all_units.append(&mut units.clone());
             }
         };
 
@@ -110,13 +110,13 @@ pub fn drop_flag(
 
         let mut all_units: Vec<Entity> = flag_units.iter().collect();
         let first_unit = flag_units.iter().next();
-        if let Some(commander) = first_unit {
-            if let Ok(army) = army.get(commander) {
-                for formation_flag in army.flags.iter().flatten() {
-                    let formation_units = units.get(*formation_flag).unwrap();
-                    let units: Vec<Entity> = formation_units.iter().collect();
-                    all_units.append(&mut units.clone());
-                }
+        if let Some(commander) = first_unit
+            && let Ok(army) = army.get(commander)
+        {
+            for formation_flag in army.flags.iter().flatten() {
+                let formation_units = units.get(*formation_flag).unwrap();
+                let units: Vec<Entity> = formation_units.iter().collect();
+                all_units.append(&mut units.clone());
             }
         };
 

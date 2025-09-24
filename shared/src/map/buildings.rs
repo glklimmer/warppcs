@@ -175,10 +175,10 @@ impl BuildingType {
         match *self {
             BuildingType::MainBuilding { level } => level
                 .next_level()
-                .map(|level| (BuildingType::MainBuilding { level })),
-            BuildingType::Wall { level } => level
-                .next_level()
-                .map(|level| (BuildingType::Wall { level })),
+                .map(|level| BuildingType::MainBuilding { level }),
+            BuildingType::Wall { level } => {
+                level.next_level().map(|level| BuildingType::Wall { level })
+            }
             BuildingType::Unit { weapon: _ } => None,
             BuildingType::Tower => None,
             BuildingType::GoldFarm => None,

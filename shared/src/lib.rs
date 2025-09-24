@@ -237,7 +237,7 @@ impl MapEntities for SetLocalPlayer {
 #[derive(Component, Deserialize, Serialize)]
 #[require(
     Replicated,
-    Transform = (Transform::from_xyz(0., 0., Layers::Player.as_f32())),
+    Transform = Transform::from_xyz(0., 0., Layers::Player.as_f32()),
     BoxCollider = player_collider(),
     Speed,
     Velocity,

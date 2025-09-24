@@ -179,7 +179,7 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
 
     let len = menu.nodes.len();
     let mut offset = -((len / 2) as f32 * menu.config.gap);
-    if len % 2 == 0 {
+    if len.is_multiple_of(2) {
         offset += menu.config.gap / 2.;
     }
 

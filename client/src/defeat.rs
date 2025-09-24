@@ -17,10 +17,10 @@ fn set_defeated(
     player: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) {
-    if let Ok(player) = player.single() {
-        if player == **trigger {
-            next_state.set(PlayerState::Defeated);
-        }
+    if let Ok(player) = player.single()
+        && player == **trigger
+    {
+        next_state.set(PlayerState::Defeated);
     }
 }
 

@@ -92,19 +92,19 @@ fn roam(
     mut unit: Query<(&mut Velocity, &RandomVelocityMul, &Speed)>,
 ) {
     for ctx in query.iter() {
-        if let Ok((mut velocity, rand_velocity_mul, speed)) = unit.get_mut(ctx.target_entity()) {
-            if fastrand::f32() < 0.02 {
-                let choice = fastrand::u8(0..3);
-                match choice {
-                    0 => {
-                        velocity.0.x = 0.0;
-                    }
-                    1 => {
-                        velocity.0.x = -1.0 * **speed * **rand_velocity_mul;
-                    }
-                    _ => {
-                        velocity.0.x = 1.0 * **speed * **rand_velocity_mul;
-                    }
+        if let Ok((mut velocity, rand_velocity_mul, speed)) = unit.get_mut(ctx.target_entity())
+            && fastrand::f32() < 0.02
+        {
+            let choice = fastrand::u8(0..3);
+            match choice {
+                0 => {
+                    velocity.0.x = 0.0;
+                }
+                1 => {
+                    velocity.0.x = -1.0 * **speed * **rand_velocity_mul;
+                }
+                _ => {
+                    velocity.0.x = 1.0 * **speed * **rand_velocity_mul;
                 }
             }
         }
