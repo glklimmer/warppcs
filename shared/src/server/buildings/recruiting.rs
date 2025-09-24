@@ -38,7 +38,7 @@ use super::item_assignment::ItemAssignment;
     Replicated,
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     BoxCollider = flag_collider(),
-    Transform = (Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()), ..default()})
+    Transform = Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()), ..default()}
 )]
 pub struct Flag {
     #[entities]

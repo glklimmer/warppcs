@@ -132,12 +132,12 @@ fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), 
             _ => HealthIndicator::Heavy,
         };
 
-        if let BuildStatus::Built { indicator } = *status {
-            if indicator != severity {
-                *status = BuildStatus::Built {
-                    indicator: severity,
-                };
-            }
+        if let BuildStatus::Built { indicator } = *status
+            && indicator != severity
+        {
+            *status = BuildStatus::Built {
+                indicator: severity,
+            };
         }
     }
 }
@@ -214,12 +214,11 @@ fn on_unit_death(
                 .remove::<AttachedTo>()
                 .remove::<Interactable>();
 
-            if let Some(player) = owner.entity() {
-                if let Ok(holder) = holder.get(player) {
-                    if flag.eq(&**holder) {
-                        commands.entity(player).remove::<FlagHolder>();
-                    }
-                }
+            if let Some(player) = owner.entity()
+                && let Ok(holder) = holder.get(player)
+                && flag.eq(&**holder)
+            {
+                commands.entity(player).remove::<FlagHolder>();
             }
 
             if let Some(army) = maybe_army {

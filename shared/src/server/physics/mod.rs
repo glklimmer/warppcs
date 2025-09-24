@@ -46,13 +46,13 @@ fn apply_force_on_hit(
     mut query: Query<(&mut Velocity, &mut PushBack)>,
 ) {
     for event in hit.read() {
-        if let Ok((mut velocity, mut push_back)) = query.get_mut(event.target_entity) {
-            if push_back.timer.finished() {
-                let direction: f32 = event.direction.into();
-                let push = Vec2::new(direction * 50., 50.);
-                push_back.timer.reset();
-                velocity.0 += push;
-            }
+        if let Ok((mut velocity, mut push_back)) = query.get_mut(event.target_entity)
+            && push_back.timer.finished()
+        {
+            let direction: f32 = event.direction.into();
+            let push = Vec2::new(direction * 50., 50.);
+            push_back.timer.reset();
+            velocity.0 += push;
         }
     }
 }

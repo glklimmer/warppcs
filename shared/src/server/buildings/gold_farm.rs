@@ -42,10 +42,10 @@ pub fn gold_farm_output(
     for (mut farm_timer, owner) in &mut gold_farms_query {
         farm_timer.timer.tick(time.delta());
 
-        if farm_timer.timer.just_finished() {
-            if let Ok(mut inventory) = inventory_query.get_mut(owner.entity().unwrap()) {
-                inventory.gold += GOLD_PER_TICK;
-            }
+        if farm_timer.timer.just_finished()
+            && let Ok(mut inventory) = inventory_query.get_mut(owner.entity().unwrap())
+        {
+            inventory.gold += GOLD_PER_TICK;
         }
     }
 }

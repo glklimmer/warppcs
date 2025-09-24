@@ -162,29 +162,29 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
 }
 
 fn spawn_random_items(In(params): In<Option<serde_json::Value>>, world: &mut World) -> BrpResult {
-    if let Some(value) = params {
-        if let Ok(brp) = serde_json::from_value::<BrpSpawnItems>(value) {
-            let player_entity = brp.player_entity(world)?;
+    if let Some(value) = params
+        && let Ok(brp) = serde_json::from_value::<BrpSpawnItems>(value)
+    {
+        let player_entity = brp.player_entity(world)?;
 
-            let player_pos = {
-                let mut query: QueryState<&Transform> = QueryState::new(world);
-                let transform = query.get(world, player_entity).unwrap();
-                transform.translation
-            };
+        let player_pos = {
+            let mut query: QueryState<&Transform> = QueryState::new(world);
+            let transform = query.get(world, player_entity).unwrap();
+            transform.translation
+        };
 
-            for item_type in ItemType::all_variants() {
-                let item = Item::builder()
-                    .with_rarity(Rarity::Common)
-                    .with_type(item_type)
-                    .build();
+        for item_type in ItemType::all_variants() {
+            let item = Item::builder()
+                .with_rarity(Rarity::Common)
+                .with_type(item_type)
+                .build();
 
-                world.spawn((
-                    item.collider(),
-                    item,
-                    player_pos.with_y(12.5).with_layer(Layers::Item),
-                    Velocity(Vec2::new((fastrand::f32() - 0.5) * 100., 100.)),
-                ));
-            }
+            world.spawn((
+                item.collider(),
+                item,
+                player_pos.with_y(12.5).with_layer(Layers::Item),
+                Velocity(Vec2::new((fastrand::f32() - 0.5) * 100., 100.)),
+            ));
         }
     }
 

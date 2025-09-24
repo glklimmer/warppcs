@@ -182,10 +182,10 @@ fn init_highlightable(
 
     let controller_player = controlled_player.single().unwrap();
 
-    if let Some(owner) = interactable.restricted_to {
-        if owner != controller_player {
-            return;
-        }
+    if let Some(owner) = interactable.restricted_to
+        && owner != controller_player
+    {
+        return;
     }
     commands
         .entity(trigger.target())
