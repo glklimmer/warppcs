@@ -195,31 +195,76 @@ fn init_scene_end_sprite(
     let mut entity_commands = commands.entity(trigger.target());
     entity_commands.insert((animation.clone(), TreeAnimation::default()));
 
-    let parent = trigger.target();
-    let atlas = texture_atlas.clone();
-
-    let trees = [
-        (-39., 0., 8., bright_texture.clone()),
-        (-22., 1., 5., dim_texture.clone()),
-        (-14., 0., 3., dim_texture.clone()),
-        (-8., 0., 7., dark_texture.clone()),
-        (8., 2., 6., dim_texture.clone()),
-        (17., 1., 4., dark_texture.clone()),
-        (25., 2., 1., bright_texture.clone()),
-    ];
-
-    commands.spawn_batch(trees.into_iter().map(move |(x, y, z, image)| {
-        (
-            ChildOf(parent),
-            Transform::from_xyz(x, y, z),
-            Sprite {
-                image,
-                texture_atlas: atlas.clone(),
-                anchor: Anchor::BottomCenter,
-                ..default()
-            },
-        )
-    }));
+    commands.spawn((
+        ChildOf(trigger.target()),
+        Transform::from_xyz(-39., 0., 8.),
+        Sprite {
+            image: bright_texture.clone(),
+            texture_atlas: texture_atlas.clone(),
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+    ));
+    commands.spawn((
+        ChildOf(trigger.target()),
+        Transform::from_xyz(-22., 1., 5.),
+        Sprite {
+            image: dim_texture.clone(),
+            texture_atlas: texture_atlas.clone(),
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+    ));
+    commands.spawn((
+        ChildOf(trigger.target()),
+        Transform::from_xyz(-14., 0., 3.),
+        Sprite {
+            image: dim_texture.clone(),
+            texture_atlas: texture_atlas.clone(),
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+    ));
+    commands.spawn((
+        ChildOf(trigger.target()),
+        Transform::from_xyz(-8., 0., 7.),
+        Sprite {
+            image: dark_texture.clone(),
+            texture_atlas: texture_atlas.clone(),
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+    ));
+    commands.spawn((
+        ChildOf(trigger.target()),
+        Transform::from_xyz(8., 2., 6.),
+        Sprite {
+            image: dim_texture.clone(),
+            texture_atlas: texture_atlas.clone(),
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+    ));
+    commands.spawn((
+        ChildOf(trigger.target()),
+        Transform::from_xyz(17., 1., 4.),
+        Sprite {
+            image: dark_texture.clone(),
+            texture_atlas: texture_atlas.clone(),
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+    ));
+    commands.spawn((
+        ChildOf(trigger.target()),
+        Transform::from_xyz(25., 2., 1.),
+        Sprite {
+            image: bright_texture.clone(),
+            texture_atlas: texture_atlas.clone(),
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+    ));
 }
 
 fn init_portal_sprite(
