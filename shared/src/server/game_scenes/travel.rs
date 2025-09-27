@@ -65,9 +65,17 @@ pub struct TravelDestinationOffset(f32);
 impl TravelDestinationOffset {
     pub fn to(exit_type: ExitType) -> Self {
         let offset = match exit_type {
-            ExitType::PlayerLeft | ExitType::TraversalLeft | ExitType::TJunctionLeft => 50.,
-            ExitType::PlayerRight | ExitType::TraversalRight | ExitType::TJunctionRight => -50.,
-            ExitType::TJunctionMiddle => 0.,
+            ExitType::PlayerLeft
+            | ExitType::TraversalLeft
+            | ExitType::TJunctionLeft
+            | ExitType::DoubleConnectionLeft => 50.,
+            ExitType::PlayerRight
+            | ExitType::TraversalRight
+            | ExitType::TJunctionRight
+            | ExitType::DoubleConnectionRight => -50.,
+            ExitType::TJunctionMiddle
+            | ExitType::DoubleConnectionLeftConn
+            | ExitType::DoubleConnectionRightConn => 0.,
         };
         Self(offset)
     }

@@ -245,17 +245,10 @@ fn setup_map(
             for node_idx in graph.node_indices() {
                 let node = &graph[node_idx];
                 let icon_type = match node.scene {
-                    SceneType::Player {
-                        player: _,
-                        left: _,
-                        right: _,
-                    } => MapIcons::Player,
-                    SceneType::Traversal { left: _, right: _ } => MapIcons::Bandit,
-                    SceneType::TJunction {
-                        left: _,
-                        middle: _,
-                        right: _,
-                    } => MapIcons::Bandit,
+                    SceneType::Player { .. } => MapIcons::Player,
+                    SceneType::Traversal { .. } => MapIcons::Bandit,
+                    SceneType::TJunction { .. } => MapIcons::Bandit,
+                    SceneType::DoubleConnection { .. } => MapIcons::Bandit,
                 };
                 parent.spawn((
                     Sprite::from_atlas_image(
