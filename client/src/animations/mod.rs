@@ -7,7 +7,7 @@ use crate::{
             animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
             commander_menu::CommanderMenuSpriteSheet,
         },
-        world::trees::pine::PineTreeSpriteSheet,
+        world::{road::RoadSpriteSheet, trees::pine::PineTreeSpriteSheet},
     },
     asset_loader::AssetsToLoad,
 };
@@ -190,6 +190,7 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<FlagSpriteSheet>();
         app.init_resource::<ChestSpriteSheet>();
         app.init_resource::<PortalSpriteSheet>();
+        app.init_resource::<RoadSpriteSheet>();
         app.init_resource::<PineTreeSpriteSheet>();
         app.init_resource::<WeaponsSpriteSheet>();
         app.init_resource::<ChestsSpriteSheet>();

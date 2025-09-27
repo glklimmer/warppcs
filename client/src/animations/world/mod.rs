@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use shared::enum_map::*;
 
+pub mod road;
 pub mod trees;
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]

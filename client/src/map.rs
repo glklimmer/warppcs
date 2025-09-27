@@ -250,7 +250,12 @@ fn setup_map(
                         left: _,
                         right: _,
                     } => MapIcons::Player,
-                    SceneType::Bandit { left: _, right: _ } => MapIcons::Bandit,
+                    SceneType::Traversal { left: _, right: _ } => MapIcons::Bandit,
+                    SceneType::TJunction {
+                        left: _,
+                        middle: _,
+                        right: _,
+                    } => MapIcons::Bandit,
                 };
                 parent.spawn((
                     Sprite::from_atlas_image(

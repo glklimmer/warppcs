@@ -8,8 +8,8 @@ use crate::{
     BoxCollider,
     map::Layers,
     server::{
-        entities::commander::ArmyFlagAssignments, physics::collider_trigger::ColliderTrigger,
-        players::interaction::InteractionType,
+        entities::commander::ArmyFlagAssignments, game_scenes::map::ExitType,
+        physics::collider_trigger::ColliderTrigger, players::interaction::InteractionType,
     },
 };
 
@@ -60,7 +60,18 @@ impl TravelDestination {
 }
 
 #[derive(Component, Clone, Deref, Default)]
-pub struct TravelDestinationOffset(pub f32);
+pub struct TravelDestinationOffset(f32);
+
+impl TravelDestinationOffset {
+    pub fn to(exit_type: ExitType) -> Self {
+        let offset = match exit_type {
+            ExitType::PlayerLeft | ExitType::TraversalLeft | ExitType::TJunctionLeft => 50.,
+            ExitType::PlayerRight | ExitType::TraversalRight | ExitType::TJunctionRight => -50.,
+            ExitType::TJunctionMiddle => 0.,
+        };
+        Self(offset)
+    }
+}
 
 #[derive(Component, Clone, Serialize, Deserialize)]
 #[require(
@@ -93,6 +104,26 @@ fn portal_collider() -> BoxCollider {
 pub struct SceneEnd;
 
 fn scene_end_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(32., 32.),
+        offset: Some(Vec2::new(0., 16.)),
+    }
+}
+
+#[derive(Component, Clone, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    Transform,
+    BoxCollider = road_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Interactable{
+        kind: InteractionType::Travel,
+        restricted_to: None,
+    },
+)]
+pub struct Road;
+
+fn road_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(32., 32.),
         offset: Some(Vec2::new(0., 16.)),
