@@ -135,29 +135,26 @@ fn connect_scenes(
     let entity_a = get_entity_for_exit(scene_a, type_a);
     let entity_b = get_entity_for_exit(scene_b, type_b);
 
-    let side_a = get_side(type_a);
-    let side_b = get_side(type_b);
-
-    let offset_for_b = match side_b {
+    let offset_for_a = match get_side(type_a) {
         ExitSide::Left => -50.0,
         ExitSide::Right => 50.0,
         ExitSide::Middle => 0.0,
     };
+    let offset_for_b = match get_side(type_b) {
+        ExitSide::Left => -50.0,
+        ExitSide::Right => 50.0,
+        ExitSide::Middle => 0.0,
+    };
+
     commands.entity(entity_a).insert((
         scene_a,
         TravelDestination::new(entity_b),
-        TravelDestinationOffset(offset_for_b),
+        TravelDestinationOffset(offset_for_a),
     ));
-
-    let offset_for_a = match side_a {
-        ExitSide::Left => -50.0,
-        ExitSide::Right => 50.0,
-        ExitSide::Middle => 0.0,
-    };
     commands.entity(entity_b).insert((
         scene_b,
         TravelDestination::new(entity_a),
-        TravelDestinationOffset(offset_for_a),
+        TravelDestinationOffset(offset_for_b),
     ));
 }
 

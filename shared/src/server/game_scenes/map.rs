@@ -172,12 +172,12 @@ impl MapGraph {
             graph.add_edge(
                 tj_a_idx,
                 t1_idx,
-                (ExitType::TJunctionLeft, ExitType::TraversalLeft),
+                (ExitType::TJunctionRight, ExitType::TraversalLeft),
             );
             graph.add_edge(
                 tj_a_idx,
                 t2_idx,
-                (ExitType::TJunctionRight, ExitType::TraversalLeft),
+                (ExitType::TJunctionLeft, ExitType::TraversalRight),
             );
             graph.add_edge(
                 tj_b_idx,
@@ -187,7 +187,7 @@ impl MapGraph {
             graph.add_edge(
                 tj_b_idx,
                 t2_idx,
-                (ExitType::TJunctionRight, ExitType::TraversalRight),
+                (ExitType::TJunctionRight, ExitType::TraversalLeft),
             );
         }
 
