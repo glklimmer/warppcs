@@ -8,8 +8,8 @@ use crate::{
     BoxCollider,
     map::Layers,
     server::{
-        entities::commander::ArmyFlagAssignments, physics::collider_trigger::ColliderTrigger,
-        players::interaction::InteractionType,
+        entities::commander::ArmyFlagAssignments, game_scenes::map::ExitType,
+        physics::collider_trigger::ColliderTrigger, players::interaction::InteractionType,
     },
 };
 
@@ -60,7 +60,18 @@ impl TravelDestination {
 }
 
 #[derive(Component, Clone, Deref, Default)]
-pub struct TravelDestinationOffset(pub f32);
+pub struct TravelDestinationOffset(f32);
+
+impl TravelDestinationOffset {
+    pub fn to(exit_type: ExitType) -> Self {
+        let offset = match exit_type {
+            ExitType::PlayerLeft | ExitType::TraversalLeft | ExitType::TJunctionLeft => 50.,
+            ExitType::PlayerRight | ExitType::TraversalRight | ExitType::TJunctionRight => -50.,
+            ExitType::TJunctionMiddle => 0.,
+        };
+        Self(offset)
+    }
+}
 
 #[derive(Component, Clone, Serialize, Deserialize)]
 #[require(
