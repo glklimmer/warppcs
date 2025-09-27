@@ -16,7 +16,7 @@ use crate::{
         ai::BanditBehaviour,
         buildings::item_assignment::ItemAssignment,
         entities::{Damage, Range, Unit, health::Health},
-        game_scenes::travel::{SceneEnd, TravelDestinationOffset},
+        game_scenes::travel::{Road, SceneEnd, TravelDestinationOffset},
         physics::movement::{Speed, Velocity},
         players::{
             chest::Chest,
@@ -74,7 +74,14 @@ fn start_game(
                     ));
                 }
             }
-            SceneType::Traversal { left, right } => camp(commands.reborrow(), offset, left, right),
+            SceneType::Traversal { left, right } => {
+                elite_camp(commands.reborrow(), offset, left, right)
+            }
+            SceneType::TJunction {
+                left,
+                middle,
+                right,
+            } => double_camp(commands.reborrow(), offset, left, middle, right),
         };
     }
 
@@ -116,13 +123,14 @@ fn connect_scenes(mut commands: Commands, left: GameScene, right: GameScene) {
     ));
 }
 
-fn camp(
+fn elite_camp(
     mut commands: Commands,
     offset: Vec3,
-    camp_left_scene_end: Entity,
-    camp_right_scene_end: Entity,
+    left_scene_end: Entity,
+    right_scene_end: Entity,
 ) {
-    for i in 1..10 {
+    commands.spawn((Chest::Big, offset.offset_x(300.).with_layer(Layers::Chest)));
+    for i in 1..30 {
         commands.spawn((
             Owner::Bandits,
             Unit {
@@ -140,16 +148,83 @@ fn camp(
                 .with_layer(Layers::Unit),
         ));
     }
-    commands.entity(camp_left_scene_end).insert((
+    commands.entity(left_scene_end).insert((
         SceneEnd,
         offset
             .offset_x(-300.)
             .offset_y(-2.)
             .with_layer(Layers::Wall),
     ));
-    commands.entity(camp_right_scene_end).insert((
+    commands.entity(right_scene_end).insert((
         SceneEnd,
         offset.offset_x(300.).offset_y(-2.).with_layer(Layers::Wall),
+    ));
+}
+
+fn double_camp(
+    mut commands: Commands,
+    offset: Vec3,
+    left_scene_end: Entity,
+    middle_connection: Entity,
+    right_scene_end: Entity,
+) {
+    commands.spawn((
+        Chest::Normal,
+        offset.offset_x(300.).with_layer(Layers::Chest),
+    ));
+    for i in 1..10 {
+        commands.spawn((
+            Owner::Bandits,
+            Unit {
+                unit_type: UnitType::Bandit,
+                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                color: PlayerColor::default(),
+            },
+            BanditBehaviour::default(),
+            Health { hitpoints: 25. },
+            Range(10.),
+            Speed(30.),
+            Damage(10.),
+            offset
+                .offset_x(300. - 10. * i as f32)
+                .with_layer(Layers::Unit),
+        ));
+    }
+    commands.spawn((
+        Chest::Normal,
+        offset.offset_x(-300.).with_layer(Layers::Chest),
+    ));
+    for i in 1..10 {
+        commands.spawn((
+            Owner::Bandits,
+            Unit {
+                unit_type: UnitType::Bandit,
+                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                color: PlayerColor::default(),
+            },
+            BanditBehaviour::default(),
+            Health { hitpoints: 25. },
+            Range(10.),
+            Speed(30.),
+            Damage(10.),
+            offset
+                .offset_x(-300. - 10. * i as f32)
+                .with_layer(Layers::Unit),
+        ));
+    }
+    commands.entity(left_scene_end).insert((
+        SceneEnd,
+        offset
+            .offset_x(-600.)
+            .offset_y(-2.)
+            .with_layer(Layers::Wall),
+    ));
+    commands
+        .entity(middle_connection)
+        .insert((Road, offset.offset_y(-2.).with_layer(Layers::Building)));
+    commands.entity(right_scene_end).insert((
+        SceneEnd,
+        offset.offset_x(600.).offset_y(-2.).with_layer(Layers::Wall),
     ));
 }
 
@@ -190,10 +265,6 @@ fn player_base(
             mount_type: MountType::Horse,
         },
         offset.offset_x(50.).with_layer(Layers::Mount),
-    ));
-    commands.spawn((
-        Chest::Normal,
-        offset.offset_x(-50.).with_layer(Layers::Chest),
     ));
     commands.spawn((
         RecruitBuilding,

@@ -55,43 +55,98 @@ pub struct GameScene {
 
 impl MapGraph {
     pub fn circular(mut commands: Commands, players: Vec<Entity>, radius: f32) -> MapGraph {
-        let total = players.len() * 2;
-        let mut graph = Graph::<GameScene, (), Undirected>::with_capacity(total, total);
-        let mut indices = Vec::with_capacity(total);
-
-        for node_index in 0..total {
-            let frac = node_index as f32 / total as f32;
-            let angle = frac * std::f32::consts::TAU;
-            let pos = Vec2::new(radius * angle.cos(), radius * angle.sin());
-
-            let node = if node_index % 2 == 0 {
-                let player_idx = node_index / 2;
-                let player_entity = players[player_idx];
-                graph.add_node(GameScene {
-                    scene: SceneType::Player {
-                        player: player_entity,
-                        left: commands.spawn_empty().id(),
-                        right: commands.spawn_empty().id(),
-                    },
-                    position: pos,
-                })
-            } else {
-                graph.add_node(GameScene {
-                    scene: SceneType::Traversal {
-                        left: commands.spawn_empty().id(),
-                        right: commands.spawn_empty().id(),
-                    },
-                    position: pos,
-                })
-            };
-
-            indices.push(node);
+        let num_players = players.len();
+        if num_players == 0 {
+            return MapGraph::default();
         }
 
-        for i in 0..total {
-            let a = indices[i];
-            let b = indices[(i + 1) % total];
-            graph.add_edge(a, b, ());
+        let mut graph = Graph::<GameScene, (), Undirected>::new_undirected();
+
+        // 1. Create all player nodes and store their indices and positions
+        let mut player_node_indices = Vec::with_capacity(num_players);
+        let mut player_positions = Vec::with_capacity(num_players);
+        for i in 0..num_players {
+            let frac = i as f32 / num_players as f32;
+            let angle = frac * std::f32::consts::TAU;
+            let pos = Vec2::new(radius * angle.cos(), radius * angle.sin());
+            player_positions.push(pos);
+
+            let node_idx = graph.add_node(GameScene {
+                scene: SceneType::Player {
+                    player: players[i],
+                    left: commands.spawn_empty().id(),
+                    right: commands.spawn_empty().id(),
+                },
+                position: pos,
+            });
+            player_node_indices.push(node_idx);
+        }
+
+        // 2. For each segment between players, create the 4 intermediate nodes and connect them.
+        for i in 0..num_players {
+            let current_player_idx = player_node_indices[i];
+            let next_player_idx = player_node_indices[(i + 1) % num_players];
+
+            let current_player_pos = player_positions[i];
+            let next_player_pos = player_positions[(i + 1) % num_players];
+
+            // Create the 4 intermediate nodes for the segment
+            // TJunction near current player
+            let tj_a_pos = current_player_pos.lerp(next_player_pos, 0.2);
+            let tj_a_idx = graph.add_node(GameScene {
+                scene: SceneType::TJunction {
+                    left: commands.spawn_empty().id(),
+                    middle: commands.spawn_empty().id(),
+                    right: commands.spawn_empty().id(),
+                },
+                position: tj_a_pos,
+            });
+
+            // TJunction near next player
+            let tj_b_pos = current_player_pos.lerp(next_player_pos, 0.8);
+            let tj_b_idx = graph.add_node(GameScene {
+                scene: SceneType::TJunction {
+                    left: commands.spawn_empty().id(),
+                    middle: commands.spawn_empty().id(),
+                    right: commands.spawn_empty().id(),
+                },
+                position: tj_b_pos,
+            });
+
+            // Traversal nodes
+            let mid_point = current_player_pos.lerp(next_player_pos, 0.5);
+            let segment_vec = next_player_pos - current_player_pos;
+            let offset_dir = segment_vec.perp().normalize_or_zero();
+            let offset_dist = segment_vec.length() * 0.3; // 30% of segment length
+
+            let traversal1_pos = mid_point + offset_dir * offset_dist;
+            let traversal1_idx = graph.add_node(GameScene {
+                scene: SceneType::Traversal {
+                    left: commands.spawn_empty().id(),
+                    right: commands.spawn_empty().id(),
+                },
+                position: traversal1_pos,
+            });
+
+            let traversal2_pos = mid_point - offset_dir * offset_dist;
+            let traversal2_idx = graph.add_node(GameScene {
+                scene: SceneType::Traversal {
+                    left: commands.spawn_empty().id(),
+                    right: commands.spawn_empty().id(),
+                },
+                position: traversal2_pos,
+            });
+
+            // 3. Add edges
+            // Connect players to their respective T-junctions
+            graph.add_edge(current_player_idx, tj_a_idx, ());
+            graph.add_edge(next_player_idx, tj_b_idx, ());
+
+            // Connect T-junctions to both traversal nodes to form the small circle
+            graph.add_edge(tj_a_idx, traversal1_idx, ());
+            graph.add_edge(tj_a_idx, traversal2_idx, ());
+            graph.add_edge(tj_b_idx, traversal1_idx, ());
+            graph.add_edge(tj_b_idx, traversal2_idx, ());
         }
 
         MapGraph(graph)
