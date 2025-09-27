@@ -26,8 +26,19 @@ impl Plugin for MapPlugin {
 #[derive(Event, Serialize, Deserialize, Deref)]
 pub struct LoadMap(pub MapGraph);
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ExitType {
+    PlayerLeft,
+    PlayerRight,
+    TraversalLeft,
+    TraversalRight,
+    TJunctionLeft,
+    TJunctionMiddle,
+    TJunctionRight,
+}
+
 #[derive(Resource, Clone, Serialize, Deserialize, Default, Deref, DerefMut)]
-pub struct MapGraph(pub Graph<GameScene, (), Undirected>);
+pub struct MapGraph(pub Graph<GameScene, (ExitType, ExitType), Undirected>);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum SceneType {
@@ -60,18 +71,21 @@ impl MapGraph {
             return MapGraph::default();
         }
 
-        let mut graph = Graph::<GameScene, (), Undirected>::new_undirected();
+        let mut graph = Graph::<GameScene, (ExitType, ExitType), Undirected>::new_undirected();
 
-        // 1. Create all player nodes and store their indices and positions
-        let mut player_node_indices = Vec::with_capacity(num_players);
-        let mut player_positions = Vec::with_capacity(num_players);
+        // 1. Create all nodes and store their indices
+        let mut player_nodes = Vec::with_capacity(num_players);
+        let mut tj_a_nodes = Vec::with_capacity(num_players);
+        let mut tj_b_nodes = Vec::with_capacity(num_players);
+        let mut t1_nodes = Vec::with_capacity(num_players); // Outer traversals
+        let mut t2_nodes = Vec::with_capacity(num_players); // Inner traversals
+
         for i in 0..num_players {
+            // Player
             let frac = i as f32 / num_players as f32;
             let angle = frac * std::f32::consts::TAU;
             let pos = Vec2::new(radius * angle.cos(), radius * angle.sin());
-            player_positions.push(pos);
-
-            let node_idx = graph.add_node(GameScene {
+            let p_idx = graph.add_node(GameScene {
                 scene: SceneType::Player {
                     player: players[i],
                     left: commands.spawn_empty().id(),
@@ -79,20 +93,24 @@ impl MapGraph {
                 },
                 position: pos,
             });
-            player_node_indices.push(node_idx);
-        }
+            player_nodes.push(p_idx);
 
-        // 2. For each segment between players, create the 4 intermediate nodes and connect them.
-        for i in 0..num_players {
-            let current_player_idx = player_node_indices[i];
-            let next_player_idx = player_node_indices[(i + 1) % num_players];
+            // Intermediate nodes for segment i
+            let next_frac = (i as f32 + 1.0) / num_players as f32;
+            let next_angle = next_frac * std::f32::consts::TAU;
+            let next_pos = Vec2::new(radius * next_angle.cos(), radius * next_angle.sin());
 
-            let current_player_pos = player_positions[i];
-            let next_player_pos = player_positions[(i + 1) % num_players];
+            let tj_a_pos = pos.lerp(next_pos, 0.25);
+            let tj_b_pos = pos.lerp(next_pos, 0.75);
 
-            // Create the 4 intermediate nodes for the segment
-            // TJunction near current player
-            let tj_a_pos = current_player_pos.lerp(next_player_pos, 0.25);
+            let mid_point = pos.lerp(next_pos, 0.5);
+            let segment_vec = next_pos - pos;
+            let offset_dir = segment_vec.perp().normalize_or_zero();
+            let offset_dist = segment_vec.length() * 0.2;
+
+            let t1_pos = mid_point + offset_dir * offset_dist; // Outer
+            let t2_pos = mid_point - offset_dir * offset_dist; // Inner
+
             let tj_a_idx = graph.add_node(GameScene {
                 scene: SceneType::TJunction {
                     left: commands.spawn_empty().id(),
@@ -101,9 +119,7 @@ impl MapGraph {
                 },
                 position: tj_a_pos,
             });
-
-            // TJunction near next player
-            let tj_b_pos = current_player_pos.lerp(next_player_pos, 0.75);
+            tj_a_nodes.push(tj_a_idx);
             let tj_b_idx = graph.add_node(GameScene {
                 scene: SceneType::TJunction {
                     left: commands.spawn_empty().id(),
@@ -112,41 +128,67 @@ impl MapGraph {
                 },
                 position: tj_b_pos,
             });
-
-            // Traversal nodes
-            let mid_point = current_player_pos.lerp(next_player_pos, 0.5);
-            let segment_vec = next_player_pos - current_player_pos;
-            let offset_dir = segment_vec.perp().normalize_or_zero();
-            let offset_dist = segment_vec.length() * 0.2; // 30% of segment length
-
-            let traversal1_pos = mid_point + offset_dir * offset_dist;
-            let traversal1_idx = graph.add_node(GameScene {
+            tj_b_nodes.push(tj_b_idx);
+            let t1_idx = graph.add_node(GameScene {
                 scene: SceneType::Traversal {
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
                 },
-                position: traversal1_pos,
+                position: t1_pos,
             });
-
-            let traversal2_pos = mid_point - offset_dir * offset_dist;
-            let traversal2_idx = graph.add_node(GameScene {
+            t1_nodes.push(t1_idx);
+            let t2_idx = graph.add_node(GameScene {
                 scene: SceneType::Traversal {
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
                 },
-                position: traversal2_pos,
+                position: t2_pos,
             });
+            t2_nodes.push(t2_idx);
+        }
 
-            // 3. Add edges
-            // Connect players to their respective T-junctions
-            graph.add_edge(current_player_idx, tj_a_idx, ());
-            graph.add_edge(next_player_idx, tj_b_idx, ());
+        // 2. Add edges with deterministic exit types
+        for i in 0..num_players {
+            let p_idx = player_nodes[i];
+            let next_p_idx = player_nodes[(i + 1) % num_players];
+            let tj_a_idx = tj_a_nodes[i];
+            let tj_b_idx = tj_b_nodes[i];
+            let t1_idx = t1_nodes[i];
+            let t2_idx = t2_nodes[i];
 
-            // Connect T-junctions to both traversal nodes to form the small circle
-            graph.add_edge(tj_a_idx, traversal1_idx, ());
-            graph.add_edge(tj_a_idx, traversal2_idx, ());
-            graph.add_edge(tj_b_idx, traversal1_idx, ());
-            graph.add_edge(tj_b_idx, traversal2_idx, ());
+            // Player -> TJunction connections
+            graph.add_edge(
+                p_idx,
+                tj_a_idx,
+                (ExitType::PlayerRight, ExitType::TJunctionMiddle),
+            );
+            graph.add_edge(
+                next_p_idx,
+                tj_b_idx,
+                (ExitType::PlayerLeft, ExitType::TJunctionMiddle),
+            );
+
+            // TJunction -> Traversal connections
+            graph.add_edge(
+                tj_a_idx,
+                t1_idx,
+                (ExitType::TJunctionLeft, ExitType::TraversalLeft),
+            );
+            graph.add_edge(
+                tj_a_idx,
+                t2_idx,
+                (ExitType::TJunctionRight, ExitType::TraversalLeft),
+            );
+            graph.add_edge(
+                tj_b_idx,
+                t1_idx,
+                (ExitType::TJunctionLeft, ExitType::TraversalRight),
+            );
+            graph.add_edge(
+                tj_b_idx,
+                t2_idx,
+                (ExitType::TJunctionRight, ExitType::TraversalRight),
+            );
         }
 
         MapGraph(graph)
@@ -184,3 +226,4 @@ fn init_map(
         event: LoadMap(map),
     });
 }
+

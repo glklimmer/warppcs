@@ -16,7 +16,7 @@ use crate::{
         ai::BanditBehaviour,
         buildings::item_assignment::ItemAssignment,
         entities::{Damage, Range, Unit, health::Health},
-        game_scenes::travel::{Road, SceneEnd, TravelDestinationOffset},
+        game_scenes::travel::{Road, SceneEnd, TravelDestination, TravelDestinationOffset},
         physics::movement::{Speed, Velocity},
         players::{
             chest::Chest,
@@ -27,10 +27,7 @@ use crate::{
     },
 };
 
-use super::{
-    map::{GameScene, LoadMap, SceneType},
-    travel::TravelDestination,
-};
+use super::map::{ExitType, GameScene, LoadMap, SceneType};
 
 pub struct StartGamePlugin;
 
@@ -85,12 +82,12 @@ fn start_game(
         };
     }
 
-    let mut used_exits = std::collections::HashSet::new();
     for edge in map.edge_references() {
-        let a = map[edge.source()];
-        let b = map[edge.target()];
+        let scene_a = map[edge.source()];
+        let scene_b = map[edge.target()];
+        let connection = edge.weight();
 
-        connect_scenes(commands.reborrow(), a, b, &mut used_exits);
+        connect_scenes(commands.reborrow(), scene_a, scene_b, *connection);
     }
 }
 
@@ -98,44 +95,69 @@ fn connect_scenes(
     mut commands: Commands,
     scene_a: GameScene,
     scene_b: GameScene,
-    used_exits: &mut std::collections::HashSet<Entity>,
+    (type_a, type_b): (ExitType, ExitType),
 ) {
-    fn find_free_exit(
-        scene: GameScene,
-        used: &mut std::collections::HashSet<Entity>,
-    ) -> Option<Entity> {
-        let exits = match scene.scene {
-            SceneType::Player { left, right, .. } => vec![left, right],
-            SceneType::Traversal { left, right } => vec![left, right],
-            SceneType::TJunction {
-                left,
-                middle,
-                right,
-            } => vec![left, middle, right],
-        };
-        for exit in exits {
-            if !used.contains(&exit) {
-                used.insert(exit);
-                return Some(exit);
-            }
+    fn get_entity_for_exit(scene: GameScene, exit_type: ExitType) -> Entity {
+        match (scene.scene, exit_type) {
+            (SceneType::Player { left, .. }, ExitType::PlayerLeft) => left,
+            (SceneType::Player { right, .. }, ExitType::PlayerRight) => right,
+            (SceneType::Traversal { left, .. }, ExitType::TraversalLeft) => left,
+            (SceneType::Traversal { right, .. }, ExitType::TraversalRight) => right,
+            (SceneType::TJunction { left, .. }, ExitType::TJunctionLeft) => left,
+            (SceneType::TJunction { middle, .. }, ExitType::TJunctionMiddle) => middle,
+            (SceneType::TJunction { right, .. }, ExitType::TJunctionRight) => right,
+            _ => panic!(
+                "Mismatched scene and exit type: {:?}, {:?}",
+                scene, exit_type
+            ),
         }
-        None
     }
 
-    let entity_a = find_free_exit(scene_a, used_exits)
-        .unwrap_or_else(|| panic!("No free exits on scene A: {:?}", scene_a));
-    let entity_b = find_free_exit(scene_b, used_exits)
-        .unwrap_or_else(|| panic!("No free exits on scene B: {:?}", scene_b));
+    #[derive(Debug)]
+    enum ExitSide {
+        Left,
+        Middle,
+        Right,
+    }
 
+    fn get_side(exit_type: ExitType) -> ExitSide {
+        match exit_type {
+            ExitType::PlayerLeft | ExitType::TraversalLeft | ExitType::TJunctionLeft => {
+                ExitSide::Left
+            }
+            ExitType::PlayerRight | ExitType::TraversalRight | ExitType::TJunctionRight => {
+                ExitSide::Right
+            }
+            ExitType::TJunctionMiddle => ExitSide::Middle,
+        }
+    }
+
+    let entity_a = get_entity_for_exit(scene_a, type_a);
+    let entity_b = get_entity_for_exit(scene_b, type_b);
+
+    let side_a = get_side(type_a);
+    let side_b = get_side(type_b);
+
+    let offset_for_b = match side_b {
+        ExitSide::Left => -50.0,
+        ExitSide::Right => 50.0,
+        ExitSide::Middle => 0.0,
+    };
     commands.entity(entity_a).insert((
         scene_a,
         TravelDestination::new(entity_b),
-        TravelDestinationOffset(50.),
+        TravelDestinationOffset(offset_for_b),
     ));
+
+    let offset_for_a = match side_a {
+        ExitSide::Left => -50.0,
+        ExitSide::Right => 50.0,
+        ExitSide::Middle => 0.0,
+    };
     commands.entity(entity_b).insert((
         scene_b,
         TravelDestination::new(entity_a),
-        TravelDestinationOffset(-50.),
+        TravelDestinationOffset(offset_for_a),
     ));
 }
 
@@ -145,7 +167,7 @@ fn elite_camp(
     left_scene_end: Entity,
     right_scene_end: Entity,
 ) {
-    commands.spawn((Chest::Big, offset.offset_x(300.).with_layer(Layers::Chest)));
+    commands.spawn((Chest::Big, offset.with_layer(Layers::Chest)));
     for i in 1..30 {
         commands.spawn((
             Owner::Bandits,
@@ -167,13 +189,13 @@ fn elite_camp(
     commands.entity(left_scene_end).insert((
         SceneEnd,
         offset
-            .offset_x(-300.)
+            .offset_x(-400.)
             .offset_y(-2.)
             .with_layer(Layers::Wall),
     ));
     commands.entity(right_scene_end).insert((
         SceneEnd,
-        offset.offset_x(300.).offset_y(-2.).with_layer(Layers::Wall),
+        offset.offset_x(400.).offset_y(-2.).with_layer(Layers::Wall),
     ));
 }
 
@@ -202,7 +224,7 @@ fn double_camp(
             Speed(30.),
             Damage(10.),
             offset
-                .offset_x(300. - 10. * i as f32)
+                .offset_x(250. - 10. * i as f32)
                 .with_layer(Layers::Unit),
         ));
     }
@@ -224,14 +246,14 @@ fn double_camp(
             Speed(30.),
             Damage(10.),
             offset
-                .offset_x(-300. - 10. * i as f32)
+                .offset_x(-250. - 10. * i as f32)
                 .with_layer(Layers::Unit),
         ));
     }
     commands.entity(left_scene_end).insert((
         SceneEnd,
         offset
-            .offset_x(-600.)
+            .offset_x(-700.)
             .offset_y(-2.)
             .with_layer(Layers::Wall),
     ));
@@ -240,7 +262,7 @@ fn double_camp(
         .insert((Road, offset.offset_y(-2.).with_layer(Layers::Building)));
     commands.entity(right_scene_end).insert((
         SceneEnd,
-        offset.offset_x(600.).offset_y(-2.).with_layer(Layers::Wall),
+        offset.offset_x(700.).offset_y(-2.).with_layer(Layers::Wall),
     ));
 }
 

@@ -48,17 +48,9 @@ fn change_background(
         return;
     };
     let event = match portal.scene {
-        SceneType::Player {
-            player: _,
-            left: _,
-            right: _,
-        } => player_background(camera),
-        SceneType::Traversal { left: _, right: _ } => bandit_background(camera),
-        SceneType::TJunction {
-            left: _,
-            middle: _,
-            right: _,
-        } => bandit_background(camera),
+        SceneType::Player { .. } => player_background(camera),
+        SceneType::Traversal { .. } => bandit_background(camera),
+        SceneType::TJunction { .. } => bandit_background(camera),
     };
     create_parallax.write(event);
 }
