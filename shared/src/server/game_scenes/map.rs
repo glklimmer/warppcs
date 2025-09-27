@@ -80,7 +80,7 @@ impl MapGraph {
         let mut t1_nodes = Vec::with_capacity(num_players); // Outer traversals
         let mut t2_nodes = Vec::with_capacity(num_players); // Inner traversals
 
-        for i in 0..num_players {
+        for (i, ..) in players.iter().enumerate() {
             // Player
             let frac = i as f32 / num_players as f32;
             let angle = frac * std::f32::consts::TAU;
