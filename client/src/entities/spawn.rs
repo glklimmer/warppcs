@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 
 use bevy_parallax::CameraFollow;
 use shared::{
@@ -7,7 +7,7 @@ use shared::{
     server::{
         buildings::{recruiting::Flag, siege_camp::SiegeCamp},
         entities::{Unit, UnitAnimation},
-        game_scenes::travel::Portal,
+        game_scenes::travel::{Portal, SceneEnd},
         physics::projectile::ProjectileType,
         players::{chest::Chest, mount::Mount},
     },
@@ -25,6 +25,7 @@ use crate::{
         },
         sprite_variant_loader::SpriteVariants,
         units::UnitSpriteSheets,
+        world::{TreeAnimation, trees::pine::PineTreeSpriteSheet},
     },
     networking::ControlledPlayer,
 };
@@ -38,6 +39,7 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_camp_sprite)
             .add_observer(init_unit_sprite)
             .add_observer(init_flag_sprite)
+            .add_observer(init_scene_end_sprite)
             .add_observer(init_portal_sprite)
             .add_observer(init_horse_sprite)
             .add_observer(init_projectile_sprite)
@@ -162,6 +164,62 @@ fn init_flag_sprite(
 
     let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), FlagAnimation::default()));
+}
+
+fn init_scene_end_sprite(
+    trigger: Trigger<OnAdd, SceneEnd>,
+    mut commands: Commands,
+    mut scene_end: Query<&mut Sprite>,
+    tree_sprite_sheet: Res<PineTreeSpriteSheet>,
+) {
+    let Ok(mut sprite) = scene_end.get_mut(trigger.target()) else {
+        return;
+    };
+
+    info!("init scene end sprite");
+    let bright_sprite_sheet = &tree_sprite_sheet.bright_sprite_sheet;
+
+    let animation = bright_sprite_sheet.animations.get(TreeAnimation::default());
+    let texture_atlas = Some(TextureAtlas {
+        layout: bright_sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+
+    let bright_texture = &bright_sprite_sheet.texture;
+    let dim_texture = &tree_sprite_sheet.dim_sprite_sheet.texture;
+    let dark_texture = &tree_sprite_sheet.dark_sprite_sheet.texture;
+
+    sprite.image = bright_texture.clone();
+    sprite.texture_atlas = texture_atlas.clone();
+
+    let mut entity_commands = commands.entity(trigger.target());
+    entity_commands.insert((animation.clone(), TreeAnimation::default()));
+
+    let parent = trigger.target();
+    let atlas = texture_atlas.clone();
+
+    let trees = [
+        (-39., 0., 8., bright_texture.clone()),
+        (-22., 1., 5., dim_texture.clone()),
+        (-14., 0., 3., dim_texture.clone()),
+        (-8., 0., 7., dark_texture.clone()),
+        (8., 2., 6., dim_texture.clone()),
+        (17., 1., 4., dark_texture.clone()),
+        (25., 2., 1., bright_texture.clone()),
+    ];
+
+    commands.spawn_batch(trees.into_iter().map(move |(x, y, z, image)| {
+        (
+            ChildOf(parent),
+            Transform::from_xyz(x, y, z),
+            Sprite {
+                image,
+                texture_atlas: atlas.clone(),
+                anchor: Anchor::BottomCenter,
+                ..default()
+            },
+        )
+    }));
 }
 
 fn init_portal_sprite(

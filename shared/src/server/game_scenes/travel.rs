@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     BoxCollider,
     map::Layers,
-    server::{entities::commander::ArmyFlagAssignments, players::interaction::InteractionType},
+    server::{
+        entities::commander::ArmyFlagAssignments, physics::collider_trigger::ColliderTrigger,
+        players::interaction::InteractionType,
+    },
 };
 
 use super::super::{
@@ -56,6 +59,9 @@ impl TravelDestination {
     }
 }
 
+#[derive(Component, Clone, Deref, Default)]
+pub struct TravelDestinationOffset(pub f32);
+
 #[derive(Component, Clone, Serialize, Deserialize)]
 #[require(
     Replicated,
@@ -70,6 +76,23 @@ impl TravelDestination {
 pub struct Portal;
 
 fn portal_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(32., 32.),
+        offset: Some(Vec2::new(0., 16.)),
+    }
+}
+
+#[derive(Component, Clone, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    Transform,
+    BoxCollider = scene_end_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    ColliderTrigger = ColliderTrigger::Travel
+)]
+pub struct SceneEnd;
+
+fn scene_end_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(32., 32.),
         offset: Some(Vec2::new(0., 16.)),
@@ -138,23 +161,30 @@ fn start_travel(
 fn end_travel(
     mut commands: Commands,
     query: Query<(Entity, &Traveling)>,
-    transform: Query<&Transform>,
+    transform: Query<(&Transform, Option<&TravelDestinationOffset>)>,
 ) {
     for (entity, travel) in query.iter() {
         if !travel.time_left.finished() {
             continue;
         }
 
-        let target_transform = transform.get(travel.target).unwrap();
+        let (target_transform, maybe_offset) = transform.get(travel.target).unwrap();
         let target_position = target_transform.translation;
 
         info!("Travel finished to target position: {:?}", target_position);
 
+        let travel_destination_offset = match maybe_offset {
+            Some(offset) => **offset,
+            None => 0.,
+        };
+
         commands
             .entity(entity)
             .remove::<Traveling>()
-            .insert(Transform::from_translation(
-                target_position.with_z(Layers::Player.as_f32()),
+            .insert(Transform::from_xyz(
+                target_position.x + travel_destination_offset,
+                target_position.y,
+                Layers::Player.as_f32(),
             ));
     }
 }

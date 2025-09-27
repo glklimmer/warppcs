@@ -7,6 +7,7 @@ use crate::{
             animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
             commander_menu::CommanderMenuSpriteSheet,
         },
+        world::trees::pine::PineTreeSpriteSheet,
     },
     asset_loader::AssetsToLoad,
 };
@@ -46,6 +47,7 @@ pub mod objects;
 pub mod sprite_variant_loader;
 pub mod ui;
 pub mod units;
+pub mod world;
 
 #[derive(Clone)]
 pub struct StaticSpriteSheet<E: EnumIter> {
@@ -188,6 +190,7 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<FlagSpriteSheet>();
         app.init_resource::<ChestSpriteSheet>();
         app.init_resource::<PortalSpriteSheet>();
+        app.init_resource::<PineTreeSpriteSheet>();
         app.init_resource::<WeaponsSpriteSheet>();
         app.init_resource::<ChestsSpriteSheet>();
         app.init_resource::<HeadsSpriteSheet>();
