@@ -85,40 +85,56 @@ fn start_game(
         };
     }
 
+    let mut used_exits = std::collections::HashSet::new();
     for edge in map.edge_references() {
         let a = map[edge.source()];
         let b = map[edge.target()];
 
-        connect_scenes(commands.reborrow(), a, b);
+        connect_scenes(commands.reborrow(), a, b, &mut used_exits);
     }
 }
 
-fn connect_scenes(mut commands: Commands, left: GameScene, right: GameScene) {
-    let left_entity = match left.scene {
-        SceneType::Player {
-            player: _,
-            left,
-            right: _,
-        } => left,
-        SceneType::Traversal { left, right: _ } => left,
-    };
-    let right_entity = match right.scene {
-        SceneType::Player {
-            player: _,
-            left: _,
-            right,
-        } => right,
-        SceneType::Traversal { left: _, right } => right,
-    };
+fn connect_scenes(
+    mut commands: Commands,
+    scene_a: GameScene,
+    scene_b: GameScene,
+    used_exits: &mut std::collections::HashSet<Entity>,
+) {
+    fn find_free_exit(
+        scene: GameScene,
+        used: &mut std::collections::HashSet<Entity>,
+    ) -> Option<Entity> {
+        let exits = match scene.scene {
+            SceneType::Player { left, right, .. } => vec![left, right],
+            SceneType::Traversal { left, right } => vec![left, right],
+            SceneType::TJunction {
+                left,
+                middle,
+                right,
+            } => vec![left, middle, right],
+        };
+        for exit in exits {
+            if !used.contains(&exit) {
+                used.insert(exit);
+                return Some(exit);
+            }
+        }
+        None
+    }
 
-    commands.entity(left_entity).insert((
-        left,
-        TravelDestination::new(right_entity),
+    let entity_a = find_free_exit(scene_a, used_exits)
+        .unwrap_or_else(|| panic!("No free exits on scene A: {:?}", scene_a));
+    let entity_b = find_free_exit(scene_b, used_exits)
+        .unwrap_or_else(|| panic!("No free exits on scene B: {:?}", scene_b));
+
+    commands.entity(entity_a).insert((
+        scene_a,
+        TravelDestination::new(entity_b),
         TravelDestinationOffset(50.),
     ));
-    commands.entity(right_entity).insert((
-        right,
-        TravelDestination::new(left_entity),
+    commands.entity(entity_b).insert((
+        scene_b,
+        TravelDestination::new(entity_a),
         TravelDestinationOffset(-50.),
     ));
 }

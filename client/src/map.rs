@@ -251,6 +251,11 @@ fn setup_map(
                         right: _,
                     } => MapIcons::Player,
                     SceneType::Traversal { left: _, right: _ } => MapIcons::Bandit,
+                    SceneType::TJunction {
+                        left: _,
+                        middle: _,
+                        right: _,
+                    } => MapIcons::Bandit,
                 };
                 parent.spawn((
                     Sprite::from_atlas_image(

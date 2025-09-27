@@ -92,7 +92,7 @@ impl MapGraph {
 
             // Create the 4 intermediate nodes for the segment
             // TJunction near current player
-            let tj_a_pos = current_player_pos.lerp(next_player_pos, 0.2);
+            let tj_a_pos = current_player_pos.lerp(next_player_pos, 0.25);
             let tj_a_idx = graph.add_node(GameScene {
                 scene: SceneType::TJunction {
                     left: commands.spawn_empty().id(),
@@ -103,7 +103,7 @@ impl MapGraph {
             });
 
             // TJunction near next player
-            let tj_b_pos = current_player_pos.lerp(next_player_pos, 0.8);
+            let tj_b_pos = current_player_pos.lerp(next_player_pos, 0.75);
             let tj_b_idx = graph.add_node(GameScene {
                 scene: SceneType::TJunction {
                     left: commands.spawn_empty().id(),
@@ -117,7 +117,7 @@ impl MapGraph {
             let mid_point = current_player_pos.lerp(next_player_pos, 0.5);
             let segment_vec = next_player_pos - current_player_pos;
             let offset_dir = segment_vec.perp().normalize_or_zero();
-            let offset_dist = segment_vec.length() * 0.3; // 30% of segment length
+            let offset_dist = segment_vec.length() * 0.2; // 30% of segment length
 
             let traversal1_pos = mid_point + offset_dir * offset_dist;
             let traversal1_idx = graph.add_node(GameScene {
@@ -172,7 +172,11 @@ fn init_map(
 
     let players: Vec<Entity> = players.iter().collect();
     let num_players = players.len();
-    let map = MapGraph::circular(commands.reborrow(), players, 25. + 25. * num_players as f32);
+    let map = MapGraph::circular(
+        commands.reborrow(),
+        players,
+        100. + 25. * num_players as f32,
+    );
 
     commands.insert_resource(map.clone());
     commands.server_trigger(ToClients {
