@@ -36,8 +36,13 @@ pub enum SceneType {
         left: Entity,
         right: Entity,
     },
-    Bandit {
+    Traversal {
         left: Entity,
+        right: Entity,
+    },
+    TJunction {
+        left: Entity,
+        middle: Entity,
         right: Entity,
     },
 }
@@ -72,7 +77,7 @@ impl MapGraph {
                 })
             } else {
                 graph.add_node(GameScene {
-                    scene: SceneType::Bandit {
+                    scene: SceneType::Traversal {
                         left: commands.spawn_empty().id(),
                         right: commands.spawn_empty().id(),
                     },

@@ -53,7 +53,7 @@ fn change_background(
             left: _,
             right: _,
         } => player_background(camera),
-        SceneType::Bandit { left: _, right: _ } => bandit_background(camera),
+        SceneType::Traversal { left: _, right: _ } => bandit_background(camera),
     };
     create_parallax.write(event);
 }

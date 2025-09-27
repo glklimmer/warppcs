@@ -74,7 +74,7 @@ fn start_game(
                     ));
                 }
             }
-            SceneType::Bandit { left, right } => camp(commands.reborrow(), offset, left, right),
+            SceneType::Traversal { left, right } => camp(commands.reborrow(), offset, left, right),
         };
     }
 
@@ -93,7 +93,7 @@ fn connect_scenes(mut commands: Commands, left: GameScene, right: GameScene) {
             left,
             right: _,
         } => left,
-        SceneType::Bandit { left, right: _ } => left,
+        SceneType::Traversal { left, right: _ } => left,
     };
     let right_entity = match right.scene {
         SceneType::Player {
@@ -101,7 +101,7 @@ fn connect_scenes(mut commands: Commands, left: GameScene, right: GameScene) {
             left: _,
             right,
         } => right,
-        SceneType::Bandit { left: _, right } => right,
+        SceneType::Traversal { left: _, right } => right,
     };
 
     commands.entity(left_entity).insert((
