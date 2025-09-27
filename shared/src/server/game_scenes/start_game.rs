@@ -79,6 +79,19 @@ fn start_game(
                 middle,
                 right,
             } => double_camp(commands.reborrow(), offset, left, middle, right),
+            SceneType::DoubleConnection {
+                left,
+                left_connection,
+                right_connection,
+                right,
+            } => triple_camp(
+                commands.reborrow(),
+                offset,
+                left,
+                left_connection,
+                right_connection,
+                right,
+            ),
         };
     }
 
@@ -106,6 +119,20 @@ fn connect_scenes(
             (SceneType::TJunction { left, .. }, ExitType::TJunctionLeft) => left,
             (SceneType::TJunction { middle, .. }, ExitType::TJunctionMiddle) => middle,
             (SceneType::TJunction { right, .. }, ExitType::TJunctionRight) => right,
+            (SceneType::DoubleConnection { left, .. }, ExitType::DoubleConnectionLeft) => left,
+            (
+                SceneType::DoubleConnection {
+                    left_connection, ..
+                },
+                ExitType::DoubleConnectionLeftConn,
+            ) => left_connection,
+            (
+                SceneType::DoubleConnection {
+                    right_connection, ..
+                },
+                ExitType::DoubleConnectionRightConn,
+            ) => right_connection,
+            (SceneType::DoubleConnection { right, .. }, ExitType::DoubleConnectionRight) => right,
             _ => panic!(
                 "Mismatched scene and exit type: {:?}, {:?}",
                 scene, exit_type
@@ -149,7 +176,7 @@ fn elite_camp(
             Speed(30.),
             Damage(10.),
             offset
-                .offset_x(50. - 10. * i as f32)
+                .offset_x(150. - 10. * i as f32)
                 .with_layer(Layers::Unit),
         ));
     }
@@ -163,6 +190,85 @@ fn elite_camp(
     commands.entity(right_scene_end).insert((
         SceneEnd,
         offset.offset_x(400.).offset_y(-2.).with_layer(Layers::Wall),
+    ));
+}
+
+fn triple_camp(
+    mut commands: Commands,
+    offset: Vec3,
+    left_scene_end: Entity,
+    left_connection: Entity,
+    right_connection: Entity,
+    right_scene_end: Entity,
+) {
+    commands.spawn((
+        Chest::Normal,
+        offset.offset_x(600.).with_layer(Layers::Chest),
+    ));
+    for i in 1..10 {
+        commands.spawn((
+            Owner::Bandits,
+            Unit {
+                unit_type: UnitType::Bandit,
+                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                color: PlayerColor::default(),
+            },
+            BanditBehaviour::default(),
+            Health { hitpoints: 25. },
+            Range(10.),
+            Speed(30.),
+            Damage(10.),
+            offset
+                .offset_x(650. - 10. * i as f32)
+                .with_layer(Layers::Unit),
+        ));
+    }
+    commands.spawn((
+        Chest::Normal,
+        offset.offset_x(-600.).with_layer(Layers::Chest),
+    ));
+    for i in 1..10 {
+        commands.spawn((
+            Owner::Bandits,
+            Unit {
+                unit_type: UnitType::Bandit,
+                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                color: PlayerColor::default(),
+            },
+            BanditBehaviour::default(),
+            Health { hitpoints: 25. },
+            Range(10.),
+            Speed(30.),
+            Damage(10.),
+            offset
+                .offset_x(-650. - 10. * i as f32)
+                .with_layer(Layers::Unit),
+        ));
+    }
+    commands.entity(left_scene_end).insert((
+        SceneEnd,
+        offset
+            .offset_x(-900.)
+            .offset_y(-2.)
+            .with_layer(Layers::Wall),
+    ));
+    commands.entity(left_connection).insert((
+        Road,
+        offset
+            .offset_x(-300.)
+            .offset_y(-2.)
+            .with_layer(Layers::Building),
+    ));
+    commands.entity(right_connection).insert((
+        Road,
+        offset
+            .offset_x(300.)
+            .offset_y(-2.)
+            .with_layer(Layers::Building),
+    ));
+    commands.entity(right_scene_end).insert((
+        SceneEnd,
+        offset.offset_x(900.).offset_y(-2.).with_layer(Layers::Wall),
     ));
 }
 
@@ -191,7 +297,7 @@ fn double_camp(
             Speed(30.),
             Damage(10.),
             offset
-                .offset_x(250. - 10. * i as f32)
+                .offset_x(350. - 10. * i as f32)
                 .with_layer(Layers::Unit),
         ));
     }
@@ -213,7 +319,7 @@ fn double_camp(
             Speed(30.),
             Damage(10.),
             offset
-                .offset_x(-250. - 10. * i as f32)
+                .offset_x(-350. - 10. * i as f32)
                 .with_layer(Layers::Unit),
         ));
     }

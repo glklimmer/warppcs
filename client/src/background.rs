@@ -51,6 +51,7 @@ fn change_background(
         SceneType::Player { .. } => player_background(camera),
         SceneType::Traversal { .. } => bandit_background(camera),
         SceneType::TJunction { .. } => bandit_background(camera),
+        SceneType::DoubleConnection { .. } => bandit_background(camera),
     };
     create_parallax.write(event);
 }
