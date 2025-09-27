@@ -50,9 +50,12 @@ use server::{
     },
 };
 
-use crate::server::entities::{
-    commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
-    health::PlayerDefeated,
+use crate::server::{
+    entities::{
+        commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
+        health::PlayerDefeated,
+    },
+    game_scenes::travel::SceneEnd,
 };
 
 pub mod enum_map;
@@ -100,6 +103,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(ProjectileType, Transform)>()
         .replicate_group::<(Unit, Transform)>()
         .replicate_group::<(Portal, Transform)>()
+        .replicate_group::<(SceneEnd, Transform)>()
         .replicate_group::<(Mount, Transform)>()
         .replicate_group::<(Chest, Transform)>()
         .replicate_group::<(Item, Transform)>()

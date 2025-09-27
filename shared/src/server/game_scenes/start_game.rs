@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+
 use petgraph::visit::{EdgeRef, IntoNodeReferences};
 
 use crate::{
@@ -15,6 +16,7 @@ use crate::{
         ai::BanditBehaviour,
         buildings::item_assignment::ItemAssignment,
         entities::{Damage, Range, Unit, health::Health},
+        game_scenes::travel::{SceneEnd, TravelDestinationOffset},
         physics::movement::{Speed, Velocity},
         players::{
             chest::Chest,
@@ -27,7 +29,7 @@ use crate::{
 
 use super::{
     map::{GameScene, LoadMap, SceneType},
-    travel::{Portal, TravelDestination},
+    travel::TravelDestination,
 };
 
 pub struct StartGamePlugin;
@@ -80,11 +82,11 @@ fn start_game(
         let a = map[edge.source()];
         let b = map[edge.target()];
 
-        connect_portals(commands.reborrow(), a, b);
+        connect_scenes(commands.reborrow(), a, b);
     }
 }
 
-fn connect_portals(mut commands: Commands, left: GameScene, right: GameScene) {
+fn connect_scenes(mut commands: Commands, left: GameScene, right: GameScene) {
     let left_entity = match left.scene {
         SceneType::Player {
             player: _,
@@ -102,15 +104,24 @@ fn connect_portals(mut commands: Commands, left: GameScene, right: GameScene) {
         SceneType::Bandit { left: _, right } => right,
     };
 
-    commands
-        .entity(left_entity)
-        .insert((left, TravelDestination::new(right_entity)));
-    commands
-        .entity(right_entity)
-        .insert((right, TravelDestination::new(left_entity)));
+    commands.entity(left_entity).insert((
+        left,
+        TravelDestination::new(right_entity),
+        TravelDestinationOffset(50.),
+    ));
+    commands.entity(right_entity).insert((
+        right,
+        TravelDestination::new(left_entity),
+        TravelDestinationOffset(-50.),
+    ));
 }
 
-fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_right_portal: Entity) {
+fn camp(
+    mut commands: Commands,
+    offset: Vec3,
+    camp_left_scene_end: Entity,
+    camp_right_scene_end: Entity,
+) {
     for i in 1..10 {
         commands.spawn((
             Owner::Bandits,
@@ -129,12 +140,17 @@ fn camp(mut commands: Commands, offset: Vec3, camp_left_portal: Entity, camp_rig
                 .with_layer(Layers::Unit),
         ));
     }
-    commands
-        .entity(camp_left_portal)
-        .insert((Portal, offset.offset_x(-250.).with_layer(Layers::Building)));
-    commands
-        .entity(camp_right_portal)
-        .insert((Portal, offset.offset_x(250.).with_layer(Layers::Building)));
+    commands.entity(camp_left_scene_end).insert((
+        SceneEnd,
+        offset
+            .offset_x(-300.)
+            .offset_y(-2.)
+            .with_layer(Layers::Wall),
+    ));
+    commands.entity(camp_right_scene_end).insert((
+        SceneEnd,
+        offset.offset_x(300.).offset_y(-2.).with_layer(Layers::Wall),
+    ));
 }
 
 fn player_base(
@@ -142,8 +158,8 @@ fn player_base(
     offset: Vec3,
     player: Entity,
     color: PlayerColor,
-    left_portal: Entity,
-    right_portal: Entity,
+    left_scene_end: Entity,
+    right_scene_end: Entity,
 ) {
     let owner = Owner::Player(player);
     commands.spawn((
@@ -262,10 +278,15 @@ fn player_base(
         },
     ));
 
-    commands
-        .entity(left_portal)
-        .insert((Portal, offset.offset_x(-450.).with_layer(Layers::Building)));
-    commands
-        .entity(right_portal)
-        .insert((Portal, offset.offset_x(450.).with_layer(Layers::Building)));
+    commands.entity(left_scene_end).insert((
+        SceneEnd,
+        offset
+            .offset_x(-600.)
+            .offset_y(-2.)
+            .with_layer(Layers::Wall),
+    ));
+    commands.entity(right_scene_end).insert((
+        SceneEnd,
+        offset.offset_x(600.).offset_y(-2.).with_layer(Layers::Wall),
+    ));
 }

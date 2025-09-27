@@ -6,12 +6,13 @@ use attachment::AttachmentPlugin;
 use movement::{MovementPlugin, Velocity};
 use projectile::ProjectilePlugin;
 
-use crate::server::physics::army_slot::ArmySlotPlugin;
+use crate::server::physics::{army_slot::ArmySlotPlugin, collider_trigger::ColliderTriggerPlugin};
 
 use super::entities::health::TakeDamage;
 
 pub mod army_slot;
 pub mod attachment;
+pub mod collider_trigger;
 pub mod movement;
 pub mod projectile;
 
@@ -24,6 +25,7 @@ impl Plugin for PhysicsPlugin {
             ProjectilePlugin,
             AttachmentPlugin,
             ArmySlotPlugin,
+            ColliderTriggerPlugin,
         ))
         .add_systems(FixedUpdate, (apply_force_on_hit, push_back_timer));
     }
