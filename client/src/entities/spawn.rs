@@ -7,7 +7,7 @@ use shared::{
     server::{
         buildings::{recruiting::Flag, siege_camp::SiegeCamp},
         entities::{Unit, UnitAnimation},
-        game_scenes::travel::{Portal, SceneEnd},
+        game_scenes::travel::{Portal, Road, SceneEnd},
         physics::projectile::ProjectileType,
         players::{chest::Chest, mount::Mount},
     },
@@ -25,7 +25,11 @@ use crate::{
         },
         sprite_variant_loader::SpriteVariants,
         units::UnitSpriteSheets,
-        world::{TreeAnimation, trees::pine::PineTreeSpriteSheet},
+        world::{
+            TreeAnimation,
+            road::{RoadAnimation, RoadSpriteSheet},
+            trees::pine::PineTreeSpriteSheet,
+        },
     },
     networking::ControlledPlayer,
 };
@@ -41,6 +45,7 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_flag_sprite)
             .add_observer(init_scene_end_sprite)
             .add_observer(init_portal_sprite)
+            .add_observer(init_road_sprite)
             .add_observer(init_horse_sprite)
             .add_observer(init_projectile_sprite)
             .add_observer(init_chest_sprite)
@@ -287,6 +292,29 @@ fn init_portal_sprite(
 
     let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), PortalAnimation::default()));
+}
+
+fn init_road_sprite(
+    trigger: Trigger<OnAdd, Road>,
+    mut commands: Commands,
+    mut road: Query<&mut Sprite>,
+    road_sprite_sheet: Res<RoadSpriteSheet>,
+) {
+    let Ok(mut sprite) = road.get_mut(trigger.target()) else {
+        return;
+    };
+
+    let sprite_sheet = &road_sprite_sheet.sprite_sheet;
+    let animation = sprite_sheet.animations.get(RoadAnimation::default());
+
+    sprite.image = sprite_sheet.texture.clone();
+    sprite.texture_atlas = Some(TextureAtlas {
+        layout: sprite_sheet.layout.clone(),
+        index: animation.first_sprite_index,
+    });
+
+    let mut commands = commands.entity(trigger.target());
+    commands.insert((animation.clone(), RoadAnimation::default()));
 }
 
 fn init_horse_sprite(

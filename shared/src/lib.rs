@@ -55,7 +55,7 @@ use crate::server::{
         commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
         health::PlayerDefeated,
     },
-    game_scenes::travel::SceneEnd,
+    game_scenes::travel::{Road, SceneEnd},
 };
 
 pub mod enum_map;
@@ -103,6 +103,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(ProjectileType, Transform)>()
         .replicate_group::<(Unit, Transform)>()
         .replicate_group::<(Portal, Transform)>()
+        .replicate_group::<(Road, Transform)>()
         .replicate_group::<(SceneEnd, Transform)>()
         .replicate_group::<(Mount, Transform)>()
         .replicate_group::<(Chest, Transform)>()

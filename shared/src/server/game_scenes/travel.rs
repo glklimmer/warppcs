@@ -99,6 +99,26 @@ fn scene_end_collider() -> BoxCollider {
     }
 }
 
+#[derive(Component, Clone, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    Transform,
+    BoxCollider = road_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Interactable{
+        kind: InteractionType::Travel,
+        restricted_to: None,
+    },
+)]
+pub struct Road;
+
+fn road_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(32., 32.),
+        offset: Some(Vec2::new(0., 16.)),
+    }
+}
+
 fn travel_timer(mut query: Query<&mut Traveling>, time: Res<Time>) {
     for mut traveling in &mut query {
         traveling.time_left.tick(time.delta());
