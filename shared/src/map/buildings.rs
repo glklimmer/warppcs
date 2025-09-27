@@ -309,7 +309,7 @@ impl BuildingType {
                 MainBuildingLevels::Hall => 50.,
                 MainBuildingLevels::Castle => 200.,
             },
-            BuildingType::Unit { weapon: _ } => 0.1,
+            BuildingType::Unit { weapon: _ } => 6.,
             BuildingType::Wall { level } => match level {
                 WallLevels::Basic => 5.,
                 WallLevels::Wood => 20.,
