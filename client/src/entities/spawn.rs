@@ -176,7 +176,6 @@ fn init_scene_end_sprite(
         return;
     };
 
-    info!("init scene end sprite");
     let bright_sprite_sheet = &tree_sprite_sheet.bright_sprite_sheet;
 
     let animation = bright_sprite_sheet.animations.get(TreeAnimation::default());
