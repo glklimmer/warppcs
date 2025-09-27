@@ -100,16 +100,27 @@ impl MapGraph {
             let next_angle = next_frac * std::f32::consts::TAU;
             let next_pos = Vec2::new(radius * next_angle.cos(), radius * next_angle.sin());
 
-            let tj_a_pos = pos.lerp(next_pos, 0.25);
-            let tj_b_pos = pos.lerp(next_pos, 0.75);
+            // Outward push logic
+            let segment_midpoint = pos.lerp(next_pos, 0.5);
+            let outward_dir = segment_midpoint.normalize_or_zero();
+            let push_out_dist = if num_players == 2 {
+                80.
+            } else if num_players == 3 {
+                20.
+            } else {
+                0.
+            };
+
+            let tj_a_pos = pos.lerp(next_pos, 0.25) + outward_dir * push_out_dist;
+            let tj_b_pos = pos.lerp(next_pos, 0.75) + outward_dir * push_out_dist;
 
             let mid_point = pos.lerp(next_pos, 0.5);
             let segment_vec = next_pos - pos;
             let offset_dir = segment_vec.perp().normalize_or_zero();
             let offset_dist = segment_vec.length() * 0.2;
 
-            let t1_pos = mid_point + offset_dir * offset_dist; // Outer
-            let t2_pos = mid_point - offset_dir * offset_dist; // Inner
+            let t1_pos = mid_point + offset_dir * offset_dist + outward_dir * push_out_dist; // Outer
+            let t2_pos = mid_point - offset_dir * offset_dist + outward_dir * push_out_dist; // Inner
 
             let tj_a_idx = graph.add_node(GameScene {
                 scene: SceneType::TJunction {
@@ -226,4 +237,3 @@ fn init_map(
         event: LoadMap(map),
     });
 }
-
