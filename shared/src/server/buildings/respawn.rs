@@ -8,12 +8,15 @@ use crate::{
         Layers,
         buildings::{Building, RespawnZone},
     },
+    networking::Inventory,
     server::{
         ai::UnitBehaviour,
         entities::commander::ArmyFlagAssignments,
         players::items::{CalculatedStats, Effect, Item},
     },
 };
+
+const RESPAWN_COST_GOLD: u16 = 20;
 
 use super::{
     item_assignment::ItemAssignment,
@@ -35,6 +38,7 @@ pub fn respawn_units(
     original_building: Query<(&Building, &ItemAssignment)>,
     commander: Query<&ArmyFlagAssignments>,
     flag_query: Query<(&Flag, Option<&FlagUnits>)>,
+    mut inventory_query: Query<&mut Inventory>,
 ) {
     for (flag_entity, flag, flag_transform, flag_collider, flag_owner, maybe_flag_units) in
         flags.iter()
@@ -63,16 +67,25 @@ pub fn respawn_units(
 
         match original_building.get(flag.original_building) {
             Ok((building, assignment)) => {
-                respawn_for_flag(
-                    commands.reborrow(),
-                    flag_entity,
-                    flag,
-                    flag_owner,
-                    maybe_flag_units,
-                    respawn_transform,
-                    building,
-                    assignment,
-                );
+                let player = match flag_owner.entity() {
+                    Some(e) => e,
+                    None => continue,
+                };
+                if let Ok(mut inventory) = inventory_query.get_mut(player) {
+                    if inventory.gold >= RESPAWN_COST_GOLD {
+                        inventory.gold -= RESPAWN_COST_GOLD;
+                        respawn_for_flag(
+                            commands.reborrow(),
+                            flag_entity,
+                            flag,
+                            flag_owner,
+                            maybe_flag_units,
+                            respawn_transform,
+                            building,
+                            assignment,
+                        );
+                    }
+                }
             }
 
             Err(_) => {
@@ -91,16 +104,25 @@ pub fn respawn_units(
                     let (building, assignment) =
                         original_building.get(flag.original_building).unwrap();
 
-                    respawn_for_flag(
-                        commands.reborrow(),
-                        *flag_entity,
-                        flag,
-                        flag_owner,
-                        maybe_flag_units,
-                        respawn_transform,
-                        building,
-                        assignment,
-                    );
+                    let player = match flag_owner.entity() {
+                        Some(e) => e,
+                        None => continue,
+                    };
+                    if let Ok(mut inventory) = inventory_query.get_mut(player) {
+                        if inventory.gold >= RESPAWN_COST_GOLD {
+                            inventory.gold -= RESPAWN_COST_GOLD;
+                            respawn_for_flag(
+                                commands.reborrow(),
+                                *flag_entity,
+                                flag,
+                                flag_owner,
+                                maybe_flag_units,
+                                respawn_transform,
+                                building,
+                                assignment,
+                            );
+                        }
+                    }
                 }
             }
         };
