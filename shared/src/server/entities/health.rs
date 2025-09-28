@@ -74,11 +74,11 @@ impl Plugin for HealthPlugin {
             (
                 (
                     delayed_damage,
-                    ((apply_damage, on_unit_death).chain()).run_if(on_event::<TakeDamage>),
+                    apply_damage.run_if(on_event::<TakeDamage>),
+                    (on_building_destroy, on_unit_death),
                     update_build_status,
                 )
                     .chain(),
-                on_building_destroy,
                 delayed_despawn,
             ),
         );
