@@ -68,23 +68,25 @@ pub fn respawn_units(
         match original_building.get(flag.original_building) {
             Ok((building, assignment)) => {
                 let player = match flag_owner.entity() {
-                    Some(e) => e,
+                    Some(entity) => entity,
                     None => continue,
                 };
-                if let Ok(mut inventory) = inventory_query.get_mut(player) {
-                    if inventory.gold >= RESPAWN_COST_GOLD {
-                        inventory.gold -= RESPAWN_COST_GOLD;
-                        respawn_for_flag(
-                            commands.reborrow(),
-                            flag_entity,
-                            flag,
-                            flag_owner,
-                            maybe_flag_units,
-                            respawn_transform,
-                            building,
-                            assignment,
-                        );
-                    }
+                let Ok(mut inventory) = inventory_query.get_mut(player) else {
+                    continue;
+                };
+
+                if inventory.gold >= RESPAWN_COST_GOLD {
+                    inventory.gold -= RESPAWN_COST_GOLD;
+                    respawn_for_flag(
+                        commands.reborrow(),
+                        flag_entity,
+                        flag,
+                        flag_owner,
+                        maybe_flag_units,
+                        respawn_transform,
+                        building,
+                        assignment,
+                    );
                 }
             }
 
@@ -105,23 +107,25 @@ pub fn respawn_units(
                         original_building.get(flag.original_building).unwrap();
 
                     let player = match flag_owner.entity() {
-                        Some(e) => e,
+                        Some(entity) => entity,
                         None => continue,
                     };
-                    if let Ok(mut inventory) = inventory_query.get_mut(player) {
-                        if inventory.gold >= RESPAWN_COST_GOLD {
-                            inventory.gold -= RESPAWN_COST_GOLD;
-                            respawn_for_flag(
-                                commands.reborrow(),
-                                *flag_entity,
-                                flag,
-                                flag_owner,
-                                maybe_flag_units,
-                                respawn_transform,
-                                building,
-                                assignment,
-                            );
-                        }
+                    let Ok(mut inventory) = inventory_query.get_mut(player) else {
+                        continue;
+                    };
+
+                    if inventory.gold >= RESPAWN_COST_GOLD {
+                        inventory.gold -= RESPAWN_COST_GOLD;
+                        respawn_for_flag(
+                            commands.reborrow(),
+                            *flag_entity,
+                            flag,
+                            flag_owner,
+                            maybe_flag_units,
+                            respawn_transform,
+                            building,
+                            assignment,
+                        );
                     }
                 }
             }
