@@ -5,8 +5,8 @@ use bevy_replicon::prelude::{SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, BoxCollider, DelayedDespawn, FlagAnimation,
-    FlagAnimationEvent, Hitby, Owner,
+    AnimationChange, AnimationChangeEvent, DelayedDespawn, FlagAnimation, FlagAnimationEvent,
+    Hitby, Owner,
     map::buildings::{BuildStatus, Building, BuildingType, HealthIndicator},
     networking::{UnitType, WorldDirection},
     server::{
@@ -274,7 +274,10 @@ fn on_building_destroy(
             commands
                 .entity(entity)
                 .remove::<Health>()
-                .remove::<BoxCollider>();
+                .insert(Interactable {
+                    kind: InteractionType::Building,
+                    restricted_to: owner.entity(),
+                });
 
             if let Some(targeted_by) = maybe_targeted_by {
                 commands
