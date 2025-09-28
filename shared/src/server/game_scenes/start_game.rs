@@ -161,7 +161,22 @@ fn elite_camp(
     left_scene_end: Entity,
     right_scene_end: Entity,
 ) {
-    commands.spawn((Chest::Big, offset.with_layer(Layers::Chest)));
+    commands.spawn((
+        Chest::Normal,
+        offset.offset_x(-45.).with_layer(Layers::Chest),
+    ));
+    commands.spawn((
+        Chest::Normal,
+        offset.offset_x(-15.).with_layer(Layers::Chest),
+    ));
+    commands.spawn((
+        Chest::Normal,
+        offset.offset_x(15.).with_layer(Layers::Chest),
+    ));
+    commands.spawn((
+        Chest::Normal,
+        offset.offset_x(45.).with_layer(Layers::Chest),
+    ));
     for i in 1..30 {
         commands.spawn((
             Owner::Bandits,
@@ -201,6 +216,25 @@ fn triple_camp(
     right_connection: Entity,
     right_scene_end: Entity,
 ) {
+    commands.spawn((Chest::Normal, offset.with_layer(Layers::Chest)));
+    for i in 1..10 {
+        commands.spawn((
+            Owner::Bandits,
+            Unit {
+                unit_type: UnitType::Bandit,
+                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                color: PlayerColor::default(),
+            },
+            BanditBehaviour::default(),
+            Health { hitpoints: 25. },
+            Range(10.),
+            Speed(30.),
+            Damage(10.),
+            offset
+                .offset_x(50. - 10. * i as f32)
+                .with_layer(Layers::Unit),
+        ));
+    }
     commands.spawn((
         Chest::Normal,
         offset.offset_x(600.).with_layer(Layers::Chest),
@@ -241,14 +275,14 @@ fn triple_camp(
             Speed(30.),
             Damage(10.),
             offset
-                .offset_x(-650. - 10. * i as f32)
+                .offset_x(-550. - 10. * i as f32)
                 .with_layer(Layers::Unit),
         ));
     }
     commands.entity(left_scene_end).insert((
         SceneEnd,
         offset
-            .offset_x(-900.)
+            .offset_x(-1000.)
             .offset_y(-2.)
             .with_layer(Layers::Wall),
     ));
@@ -268,7 +302,10 @@ fn triple_camp(
     ));
     commands.entity(right_scene_end).insert((
         SceneEnd,
-        offset.offset_x(900.).offset_y(-2.).with_layer(Layers::Wall),
+        offset
+            .offset_x(1000.)
+            .offset_y(-2.)
+            .with_layer(Layers::Wall),
     ));
 }
 
@@ -319,7 +356,7 @@ fn double_camp(
             Speed(30.),
             Damage(10.),
             offset
-                .offset_x(-350. - 10. * i as f32)
+                .offset_x(-250. - 10. * i as f32)
                 .with_layer(Layers::Unit),
         ));
     }
@@ -463,12 +500,12 @@ fn player_base(
     commands.entity(left_scene_end).insert((
         SceneEnd,
         offset
-            .offset_x(-600.)
+            .offset_x(-700.)
             .offset_y(-2.)
             .with_layer(Layers::Wall),
     ));
     commands.entity(right_scene_end).insert((
         SceneEnd,
-        offset.offset_x(600.).offset_y(-2.).with_layer(Layers::Wall),
+        offset.offset_x(700.).offset_y(-2.).with_layer(Layers::Wall),
     ));
 }
