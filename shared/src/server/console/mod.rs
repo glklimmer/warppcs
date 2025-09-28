@@ -127,12 +127,15 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
     let chest = Item::builder().with_type(ItemType::Chest).build();
     let feet = Item::builder().with_type(ItemType::Feet).build();
 
+    let building = Building {
+        building_type: BuildingType::Unit { weapon: unit_type },
+        color: player.color,
+    };
     let building = world
         .spawn((
-            Building {
-                building_type: BuildingType::Unit { weapon: unit_type },
-                color: player.color,
-            },
+            building.collider(),
+            building.health(),
+            building,
             RecruitBuilding,
             RespawnZone::default(),
             ItemAssignment {
