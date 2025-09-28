@@ -87,7 +87,7 @@ impl From<f32> for Seconds {
     }
 }
 
-const BACKGROUND_VOLUME: f32 = 0.00;
+const BACKGROUND_VOLUME: f32 = 0.075;
 const COMBAT_DISTANCE_THRESHOLD: f32 = 150.0;
 pub struct BackgroundSoundPlugin;
 
