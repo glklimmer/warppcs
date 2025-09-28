@@ -115,9 +115,9 @@ pub fn trigger_king_animation(
         if let Ok(maybe_mounted) = mounted.get(event.entity) {
             let new_animation = match maybe_mounted {
                 Some(_) => match &event.change {
-                    AnimationChange::Attack => todo!(),
-                    AnimationChange::Hit(_) => todo!(),
-                    AnimationChange::Death => todo!(),
+                    AnimationChange::Attack => KingAnimation::Mount,
+                    AnimationChange::Hit(_) => KingAnimation::Mount,
+                    AnimationChange::Death => KingAnimation::Death,
                     AnimationChange::Mount => KingAnimation::Mount,
                     AnimationChange::Unmount => KingAnimation::Unmount,
                 },
