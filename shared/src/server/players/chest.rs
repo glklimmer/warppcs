@@ -67,14 +67,15 @@ pub fn open_chest(
         let chest_transform = query.get(event.interactable).unwrap();
         let chest_translation = chest_transform.translation;
 
-        let item = Item::random();
-        info!("Spawning item: {:?}", item);
-        commands.spawn((
-            item.collider(),
-            item,
-            chest_translation.with_y(12.5).with_layer(Layers::Item),
-            Velocity(Vec2::new((fastrand::f32() - 0.5) * 50., 50.)),
-        ));
+        for _ in 0..3 {
+            let item = Item::random();
+            commands.spawn((
+                item.collider(),
+                item,
+                chest_translation.with_y(12.5).with_layer(Layers::Item),
+                Velocity(Vec2::new((fastrand::f32() - 0.5) * 50., 50.)),
+            ));
+        }
 
         animation.write(ToClients {
             mode: SendMode::Broadcast,
