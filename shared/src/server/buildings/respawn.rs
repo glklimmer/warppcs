@@ -75,19 +75,17 @@ pub fn respawn_units(
                     continue;
                 };
 
-                if inventory.gold >= RESPAWN_COST_GOLD {
-                    inventory.gold -= RESPAWN_COST_GOLD;
-                    respawn_for_flag(
-                        commands.reborrow(),
-                        flag_entity,
-                        flag,
-                        flag_owner,
-                        maybe_flag_units,
-                        respawn_transform,
-                        building,
-                        assignment,
-                    );
-                }
+                respawn_for_flag(
+                    commands.reborrow(),
+                    flag_entity,
+                    flag,
+                    flag_owner,
+                    maybe_flag_units,
+                    respawn_transform,
+                    building,
+                    assignment,
+                    &mut inventory,
+                );
             }
 
             Err(_) => {
@@ -114,19 +112,17 @@ pub fn respawn_units(
                         continue;
                     };
 
-                    if inventory.gold >= RESPAWN_COST_GOLD {
-                        inventory.gold -= RESPAWN_COST_GOLD;
-                        respawn_for_flag(
-                            commands.reborrow(),
-                            *flag_entity,
-                            flag,
-                            flag_owner,
-                            maybe_flag_units,
-                            respawn_transform,
-                            building,
-                            assignment,
-                        );
-                    }
+                    respawn_for_flag(
+                        commands.reborrow(),
+                        *flag_entity,
+                        flag,
+                        flag_owner,
+                        maybe_flag_units,
+                        respawn_transform,
+                        building,
+                        assignment,
+                        &mut inventory,
+                    );
                 }
             }
         };
@@ -142,6 +138,7 @@ fn respawn_for_flag(
     respawn_transform: &Transform,
     building: &Building,
     assignment: &ItemAssignment,
+    inventory: &mut Inventory,
 ) {
     let items: Vec<Item> = assignment.items.clone().into_iter().flatten().collect();
 
@@ -152,6 +149,11 @@ fn respawn_for_flag(
     let max_allowed = items.calculated(Effect::UnitAmount) as i32;
 
     if num_alive < max_allowed {
+        if inventory.gold < RESPAWN_COST_GOLD {
+            return;
+        }
+        inventory.gold -= RESPAWN_COST_GOLD;
+
         let (unit, health, speed, damage, range) =
             unit_stats(building.unit_type().unwrap(), &items, flag.color);
 
