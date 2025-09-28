@@ -20,7 +20,7 @@ pub fn pikeman_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus, 
     let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
         UVec2::new(112, 50),
         ATLAS_COLUMNS as u32,
-        6,
+        7,
         Some(UVec2::splat(1)),
         None,
     ));
@@ -34,7 +34,7 @@ pub fn pikeman_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus, 
             HealthIndicator::Medium => anim!(4, 5),
             HealthIndicator::Heavy => anim!(5, 5),
         },
-        BuildStatus::Destroyed => anim!(0, 0),
+        BuildStatus::Destroyed => anim!(6, 0),
     });
 
     let animations_sound = EnumMap::new(|c| match c {
