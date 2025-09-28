@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::entity::MapEntities, prelude::*};
 
 use bevy_replicon::{
     prelude::{FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer},
@@ -25,6 +25,14 @@ impl Plugin for MapPlugin {
 
 #[derive(Event, Serialize, Deserialize, Deref)]
 pub struct LoadMap(pub MapGraph);
+
+impl MapEntities for LoadMap {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        for node in self.0.node_weights_mut() {
+            node.map_entities(entity_mapper);
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ExitType {
@@ -68,10 +76,56 @@ pub enum SceneType {
     },
 }
 
+impl MapEntities for SceneType {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        match self {
+            SceneType::Player {
+                player,
+                left,
+                right,
+            } => {
+                *player = entity_mapper.get_mapped(*player);
+                *left = entity_mapper.get_mapped(*left);
+                *right = entity_mapper.get_mapped(*right);
+            }
+            SceneType::Traversal { left, right } => {
+                *left = entity_mapper.get_mapped(*left);
+                *right = entity_mapper.get_mapped(*right);
+            }
+            SceneType::TJunction {
+                left,
+                middle,
+                right,
+            } => {
+                *left = entity_mapper.get_mapped(*left);
+                *middle = entity_mapper.get_mapped(*middle);
+                *right = entity_mapper.get_mapped(*right);
+            }
+            SceneType::DoubleConnection {
+                left,
+                left_connection,
+                right_connection,
+                right,
+            } => {
+                *left = entity_mapper.get_mapped(*left);
+                *left_connection = entity_mapper.get_mapped(*left_connection);
+                *right_connection = entity_mapper.get_mapped(*right_connection);
+                *right = entity_mapper.get_mapped(*right);
+            }
+        }
+    }
+}
+
 #[derive(Component, Debug, Clone, Serialize, Deserialize, Copy)]
 pub struct GameScene {
     pub scene: SceneType,
     pub position: Vec2,
+}
+
+impl MapEntities for GameScene {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.scene.map_entities(entity_mapper);
+    }
 }
 
 impl MapGraph {
