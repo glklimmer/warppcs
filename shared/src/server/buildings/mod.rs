@@ -120,6 +120,9 @@ fn check_building_interaction(
                 }
             }
             BuildStatus::Destroyed => {
+                if !inventory.gold.ge(&building.cost().gold) {
+                    continue;
+                }
                 writer.write(BuildingChangeStart(BuildingEventInfo {
                     player_entity: event.player,
                     building_entity: entity,
