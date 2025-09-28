@@ -59,6 +59,7 @@ bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax" }
 arboard = "3.5.0"
 image = { version = "0.25.6", features = ["png"] }
 thiserror = "2.0.12"
+petgraph = { version = "0.8.1", features = ["serde-1"] }
 
 [lints.clippy]
 type_complexity = "allow"

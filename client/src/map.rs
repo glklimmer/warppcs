@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 
 use bevy::input::common_conditions::input_just_pressed;
+use petgraph::graph::NodeIndex;
+
 use shared::{
     PlayerState,
-    server::game_scenes::{
-        map::{GameScene, LoadMap, SceneType},
-        travel::Traveling,
-    },
+    server::game_scenes::map::{GameScene, LoadMap, MapGraph, SceneType},
+    server::game_scenes::travel::Traveling,
 };
 
 use crate::{
@@ -24,6 +24,7 @@ impl Plugin for MapPlugin {
             .add_observer(enter_travel_state)
             .add_observer(leave_travel_state)
             // ------------
+            .add_observer(reveal_map_icons)
             .add_systems(
                 OnEnter(PlayerState::Traveling),
                 (show_map, spawn_travel_dashline),
@@ -39,6 +40,35 @@ impl Plugin for MapPlugin {
                 ),
             )
             .add_systems(Update, animate_dashes);
+    }
+}
+
+#[derive(Component, Deref)]
+struct MapIcon(NodeIndex);
+
+fn reveal_map_icons(
+    trigger: Trigger<OnRemove, Traveling>,
+    traveling_controller_player: Query<&Traveling, With<ControlledPlayer>>,
+    scene_query: Query<&GameScene>,
+    mut icon_query: Query<(&mut Visibility, &MapIcon)>,
+    graph: Res<MapGraph>,
+) {
+    let Ok(traveling) = traveling_controller_player.get(trigger.target()) else {
+        return;
+    };
+    let Ok(game_scene) = scene_query.get(traveling.target) else {
+        return;
+    };
+
+    for node_idx in graph.node_indices() {
+        let node = &graph[node_idx];
+        if node.position == game_scene.position {
+            for (mut visibility, icon) in icon_query.iter_mut() {
+                if **icon == node_idx {
+                    *visibility = Visibility::Inherited;
+                }
+            }
+        }
     }
 }
 
@@ -229,8 +259,10 @@ fn setup_map(
     mut commands: Commands,
     assets: Res<AssetServer>,
     map_icons: Res<MapIconSpriteSheet>,
+    controlled_player: Query<Entity, With<ControlledPlayer>>,
 ) {
-    let graph = &**trigger.event();
+    let graph = trigger.event().0.clone();
+    commands.insert_resource(graph.clone());
 
     let map_texture = assets.load::<Image>("sprites/ui/map.png");
 
@@ -250,7 +282,19 @@ fn setup_map(
                     SceneType::TJunction { .. } => MapIcons::Bandit,
                     SceneType::DoubleConnection { .. } => MapIcons::Bandit,
                 };
+                let visibility = if let SceneType::Player { player, .. } = node.scene {
+                    let controlled_player = &controlled_player.single().unwrap();
+                    if player.eq(controlled_player) {
+                        Visibility::Inherited
+                    } else {
+                        Visibility::Hidden
+                    }
+                } else {
+                    Visibility::Hidden
+                };
                 parent.spawn((
+                    MapIcon(node_idx),
+                    visibility,
                     Sprite::from_atlas_image(
                         map_icons.sprite_sheet.texture.clone(),
                         map_icons.sprite_sheet.texture_atlas(icon_type),

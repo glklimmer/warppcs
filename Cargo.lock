@@ -2183,6 +2183,7 @@ dependencies = [
  "bincode",
  "fastrand",
  "image",
+ "petgraph 0.8.2",
  "serde",
  "shared",
  "thiserror 2.0.12",
