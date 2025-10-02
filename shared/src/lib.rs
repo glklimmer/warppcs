@@ -5,7 +5,7 @@ use bevy_replicon::{
         AppRuleExt, Channel, ClientTriggerAppExt, ConnectedClient, Replicated, SendMode,
         ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, SyncRelatedAppExt, ToClients,
     },
-    server::{ServerPlugin, VisibilityPolicy},
+    server::{ServerPlugin, TickPolicy, VisibilityPolicy},
 };
 use enum_map::*;
 
@@ -74,6 +74,7 @@ impl Plugin for SharedPlugin {
         app.add_plugins((
             RepliconPlugins.set(ServerPlugin {
                 visibility_policy: VisibilityPolicy::All,
+                tick_policy: TickPolicy::MaxTickRate(20),
                 ..Default::default()
             }),
             PlayerMovement,
