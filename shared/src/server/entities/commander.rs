@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::networking::UnitType;
 use crate::server::buildings::recruiting::{Flag, FlagAssignment};
+use crate::server::game_scenes::GameSceneId;
 use crate::{
     ClientPlayerMap, Owner, Vec3LayerExt,
     enum_map::*,
@@ -188,17 +189,18 @@ fn handle_camp_interaction(
     active: Res<ActiveCommander>,
     client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
-    transform: Query<&Transform>,
+    query: Query<(&Transform, &GameSceneId)>,
 ) {
     let player = client_player_map.get(&trigger.client_entity).unwrap();
     let commander = active.0.get(player).unwrap();
-    let commander_transform = transform.get(*commander).unwrap();
+    let (commander_transform, game_scene_id) = query.get(*commander).unwrap();
     let commander_pos = commander_transform.translation;
 
     commands.spawn((
         SiegeCamp::default(),
         commander_pos.with_layer(Layers::Building),
         Owner::Player(*player),
+        *game_scene_id,
     ));
 }
 

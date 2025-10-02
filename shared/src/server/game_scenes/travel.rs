@@ -1,15 +1,22 @@
 use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
-use bevy_replicon::prelude::{Replicated, server_or_singleplayer};
+use bevy_replicon::prelude::{
+    Replicated, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider,
+    BoxCollider, ClientPlayerMap,
     map::Layers,
     server::{
-        entities::commander::ArmyFlagAssignments, game_scenes::map::ExitType,
-        physics::collider_trigger::ColliderTrigger, players::interaction::InteractionType,
+        entities::commander::ArmyFlagAssignments,
+        game_scenes::{
+            GameSceneId,
+            world::{ExitType, GameScene, RevealMapNode},
+        },
+        physics::collider_trigger::ColliderTrigger,
+        players::interaction::InteractionType,
     },
 };
 
@@ -33,18 +40,29 @@ impl Plugin for TravelPlugin {
 
 #[derive(Component, Serialize, Deserialize)]
 pub struct Traveling {
-    #[entities]
-    pub source: Entity,
-    #[entities]
-    pub target: Entity,
+    pub source: (Entity, Option<GameScene>),
+    pub target: (Entity, Option<GameScene>),
     time_left: Timer,
 }
 
 impl Traveling {
-    fn between(source: Entity, target: Entity) -> Self {
+    fn player(
+        source: Entity,
+        source_game_scene: GameScene,
+        target: Entity,
+        target_game_scene: GameScene,
+    ) -> Self {
         Self {
-            source,
-            target,
+            source: (source, Some(source_game_scene)),
+            target: (target, Some(target_game_scene)),
+            time_left: Timer::from_seconds(5., TimerMode::Once),
+        }
+    }
+
+    fn unit(source: Entity, target: Entity) -> Self {
+        Self {
+            source: (source, None),
+            target: (target, None),
             time_left: Timer::from_seconds(5., TimerMode::Once),
         }
     }
@@ -151,6 +169,7 @@ fn start_travel(
     commanders: Query<(&FlagAssignment, &ArmyFlagAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
     destination: Query<(Entity, &TravelDestination)>,
+    game_scenes: Query<&GameScene>,
 ) {
     for event in traveling.read() {
         let InteractionType::Travel = &event.interaction else {
@@ -159,6 +178,9 @@ fn start_travel(
 
         let player_entity = event.player;
         let (source, destination) = destination.get(event.interactable).unwrap();
+        let source_game_scene = game_scenes.get(source).unwrap();
+        let destination_game_scene = game_scenes.get(**destination).unwrap();
+
         let flag_holder = flag_holders.get(player_entity);
 
         info!("Travel starting...");
@@ -187,12 +209,19 @@ fn start_travel(
 
         commands
             .entity(player_entity)
-            .insert(Traveling::between(source, **destination));
+            .insert(Traveling::player(
+                source,
+                *source_game_scene,
+                **destination,
+                *destination_game_scene,
+            ))
+            .remove::<GameSceneId>();
 
         for group in travel_entities {
             commands
                 .entity(group)
-                .insert(Traveling::between(source, **destination));
+                .insert(Traveling::unit(source, **destination))
+                .remove::<GameSceneId>();
         }
     }
 }
@@ -200,14 +229,18 @@ fn start_travel(
 fn end_travel(
     mut commands: Commands,
     query: Query<(Entity, &Traveling)>,
-    transform: Query<(&Transform, Option<&TravelDestinationOffset>)>,
+    target: Query<(&Transform, &GameSceneId, Option<&TravelDestinationOffset>)>,
+    client_player_map: Res<ClientPlayerMap>,
 ) {
     for (entity, travel) in query.iter() {
         if !travel.time_left.finished() {
             continue;
         }
 
-        let (target_transform, maybe_offset) = transform.get(travel.target).unwrap();
+        let (target_entity, maybe_target_game_scene) = travel.target;
+
+        let (target_transform, target_game_scene_id, maybe_offset) =
+            target.get(target_entity).unwrap();
         let target_position = target_transform.translation;
 
         info!("Travel finished to target position: {:?}", target_position);
@@ -217,13 +250,29 @@ fn end_travel(
             None => 0.,
         };
 
-        commands
-            .entity(entity)
-            .remove::<Traveling>()
-            .insert(Transform::from_xyz(
+        commands.entity(entity).remove::<Traveling>().insert((
+            Transform::from_xyz(
                 target_position.x + travel_destination_offset,
                 target_position.y,
                 Layers::Player.as_f32(),
-            ));
+            ),
+            *target_game_scene_id,
+        ));
+
+        let Some(target_game_scene) = maybe_target_game_scene else {
+            continue;
+        };
+
+        let Some(client) = (**client_player_map)
+            .iter()
+            .find_map(|(key, &val)| if val == entity { Some(key) } else { None })
+        else {
+            continue;
+        };
+
+        commands.server_trigger(ToClients {
+            mode: SendMode::Direct(*client),
+            event: RevealMapNode::to(target_game_scene),
+        });
     }
 }

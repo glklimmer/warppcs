@@ -9,7 +9,10 @@ use crate::{
     AnimationChange, AnimationChangeEvent, BoxCollider,
     map::Layers,
     networking::{MountType, Mounted},
-    server::physics::movement::{Speed, Velocity},
+    server::{
+        game_scenes::GameSceneId,
+        physics::movement::{Speed, Velocity},
+    },
     unit_collider,
 };
 
@@ -100,7 +103,7 @@ fn mount(
 
 fn unmount(
     mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut player_query: Query<(&Mounted, &Transform)>,
+    mut player_query: Query<(&Mounted, &Transform, &GameSceneId)>,
     mut commands: Commands,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
 ) {
@@ -110,7 +113,7 @@ fn unmount(
         };
 
         let player = event.player;
-        let (mounted, transform) = player_query.get_mut(player).unwrap();
+        let (mounted, transform, game_scene_id) = player_query.get_mut(player).unwrap();
 
         let new_speed = Speed::default();
 
@@ -120,13 +123,16 @@ fn unmount(
             .remove::<Interactable>()
             .insert(new_speed);
 
-        commands.spawn(DelayedMountSpawn {
-            mount_type: mounted.mount_type,
-            position: transform
-                .with_translation(transform.translation.with_z(Layers::Mount.as_f32())),
-            timer: Timer::from_seconds(0.1 * 7., TimerMode::Once), // TODO: replace with animation
-                                                                   // hook
-        });
+        commands.spawn((
+            DelayedMountSpawn {
+                mount_type: mounted.mount_type,
+                position: transform
+                    .with_translation(transform.translation.with_z(Layers::Mount.as_f32())),
+                timer: Timer::from_seconds(0.1 * 7., TimerMode::Once), // TODO: replace with animation
+                                                                       // hook
+            },
+            *game_scene_id,
+        ));
 
         animation.write(ToClients {
             mode: SendMode::Broadcast,
@@ -140,10 +146,10 @@ fn unmount(
 
 fn spawn_mount_on_unmount(
     mut commands: Commands,
-    mut delayed_spawns: Query<(Entity, &mut DelayedMountSpawn)>,
+    mut delayed_spawns: Query<(Entity, &mut DelayedMountSpawn, &GameSceneId)>,
     time: Res<Time>,
 ) {
-    for (entity, mut delayed_spawn) in delayed_spawns.iter_mut() {
+    for (entity, mut delayed_spawn, game_scene_id) in delayed_spawns.iter_mut() {
         delayed_spawn.timer.tick(time.delta());
 
         if delayed_spawn.timer.finished() {
@@ -152,6 +158,7 @@ fn spawn_mount_on_unmount(
                     mount_type: delayed_spawn.mount_type,
                 },
                 delayed_spawn.position,
+                *game_scene_id,
             ));
 
             commands.entity(entity).despawn();

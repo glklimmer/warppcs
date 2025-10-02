@@ -14,6 +14,7 @@ use crate::{
             Damage, Unit,
             health::{DelayedDamage, TakeDamage},
         },
+        game_scenes::GameSceneId,
         physics::{movement::Velocity, projectile::ProjectileType},
     },
 };
@@ -30,13 +31,21 @@ impl Plugin for AIAttackPlugin {
 fn process_attacks(
     query: Query<&BehaveCtx, With<AttackingInRange>>,
     mut commands: Commands,
-    mut unit: Query<(&mut Unit, Option<&Target>, &Owner, &Transform, &Damage)>,
+    mut unit: Query<(
+        &mut Unit,
+        Option<&Target>,
+        &Owner,
+        &Transform,
+        &Damage,
+        &GameSceneId,
+    )>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
 ) {
     for ctx in query.iter() {
         let entity = ctx.target_entity();
-        let (mut unit, maybe_target, owner, transform, damage) = unit.get_mut(entity).unwrap();
+        let (mut unit, maybe_target, owner, transform, damage, game_scene_id) =
+            unit.get_mut(entity).unwrap();
         let Some(target) = maybe_target else {
             commands.trigger(ctx.success());
             continue;
@@ -113,6 +122,7 @@ fn process_attacks(
                         projectile_type,
                         velocity,
                         Damage(**damage),
+                        *game_scene_id,
                     ));
                 }
             }

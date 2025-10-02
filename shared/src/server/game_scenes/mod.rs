@@ -1,12 +1,20 @@
 use bevy::prelude::*;
 
-use map::MapPlugin;
-use start_game::StartGamePlugin;
+use init_world::StartGamePlugin;
 use travel::TravelPlugin;
+use world::MapPlugin;
 
-pub mod map;
-pub mod start_game;
+pub mod init_world;
 pub mod travel;
+pub mod world;
+
+#[derive(Component, PartialEq, Eq, Copy, Clone)]
+pub struct GameSceneId(usize);
+impl GameSceneId {
+    pub(crate) fn lobby() -> Self {
+        Self(0)
+    }
+}
 
 pub struct GameScenesPlugin;
 
