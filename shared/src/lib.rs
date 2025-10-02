@@ -2,8 +2,9 @@ use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
-        AppRuleExt, Channel, ClientTriggerAppExt, ConnectedClient, Replicated, SendMode,
-        ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, SyncRelatedAppExt, ToClients,
+        AppRuleExt, Channel, ClientTriggerAppExt, ClientVisibility, ConnectedClient, Replicated,
+        SendMode, ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, SyncRelatedAppExt,
+        ToClients,
     },
     server::{ServerPlugin, TickPolicy, VisibilityPolicy},
 };
@@ -55,7 +56,10 @@ use crate::server::{
         commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
         health::PlayerDefeated,
     },
-    game_scenes::travel::{Road, SceneEnd},
+    game_scenes::{
+        GameSceneId,
+        travel::{Road, SceneEnd},
+    },
 };
 
 pub mod enum_map;
@@ -75,6 +79,7 @@ impl Plugin for SharedPlugin {
             RepliconPlugins.set(ServerPlugin {
                 visibility_policy: VisibilityPolicy::All,
                 tick_policy: TickPolicy::MaxTickRate(20),
+                visibility_policy: VisibilityPolicy::Whitelist,
                 ..Default::default()
             }),
             PlayerMovement,
@@ -127,7 +132,8 @@ impl Plugin for SharedPlugin {
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
         .add_mapped_server_event::<FlagAnimationEvent>(Channel::Ordered)
-        .add_observer(spawn_clients);
+        .add_observer(spawn_clients)
+        .add_observer(update_visibility);
     }
 }
 
@@ -211,6 +217,7 @@ impl MapEntities for FlagAnimationEvent {
 fn spawn_clients(
     trigger: Trigger<OnAdd, ConnectedClient>,
     mut commands: Commands,
+    mut visibility: Query<&mut ClientVisibility>,
     mut client_player_map: ResMut<ClientPlayerMap>,
 ) {
     let player = commands
@@ -220,15 +227,32 @@ fn spawn_clients(
                 color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
             },
             Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
+            GameSceneId::lobby(),
         ))
         .id();
 
+    client_player_map.insert(player, player);
+
+    for mut client_visibility in visibility.iter_mut() {
+        client_visibility.set_visibility(player, true);
+    }
+
     commands.server_trigger(ToClients {
-        mode: SendMode::Direct(trigger.target()),
+        mode: SendMode::Direct(player),
         event: SetLocalPlayer(player),
     });
+}
 
-    client_player_map.insert(trigger.target(), player);
+fn update_visibility(
+    _trigger: Trigger<OnInsert, GameSceneId>,
+    mut players: Query<(&mut ClientVisibility, &GameSceneId), With<Player>>,
+    others: Query<(Entity, &GameSceneId)>,
+) {
+    for (mut visibility, game_scene_id) in players.iter_mut() {
+        for (entity, other_game_scene_id) in others.iter() {
+            visibility.set_visibility(entity, other_game_scene_id.eq(game_scene_id));
+        }
+    }
 }
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
