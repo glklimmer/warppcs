@@ -12,6 +12,7 @@ use crate::{
     server::{
         ai::UnitBehaviour,
         entities::commander::ArmyFlagAssignments,
+        game_scenes::GameSceneId,
         players::items::{CalculatedStats, Effect, Item},
     },
 };
@@ -32,6 +33,7 @@ pub fn respawn_units(
         &Transform,
         &BoxCollider,
         &Owner,
+        &GameSceneId,
         Option<&FlagUnits>,
     )>,
     mut respawn_zones: Query<(&mut RespawnZone, &Transform, &BoxCollider, &Owner)>,
@@ -40,8 +42,15 @@ pub fn respawn_units(
     flag_query: Query<(&Flag, Option<&FlagUnits>)>,
     mut inventory_query: Query<&mut Inventory>,
 ) {
-    for (flag_entity, flag, flag_transform, flag_collider, flag_owner, maybe_flag_units) in
-        flags.iter()
+    for (
+        flag_entity,
+        flag,
+        flag_transform,
+        flag_collider,
+        flag_owner,
+        flag_game_scene_id,
+        maybe_flag_units,
+    ) in flags.iter()
     {
         let flag_bounds = flag_collider.at(flag_transform);
 
@@ -85,6 +94,7 @@ pub fn respawn_units(
                     building,
                     assignment,
                     &mut inventory,
+                    flag_game_scene_id,
                 );
             }
 
@@ -122,6 +132,7 @@ pub fn respawn_units(
                         building,
                         assignment,
                         &mut inventory,
+                        flag_game_scene_id,
                     );
                 }
             }
@@ -139,6 +150,7 @@ fn respawn_for_flag(
     building: &Building,
     assignment: &ItemAssignment,
     inventory: &mut Inventory,
+    game_scene_id: &GameSceneId,
 ) {
     let items: Vec<Item> = assignment.items.clone().into_iter().flatten().collect();
 
@@ -165,6 +177,7 @@ fn respawn_for_flag(
             damage,
             range,
             *flag_owner,
+            *game_scene_id,
             FlagAssignment(flag_entity),
             UnitBehaviour::default(),
         ));

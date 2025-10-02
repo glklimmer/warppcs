@@ -4,7 +4,10 @@ use bevy_replicon::prelude::*;
 use aeronet::io::{Session, SessionEndpoint, connection::Disconnected, server::Server};
 use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
 
-use crate::{ClientPlayerMap, Player, PlayerColor, SetLocalPlayer, enum_map::*};
+use crate::{
+    ClientPlayerMap, Player, PlayerColor, SetLocalPlayer, enum_map::*,
+    server::game_scenes::GameSceneId,
+};
 
 pub struct CreateServerPlugin;
 
@@ -114,9 +117,12 @@ fn on_created(
     info!("Successfully created server");
 
     let server_player = commands
-        .spawn(Player {
-            color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
-        })
+        .spawn((
+            Player {
+                color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
+            },
+            GameSceneId::lobby(),
+        ))
         .id();
 
     client_player_map.insert(SERVER, server_player);
