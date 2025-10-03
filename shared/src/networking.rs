@@ -1,5 +1,7 @@
 use aeronet::io::{Session, SessionEndpoint, connection::Disconnect};
-use bevy::{ecs::query::QuerySingleError, prelude::*};
+use bevy::{
+    ecs::query::QuerySingleError, input::common_conditions::input_just_pressed, prelude::*,
+};
 
 use bevy_egui::{EguiContexts, egui};
 use bevy_replicon::prelude::*;
@@ -11,23 +13,39 @@ use crate::{BoxCollider, horse_collider, map::buildings::Cost, server::players::
 
 pub const PROTOCOL_ID: u64 = 7;
 
+#[derive(Resource)]
+struct RepliconVisualizerState {
+    pub show: bool,
+}
+
 pub struct NetworkRegistry;
 
 impl Plugin for NetworkRegistry {
     fn build(&self, app: &mut App) {
+        app.insert_resource(RepliconVisualizerState { show: false });
         app.add_client_event::<LobbyEvent>(Channel::Ordered);
-        app.add_systems(Update, global_ui);
+        app.add_systems(
+            Update,
+            (
+                replicon_visualizer,
+                toggle_replicon_visualizer.run_if(input_just_pressed(KeyCode::KeyY)),
+            ),
+        );
     }
 }
 
-fn global_ui(
+fn replicon_visualizer(
     mut commands: Commands,
     mut egui: EguiContexts,
     sessions: Query<(Entity, &Name, Option<&Session>), With<SessionEndpoint>>,
     replicon_client: Res<RepliconClient>,
+    state: Res<RepliconVisualizerState>,
 ) {
+    if !state.show {
+        return;
+    }
     let stats = replicon_client.stats();
-    egui::Window::new("Session Log").show(egui.ctx_mut(), |ui| {
+    egui::Window::new("Replicon Visualizer").show(egui.ctx_mut(), |ui| {
         ui.label("Replicon reports:");
         ui.horizontal(|ui| {
             ui.label(match replicon_client.status() {
@@ -78,6 +96,10 @@ fn global_ui(
 #[derive(Debug, Deserialize, Event, Serialize)]
 pub enum LobbyEvent {
     StartGame,
+}
+
+fn toggle_replicon_visualizer(mut state: ResMut<RepliconVisualizerState>) {
+    state.show = !state.show;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Mappable, PartialEq, Eq)]

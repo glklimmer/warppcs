@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
-use aeronet::{
-    io::{Session, SessionEndpoint, connection::Disconnected, server::Server},
-    transport::visualizer::{SessionVisualizer, SessionVisualizerPlugin},
-};
+use aeronet::io::{Session, SessionEndpoint, connection::Disconnected, server::Server};
 use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
 
 use crate::{
@@ -16,7 +13,6 @@ pub struct CreateServerPlugin;
 
 impl Plugin for CreateServerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SessionVisualizerPlugin);
         app.add_plugins(AeronetRepliconServerPlugin)
             .add_observer(on_created)
             .add_observer(on_connecting)
@@ -161,12 +157,8 @@ fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>) {
     info!("Client {client} connecting...");
 }
 
-fn on_connected(trigger: Trigger<OnAdd, Session>, mut commands: Commands) {
+fn on_connected(trigger: Trigger<OnAdd, Session>) {
     let client = trigger.target();
-
-    commands
-        .entity(client)
-        .insert((SessionVisualizer::default(),));
     info!("Client {client} connected.");
 }
 
