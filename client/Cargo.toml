@@ -44,9 +44,7 @@ bevy_replicon = { workspace = true, features = ["client"] }
 bincode = { workspace = true }
 fastrand = { workspace = true }
 serde = { workspace = true }
-bevy_egui = { workspace = true }
-
-aeronet = { workspace = true , features = ["visualizer"]}
+aeronet = { workspace = true }
 aeronet_webtransport = { workspace = true, features = [
     "client",
     "dangerous-configuration",
