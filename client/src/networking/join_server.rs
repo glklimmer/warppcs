@@ -2,7 +2,10 @@ use bevy::prelude::*;
 
 use aeronet::{
     io::{Session, SessionEndpoint, connection::Disconnected},
-    transport::TransportConfig,
+    transport::{
+        TransportConfig,
+        visualizer::{SessionVisualizer, SessionVisualizerPlugin},
+    },
 };
 use aeronet_replicon::client::{AeronetRepliconClient, AeronetRepliconClientPlugin};
 
@@ -10,6 +13,7 @@ pub struct JoinServerPlugin;
 
 impl Plugin for JoinServerPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(SessionVisualizerPlugin);
         app.add_plugins(AeronetRepliconClientPlugin)
             .add_observer(on_connecting)
             .add_observer(on_connected)
@@ -109,9 +113,10 @@ fn on_connected(trigger: Trigger<OnAdd, Session>, mut commands: Commands) {
 
     info!("Joined server.");
 
-    commands
-        .entity(entity)
-        .insert((TransportConfig { ..default() },));
+    commands.entity(entity).insert((
+        TransportConfig { ..default() },
+        SessionVisualizer::default(),
+    ));
 }
 
 fn on_disconnected(trigger: Trigger<Disconnected>) {
