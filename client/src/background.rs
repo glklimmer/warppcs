@@ -2,10 +2,7 @@ use bevy::prelude::*;
 use bevy_parallax::{CreateParallaxEvent, LayerData, LayerRepeat, LayerSpeed, RepeatStrategy};
 use shared::{
     PlayerState,
-    server::game_scenes::{
-        map::{GameScene, SceneType},
-        travel::Traveling,
-    },
+    server::game_scenes::{travel::Traveling, world::SceneType},
 };
 
 use crate::networking::ControlledPlayer;
@@ -31,7 +28,6 @@ fn setup_background(
 }
 
 fn change_background(
-    portals: Query<&GameScene>,
     player: Query<&Traveling, With<ControlledPlayer>>,
     camera: Query<Entity, With<Camera2d>>,
     mut create_parallax: EventWriter<CreateParallaxEvent>,
@@ -40,14 +36,15 @@ fn change_background(
         return;
     };
 
-    let Ok(portal) = portals.get(player.target) else {
+    let (_, maybe_target) = player.target;
+    let Some(target_game_scene) = maybe_target else {
         return;
     };
 
     let Ok(camera) = camera.single() else {
         return;
     };
-    let event = match portal.scene {
+    let event = match target_game_scene.scene {
         SceneType::Player { .. } => player_background(camera),
         SceneType::Traversal { .. } => bandit_background(camera),
         SceneType::TJunction { .. } => bandit_background(camera),

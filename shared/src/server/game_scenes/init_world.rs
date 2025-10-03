@@ -30,22 +30,22 @@ use crate::{
     },
 };
 
-use super::map::{ExitType, GameScene, LoadMap, SceneType};
+use super::world::{ExitType, GameScene, InitWorld, SceneType};
 
 pub struct StartGamePlugin;
 
 impl Plugin for StartGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(start_game);
+        app.add_observer(init_world);
     }
 }
 
-fn start_game(
-    trigger: Trigger<LoadMap>,
-    mut players: Query<(&mut Transform, &Player), With<Player>>,
+fn init_world(
+    load_map: Trigger<InitWorld>,
+    mut players: Query<(&mut Transform, &Player)>,
     mut commands: Commands,
 ) {
-    let map = &**trigger.event();
+    let map = &**load_map.event();
     for (i, node) in map.node_references() {
         let offset = Vec3::new(10000. * i.index() as f32, 0., 0.);
         let game_scene_id = GameSceneId(i.index() + 1);
@@ -58,6 +58,7 @@ fn start_game(
             } => {
                 let (mut transform, Player { color }) = players.get_mut(player).unwrap();
                 transform.translation = offset.with_z(Layers::Player.as_f32());
+                commands.entity(player).insert(game_scene_id);
 
                 player_base(
                     commands.reborrow(),

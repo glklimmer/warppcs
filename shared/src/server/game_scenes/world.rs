@@ -1,4 +1,4 @@
-use bevy::{ecs::entity::MapEntities, prelude::*};
+use bevy::prelude::*;
 
 use bevy_replicon::{
     prelude::{FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer},
@@ -6,16 +6,17 @@ use bevy_replicon::{
 };
 use petgraph::{Graph, Undirected};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
-use crate::{GameState, Player, networking::LobbyEvent};
+use crate::{ClientPlayerMap, GameState, Player, networking::LobbyEvent};
 
 pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MapGraph>().add_systems(
+        app.add_systems(
             PreUpdate,
-            init_map
+            init_world
                 .after(ServerSet::Receive)
                 .run_if(server_or_singleplayer)
                 .run_if(in_state(GameState::MainMenu)),
@@ -23,18 +24,22 @@ impl Plugin for MapPlugin {
     }
 }
 
-#[derive(Event, Serialize, Deserialize, Deref)]
-pub struct LoadMap(pub MapGraph);
+#[derive(Event, Deref)]
+pub struct InitWorld(WorldGraph);
 
-impl MapEntities for LoadMap {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        for node in self.0.node_weights_mut() {
-            node.map_entities(entity_mapper);
-        }
+#[derive(Event, Deref, Serialize, Deserialize)]
+pub struct InitPlayerMapNode(GameScene);
+
+#[derive(Event, Deref, Serialize, Deserialize)]
+pub struct RevealMapNode(GameScene);
+
+impl RevealMapNode {
+    pub fn to(game_scene: GameScene) -> Self {
+        Self(game_scene)
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExitType {
     PlayerLeft,
     PlayerRight,
@@ -49,8 +54,8 @@ pub enum ExitType {
     DoubleConnectionRight,
 }
 
-#[derive(Resource, Clone, Serialize, Deserialize, Default, Deref, DerefMut)]
-pub struct MapGraph(pub Graph<GameScene, (ExitType, ExitType), Undirected>);
+#[derive(Clone, Default, Deref, DerefMut)]
+pub struct WorldGraph(Graph<GameScene, (ExitType, ExitType), Undirected>);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum SceneType {
@@ -76,66 +81,28 @@ pub enum SceneType {
     },
 }
 
-impl MapEntities for SceneType {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        match self {
-            SceneType::Player {
-                player,
-                left,
-                right,
-            } => {
-                *player = entity_mapper.get_mapped(*player);
-                *left = entity_mapper.get_mapped(*left);
-                *right = entity_mapper.get_mapped(*right);
-            }
-            SceneType::Traversal { left, right } => {
-                *left = entity_mapper.get_mapped(*left);
-                *right = entity_mapper.get_mapped(*right);
-            }
-            SceneType::TJunction {
-                left,
-                middle,
-                right,
-            } => {
-                *left = entity_mapper.get_mapped(*left);
-                *middle = entity_mapper.get_mapped(*middle);
-                *right = entity_mapper.get_mapped(*right);
-            }
-            SceneType::DoubleConnection {
-                left,
-                left_connection,
-                right_connection,
-                right,
-            } => {
-                *left = entity_mapper.get_mapped(*left);
-                *left_connection = entity_mapper.get_mapped(*left_connection);
-                *right_connection = entity_mapper.get_mapped(*right_connection);
-                *right = entity_mapper.get_mapped(*right);
-            }
-        }
-    }
-}
-
 #[derive(Component, Debug, Clone, Serialize, Deserialize, Copy)]
 pub struct GameScene {
     pub scene: SceneType,
     pub position: Vec2,
 }
 
-impl MapEntities for GameScene {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.scene.map_entities(entity_mapper);
-    }
-}
+#[derive(Default, Clone, Deref)]
+struct PlayerGameScenes(HashMap<Entity, GameScene>);
 
-impl MapGraph {
-    pub fn circular(mut commands: Commands, players: Vec<Entity>, radius: f32) -> MapGraph {
+impl WorldGraph {
+    fn circular(
+        mut commands: Commands,
+        players: Vec<Entity>,
+        radius: f32,
+    ) -> (WorldGraph, PlayerGameScenes) {
         let num_players = players.len();
         if num_players == 0 {
-            return MapGraph::default();
+            return (WorldGraph::default(), PlayerGameScenes::default());
         }
 
         let mut graph = Graph::<GameScene, (ExitType, ExitType), Undirected>::new_undirected();
+        let mut player_game_scenes = HashMap::new();
 
         // Create all nodes and store their indices
         let mut player_nodes = Vec::with_capacity(num_players);
@@ -149,15 +116,17 @@ impl MapGraph {
             let frac = i as f32 / num_players as f32;
             let angle = frac * std::f32::consts::TAU;
             let pos = Vec2::new(radius * angle.cos(), radius * angle.sin());
-            let p_idx = graph.add_node(GameScene {
+            let game_scene = GameScene {
                 scene: SceneType::Player {
                     player: players[i],
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
                 },
                 position: pos,
-            });
+            };
+            let p_idx = graph.add_node(game_scene);
             player_nodes.push(p_idx);
+            player_game_scenes.insert(players[i], game_scene);
 
             // Intermediate nodes for segment i
             let next_frac = (i as f32 + 1.0) / num_players as f32;
@@ -316,15 +285,16 @@ impl MapGraph {
             }
         }
 
-        MapGraph(graph)
+        (WorldGraph(graph), PlayerGameScenes(player_game_scenes))
     }
 }
 
-fn init_map(
+fn init_world(
     mut lobby_events: EventReader<FromClient<LobbyEvent>>,
     mut commands: Commands,
     mut next_game_state: ResMut<NextState<GameState>>,
     players: Query<Entity, With<Player>>,
+    client_player_map: Res<ClientPlayerMap>,
 ) {
     let Some(FromClient { event, .. }) = lobby_events.read().next() else {
         return;
@@ -339,15 +309,19 @@ fn init_map(
 
     let players: Vec<Entity> = players.iter().collect();
     let num_players = players.len();
-    let map = MapGraph::circular(
+    let (map, player_game_scenes) = WorldGraph::circular(
         commands.reborrow(),
         players,
         100. + 25. * num_players as f32,
     );
 
-    commands.insert_resource(map.clone());
-    commands.server_trigger(ToClients {
-        mode: SendMode::Broadcast,
-        event: LoadMap(map),
-    });
+    commands.trigger(InitWorld(map));
+
+    for (client, player) in client_player_map.iter() {
+        let game_scene = player_game_scenes.get(player).unwrap();
+        commands.server_trigger(ToClients {
+            mode: SendMode::Direct(*client),
+            event: InitPlayerMapNode(*game_scene),
+        });
+    }
 }

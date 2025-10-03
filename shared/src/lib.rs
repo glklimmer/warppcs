@@ -35,8 +35,8 @@ use server::{
         },
     },
     game_scenes::{
-        map::{GameScene, LoadMap},
         travel::{Portal, Traveling},
+        world::GameScene,
     },
     physics::{
         attachment::AttachedTo,
@@ -59,6 +59,7 @@ use crate::server::{
     game_scenes::{
         GameSceneId,
         travel::{Road, SceneEnd},
+        world::{InitPlayerMapNode, RevealMapNode},
     },
 };
 
@@ -77,9 +78,8 @@ impl Plugin for SharedPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             RepliconPlugins.set(ServerPlugin {
-                visibility_policy: VisibilityPolicy::All,
-                tick_policy: TickPolicy::MaxTickRate(20),
                 visibility_policy: VisibilityPolicy::Whitelist,
+                tick_policy: TickPolicy::MaxTickRate(20),
                 ..Default::default()
             }),
             PlayerMovement,
@@ -124,7 +124,8 @@ impl Plugin for SharedPlugin {
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
-        .add_mapped_server_trigger::<LoadMap>(Channel::Ordered)
+        .add_server_trigger::<InitPlayerMapNode>(Channel::Ordered)
+        .add_server_trigger::<RevealMapNode>(Channel::Ordered)
         .add_mapped_server_trigger::<PlayerDefeated>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
