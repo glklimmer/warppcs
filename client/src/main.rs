@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 use bevy::audio::{AudioPlugin, SpatialScale, Volume};
-use bevy_egui::EguiPlugin;
 use bevy_parallax::ParallaxPlugin;
 use gizmos::GizmosPlugin;
 use map::MapPlugin;
@@ -89,9 +88,6 @@ fn main() {
     client.add_plugins(SharedPlugin);
 
     client.insert_state(GameState::Loading).add_plugins((
-        EguiPlugin {
-            enable_multipass_for_primary_context: false,
-        },
         AssetLoaderPlugin,
         ParallaxPlugin,
         CameraPlugin,
