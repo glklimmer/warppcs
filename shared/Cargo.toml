@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["steam"]
+default = ["netcode"]
 steam = ["bevy-steamworks", "aeronet_steam"]
 netcode = ["aeronet_webtransport"]
 
@@ -55,6 +55,8 @@ aeronet_steam = { workspace = true, features = [
     "client",
     "server",
 ], optional = true }
+bevy_egui = { workspace = true }
+
 
 enum_as_f32_macro = { path = "../enum_as_f32_macro" }
 enum_mappable = { path = "../enum_mappable" }
