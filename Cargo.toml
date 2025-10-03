@@ -27,10 +27,11 @@ netcode = ["client/netcode", "shared/netcode"]
 bincode = "2.0.1"
 fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
-aeronet = "0.14.0"
+aeronet = { version = "0.14.0" , features = ["visualizer"] }
 bevy = { version = "0.16", default-features = false }
 bevy_replicon = { version = "0.33" }
 bevy-steamworks = { git = "https://github.com/glklimmer/bevy_steamworks" }
 aeronet_webtransport = { version = "0.14.0" }
 aeronet_replicon = { version = "0.14.0" }
 aeronet_steam = { version = "0.14.0" }
+bevy_egui = "0.34.1"
