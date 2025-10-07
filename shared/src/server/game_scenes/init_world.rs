@@ -447,7 +447,7 @@ fn player_base(
             },
             color,
         },
-        Health { hitpoints: 200. },
+        Health { hitpoints: 1200. },
         BuildingType::MainBuilding {
             level: MainBuildingLevels::Tent,
         }
