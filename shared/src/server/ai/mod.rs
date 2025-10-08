@@ -125,7 +125,7 @@ fn on_insert_bandit_behaviour(
         BanditBehaviour::Aggressive => behave!(Behave::spawn_named(
             "Roaming",
             (
-                Roam,
+                Roam::default(),
                 BehaveInterrupt::by(DetermineTarget).or(BeingPushed),
                 BehaveTarget(entity)
             )
