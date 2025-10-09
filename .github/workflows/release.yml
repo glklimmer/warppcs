@@ -28,6 +28,7 @@ jobs:
           mkdir windows-client
           cp target/x86_64-pc-windows-msvc/release/client.exe windows-client/
           cp -r client/assets windows-client/
+          Get-ChildItem -Path windows-client/assets -Recurse -Include *.aseprite | Remove-Item
 
       - name: Package client
         run: |
