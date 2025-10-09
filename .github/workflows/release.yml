@@ -21,14 +21,16 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target x86_64-pc-windows-msvc
+          cargo build --release --target x86_64-pc-windows-msvc --features steam --no-default-features
 
       - name: Prepare client package
         run: |
           mkdir windows-client
           cp target/x86_64-pc-windows-msvc/release/client.exe windows-client/
-          mkdir assets -ea 0
-          cp -r assets windows-client/
+          cp -r client/assets windows-client/
+          Get-ChildItem -Path windows-client/assets -Recurse -Include *.aseprite | Remove-Item
+          cp public/steam_api.dll windows-client/
+          cp public/steam_api64.dll windows-client/
 
       - name: Package client
         run: |
@@ -54,8 +56,6 @@ jobs:
         run: |
           mkdir windows-server
           cp target/x86_64-pc-windows-msvc/release/server.exe windows-server/
-          mkdir assets -ea 0
-          cp -r assets windows-server/
 
       - name: Package server
         run: |
@@ -88,5 +88,5 @@ jobs:
           appId: 1513980
           buildDescription: ${{ steps.get_version.outputs.tag }}
           rootPath: build
-          depot1Path: StandaloneWindows64
+          depot1Path: windows
           releaseBranch: prerelease

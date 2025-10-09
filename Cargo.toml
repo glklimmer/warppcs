@@ -18,6 +18,11 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 3
 
+[workspace.features]
+default = ["client/default", "shared/default"]
+steam = ["client/steam", "shared/steam"]
+netcode = ["client/netcode", "shared/netcode"]
+
 [workspace.dependencies]
 bincode = "2.0.1"
 fastrand = "2.3.0"
