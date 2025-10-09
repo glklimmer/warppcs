@@ -29,6 +29,8 @@ jobs:
           cp target/x86_64-pc-windows-msvc/release/client.exe windows-client/
           cp -r client/assets windows-client/
           Get-ChildItem -Path windows-client/assets -Recurse -Include *.aseprite | Remove-Item
+          cp public/steam_api.dll windows-client/
+          cp public/steam_api64.dll windows-client/
 
       - name: Package client
         run: |
