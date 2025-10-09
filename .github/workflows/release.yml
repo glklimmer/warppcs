@@ -95,4 +95,3 @@ jobs:
           buildDescription: ${{ steps.get_version.outputs.tag }}
           rootPath: .
           depot1Path: windows
-          releaseBranch: prerelease
