@@ -44,8 +44,11 @@ fn process_attacks(
 ) {
     for ctx in query.iter() {
         let entity = ctx.target_entity();
-        let (mut unit, maybe_target, owner, transform, damage, game_scene_id) =
-            unit.get_mut(entity).unwrap();
+        let Ok((mut unit, maybe_target, owner, transform, damage, game_scene_id)) =
+            unit.get_mut(entity)
+        else {
+            continue;
+        };
         let Some(target) = maybe_target else {
             commands.trigger(ctx.success());
             continue;

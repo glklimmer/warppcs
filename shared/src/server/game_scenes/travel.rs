@@ -59,7 +59,7 @@ impl Traveling {
         }
     }
 
-    fn unit(source: Entity, target: Entity) -> Self {
+    fn entity(source: Entity, target: Entity) -> Self {
         Self {
             source: (source, None),
             target: (target, None),
@@ -191,7 +191,10 @@ fn start_travel(
             units_on_flag
                 .iter()
                 .filter(|(_, assignment, _)| assignment.0 == flag_holder.0)
-                .for_each(|(entity, _, _)| travel_entities.push(entity));
+                .for_each(|(entity, _, _)| {
+                    travel_entities.push(entity);
+                    travel_entities.push(**flag_holder);
+                });
 
             let commander = commanders
                 .iter()
@@ -203,7 +206,10 @@ fn start_travel(
                     .filter(|(_, assignment, _)| {
                         slots_assignments.flags.contains(&Some(assignment.0))
                     })
-                    .for_each(|(entity, _, _)| travel_entities.push(entity));
+                    .for_each(|(entity, assignment, _)| {
+                        travel_entities.push(entity);
+                        travel_entities.push(**assignment);
+                    });
             };
         };
 
@@ -217,10 +223,10 @@ fn start_travel(
             ))
             .remove::<GameSceneId>();
 
-        for group in travel_entities {
+        for entity in travel_entities {
             commands
-                .entity(group)
-                .insert(Traveling::unit(source, **destination))
+                .entity(entity)
+                .insert(Traveling::entity(source, **destination))
                 .remove::<GameSceneId>();
         }
     }
