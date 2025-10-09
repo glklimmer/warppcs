@@ -2,8 +2,9 @@ use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
-        AppRuleExt, Channel, ClientTriggerAppExt, ConnectedClient, Replicated, SendMode,
-        ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, SyncRelatedAppExt, ToClients,
+        AppRuleExt, Channel, ClientTriggerAppExt, ClientVisibility, ConnectedClient, Replicated,
+        SendMode, ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, SyncRelatedAppExt,
+        ToClients,
     },
     server::{ServerPlugin, TickPolicy, VisibilityPolicy},
 };
@@ -34,8 +35,8 @@ use server::{
         },
     },
     game_scenes::{
-        map::{GameScene, LoadMap},
         travel::{Portal, Traveling},
+        world::GameScene,
     },
     physics::{
         attachment::AttachedTo,
@@ -55,7 +56,11 @@ use crate::server::{
         commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
         health::PlayerDefeated,
     },
-    game_scenes::travel::{Road, SceneEnd},
+    game_scenes::{
+        GameSceneId,
+        travel::{Road, SceneEnd},
+        world::{InitPlayerMapNode, RevealMapNode},
+    },
 };
 
 pub mod enum_map;
@@ -73,8 +78,8 @@ impl Plugin for SharedPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             RepliconPlugins.set(ServerPlugin {
-                visibility_policy: VisibilityPolicy::All,
-                tick_policy: TickPolicy::MaxTickRate(20),
+                visibility_policy: VisibilityPolicy::Whitelist,
+                tick_policy: TickPolicy::MaxTickRate(30),
                 ..Default::default()
             }),
             PlayerMovement,
@@ -119,7 +124,8 @@ impl Plugin for SharedPlugin {
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
-        .add_mapped_server_trigger::<LoadMap>(Channel::Ordered)
+        .add_server_trigger::<InitPlayerMapNode>(Channel::Ordered)
+        .add_server_trigger::<RevealMapNode>(Channel::Ordered)
         .add_mapped_server_trigger::<PlayerDefeated>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
@@ -127,7 +133,9 @@ impl Plugin for SharedPlugin {
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
         .add_mapped_server_event::<FlagAnimationEvent>(Channel::Ordered)
-        .add_observer(spawn_clients);
+        .add_observer(spawn_clients)
+        .add_observer(update_visibility)
+        .add_observer(hide_on_remove);
     }
 }
 
@@ -211,6 +219,7 @@ impl MapEntities for FlagAnimationEvent {
 fn spawn_clients(
     trigger: Trigger<OnAdd, ConnectedClient>,
     mut commands: Commands,
+    mut visibility: Query<&mut ClientVisibility>,
     mut client_player_map: ResMut<ClientPlayerMap>,
 ) {
     let player = commands
@@ -220,15 +229,66 @@ fn spawn_clients(
                 color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
             },
             Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
+            GameSceneId::lobby(),
         ))
         .id();
 
+    client_player_map.insert(player, player);
+
+    for mut client_visibility in visibility.iter_mut() {
+        client_visibility.set_visibility(player, true);
+    }
+
     commands.server_trigger(ToClients {
-        mode: SendMode::Direct(trigger.target()),
+        mode: SendMode::Direct(player),
         event: SetLocalPlayer(player),
     });
+}
 
-    client_player_map.insert(trigger.target(), player);
+fn update_visibility(
+    trigger: Trigger<OnInsert, GameSceneId>,
+    mut players: Query<(Entity, &mut ClientVisibility, &GameSceneId), With<Player>>,
+    others: Query<(Entity, &GameSceneId)>,
+    player_check: Query<(), With<Player>>,
+) {
+    let entity = trigger.target();
+    let new_entity_scene_id = match others.get(entity) {
+        Ok((_, scene_id)) => scene_id,
+        Err(_) => return,
+    };
+
+    if player_check.get(entity).is_ok() {
+        let player_scenes: HashMap<Entity, GameSceneId> = players
+            .iter()
+            .map(|(entity, _, game_scene_id)| (entity, *game_scene_id))
+            .collect();
+
+        for (player_entity, mut visibility, _player_scene_id) in &mut players {
+            if player_entity.eq(&entity) {
+                let player_scene_id = player_scenes.get(&entity).unwrap();
+                for (other_entity, other_scene_id) in &others {
+                    visibility.set_visibility(other_entity, other_scene_id.eq(player_scene_id));
+                }
+            } else {
+                let other_player_scene_id = player_scenes.get(&player_entity).unwrap();
+                visibility.set_visibility(entity, other_player_scene_id.eq(new_entity_scene_id));
+            }
+        }
+    } else {
+        for (_, mut visibility, player_scene_id) in &mut players {
+            visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
+        }
+    }
+}
+
+fn hide_on_remove(
+    trigger: Trigger<OnRemove, GameSceneId>,
+    mut players: Query<(Entity, &mut ClientVisibility), With<Player>>,
+) {
+    let entity = trigger.target();
+    for (player_entity, mut visibility) in &mut players {
+        visibility.set_visibility(entity, player_entity == entity);
+    }
 }
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]

@@ -5,8 +5,11 @@ use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, ChestAnimation, ChestAnimationEvent, Vec3LayerExt, map::Layers,
-    networking::MountType, server::physics::movement::Velocity, unit_collider,
+    BoxCollider, ChestAnimation, ChestAnimationEvent, Vec3LayerExt,
+    map::Layers,
+    networking::MountType,
+    server::{game_scenes::GameSceneId, physics::movement::Velocity},
+    unit_collider,
 };
 
 use super::{
@@ -56,7 +59,7 @@ pub fn open_chest(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut commands: Commands,
     mut animation: EventWriter<ToClients<ChestAnimationEvent>>,
-    query: Query<&Transform>,
+    query: Query<(&Transform, &GameSceneId)>,
 ) {
     for event in interactions.read() {
         let InteractionType::Chest = &event.interaction else {
@@ -64,7 +67,7 @@ pub fn open_chest(
         };
 
         commands.entity(event.interactable).remove::<Interactable>();
-        let chest_transform = query.get(event.interactable).unwrap();
+        let (chest_transform, game_scene_id) = query.get(event.interactable).unwrap();
         let chest_translation = chest_transform.translation;
 
         for _ in 0..3 {
@@ -72,6 +75,7 @@ pub fn open_chest(
             commands.spawn((
                 item.collider(),
                 item,
+                *game_scene_id,
                 chest_translation.with_y(12.5).with_layer(Layers::Item),
                 Velocity(Vec2::new((fastrand::f32() - 0.5) * 50., 50.)),
             ));

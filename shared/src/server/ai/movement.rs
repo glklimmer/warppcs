@@ -19,8 +19,14 @@ use crate::{
 #[derive(Component, Clone)]
 pub struct FollowFlag;
 
-#[derive(Component, Clone)]
-pub struct Roam;
+#[derive(Component, Clone, Deref, DerefMut)]
+pub struct Roam(Timer);
+
+impl Default for Roam {
+    fn default() -> Self {
+        Self(Timer::from_seconds(1., TimerMode::Repeating))
+    }
+}
 
 pub struct AIMovementPlugin;
 
@@ -88,10 +94,17 @@ fn follow_flag(
 }
 
 fn roam(
-    query: Query<&BehaveCtx, With<Roam>>,
+    mut query: Query<(&BehaveCtx, &mut Roam)>,
     mut unit: Query<(&mut Velocity, &RandomVelocityMul, &Speed)>,
+    time: Res<Time>,
 ) {
-    for ctx in query.iter() {
+    for (ctx, mut roam) in query.iter_mut() {
+        (**roam).tick(time.delta());
+
+        if !(**roam).just_finished() {
+            continue;
+        }
+
         if let Ok((mut velocity, rand_velocity_mul, speed)) = unit.get_mut(ctx.target_entity())
             && fastrand::f32() < 0.02
         {

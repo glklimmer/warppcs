@@ -189,7 +189,7 @@ fn init_highlightable(
     }
     commands
         .entity(trigger.target())
-        .insert(Highlightable::default());
+        .try_insert(Highlightable::default());
 }
 
 fn remove_highlightable(trigger: Trigger<OnRemove, Interactable>, mut commands: Commands) {
@@ -217,5 +217,5 @@ fn add_highlightable_on_attached(
 
     commands
         .entity(trigger.target())
-        .insert(Highlightable::default());
+        .try_insert(Highlightable::default());
 }
