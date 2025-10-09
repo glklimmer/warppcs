@@ -81,12 +81,18 @@ jobs:
     needs: release-windows
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-client
+      - name: Unzip client
+        run: unzip client.zip -d windows
+
       - uses: game-ci/steam-deploy@v3.0.4
         with:
           username: ${{ secrets.STEAM_USERNAME }}
           configVdf: ${{ secrets.STEAM_CONFIG_VDF }}
           appId: 1513980
           buildDescription: ${{ steps.get_version.outputs.tag }}
-          rootPath: build
+          rootPath: .
           depot1Path: windows
           releaseBranch: prerelease
