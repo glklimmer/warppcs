@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["steam"]
-steam = ["bevy-steamworks", "aeronet_steam"]
-netcode = ["aeronet_webtransport"]
+default = ["netcode"]
+steam = ["shared/steam", "bevy-steamworks", "aeronet_steam"]
+netcode = ["shared/netcode", "aeronet_webtransport"]
 
 [dependencies]
 bevy = { workspace = true, default-features = false, features = [
@@ -38,7 +38,7 @@ bevy = { workspace = true, default-features = false, features = [
     "vorbis",
     "wayland",
 ] }
-shared = { path = "../shared" }
+shared = { path = "../shared", default-features = false }
 bevy-steamworks = { workspace = true, optional = true }
 bevy_replicon = { workspace = true, features = ["client"] }
 bincode = { workspace = true }
