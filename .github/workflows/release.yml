@@ -88,5 +88,5 @@ jobs:
           appId: 1513980
           buildDescription: ${{ steps.get_version.outputs.tag }}
           rootPath: build
-          depot1Path: StandaloneWindows64
+          depot1Path: windows
           releaseBranch: prerelease
