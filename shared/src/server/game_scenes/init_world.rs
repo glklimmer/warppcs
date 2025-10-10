@@ -440,18 +440,16 @@ fn player_base(
     game_scene_id: GameSceneId,
 ) {
     let owner = Owner::Player(player);
-    commands.spawn((
-        Building {
-            building_type: BuildingType::MainBuilding {
-                level: MainBuildingLevels::Tent,
-            },
-            color,
-        },
-        Health { hitpoints: 200. },
-        BuildingType::MainBuilding {
+    let building = Building {
+        building_type: BuildingType::MainBuilding {
             level: MainBuildingLevels::Tent,
-        }
-        .collider(),
+        },
+        color,
+    };
+    commands.spawn((
+        building,
+        building.collider(),
+        building.health(),
         BuildStatus::Built {
             indicator: HealthIndicator::Healthy,
         },
