@@ -173,6 +173,7 @@ fn play_on_interactable(
         InteractionType::Commander => todo!(),
         InteractionType::ItemAssignment => todo!(),
         InteractionType::Unmount => todo!(),
+        InteractionType::Portal => todo!(),
     };
 
     commands.spawn((
