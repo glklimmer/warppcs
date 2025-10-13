@@ -196,6 +196,13 @@ fn elite_camp(
         game_scene_id,
     ));
     commands.spawn((
+        Mount {
+            mount_type: MountType::Horse,
+        },
+        offset.with_layer(Layers::Mount),
+        game_scene_id,
+    ));
+    commands.spawn((
         Chest::Normal,
         offset.offset_x(15.).with_layer(Layers::Chest),
         game_scene_id,
@@ -460,13 +467,6 @@ fn player_base(
             kind: InteractionType::Recruit,
             restricted_to: Some(player),
         },
-        game_scene_id,
-    ));
-    commands.spawn((
-        Mount {
-            mount_type: MountType::Horse,
-        },
-        offset.offset_x(50.).with_layer(Layers::Mount),
         game_scene_id,
     ));
     commands.spawn((
