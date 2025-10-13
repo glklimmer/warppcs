@@ -8,7 +8,7 @@ use crate::{
     networking::UnitType,
     server::{
         buildings::recruiting::FlagAssignment,
-        entities::{Range, Unit},
+        entities::{MeleeRange, Unit},
         physics::{
             attachment::AttachedTo,
             movement::{RandomVelocityMul, Speed, Velocity},
@@ -133,7 +133,7 @@ fn walk_into_range(
         Option<&Target>,
         &RandomVelocityMul,
         &Speed,
-        &Range,
+        &MeleeRange,
     )>,
     transform_query: Query<&Transform>,
     mut commands: Commands,

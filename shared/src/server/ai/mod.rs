@@ -7,10 +7,14 @@ use bevy_behave::{
 };
 use movement::{AIMovementPlugin, FollowFlag, Roam};
 
-use crate::{Owner, networking::WorldDirection, server::entities::Sight};
+use crate::{
+    Owner,
+    networking::WorldDirection,
+    server::entities::{DistanceRange, Sight, Unit},
+};
 
 use super::{
-    entities::{Range, health::Health},
+    entities::{MeleeRange, health::Health},
     physics::PushBack,
 };
 
@@ -44,13 +48,17 @@ impl Plugin for AIPlugin {
             .add_observer(on_insert_bandit_behaviour)
             .add_observer(push_back_check)
             .add_observer(determine_target)
-            .add_observer(check_target_in_range)
+            .add_observer(check_target_in_melee_range)
+            .add_observer(check_target_in_distance_range)
             .add_systems(FixedPostUpdate, remove_target_if_out_of_sight);
     }
 }
 
 #[derive(Component, Clone)]
-struct AttackingInRange;
+enum AttackingInRange {
+    Melee,
+    Distance,
+}
 
 #[derive(Component, Clone)]
 struct WalkIntoRange;
@@ -61,10 +69,16 @@ struct WalkingInDirection(WorldDirection);
 fn on_insert_unit_behaviour(
     trigger: Trigger<OnInsert, UnitBehaviour>,
     mut commands: Commands,
-    query: Query<&UnitBehaviour>,
+    query: Query<(&Unit, &UnitBehaviour)>,
 ) {
     let entity = trigger.target();
-    let behaviour = query.get(entity).unwrap();
+    let (unit, behaviour) = query.get(entity).unwrap();
+
+    let attack_range = if unit.unit_type.eq(&crate::networking::UnitType::Archer) {
+        Some(attack_distance_in_range(entity))
+    } else {
+        None
+    };
 
     let attack_nearby = match behaviour {
         UnitBehaviour::FollowFlag => attack_in_range(entity),
@@ -76,7 +90,9 @@ fn on_insert_unit_behaviour(
             "Following flag",
             (
                 FollowFlag,
-                BehaveInterrupt::by(TargetInRange).or(BeingPushed),
+                BehaveInterrupt::by(TargetInDistanceRange)
+                    .or(TargetInMeleeRange)
+                    .or(BeingPushed),
                 BehaveTarget(entity)
             )
         )),
@@ -99,12 +115,9 @@ fn on_insert_unit_behaviour(
 
     let tree = behave!(
         Behave::Forever => {
-            Behave::Fallback => {
-                // Behave::trigger(BeingPushed),
                 Behave::Fallback => {
                     @ attack_nearby,
                     @ stance
-                }
             }
         }
     );
@@ -113,7 +126,7 @@ fn on_insert_unit_behaviour(
         .entity(entity)
         .despawn_related::<BehaveSources>()
         .with_child((
-            BehaveTree::new(tree).with_logging(false),
+            BehaveTree::new(tree).with_logging(true),
             BehaveTarget(entity),
         ));
 }
@@ -160,12 +173,12 @@ fn attack_and_walk_in_range(entity: Entity) -> bevy_behave::prelude::Tree<Behave
         Behave::IfThen => {
             Behave::trigger(DetermineTarget),
             Behave::IfThen => {
-                Behave::trigger(TargetInRange),
+                Behave::trigger(TargetInMeleeRange),
                 Behave::spawn_named(
                     "Attack nearest enemy",
                     (
-                        AttackingInRange,
-                        BehaveInterrupt::by_not(TargetInRange),
+                        AttackingInRange::Melee,
+                        BehaveInterrupt::by_not(TargetInDistanceRange),
                         BehaveTarget(entity)
                     )
                 ),
@@ -183,15 +196,24 @@ fn attack_in_range(entity: Entity) -> bevy_behave::prelude::Tree<Behave> {
         Behave::IfThen => {
             Behave::trigger(DetermineTarget),
             Behave::IfThen => {
-                Behave::trigger(TargetInRange),
+                Behave::trigger(TargetInMeleeRange),
                 Behave::spawn_named(
-                    "Attack nearest enemy",
+                    "Attack nearest enemy Melee",
                     (
-                        AttackingInRange,
-                        BehaveInterrupt::by_not(TargetInRange),
+                        AttackingInRange::Melee,
+                        BehaveTarget(entity)
+                    ),
+                ),
+                Behave::IfThen => {
+                Behave::trigger(TargetInDistanceRange),
+                Behave::spawn_named(
+                    "Attack nearest enemy Range",
+                    (
+                        AttackingInRange::Distance,
                         BehaveTarget(entity)
                     )
-                )
+                ),
+            }
             }
         }
     )
@@ -212,7 +234,10 @@ struct BeingPushed;
 struct DetermineTarget;
 
 #[derive(Clone)]
-struct TargetInRange;
+struct TargetInMeleeRange;
+
+#[derive(Clone)]
+struct TargetInDistanceRange;
 
 #[derive(Component, Clone, Deref)]
 struct AllowToAttack(WorldDirection);
@@ -284,14 +309,15 @@ fn determine_target(
     }
 }
 
-fn check_target_in_range(
-    trigger: Trigger<BehaveTrigger<TargetInRange>>,
+fn check_target_in_melee_range(
+    trigger: Trigger<BehaveTrigger<TargetInMeleeRange>>,
     mut commands: Commands,
-    query: Query<(&Transform, &Range, Option<&Target>)>,
+    query: Query<(&Transform, &MeleeRange, Option<&Target>)>,
     transform_query: Query<&Transform>,
 ) {
     let ctx = trigger.ctx();
-    let (transform, range, maybe_target) = query.get(ctx.target_entity()).unwrap();
+
+    let (transform, melee_range, maybe_target) = query.get(ctx.target_entity()).unwrap();
     let Some(target) = maybe_target else {
         commands.trigger(ctx.failure());
         return;
@@ -302,8 +328,42 @@ fn check_target_in_range(
         .truncate()
         .distance(other_transform.translation.truncate());
 
-    if distance <= **range {
+    if distance <= **melee_range {
         commands.trigger(ctx.success());
+    } else {
+        commands.trigger(ctx.failure());
+    }
+}
+
+fn check_target_in_distance_range(
+    trigger: Trigger<BehaveTrigger<TargetInDistanceRange>>,
+    mut commands: Commands,
+    query: Query<(&Transform, Option<&DistanceRange>, Option<&Target>)>,
+    transform_query: Query<&Transform>,
+) {
+    let ctx = trigger.ctx();
+
+    let (transform, maybe_distance_range, maybe_target) = query.get(ctx.target_entity()).unwrap();
+    let Some(target) = maybe_target else {
+        commands.trigger(ctx.failure());
+        return;
+    };
+
+    let other_transform = transform_query.get(**target).unwrap();
+    let distance = transform
+        .translation
+        .truncate()
+        .distance(other_transform.translation.truncate());
+
+    // Then check DistanceRange
+    if let Some(distance_range) = maybe_distance_range {
+        if distance <= **distance_range {
+            info!("Target is within DistanceRange");
+            commands.trigger(ctx.success());
+        } else {
+            info!("Target out of distance range");
+            commands.trigger(ctx.failure());
+        }
     } else {
         commands.trigger(ctx.failure());
     }

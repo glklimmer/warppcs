@@ -49,7 +49,7 @@ impl DelayedDamage {
         let frame_delay = match unit_type {
             UnitType::Shieldwarrior => 2,
             UnitType::Pikeman => 3,
-            UnitType::Archer => todo!(),
+            UnitType::Archer => 3,
             UnitType::Bandit => 2,
             UnitType::Commander => 2,
         };

@@ -15,7 +15,7 @@ use crate::{
     server::{
         ai::BanditBehaviour,
         buildings::item_assignment::ItemAssignment,
-        entities::{Damage, Range, Unit, health::Health},
+        entities::{Damage, MeleeRange, Unit, health::Health},
         game_scenes::{
             GameSceneId,
             travel::{Road, SceneEnd, TravelDestination, TravelDestinationOffset},
@@ -222,7 +222,7 @@ fn elite_camp(
             },
             BanditBehaviour::default(),
             Health { hitpoints: 25. },
-            Range(10.),
+            MeleeRange(10.),
             Speed(30.),
             Damage(10.),
             offset
@@ -270,7 +270,7 @@ fn triple_camp(
             },
             BanditBehaviour::default(),
             Health { hitpoints: 25. },
-            Range(10.),
+            MeleeRange(10.),
             Speed(30.),
             Damage(10.),
             offset
@@ -294,7 +294,7 @@ fn triple_camp(
             },
             BanditBehaviour::default(),
             Health { hitpoints: 25. },
-            Range(10.),
+            MeleeRange(10.),
             Speed(30.),
             Damage(10.),
             offset
@@ -318,7 +318,7 @@ fn triple_camp(
             },
             BanditBehaviour::default(),
             Health { hitpoints: 25. },
-            Range(10.),
+            MeleeRange(10.),
             Speed(30.),
             Damage(10.),
             offset
@@ -384,7 +384,7 @@ fn double_camp(
             },
             BanditBehaviour::default(),
             Health { hitpoints: 25. },
-            Range(10.),
+            MeleeRange(10.),
             Speed(30.),
             Damage(10.),
             offset
@@ -408,7 +408,7 @@ fn double_camp(
             },
             BanditBehaviour::default(),
             Health { hitpoints: 25. },
-            Range(10.),
+            MeleeRange(10.),
             Speed(30.),
             Damage(10.),
             offset

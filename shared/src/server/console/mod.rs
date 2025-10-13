@@ -9,6 +9,7 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
+use crate::server::ai::BanditBehaviour;
 use crate::{
     ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
@@ -29,7 +30,7 @@ use super::{
         recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
     },
     entities::{
-        Damage, Range, Unit,
+        Damage, MeleeRange, Unit,
         commander::{
             ArmyFlagAssignments, ArmyPosition, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH,
         },
@@ -53,7 +54,8 @@ impl Plugin for ConsolePlugin {
             RemotePlugin::default()
                 .with_method(BRP_SPAWN_UNIT, spawn_unit_handler)
                 .with_method(BRP_SPAWN_RANDOM_ITEM, spawn_random_items)
-                .with_method(BRP_SPAWN_FULL_COMMANDER, spawn_full_commander),
+                .with_method(BRP_SPAWN_FULL_COMMANDER, spawn_full_commander)
+                .with_method(BRP_SPAWN_AI_SCENARIO, spawn_ai_scenario),
             RemoteHttpPlugin::default(),
         ));
     }
@@ -88,6 +90,12 @@ impl PlayerCommand for BrpSpawnUnit {
 }
 
 impl PlayerCommand for BrpSpawnFullCommander {
+    fn player(&self) -> u8 {
+        self.player
+    }
+}
+
+impl PlayerCommand for BrpSpawnAiScenario {
     fn player(&self) -> u8 {
         self.player
     }
@@ -243,7 +251,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     let damage = Damage(damage);
 
     let range = 10.;
-    let range = Range(range);
+    let range = MeleeRange(range);
 
     let offset = Vec2::new(-18., 0.);
 
@@ -330,6 +338,56 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     Ok(json!("success"))
 }
 
+fn spawn_ai_scenario(In(params): In<Option<Value>>, world: &mut World) -> BrpResult {
+    if let Some(value) = params
+        && let Ok(brp) = serde_json::from_value::<BrpSpawnAiScenario>(value)
+    {
+        let player_entity = brp.player_entity(world)?;
+
+        let player_pos = {
+            let mut query: QueryState<&Transform> = QueryState::new(world);
+            let transform = query.get(world, player_entity).unwrap();
+            transform.translation
+        };
+
+        let weapon = Item::builder()
+            .with_type(ItemType::Weapon(WeaponType::Projectile(
+                ProjectileWeapon::Bow,
+            )))
+            .build();
+        let head = Item::builder().with_type(ItemType::Head).build();
+        let chest = Item::builder().with_type(ItemType::Chest).build();
+        let feet = Item::builder().with_type(ItemType::Feet).build();
+
+        for i in 1..10 {
+            world.spawn((
+                Owner::Bandits,
+                Unit {
+                    unit_type: UnitType::Bandit,
+                    swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                    color: PlayerColor::default(),
+                },
+                BanditBehaviour::default(),
+                Health { hitpoints: 55. },
+                MeleeRange(10.),
+                Speed(30.),
+                Damage(10.),
+                player_pos
+                    .offset_x(350. - 10. * i as f32)
+                    .with_layer(Layers::Unit),
+            ));
+        }
+
+        world.trigger(RecruitEvent::new(
+            player_entity,
+            UnitType::Archer,
+            Some(vec![weapon, head, chest, feet]),
+            Entity::PLACEHOLDER,
+        ));
+    }
+    Ok(json!("success"))
+}
+
 fn spawn_unit(
     world: &mut World,
     player: Entity,
@@ -374,7 +432,7 @@ fn spawn_unit(
         UnitType::Bandit => todo!(),
         UnitType::Commander => todo!(),
     };
-    let range = Range(range);
+    let range = MeleeRange(range);
 
     for _ in 1..=4 {
         world.spawn((

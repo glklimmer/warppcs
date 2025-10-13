@@ -34,6 +34,10 @@ pub enum PPCSubCommands {
         #[arg(short, long, value_hint = ValueHint::CommandWithArguments, default_value_t = 0)]
         player: u8,
     },
+    SpawnAIScenario {
+        #[arg(short, long, value_hint = ValueHint::CommandWithArguments, default_value_t = 0)]
+        player: u8,
+    },
 }
 
 fn main() {
@@ -86,6 +90,15 @@ fn main() {
             id: None,
             params: Some(
                 to_value(BrpSpawnFullCommander { player })
+                    .expect("Unable to convert query parameters to a valid JSON value"),
+            ),
+        },
+        PPCSubCommands::SpawnAIScenario { player } => BrpRequest {
+            jsonrpc: String::from("2.0"),
+            method: BRP_SPAWN_AI_SCENARIO.into(),
+            id: None,
+            params: Some(
+                to_value(BrpSpawnAiScenario { player })
                     .expect("Unable to convert query parameters to a valid JSON value"),
             ),
         },

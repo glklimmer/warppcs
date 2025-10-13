@@ -76,7 +76,7 @@ fn check_allow_to_attack(
 
 #[allow(clippy::type_complexity)]
 fn process_attacks(
-    query: Query<&BehaveCtx, With<AttackingInRange>>,
+    query: Query<(&BehaveCtx, &AttackingInRange)>,
     mut commands: Commands,
     mut unit: Query<(
         &mut Unit,
@@ -89,7 +89,7 @@ fn process_attacks(
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
 ) {
-    for ctx in query.iter() {
+    for (ctx, attacking_range) in query.iter() {
         let entity = ctx.target_entity();
         let Ok((mut unit, maybe_target, owner, transform, damage, game_scene_id)) =
             unit.get_mut(entity)
@@ -110,11 +110,8 @@ fn process_attacks(
             };
             let delta_x = target_pos.x - transform.translation.x;
 
-            match unit.unit_type {
-                UnitType::Shieldwarrior
-                | UnitType::Pikeman
-                | UnitType::Bandit
-                | UnitType::Commander => {
+            match attacking_range {
+                AttackingInRange::Melee => {
                     commands.spawn(DelayedDamage::new(
                         &unit.unit_type,
                         TakeDamage {
@@ -124,66 +121,67 @@ fn process_attacks(
                             by: Hitby::Melee,
                         },
                     ));
+
+                    animation.write(ToClients {
+                        mode: SendMode::Broadcast,
+                        event: AnimationChangeEvent {
+                            entity,
+                            change: AnimationChange::Attack,
+                        },
+                    });
                 }
-                UnitType::Archer => {
+                AttackingInRange::Distance => {
                     let arrow_position = Vec3::new(
                         transform.translation.x,
                         transform.translation.y + 1.,
                         Layers::Projectile.as_f32(),
                     );
+                    if unit.unit_type == UnitType::Archer {
+                        let projectile_type = ProjectileType::Arrow;
+                        let target_pos = target_pos.with_y(14.);
 
-                    let projectile_type = ProjectileType::Arrow;
-                    let target_pos = target_pos.with_y(14.);
+                        let delta_y = target_pos.y - transform.translation.y;
 
-                    let delta_y = target_pos.y - transform.translation.y;
+                        let theta = if delta_x > 0. { FRAC_PI_4 } else { 2.3561944 };
 
-                    let theta = if delta_x > 0. { FRAC_PI_4 } else { 2.3561944 };
+                        let cos_theta = theta.cos();
+                        let sin_theta = theta.sin();
+                        let tan_theta = sin_theta / cos_theta;
+                        let cos_theta_squared = cos_theta * cos_theta;
 
-                    let cos_theta = theta.cos();
-                    let sin_theta = theta.sin();
-                    let tan_theta = sin_theta / cos_theta;
-                    let cos_theta_squared = cos_theta * cos_theta;
+                        let denominator = 2.0 * (delta_x * tan_theta - delta_y) * cos_theta_squared;
+                        if denominator <= 0.0 {
+                            warn!(
+                                "Shooting not possible, theta: {}, delta_x: {}",
+                                theta, delta_x
+                            );
+                            continue;
+                        }
 
-                    let denominator = 2.0 * (delta_x * tan_theta - delta_y) * cos_theta_squared;
-                    if denominator <= 0.0 {
-                        warn!(
-                            "Shooting not possible, theta: {}, delta_x: {}",
-                            theta, delta_x
-                        );
-                        continue;
+                        let numerator = GRAVITY_G * delta_x * delta_x;
+
+                        let v0_squared = numerator / denominator;
+                        let speed = v0_squared.sqrt();
+
+                        let velocity = Velocity(Vec2::from_angle(theta) * speed);
+
+                        let arrow_transform = Transform {
+                            translation: arrow_position,
+                            scale: Vec3::splat(1.0),
+                            rotation: Quat::from_rotation_z(theta),
+                        };
+
+                        commands.spawn((
+                            arrow_transform,
+                            *owner,
+                            projectile_type,
+                            velocity,
+                            Damage(**damage),
+                            *game_scene_id,
+                        ));
                     }
-
-                    let numerator = GRAVITY_G * delta_x * delta_x;
-
-                    let v0_squared = numerator / denominator;
-                    let speed = v0_squared.sqrt();
-
-                    let velocity = Velocity(Vec2::from_angle(theta) * speed);
-
-                    let arrow_transform = Transform {
-                        translation: arrow_position,
-                        scale: Vec3::splat(1.0),
-                        rotation: Quat::from_rotation_z(theta),
-                    };
-
-                    commands.spawn((
-                        arrow_transform,
-                        *owner,
-                        projectile_type,
-                        velocity,
-                        Damage(**damage),
-                        *game_scene_id,
-                    ));
                 }
             }
-
-            animation.write(ToClients {
-                mode: SendMode::Broadcast,
-                event: AnimationChangeEvent {
-                    entity,
-                    change: AnimationChange::Attack,
-                },
-            });
 
             unit.swing_timer.reset();
         }
