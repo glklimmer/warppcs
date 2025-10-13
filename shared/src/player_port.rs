@@ -2,11 +2,11 @@ use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::*;
-
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 use crate::{
-    BoxCollider, ClientPlayerMap, DelayedDespawn, Owner, PlayerState, Vec3LayerExt,
+    BoxCollider, ClientPlayerMap, DelayedDespawn, Owner, Player, PlayerState, Vec3LayerExt,
     map::{
         Layers,
         buildings::{Building, BuildingType},
@@ -24,6 +24,7 @@ pub struct PlayerPort;
 impl Plugin for PlayerPort {
     fn build(&self, app: &mut App) {
         app.add_client_trigger::<ChannelPort>(Channel::Ordered)
+            .add_observer(add_port_cooldown)
             .add_observer(check_port_cooldown)
             .add_observer(spawn_player_portal)
             .add_systems(
@@ -48,11 +49,21 @@ struct ChannelPort;
 #[derive(Event)]
 struct SpawnPortal;
 
-#[derive(Component, Deref, DerefMut)]
-struct PortCooldown(Timer);
+#[derive(Component)]
+struct PortCooldown {
+    summon: Timer,
+    usage: Timer,
+}
+
 impl Default for PortCooldown {
     fn default() -> Self {
-        PortCooldown(Timer::from_seconds(30., TimerMode::Once))
+        let mut summon = Timer::from_seconds(90., TimerMode::Once);
+        summon.tick(Duration::MAX);
+
+        let mut usage = Timer::from_seconds(5., TimerMode::Once);
+        usage.tick(Duration::MAX);
+
+        PortCooldown { summon, usage }
     }
 }
 
@@ -79,6 +90,12 @@ fn portal_collider() -> BoxCollider {
 #[derive(Component, Deref)]
 struct PortalDestination(Entity);
 
+fn add_port_cooldown(trigger: Trigger<OnAdd, Player>, mut commands: Commands) {
+    commands
+        .entity(trigger.target())
+        .insert(PortCooldown::default());
+}
+
 fn channel_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
     if input.pressed(KeyCode::KeyT) {
         commands.client_trigger(ChannelPort);
@@ -88,31 +105,24 @@ fn channel_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
 fn check_port_cooldown(
     trigger: Trigger<FromClient<ChannelPort>>,
     mut commands: Commands,
-    mut players: Query<Option<&mut PortCooldown>>,
+    mut players: Query<&mut PortCooldown>,
     client_player_map: Res<ClientPlayerMap>,
 ) {
     let player = *client_player_map.get(&trigger.client_entity).unwrap();
-    let Ok(maybe_cooldown) = players.get_mut(player) else {
+    let Ok(mut cooldown) = players.get_mut(player) else {
         return;
     };
 
-    let Some(mut cooldown) = maybe_cooldown else {
-        commands
-            .entity(player)
-            .insert(PortCooldown::default())
-            .trigger(SpawnPortal);
-        return;
-    };
-
-    if (**cooldown).finished() {
+    if cooldown.summon.finished() {
         commands.entity(player).trigger(SpawnPortal);
-        (**cooldown).reset();
+        cooldown.summon.reset();
     }
 }
 
 fn progress_cooldown(mut players: Query<&mut PortCooldown>, time: Res<Time>) {
     for mut cooldown in players.iter_mut() {
-        (**cooldown).tick(time.delta());
+        cooldown.summon.tick(time.delta());
+        cooldown.usage.tick(time.delta());
     }
 }
 
@@ -150,7 +160,7 @@ fn spawn_player_portal(
         Portal,
         base_transform
             .translation
-            .offset_x(-50.)
+            .offset_x(50.)
             .with_layer(Layers::Building),
         *base_game_scene_id,
         PortalDestination(player_portal),
@@ -161,9 +171,9 @@ fn spawn_player_portal(
 fn port(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut commands: Commands,
+    mut players: Query<(Option<&FlagHolder>, &mut PortCooldown)>,
     portal: Query<&PortalDestination>,
     destination: Query<(&Transform, &GameSceneId)>,
-    flag_holders: Query<&FlagHolder>,
     commanders: Query<(&FlagAssignment, &ArmyFlagAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
 ) {
@@ -177,13 +187,18 @@ fn port(
         let (target_transform, target_game_scene_id) = destination.get(**target_portal).unwrap();
         let target_position = target_transform.translation;
 
-        let flag_holder = flag_holders.get(player_entity);
+        let (maybe_flag_holder, mut cooldown) = players.get_mut(player_entity).unwrap();
+
+        if !cooldown.usage.finished() {
+            info!("Portal usage cooldown");
+            return;
+        }
 
         info!("Porting player...");
 
         let mut travel_entities = Vec::new();
 
-        if let Ok(flag_holder) = flag_holder {
+        if let Some(flag_holder) = maybe_flag_holder {
             units_on_flag
                 .iter()
                 .filter(|(_, assignment, _)| assignment.0 == flag_holder.0)
@@ -217,6 +232,8 @@ fn port(
             ),
             *target_game_scene_id,
         ));
+
+        cooldown.usage.reset();
 
         for entity in travel_entities {
             commands.entity(entity).insert((
