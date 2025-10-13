@@ -1,4 +1,6 @@
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::prelude::*;
+
+use bevy::platform::collections::HashMap;
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
@@ -34,10 +36,7 @@ use server::{
             CommanderCampInteraction, CommanderInteraction,
         },
     },
-    game_scenes::{
-        travel::{Portal, Traveling},
-        world::GameScene,
-    },
+    game_scenes::{travel::Traveling, world::GameScene},
     physics::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},
@@ -51,15 +50,18 @@ use server::{
     },
 };
 
-use crate::server::{
-    entities::{
-        commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
-        health::PlayerDefeated,
-    },
-    game_scenes::{
-        GameSceneId,
-        travel::{Road, SceneEnd},
-        world::{InitPlayerMapNode, RevealMapNode},
+use crate::{
+    player_port::{PlayerPort, Portal},
+    server::{
+        entities::{
+            commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
+            health::PlayerDefeated,
+        },
+        game_scenes::{
+            GameSceneId,
+            travel::{Road, SceneEnd},
+            world::{InitPlayerMapNode, RevealMapNode},
+        },
     },
 };
 
@@ -68,6 +70,7 @@ pub mod map;
 pub mod networking;
 pub mod player_attacks;
 pub mod player_movement;
+pub mod player_port;
 pub mod server;
 
 pub const GRAVITY_G: f32 = 9.81 * 33.;
@@ -84,6 +87,7 @@ impl Plugin for SharedPlugin {
             }),
             PlayerMovement,
             PlayerAttacks,
+            PlayerPort,
             InteractPlugin,
         ))
         .init_resource::<ClientPlayerMap>()
@@ -428,7 +432,7 @@ impl MapEntities for Owner {
 }
 
 #[derive(Component)]
-struct DelayedDespawn(Timer);
+pub struct DelayedDespawn(Timer);
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {

@@ -103,26 +103,6 @@ impl TravelDestinationOffset {
 #[require(
     Replicated,
     Transform,
-    BoxCollider = portal_collider(),
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
-    Interactable{
-        kind: InteractionType::Travel,
-        restricted_to: None,
-    },
-)]
-pub struct Portal;
-
-fn portal_collider() -> BoxCollider {
-    BoxCollider {
-        dimension: Vec2::new(32., 32.),
-        offset: Some(Vec2::new(0., 16.)),
-    }
-}
-
-#[derive(Component, Clone, Serialize, Deserialize)]
-#[require(
-    Replicated,
-    Transform,
     BoxCollider = scene_end_collider(),
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     ColliderTrigger = ColliderTrigger::Travel

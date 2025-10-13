@@ -14,6 +14,7 @@ pub enum InteractionType {
     ItemAssignment,
     Building,
     Travel,
+    Portal,
     Mount,
     Commander,
     Chest,

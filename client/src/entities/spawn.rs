@@ -4,10 +4,11 @@ use bevy_parallax::CameraFollow;
 use shared::{
     ChestAnimation, FlagAnimation, Player, SetLocalPlayer,
     map::buildings::{Building, RecruitBuilding},
+    player_port::Portal,
     server::{
         buildings::{recruiting::Flag, siege_camp::SiegeCamp},
         entities::{Unit, UnitAnimation},
-        game_scenes::travel::{Portal, Road, SceneEnd},
+        game_scenes::travel::{Road, SceneEnd},
         physics::projectile::ProjectileType,
         players::{chest::Chest, mount::Mount},
     },
