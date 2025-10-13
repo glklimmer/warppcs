@@ -1,10 +1,8 @@
 use bevy::prelude::*;
+use bevy_behave::prelude::*;
 
 use attack::AIAttackPlugin;
-use bevy_behave::{
-    Behave, behave,
-    prelude::{BehaveInterrupt, BehavePlugin, BehaveTree, BehaveTrigger},
-};
+use bevy_behave::{Behave, behave};
 use movement::{AIMovementPlugin, FollowFlag, Roam};
 
 use crate::{
@@ -162,7 +160,7 @@ fn on_insert_bandit_behaviour(
         ));
 }
 
-fn attack_and_walk_in_range(entity: Entity) -> bevy_behave::prelude::Tree<Behave> {
+fn attack_and_walk_in_range(entity: Entity) -> Tree<Behave> {
     behave!(
         Behave::IfThen => {
             Behave::trigger(DetermineTarget),
@@ -185,7 +183,7 @@ fn attack_and_walk_in_range(entity: Entity) -> bevy_behave::prelude::Tree<Behave
     )
 }
 
-fn attack_in_range(entity: Entity) -> bevy_behave::prelude::Tree<Behave> {
+fn attack_in_range(entity: Entity) -> Tree<Behave> {
     behave!(
         Behave::IfThen => {
             Behave::trigger(DetermineTarget),
@@ -195,19 +193,21 @@ fn attack_in_range(entity: Entity) -> bevy_behave::prelude::Tree<Behave> {
                     "Attack nearest enemy Melee",
                     (
                         AttackingInRange::Melee,
+                        BehaveInterrupt::by_not(TargetInDistanceRange),
                         BehaveTarget(entity)
                     ),
                 ),
                 Behave::IfThen => {
-                Behave::trigger(TargetInDistanceRange),
-                Behave::spawn_named(
-                    "Attack nearest enemy Range",
-                    (
-                        AttackingInRange::Distance,
-                        BehaveTarget(entity)
-                    )
-                ),
-            }
+                    Behave::trigger(TargetInDistanceRange),
+                    Behave::spawn_named(
+                        "Attack nearest enemy Range",
+                        (
+                            AttackingInRange::Distance,
+                            BehaveInterrupt::by_not(TargetInDistanceRange).or(TargetInMeleeRange),
+                            BehaveTarget(entity)
+                        )
+                    ),
+                }
             }
         }
     )
@@ -352,7 +352,7 @@ fn check_target_in_distance_range(
     // Then check DistanceRange
     if let Some(distance_range) = maybe_distance_range {
         if distance <= **distance_range {
-            info!("Target is within DistanceRange");
+            // info!("Target is within DistanceRange");
             commands.trigger(ctx.success());
         } else {
             info!("Target out of distance range");
