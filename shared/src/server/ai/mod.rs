@@ -69,16 +69,10 @@ struct WalkingInDirection(WorldDirection);
 fn on_insert_unit_behaviour(
     trigger: Trigger<OnInsert, UnitBehaviour>,
     mut commands: Commands,
-    query: Query<(&Unit, &UnitBehaviour)>,
+    query: Query<&UnitBehaviour>,
 ) {
     let entity = trigger.target();
-    let (unit, behaviour) = query.get(entity).unwrap();
-
-    let attack_range = if unit.unit_type.eq(&crate::networking::UnitType::Archer) {
-        Some(attack_distance_in_range(entity))
-    } else {
-        None
-    };
+    let behaviour = query.get(entity).unwrap();
 
     let attack_nearby = match behaviour {
         UnitBehaviour::FollowFlag => attack_in_range(entity),
