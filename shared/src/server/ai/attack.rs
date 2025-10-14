@@ -121,22 +121,14 @@ fn process_attacks(
                             by: Hitby::Melee,
                         },
                     ));
-
-                    animation.write(ToClients {
-                        mode: SendMode::Broadcast,
-                        event: AnimationChangeEvent {
-                            entity,
-                            change: AnimationChange::Attack,
-                        },
-                    });
                 }
                 AttackingInRange::Distance => {
-                    let arrow_position = Vec3::new(
-                        transform.translation.x,
-                        transform.translation.y + 1.,
-                        Layers::Projectile.as_f32(),
-                    );
                     if unit.unit_type == UnitType::Archer {
+                        let arrow_position = Vec3::new(
+                            transform.translation.x,
+                            transform.translation.y + 1.,
+                            Layers::Projectile.as_f32(),
+                        );
                         let projectile_type = ProjectileType::Arrow;
                         let target_pos = target_pos.with_y(14.);
 
@@ -183,6 +175,13 @@ fn process_attacks(
                 }
             }
 
+            animation.write(ToClients {
+                mode: SendMode::Broadcast,
+                event: AnimationChangeEvent {
+                    entity,
+                    change: AnimationChange::Attack,
+                },
+            });
             unit.swing_timer.reset();
         }
     }

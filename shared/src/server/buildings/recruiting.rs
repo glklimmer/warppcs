@@ -209,7 +209,7 @@ fn spawn_units(
 
     let (unit, health, speed, damage, range, sight) = unit_stats(unit_type, items, color);
 
-    for _ in 1..=1 {
+    for _ in 1..=unit_amount {
         let mut unit = commands.spawn((
             position.with_layer(Layers::Unit),
             unit.clone(),
@@ -228,10 +228,10 @@ fn spawn_units(
             | UnitType::Pikeman
             | UnitType::Commander
             | UnitType::Bandit => {
-                unit.insert(MeleeRange(50.));
+                unit.insert(MeleeRange(range));
             }
             UnitType::Archer => {
-                unit.insert(DistanceRange(300.));
+                unit.insert(DistanceRange(range));
                 unit.insert(MeleeRange(50.));
             }
         }

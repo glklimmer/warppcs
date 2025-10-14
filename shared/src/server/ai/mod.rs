@@ -46,8 +46,8 @@ impl Plugin for AIPlugin {
             .add_observer(on_insert_bandit_behaviour)
             .add_observer(push_back_check)
             .add_observer(determine_target)
-            .add_observer(check_target_in_melee_range)
-            .add_observer(check_target_in_distance_range)
+            .add_observer(check_target_in_melee_proximity)
+            .add_observer(check_target_in_range_proximity)
             .add_systems(FixedPostUpdate, remove_target_if_out_of_sight);
     }
 }
@@ -82,8 +82,8 @@ fn on_insert_unit_behaviour(
             "Following flag",
             (
                 FollowFlag,
-                BehaveInterrupt::by(TargetInDistanceRange)
-                    .or(TargetInMeleeRange)
+                BehaveInterrupt::by(TargetInRangeProximity)
+                    .or(TargetInMeleeProximity)
                     .or(BeingPushed),
                 BehaveTarget(entity)
             )
@@ -165,12 +165,12 @@ fn attack_and_walk_in_range(entity: Entity) -> Tree<Behave> {
         Behave::IfThen => {
             Behave::trigger(DetermineTarget),
             Behave::IfThen => {
-                Behave::trigger(TargetInMeleeRange),
+                Behave::trigger(TargetInMeleeProximity),
                 Behave::spawn_named(
                     "Attack nearest enemy",
                     (
                         AttackingInRange::Melee,
-                        BehaveInterrupt::by_not(TargetInDistanceRange),
+                        BehaveInterrupt::by_not(TargetInRangeProximity),
                         BehaveTarget(entity)
                     )
                 ),
@@ -188,22 +188,22 @@ fn attack_in_range(entity: Entity) -> Tree<Behave> {
         Behave::IfThen => {
             Behave::trigger(DetermineTarget),
             Behave::IfThen => {
-                Behave::trigger(TargetInMeleeRange),
+                Behave::trigger(TargetInMeleeProximity),
                 Behave::spawn_named(
                     "Attack nearest enemy Melee",
                     (
                         AttackingInRange::Melee,
-                        BehaveInterrupt::by_not(TargetInDistanceRange),
+                        BehaveInterrupt::by_not(TargetInRangeProximity),
                         BehaveTarget(entity)
                     ),
                 ),
                 Behave::IfThen => {
-                    Behave::trigger(TargetInDistanceRange),
+                    Behave::trigger(TargetInRangeProximity),
                     Behave::spawn_named(
                         "Attack nearest enemy Range",
                         (
                             AttackingInRange::Distance,
-                            BehaveInterrupt::by_not(TargetInDistanceRange).or(TargetInMeleeRange),
+                            BehaveInterrupt::by_not(TargetInRangeProximity).or(TargetInMeleeProximity),
                             BehaveTarget(entity)
                         )
                     ),
@@ -228,10 +228,10 @@ struct BeingPushed;
 struct DetermineTarget;
 
 #[derive(Clone)]
-struct TargetInMeleeRange;
+struct TargetInMeleeProximity;
 
 #[derive(Clone)]
-struct TargetInDistanceRange;
+struct TargetInRangeProximity;
 
 #[derive(Component, Clone, Deref)]
 struct AllowToAttack(WorldDirection);
@@ -303,8 +303,8 @@ fn determine_target(
     }
 }
 
-fn check_target_in_melee_range(
-    trigger: Trigger<BehaveTrigger<TargetInMeleeRange>>,
+fn check_target_in_melee_proximity(
+    trigger: Trigger<BehaveTrigger<TargetInMeleeProximity>>,
     mut commands: Commands,
     query: Query<(&Transform, &MeleeRange, Option<&Target>)>,
     transform_query: Query<&Transform>,
@@ -329,8 +329,8 @@ fn check_target_in_melee_range(
     }
 }
 
-fn check_target_in_distance_range(
-    trigger: Trigger<BehaveTrigger<TargetInDistanceRange>>,
+fn check_target_in_range_proximity(
+    trigger: Trigger<BehaveTrigger<TargetInRangeProximity>>,
     mut commands: Commands,
     query: Query<(&Transform, Option<&DistanceRange>, Option<&Target>)>,
     transform_query: Query<&Transform>,
@@ -349,13 +349,10 @@ fn check_target_in_distance_range(
         .truncate()
         .distance(other_transform.translation.truncate());
 
-    // Then check DistanceRange
     if let Some(distance_range) = maybe_distance_range {
         if distance <= **distance_range {
-            // info!("Target is within DistanceRange");
             commands.trigger(ctx.success());
         } else {
-            info!("Target out of distance range");
             commands.trigger(ctx.failure());
         }
     } else {

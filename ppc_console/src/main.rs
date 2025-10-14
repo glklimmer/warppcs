@@ -34,7 +34,7 @@ pub enum PPCSubCommands {
         #[arg(short, long, value_hint = ValueHint::CommandWithArguments, default_value_t = 0)]
         player: u8,
     },
-    SpawnAIScenario {
+    SpawnUnitAndBandits {
         #[arg(short, long, value_hint = ValueHint::CommandWithArguments, default_value_t = 0)]
         player: u8,
     },
@@ -93,12 +93,12 @@ fn main() {
                     .expect("Unable to convert query parameters to a valid JSON value"),
             ),
         },
-        PPCSubCommands::SpawnAIScenario { player } => BrpRequest {
+        PPCSubCommands::SpawnUnitAndBandits { player } => BrpRequest {
             jsonrpc: String::from("2.0"),
-            method: BRP_SPAWN_AI_SCENARIO.into(),
+            method: BRP_SPAWN_UNIT_AND_BANDITS.into(),
             id: None,
             params: Some(
-                to_value(BrpSpawnAiScenario { player })
+                to_value(BrpSpawnUnitAndBandits { player })
                     .expect("Unable to convert query parameters to a valid JSON value"),
             ),
         },

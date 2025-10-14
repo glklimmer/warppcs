@@ -55,7 +55,7 @@ impl Plugin for ConsolePlugin {
                 .with_method(BRP_SPAWN_UNIT, spawn_unit_handler)
                 .with_method(BRP_SPAWN_RANDOM_ITEM, spawn_random_items)
                 .with_method(BRP_SPAWN_FULL_COMMANDER, spawn_full_commander)
-                .with_method(BRP_SPAWN_AI_SCENARIO, spawn_ai_scenario),
+                .with_method(BRP_SPAWN_UNIT_AND_BANDITS, spawn_unit_and_bandits),
             RemoteHttpPlugin::default(),
         ));
     }
@@ -95,7 +95,7 @@ impl PlayerCommand for BrpSpawnFullCommander {
     }
 }
 
-impl PlayerCommand for BrpSpawnAiScenario {
+impl PlayerCommand for BrpSpawnUnitAndBandits {
     fn player(&self) -> u8 {
         self.player
     }
@@ -338,9 +338,9 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     Ok(json!("success"))
 }
 
-fn spawn_ai_scenario(In(params): In<Option<Value>>, world: &mut World) -> BrpResult {
+fn spawn_unit_and_bandits(In(params): In<Option<Value>>, world: &mut World) -> BrpResult {
     if let Some(value) = params
-        && let Ok(brp) = serde_json::from_value::<BrpSpawnAiScenario>(value)
+        && let Ok(brp) = serde_json::from_value::<BrpSpawnUnitAndBandits>(value)
     {
         let player_entity = brp.player_entity(world)?;
 

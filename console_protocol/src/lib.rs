@@ -22,9 +22,9 @@ pub struct BrpSpawnFullCommander {
     pub player: u8,
 }
 
-pub const BRP_SPAWN_AI_SCENARIO: &str = "player/spawn_ai_scenario";
+pub const BRP_SPAWN_UNIT_AND_BANDITS: &str = "player/spawn_ai_scenario";
 
 #[derive(Serialize, Deserialize)]
-pub struct BrpSpawnAiScenario {
+pub struct BrpSpawnUnitAndBandits {
     pub player: u8,
 }
