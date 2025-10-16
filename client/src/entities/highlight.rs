@@ -6,25 +6,11 @@ use bevy::{
     math::bounding::IntersectsVolume,
 };
 use image::{GenericImage, GenericImageView, Rgba};
-use shared::{
-    BoxCollider, Player,
-    server::{physics::attachment::AttachedTo, players::interaction::Interactable},
-};
+use shared::server::physics::attachment::AttachedTo;
+use shared::{BoxCollider, Player, server::players::interaction::Interactable};
 use std::cmp::Ordering;
 
 use crate::networking::ControlledPlayer;
-
-fn on_remove_highlighted(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
-    let mut entity_mut = world.entity_mut(entity);
-    let value = entity_mut
-        .get::<Highlighted>()
-        .unwrap()
-        .original_handle
-        .clone();
-
-    let mut sprite = entity_mut.get_mut::<Sprite>().unwrap();
-    sprite.image = value
-}
 
 #[derive(Component)]
 struct Highlightable {
@@ -39,21 +25,40 @@ impl Default for Highlightable {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 #[component(on_remove = on_remove_highlighted)]
+#[component(on_insert = on_insert_highlighted)]
 pub struct Highlighted {
-    pub original_handle: Handle<Image>,
+    original_handle: Handle<Image>,
+}
+
+fn on_remove_highlighted(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    let mut entity_mut = world.entity_mut(entity);
+    let value = entity_mut
+        .get::<Highlighted>()
+        .unwrap()
+        .original_handle
+        .clone();
+
+    let mut sprite = entity_mut.get_mut::<Sprite>().unwrap();
+    sprite.image = value
+}
+
+fn on_insert_highlighted(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    let mut entity_mut = world.entity_mut(entity);
+    let value = entity_mut.get::<Sprite>().unwrap().image.clone();
+
+    let mut highlight = entity_mut.get_mut::<Highlighted>().unwrap();
+    highlight.original_handle = value
 }
 
 pub struct HighlightPlugin;
 
 impl Plugin for HighlightPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(remove_highlightable_on_attached)
-            .add_observer(add_highlightable_on_attached)
-            .add_observer(init_highlightable)
+        app.add_observer(init_highlightable)
             .add_observer(remove_highlightable)
-            .add_systems(PostUpdate, (highlight_entity, check_highlight));
+            .add_systems(PostUpdate, (check_highlight, highlight_entity).chain());
     }
 }
 
@@ -95,14 +100,13 @@ fn highlight_entity(
 #[allow(clippy::type_complexity)]
 fn check_highlight(
     mut commands: Commands,
-    mut outline: Query<
+    outline: Query<
         (
             Entity,
             &Transform,
             &BoxCollider,
-            &Sprite,
-            Option<&mut Highlighted>,
             Option<&Interactable>,
+            Option<&AttachedTo>,
         ),
         With<Highlightable>,
     >,
@@ -114,54 +118,56 @@ fn check_highlight(
 
     let player_bounds = player_collider.at(player_transform);
 
-    let candidate_entity = outline
+    let priority_interaction = outline
         .iter()
         .filter(|(_, transform, collider, ..)| collider.at(transform).intersects(&player_bounds))
         .max_by(
-            |(_, a_transform, .., interactable_a), (_, b_transform, .., interactable_b)| match (
-                interactable_a,
-                interactable_b,
-            ) {
-                (Some(a), Some(b)) => {
-                    let priority_a = a.kind as i32;
-                    let priority_b = b.kind as i32;
+            |(_, a_transform, .., interactable_a, _), (_, b_transform, .., interactable_b, _)| {
+                match (interactable_a, interactable_b) {
+                    (Some(a), Some(b)) => {
+                        let priority_a = a.kind as i32;
+                        let priority_b = b.kind as i32;
 
-                    if priority_a != priority_b {
-                        return priority_a.cmp(&priority_b);
+                        if priority_a != priority_b {
+                            return priority_a.cmp(&priority_b);
+                        }
+
+                        let distance_a = player_transform
+                            .translation
+                            .distance(a_transform.translation);
+                        let distance_b = player_transform
+                            .translation
+                            .distance(b_transform.translation);
+                        distance_b.total_cmp(&distance_a)
                     }
-
-                    let distance_a = player_transform
-                        .translation
-                        .distance(a_transform.translation);
-                    let distance_b = player_transform
-                        .translation
-                        .distance(b_transform.translation);
-                    distance_b.total_cmp(&distance_a)
+                    (None, None) => {
+                        let distance_a = player_transform
+                            .translation
+                            .distance(a_transform.translation);
+                        let distance_b = player_transform
+                            .translation
+                            .distance(b_transform.translation);
+                        distance_b.total_cmp(&distance_a)
+                    }
+                    (None, Some(_)) => Ordering::Less,
+                    (Some(_), None) => Ordering::Greater,
                 }
-                (None, None) => {
-                    let distance_a = player_transform
-                        .translation
-                        .distance(a_transform.translation);
-                    let distance_b = player_transform
-                        .translation
-                        .distance(b_transform.translation);
-                    distance_b.total_cmp(&distance_a)
-                }
-                (None, Some(_)) => Ordering::Less,
-                (Some(_), None) => Ordering::Greater,
             },
         )
         .map(|(entity, ..)| entity);
 
-    for (entity, _, _, sprite, maybe_highlight, _) in outline.iter_mut() {
-        if Some(entity) == candidate_entity {
-            if maybe_highlight.is_none() {
-                commands.entity(entity).insert(Highlighted {
-                    original_handle: sprite.image.clone(),
-                });
-            }
-        } else if maybe_highlight.is_some() {
-            commands.entity(entity).remove::<Highlighted>();
+    let Some(priority_entity) = priority_interaction else {
+        for (entity, ..) in outline.iter() {
+            commands.entity(entity).try_remove::<Highlighted>();
+        }
+        return;
+    };
+
+    for (entity, .., maybe_attached_to) in outline.iter() {
+        if entity.eq(&priority_entity) && maybe_attached_to.is_none() {
+            commands.entity(entity).insert(Highlighted::default());
+        } else {
+            commands.entity(entity).try_remove::<Highlighted>();
         }
     }
 }
@@ -170,15 +176,11 @@ fn init_highlightable(
     trigger: Trigger<OnAdd, Interactable>,
     mut commands: Commands,
     controlled_player: Query<Entity, With<ControlledPlayer>>,
-    interactable: Query<(&Interactable, Option<&AttachedTo>), Without<Player>>,
+    interactable: Query<&Interactable, Without<Player>>,
 ) {
-    let Ok((interactable, maybe_attached)) = interactable.get(trigger.target()) else {
+    let Ok(interactable) = interactable.get(trigger.target()) else {
         return;
     };
-
-    if maybe_attached.is_some() {
-        return;
-    }
 
     let controller_player = controlled_player.single().unwrap();
 
@@ -197,25 +199,4 @@ fn remove_highlightable(trigger: Trigger<OnRemove, Interactable>, mut commands: 
         .entity(trigger.target())
         .try_remove::<Highlightable>()
         .try_remove::<Highlighted>();
-}
-
-fn remove_highlightable_on_attached(trigger: Trigger<OnAdd, AttachedTo>, mut commands: Commands) {
-    commands
-        .entity(trigger.target())
-        .try_remove::<Highlightable>()
-        .try_remove::<Highlighted>();
-}
-
-fn add_highlightable_on_attached(
-    trigger: Trigger<OnRemove, AttachedTo>,
-    mut commands: Commands,
-    query: Query<&Interactable>,
-) {
-    if query.get(trigger.target()).is_err() {
-        return;
-    }
-
-    commands
-        .entity(trigger.target())
-        .try_insert(Highlightable::default());
 }
