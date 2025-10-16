@@ -10,6 +10,7 @@ use console_protocol::*;
 use serde_json::{Value, json};
 
 use crate::server::ai::BanditBehaviour;
+use crate::server::game_scenes::GameSceneId;
 use crate::{
     ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
@@ -117,8 +118,8 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
     };
 
     let player_entity = unit_req.player_entity(world)?;
-    let (player_transform, player) = {
-        let mut query: QueryState<(&Transform, &Player)> = QueryState::new(world);
+    let (player_transform, player, game_scene_id) = {
+        let mut query: QueryState<(&Transform, &Player, &GameSceneId)> = QueryState::new(world);
         query.get(world, player_entity).unwrap()
     };
 
@@ -159,6 +160,7 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
             },
             player_transform.translation.with_layer(Layers::Building),
             Owner::Player(player_entity),
+            *game_scene_id,
         ))
         .id();
 
@@ -178,10 +180,10 @@ fn spawn_random_items(In(params): In<Option<serde_json::Value>>, world: &mut Wor
     {
         let player_entity = brp.player_entity(world)?;
 
-        let player_pos = {
-            let mut query: QueryState<&Transform> = QueryState::new(world);
-            let transform = query.get(world, player_entity).unwrap();
-            transform.translation
+        let (player_pos, game_scene_id) = {
+            let mut query: QueryState<(&Transform, &GameSceneId)> = QueryState::new(world);
+            let (transform, game_scene_id) = query.get(world, player_entity).unwrap();
+            (transform.translation, *game_scene_id)
         };
 
         for item_type in ItemType::all_variants() {
@@ -195,6 +197,7 @@ fn spawn_random_items(In(params): In<Option<serde_json::Value>>, world: &mut Wor
                 item,
                 player_pos.with_y(12.5).with_layer(Layers::Item),
                 Velocity(Vec2::new((fastrand::f32() - 0.5) * 100., 100.)),
+                game_scene_id,
             ));
         }
     }
@@ -209,7 +212,13 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     let brp: BrpSpawnFullCommander = serde_json::from_value(value)
         .map_err(|e| BrpError::internal(format!("invalid commander parameters: {e}")))?;
     let player = brp.player_entity(world)?;
-    let color = world.entity(player).get::<Player>().unwrap().color;
+    let (player_component, game_scene_id) = world
+        .entity(player)
+        .get_components::<(&Player, &GameSceneId)>()
+        .unwrap();
+    let color = player_component.color;
+
+    let game_scene_id = *game_scene_id;
 
     let owner = Owner::Player(player);
     let flag_commander = world
@@ -265,6 +274,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
             range,
             owner,
             FlagAssignment(flag_commander),
+            game_scene_id,
             FollowOffset(offset),
             UnitBehaviour::default(),
             Interactable {
@@ -300,6 +310,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         UnitType::Shieldwarrior,
         player_translation,
         color,
+        game_scene_id,
     );
     let middle = spawn_unit(
         world,
@@ -308,6 +319,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         UnitType::Pikeman,
         player_translation,
         color,
+        game_scene_id,
     );
     let back = spawn_unit(
         world,
@@ -316,6 +328,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         UnitType::Archer,
         player_translation,
         color,
+        game_scene_id,
     );
 
     world.entity_mut(commander).insert((
@@ -344,10 +357,10 @@ fn spawn_unit_and_bandits(In(params): In<Option<Value>>, world: &mut World) -> B
     {
         let player_entity = brp.player_entity(world)?;
 
-        let player_pos = {
-            let mut query: QueryState<&Transform> = QueryState::new(world);
-            let transform = query.get(world, player_entity).unwrap();
-            transform.translation
+        let (player_pos, game_scene_id) = {
+            let mut query: QueryState<(&Transform, &GameSceneId)> = QueryState::new(world);
+            let (transform, game_scene_id) = query.get(world, player_entity).unwrap();
+            (transform.translation, *game_scene_id)
         };
 
         let weapon = Item::builder()
@@ -372,6 +385,7 @@ fn spawn_unit_and_bandits(In(params): In<Option<Value>>, world: &mut World) -> B
                 MeleeRange(10.),
                 Speed(30.),
                 Damage(10.),
+                game_scene_id,
                 player_pos
                     .offset_x(350. - 10. * i as f32)
                     .with_layer(Layers::Unit),
@@ -395,6 +409,7 @@ fn spawn_unit(
     unit_type: UnitType,
     player_translation: Vec3,
     color: PlayerColor,
+    game_scene_id: GameSceneId,
 ) -> Entity {
     let owner = Owner::Player(player);
     let flag_entity = world
@@ -407,6 +422,7 @@ fn spawn_unit(
             AttachedTo(commander),
             owner,
             Visibility::Hidden,
+            game_scene_id,
         ))
         .id();
 
@@ -443,6 +459,7 @@ fn spawn_unit(
             damage,
             range,
             owner,
+            game_scene_id,
             FlagAssignment(flag_entity),
             UnitBehaviour::default(),
         ));
