@@ -5,12 +5,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AnimationChange, AnimationChangeEvent, ClientPlayerMap,
+    networking::WorldDirection,
     server::{
         ai::UnitBehaviour,
         buildings::recruiting::{FlagHolder, FlagUnits},
         entities::commander::ArmyFlagAssignments,
     },
 };
+
+#[derive(Component)]
+pub struct AttackIndicator {
+    pub direction: WorldDirection,
+}
 
 pub struct PlayerAttacks;
 
@@ -72,6 +78,15 @@ fn attack(
             UnitBehaviour::Attack(transform.scale.x.into())
         }
     };
+
+    match new_behaviour {
+        UnitBehaviour::Attack(direction) => {
+            commands.entity(flag).insert(AttackIndicator { direction });
+        }
+        UnitBehaviour::FollowFlag | UnitBehaviour::Idle => {
+            commands.entity(flag).remove::<AttackIndicator>();
+        }
+    }
 
     let mut all_units: Vec<Entity> = flag_units.iter().collect();
     if let Ok(army) = army.get(unit) {
