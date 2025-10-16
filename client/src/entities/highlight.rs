@@ -1,10 +1,6 @@
 use bevy::prelude::*;
 
-use bevy::{
-    asset::RenderAssetUsages,
-    ecs::{component::HookContext, world::DeferredWorld},
-    math::bounding::IntersectsVolume,
-};
+use bevy::{asset::RenderAssetUsages, math::bounding::IntersectsVolume};
 use image::{GenericImage, GenericImageView, Rgba};
 use shared::server::physics::attachment::AttachedTo;
 use shared::{BoxCollider, Player, server::players::interaction::Interactable};
@@ -26,74 +22,20 @@ impl Default for Highlightable {
 }
 
 #[derive(Component, Default)]
-#[component(on_remove = on_remove_highlighted)]
-#[component(on_insert = on_insert_highlighted)]
-pub struct Highlighted {
-    original_handle: Handle<Image>,
-}
+pub struct Highlighted;
 
-fn on_remove_highlighted(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
-    let mut entity_mut = world.entity_mut(entity);
-    let value = entity_mut
-        .get::<Highlighted>()
-        .unwrap()
-        .original_handle
-        .clone();
-
-    let mut sprite = entity_mut.get_mut::<Sprite>().unwrap();
-    sprite.image = value
-}
-
-fn on_insert_highlighted(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
-    let mut entity_mut = world.entity_mut(entity);
-    let value = entity_mut.get::<Sprite>().unwrap().image.clone();
-
-    let mut highlight = entity_mut.get_mut::<Highlighted>().unwrap();
-    highlight.original_handle = value
-}
+#[derive(Component, Deref)]
+struct OriginalSprite(Handle<Image>);
 
 pub struct HighlightPlugin;
 
 impl Plugin for HighlightPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_highlightable)
+            .add_observer(outline_sprite)
+            .add_observer(restore_original_sprite)
             .add_observer(remove_highlightable)
-            .add_systems(PostUpdate, (check_highlight, highlight_entity).chain());
-    }
-}
-
-fn highlight_entity(
-    mut sprites: Query<(&mut Sprite, &Highlightable), Changed<Highlighted>>,
-    mut images: ResMut<Assets<Image>>,
-) {
-    for (mut sprite, highlightable) in sprites.iter_mut() {
-        if let Some(texture) = images.get_mut(sprite.image.id()) {
-            let width = texture.width();
-            let height = texture.height();
-            let dynamic_image = texture.clone().try_into_dynamic().unwrap();
-            let mut outlined_image = dynamic_image.clone();
-            for (x, y, p) in dynamic_image.pixels() {
-                if x == 0 || y == 0 || x == width - 1 || y == height - 1 || p.0[3] != 0 {
-                    continue;
-                }
-                let current = dynamic_image.get_pixel(x, y)[3];
-                let left = dynamic_image.get_pixel(x - 1, y)[3];
-                let right = dynamic_image.get_pixel(x + 1, y)[3];
-                let up = dynamic_image.get_pixel(x, y - 1)[3];
-                let down = dynamic_image.get_pixel(x, y + 1)[3];
-                if current != left || current != right || current != up || current != down {
-                    outlined_image.put_pixel(
-                        x,
-                        y,
-                        Rgba(highlightable.outline_color.to_srgba().to_u8_array()),
-                    );
-                }
-            }
-
-            let outline_image =
-                Image::from_dynamic(outlined_image, true, RenderAssetUsages::RENDER_WORLD);
-            sprite.image = images.add(outline_image);
-        }
+            .add_systems(PostUpdate, check_highlight);
     }
 }
 
@@ -165,7 +107,7 @@ fn check_highlight(
 
     for (entity, .., maybe_attached_to) in outline.iter() {
         if entity.eq(&priority_entity) && maybe_attached_to.is_none() {
-            commands.entity(entity).insert(Highlighted::default());
+            commands.entity(entity).insert(Highlighted);
         } else {
             commands.entity(entity).try_remove::<Highlighted>();
         }
@@ -199,4 +141,58 @@ fn remove_highlightable(trigger: Trigger<OnRemove, Interactable>, mut commands: 
         .entity(trigger.target())
         .try_remove::<Highlightable>()
         .try_remove::<Highlighted>();
+}
+
+fn restore_original_sprite(
+    trigger: Trigger<OnRemove, Highlighted>,
+    mut commands: Commands,
+    mut query: Query<(&mut Sprite, &OriginalSprite)>,
+) {
+    if let Ok((mut sprite, original_sprite)) = query.get_mut(trigger.target()) {
+        sprite.image = (**original_sprite).clone();
+        commands.entity(trigger.target()).remove::<OriginalSprite>();
+    }
+}
+
+fn outline_sprite(
+    trigger: Trigger<OnAdd, Highlighted>,
+    mut commands: Commands,
+    mut query: Query<(&mut Sprite, &Highlightable)>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    if let Ok((mut sprite, highlightable)) = query.get_mut(trigger.target()) {
+        let outline_color = highlightable.outline_color;
+
+        commands
+            .entity(trigger.target())
+            .insert(OriginalSprite(sprite.image.clone()));
+
+        let maybe_image = images.get(sprite.image.id());
+
+        if let Some(texture) = maybe_image {
+            let width = texture.width();
+            let height = texture.height();
+            let dynamic_image = texture.clone().try_into_dynamic().unwrap();
+
+            let mut outlined_image = dynamic_image.clone();
+
+            for (x, y, p) in dynamic_image.pixels() {
+                if x == 0 || y == 0 || x == width - 1 || y == height - 1 || p.0[3] != 0 {
+                    continue;
+                }
+                let current = dynamic_image.get_pixel(x, y)[3];
+                let left = dynamic_image.get_pixel(x - 1, y)[3];
+                let right = dynamic_image.get_pixel(x + 1, y)[3];
+                let up = dynamic_image.get_pixel(x, y - 1)[3];
+                let down = dynamic_image.get_pixel(x, y + 1)[3];
+                if current != left || current != right || current != up || current != down {
+                    outlined_image.put_pixel(x, y, Rgba(outline_color.to_srgba().to_u8_array()));
+                }
+            }
+
+            let outline_image =
+                Image::from_dynamic(outlined_image, true, RenderAssetUsages::RENDER_WORLD);
+            sprite.image = images.add(outline_image);
+        }
+    }
 }
