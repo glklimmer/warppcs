@@ -18,7 +18,6 @@ use wall_wood::wall_wood_building;
 
 use crate::{
     animations::{AnimationSound, AnimationSoundTrigger},
-    entities::highlight::Highlighted,
     sound::CRAFTING_SOUND_PATH,
 };
 
@@ -79,13 +78,7 @@ impl FromWorld for BuildingSpriteSheets {
 
 pub fn update_building_sprite(
     mut buildings: Query<
-        (
-            Entity,
-            &mut Sprite,
-            &Building,
-            &BuildStatus,
-            Option<&mut Highlighted>,
-        ),
+        (Entity, &mut Sprite, &Building, &BuildStatus),
         Or<(Changed<Building>, Changed<BuildStatus>)>,
     >,
     mut commands: Commands,
@@ -93,7 +86,7 @@ pub fn update_building_sprite(
     building_sprite_sheet: Res<BuildingSpriteSheets>,
     variants: Res<Assets<SpriteVariants>>,
 ) {
-    for (entity, mut sprite, building, status, maybe_highlight) in buildings.iter_mut() {
+    for (entity, mut sprite, building, status) in buildings.iter_mut() {
         let sprite_sheet = building_sprite_sheet
             .sprite_sheets
             .get(building.building_type);
@@ -126,10 +119,6 @@ pub fn update_building_sprite(
 
         if let Some(atlas) = &mut sprite.texture_atlas {
             atlas.index = animation.first_sprite_index;
-        }
-
-        if let Some(mut highlight) = maybe_highlight {
-            highlight.original_handle = handle.clone();
         }
 
         if let BuildStatus::Built { indicator: _ } = status {
