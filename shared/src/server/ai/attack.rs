@@ -47,26 +47,25 @@ fn check_allow_to_attack(
             }
             UnitType::Commander => {
                 if let Ok(army) = army.get(entity) {
-                    let mut all_units_position: Vec<f32> = Vec::new();
+                    let comparer: fn(f32, f32) -> bool = match **allow_to_attack {
+                        WorldDirection::Left => |a, b| a > b,
+                        WorldDirection::Right => |a, b| a < b,
+                    };
+
                     let commander_position = commander_position.translation.x;
+                    let mut extreme = commander_position;
 
                     for formation_flag in army.flags.iter().flatten() {
                         for (unit_position, flag) in units.iter() {
-                            if flag.0 == *formation_flag {
-                                all_units_position.push(unit_position.translation.x);
+                            if **flag == *formation_flag
+                                && comparer(unit_position.translation.x, extreme)
+                            {
+                                extreme = unit_position.translation.x;
                             }
                         }
                     }
 
-                    let behind_all_units =
-                        all_units_position
-                            .iter()
-                            .all(|&unit_position| match **allow_to_attack {
-                                WorldDirection::Left => unit_position < commander_position,
-                                WorldDirection::Right => unit_position > commander_position,
-                            });
-
-                    if behind_all_units {
+                    if (extreme - commander_position).abs() <= 0. {
                         commands.trigger(ctx.success());
                     }
                 }
