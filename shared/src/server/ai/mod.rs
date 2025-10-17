@@ -82,14 +82,21 @@ fn on_insert_unit_behaviour(
                 BehaveTarget(entity)
             )
         )),
-        UnitBehaviour::Attack(direction) => behave!(Behave::spawn_named(
-            "Attacking direction",
-            (
-                WalkingInDirection(*direction),
-                BehaveInterrupt::by(DetermineTarget).or(BeingPushed),
-                BehaveTarget(entity)
-            )
-        )),
+        UnitBehaviour::Attack(direction) => behave!(
+            Behave::Sequence => {
+                Behave::spawn((
+                    Name::new("Wait until unit can attack in direction"),
+                    AllowToAttack(*direction)
+                )),
+                Behave::spawn_named(
+                "Attacking direction",
+                (
+                    WalkingInDirection(*direction),
+                    BehaveInterrupt::by(DetermineTarget).or(BeingPushed),
+                    BehaveTarget(entity)
+                ))
+            }
+        ),
     };
 
     let tree = behave!(
@@ -208,6 +215,9 @@ struct DetermineTarget;
 
 #[derive(Clone)]
 struct TargetInRange;
+
+#[derive(Component, Clone, Deref)]
+struct AllowToAttack(WorldDirection);
 
 #[derive(Component, Deref)]
 #[relationship(relationship_target = TargetedBy)]
