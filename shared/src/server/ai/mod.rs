@@ -8,7 +8,7 @@ use movement::{AIMovementPlugin, FollowFlag, Roam};
 use crate::{
     Owner,
     networking::WorldDirection,
-    server::entities::{DistanceRange, Sight, Unit},
+    server::entities::{DistanceRange, Sight},
 };
 
 use super::{

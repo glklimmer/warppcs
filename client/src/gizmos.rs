@@ -1,11 +1,11 @@
 use bevy::{
-    color::palettes::css::{BLUE, GREEN, RED},
+    color::palettes::css::{BLUE, GREEN, RED, YELLOW},
     prelude::*,
 };
 
 use shared::{
     BoxCollider,
-    server::entities::{Range, Sight},
+    server::entities::{DistanceRange, MeleeRange, Sight},
 };
 
 pub struct GizmosPlugin;
@@ -26,13 +26,14 @@ pub struct GizmosSettings {
 fn draw_range(
     mut gizmos: Gizmos,
     settings: Res<GizmosSettings>,
-    query: Query<(&GlobalTransform, &Range, &Sight)>,
+    query: Query<(&GlobalTransform, &MeleeRange, &DistanceRange, &Sight)>,
 ) {
     if !settings.on {
         return;
     }
-    for (transform, range, sight) in query.iter() {
-        gizmos.circle_2d(transform.translation().truncate(), **range, RED);
+    for (transform, melee_range, distance_range, sight) in query.iter() {
+        gizmos.circle_2d(transform.translation().truncate(), **melee_range, RED);
+        gizmos.circle_2d(transform.translation().truncate(), **distance_range, YELLOW);
         gizmos.circle_2d(transform.translation().truncate(), **sight, GREEN);
     }
 }

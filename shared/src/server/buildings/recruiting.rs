@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     BoxCollider, Owner, Player, PlayerColor, Vec3LayerExt,
-    enum_map::EnumMap,
+    enum_map::{EnumIter, EnumMap},
     flag_collider,
     map::{
         Layers,
