@@ -40,7 +40,8 @@ pub enum UnitAnimation {
     Health,
     Range,
     Speed,
-    Damage
+    Damage,
+    Sight
 )]
 pub struct Unit {
     pub unit_type: UnitType,
@@ -63,6 +64,15 @@ pub struct Range(pub f32);
 impl Default for Range {
     fn default() -> Self {
         Self(10.)
+    }
+}
+
+#[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]
+pub struct Sight(pub f32);
+
+impl Default for Sight {
+    fn default() -> Self {
+        Self(300.)
     }
 }
 

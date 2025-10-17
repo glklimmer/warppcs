@@ -251,6 +251,7 @@ pub enum Effect {
     AttackSpeed,
     MovementSpeed,
     UnitAmount,
+    Sight,
 }
 
 impl Effect {
@@ -267,7 +268,8 @@ impl Effect {
             },
             Effect::AttackSpeed => 1..=4,
             Effect::MovementSpeed => 25..=45,
-            Effect::UnitAmount => 3..=5,
+            Effect::UnitAmount => 4..=4,
+            Effect::Sight => 290..=310,
         };
         let amount = fastrand::i32(range);
         BaseEffect {
@@ -304,6 +306,7 @@ impl fmt::Display for Effect {
             Effect::AttackSpeed => "AttackSpeed",
             Effect::MovementSpeed => "MovementSpeed",
             Effect::UnitAmount => "UnitAmount",
+            Effect::Sight => "SightRange",
         };
         write!(f, "{s}")
     }
@@ -350,7 +353,7 @@ impl ItemType {
             }
             ItemType::Chest => vec![Effect::Health],
             ItemType::Feet => vec![Effect::MovementSpeed],
-            ItemType::Head => vec![Effect::UnitAmount],
+            ItemType::Head => vec![Effect::UnitAmount, Effect::Sight],
         };
 
         effects.iter().map(|effect| effect.base()).collect()
@@ -366,6 +369,10 @@ impl ItemType {
 
         if let ItemType::Weapon(weapon_type) = self {
             effects.push(Effect::Range(*weapon_type));
+        }
+
+        if let ItemType::Head = self {
+            effects.push(Effect::Sight);
         }
 
         let effect = fastrand::choice(effects).unwrap();
