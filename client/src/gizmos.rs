@@ -3,7 +3,10 @@ use bevy::{
     prelude::*,
 };
 
-use shared::{BoxCollider, server::ai::SIGHT_RANGE};
+use shared::{
+    BoxCollider,
+    server::entities::{Range, Sight},
+};
 
 pub struct GizmosPlugin;
 
@@ -15,9 +18,6 @@ impl Plugin for GizmosPlugin {
     }
 }
 
-#[derive(Component)]
-pub struct UnitRange(pub f32);
-
 #[derive(Resource, Default)]
 pub struct GizmosSettings {
     pub on: bool,
@@ -26,14 +26,14 @@ pub struct GizmosSettings {
 fn draw_range(
     mut gizmos: Gizmos,
     settings: Res<GizmosSettings>,
-    query: Query<(&GlobalTransform, &UnitRange)>,
+    query: Query<(&GlobalTransform, &Range, &Sight)>,
 ) {
     if !settings.on {
         return;
     }
-    for (transform, range) in query.iter() {
-        gizmos.circle_2d(transform.translation().truncate(), range.0, RED);
-        gizmos.circle_2d(transform.translation().truncate(), SIGHT_RANGE, GREEN);
+    for (transform, range, sight) in query.iter() {
+        gizmos.circle_2d(transform.translation().truncate(), **range, RED);
+        gizmos.circle_2d(transform.translation().truncate(), **sight, GREEN);
     }
 }
 

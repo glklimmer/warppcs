@@ -7,7 +7,7 @@ use bevy_behave::{
 };
 use movement::{AIMovementPlugin, FollowFlag, Roam};
 
-use crate::{Owner, networking::WorldDirection};
+use crate::{Owner, networking::WorldDirection, server::entities::Sight};
 
 use super::{
     entities::{Range, health::Health},
@@ -57,8 +57,6 @@ struct WalkIntoRange;
 
 #[derive(Component, Clone, Deref)]
 struct WalkingInDirection(WorldDirection);
-
-pub const SIGHT_RANGE: f32 = 300.;
 
 fn on_insert_unit_behaviour(
     trigger: Trigger<OnInsert, UnitBehaviour>,
@@ -250,12 +248,12 @@ fn push_back_check(
 fn determine_target(
     trigger: Trigger<BehaveTrigger<DetermineTarget>>,
     mut commands: Commands,
-    query: Query<(&Transform, &Owner, Option<&Target>)>,
+    query: Query<(&Transform, &Owner, &Sight, Option<&Target>)>,
     others: Query<(Entity, &Transform, &Owner), With<Health>>,
 ) {
     let ctx = trigger.event().ctx();
     let unit_entity = ctx.target_entity();
-    let (transform, owner, maybe_target) = query.get(unit_entity).unwrap();
+    let (transform, owner, sight, maybe_target) = query.get(unit_entity).unwrap();
 
     if maybe_target.is_some() {
         commands.trigger(ctx.success());
@@ -274,7 +272,7 @@ fn determine_target(
                     .distance(other_transform.translation.truncate()),
             )
         })
-        .filter(|(.., distance)| *distance <= SIGHT_RANGE)
+        .filter(|(.., distance)| *distance <= **sight)
         .min_by(|(.., a), (.., b)| a.total_cmp(b));
 
     match nearest {
@@ -313,16 +311,16 @@ fn check_target_in_range(
 
 fn remove_target_if_out_of_sight(
     mut commands: Commands,
-    query: Query<(Entity, &Target, &Transform)>,
+    query: Query<(Entity, &Target, &Transform, &Sight)>,
     other: Query<&Transform>,
 ) {
-    for (entity, target, transform) in query.iter() {
+    for (entity, target, transform, sight) in query.iter() {
         let other_transform = other.get(**target).unwrap();
         let distance = transform
             .translation
             .truncate()
             .distance(other_transform.translation.truncate());
-        if distance > SIGHT_RANGE {
+        if distance > **sight {
             commands.entity(entity).try_remove::<Target>();
         }
     }

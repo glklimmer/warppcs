@@ -1,4 +1,5 @@
 use crate::enum_map::EnumIter;
+use crate::server::entities::Sight;
 use crate::server::game_scenes::GameSceneId;
 use crate::server::physics::army_slot::ArmySlot;
 use bevy::prelude::*;
@@ -201,7 +202,7 @@ fn spawn_units(
 ) {
     let unit_amount = items.calculated(Effect::UnitAmount) as i32;
 
-    let (unit, health, speed, damage, range) = unit_stats(unit_type, items, color);
+    let (unit, health, speed, damage, range, sight) = unit_stats(unit_type, items, color);
 
     for _ in 1..=unit_amount {
         commands.spawn((
@@ -211,6 +212,7 @@ fn spawn_units(
             speed,
             damage,
             range,
+            sight,
             owner,
             *game_scene_id,
             FlagAssignment(flag_entity),
@@ -223,7 +225,7 @@ pub fn unit_stats(
     unit_type: UnitType,
     items: &[Item],
     color: PlayerColor,
-) -> (Unit, Health, Speed, Damage, Range) {
+) -> (Unit, Health, Speed, Damage, Range, Sight) {
     let time = items.calculated(Effect::AttackSpeed) / 2.;
     let unit = Unit {
         swing_timer: Timer::from_seconds(time, TimerMode::Once),
@@ -247,7 +249,11 @@ pub fn unit_stats(
         Some(Effect::Range(weapon))
     });
     let range = Range(range);
-    (unit, health, speed, damage, range)
+
+    let sight = items.calculated(Effect::Sight);
+    let sight = Sight(sight);
+
+    (unit, health, speed, damage, range, sight)
 }
 
 pub fn recruit_commander(
