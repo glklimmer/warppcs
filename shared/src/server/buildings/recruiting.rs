@@ -241,7 +241,7 @@ pub fn unit_stats(
     ProjectileRange,
     Sight,
 ) {
-    let time = items.calculated(Effect::AttackSpeed) / 2.;
+    let time = 60. / items.calculated(Effect::AttackSpeed);
     let unit = Unit {
         swing_timer: Timer::from_seconds(time, TimerMode::Once),
         unit_type,

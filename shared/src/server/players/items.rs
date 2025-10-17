@@ -275,7 +275,7 @@ impl Effect {
                     ProjectileWeapon::Bow => 240..=280,
                 },
             },
-            Effect::AttackSpeed => 1..=4,
+            Effect::AttackSpeed => 10..=12,
             Effect::MovementSpeed => 25..=45,
             Effect::UnitAmount => 4..=4,
             Effect::Sight => 290..=310,
