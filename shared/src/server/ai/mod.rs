@@ -82,9 +82,7 @@ fn on_insert_unit_behaviour(
             "Following flag",
             (
                 FollowFlag,
-                BehaveInterrupt::by(TargetInRangeProximity)
-                    .or(TargetInMeleeProximity)
-                    .or(BeingPushed),
+                BehaveInterrupt::by(DetermineTarget).or(BeingPushed),
                 BehaveTarget(entity)
             )
         )),
@@ -118,7 +116,7 @@ fn on_insert_unit_behaviour(
         .entity(entity)
         .despawn_related::<BehaveSources>()
         .with_child((
-            BehaveTree::new(tree).with_logging(false),
+            BehaveTree::new(tree).with_logging(true),
             BehaveTarget(entity),
         ));
 }
@@ -155,7 +153,7 @@ fn on_insert_bandit_behaviour(
         .entity(entity)
         .despawn_related::<BehaveSources>()
         .with_child((
-            BehaveTree::new(tree).with_logging(false),
+            BehaveTree::new(tree).with_logging(true),
             BehaveTarget(entity),
         ));
 }
@@ -164,20 +162,20 @@ fn attack_and_walk_in_range(entity: Entity) -> Tree<Behave> {
     behave!(
         Behave::IfThen => {
             Behave::trigger(DetermineTarget),
-            Behave::IfThen => {
-                Behave::trigger(TargetInMeleeProximity),
-                Behave::spawn_named(
-                    "Attack nearest enemy",
-                    (
-                        AttackingInRange::Melee,
-                        BehaveInterrupt::by_not(TargetInRangeProximity),
-                        BehaveTarget(entity)
+                Behave::IfThen => {
+                    Behave::trigger(TargetInMeleeProximity),
+                    Behave::spawn_named(
+                        "Attack nearest enemy",
+                        (
+                            AttackingInRange::Melee,
+                            BehaveInterrupt::by_not(TargetInRangeProximity),
+                            BehaveTarget(entity)
+                        )
+                    ),
+                    Behave::spawn_named(
+                        "Walking to target",
+                        (WalkIntoRange, BehaveTarget(entity))
                     )
-                ),
-                Behave::spawn_named(
-                    "Walking to target",
-                    (WalkIntoRange, BehaveTarget(entity))
-                )
             }
         }
     )
