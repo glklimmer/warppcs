@@ -5,7 +5,7 @@ use bevy::{
 
 use shared::{
     BoxCollider,
-    server::entities::{DistanceRange, MeleeRange, Sight},
+    server::entities::{MeleeRange, ProjectileRange, Sight},
 };
 
 pub struct GizmosPlugin;
@@ -26,14 +26,29 @@ pub struct GizmosSettings {
 fn draw_range(
     mut gizmos: Gizmos,
     settings: Res<GizmosSettings>,
-    query: Query<(&GlobalTransform, &MeleeRange, &DistanceRange, &Sight)>,
+    query: Query<(
+        &GlobalTransform,
+        Option<&MeleeRange>,
+        Option<&ProjectileRange>,
+        &Sight,
+    )>,
 ) {
     if !settings.on {
         return;
     }
-    for (transform, melee_range, distance_range, sight) in query.iter() {
-        gizmos.circle_2d(transform.translation().truncate(), **melee_range, RED);
-        gizmos.circle_2d(transform.translation().truncate(), **distance_range, YELLOW);
+    for (transform, maybe_melee_range, maybe_projectile_range, sight) in query.iter() {
+        if let Some(melee_range) = maybe_melee_range {
+            gizmos.circle_2d(transform.translation().truncate(), **melee_range, RED);
+        }
+
+        if let Some(projectile_range) = maybe_projectile_range {
+            gizmos.circle_2d(
+                transform.translation().truncate(),
+                **projectile_range,
+                YELLOW,
+            );
+        }
+
         gizmos.circle_2d(transform.translation().truncate(), **sight, GREEN);
     }
 }

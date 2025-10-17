@@ -16,7 +16,7 @@ use crate::{
     server::{
         ai::{FollowOffset, UnitBehaviour},
         entities::{
-            Damage, DistanceRange, MeleeRange, Sight, Unit,
+            Damage, MeleeRange, ProjectileRange, Sight, Unit,
             commander::{
                 ArmyFlagAssignments, ArmyFormation, ArmyPosition, BASE_FORMATION_OFFSET,
                 BASE_FORMATION_WIDTH,
@@ -207,34 +207,24 @@ fn spawn_units(
 ) {
     let unit_amount = items.calculated(Effect::UnitAmount) as i32;
 
-    let (unit, health, speed, damage, range, sight) = unit_stats(unit_type, items, color);
+    let (unit, health, speed, damage, melee_range, projectile_range, sight) =
+        unit_stats(unit_type, items, color);
 
     for _ in 1..=unit_amount {
-        let mut unit = commands.spawn((
+        commands.spawn((
             position.with_layer(Layers::Unit),
             unit.clone(),
             health,
             speed,
             damage,
+            melee_range,
+            projectile_range,
             sight,
             owner,
             *game_scene_id,
             FlagAssignment(flag_entity),
             UnitBehaviour::default(),
         ));
-
-        match unit_type {
-            UnitType::Shieldwarrior
-            | UnitType::Pikeman
-            | UnitType::Commander
-            | UnitType::Bandit => {
-                unit.insert(MeleeRange(range));
-            }
-            UnitType::Archer => {
-                unit.insert(DistanceRange(range));
-                unit.insert(MeleeRange(50.));
-            }
-        }
     }
 }
 
@@ -242,7 +232,15 @@ pub fn unit_stats(
     unit_type: UnitType,
     items: &[Item],
     color: PlayerColor,
-) -> (Unit, Health, Speed, Damage, f32, Sight) {
+) -> (
+    Unit,
+    Health,
+    Speed,
+    Damage,
+    MeleeRange,
+    ProjectileRange,
+    Sight,
+) {
     let time = items.calculated(Effect::AttackSpeed) / 2.;
     let unit = Unit {
         swing_timer: Timer::from_seconds(time, TimerMode::Once),
@@ -259,17 +257,34 @@ pub fn unit_stats(
     let damage = items.calculated(Effect::Damage);
     let damage = Damage(damage);
 
-    let range = items.calculated(|item: &Item| {
+    let melee_range = items.calculated(|item: &Item| {
         let ItemType::Weapon(weapon) = item.item_type else {
             return None;
         };
-        Some(Effect::Range(weapon))
+        Some(Effect::MeleeRange(weapon))
     });
+    let melee_range = MeleeRange(melee_range);
+
+    let projectile_range = items.calculated(|item: &Item| {
+        let ItemType::Weapon(weapon) = item.item_type else {
+            return None;
+        };
+        Some(Effect::ProjectileRange(weapon))
+    });
+    let projectile_range = ProjectileRange(projectile_range);
 
     let sight = items.calculated(Effect::Sight);
     let sight = Sight(sight);
 
-    (unit, health, speed, damage, range, sight)
+    (
+        unit,
+        health,
+        speed,
+        damage,
+        melee_range,
+        projectile_range,
+        sight,
+    )
 }
 
 pub fn recruit_commander(

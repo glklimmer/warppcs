@@ -247,7 +247,8 @@ impl fmt::Display for Multiplier {
 pub enum Effect {
     Damage,
     Health,
-    Range(WeaponType),
+    MeleeRange(WeaponType),
+    ProjectileRange(WeaponType),
     AttackSpeed,
     MovementSpeed,
     UnitAmount,
@@ -259,12 +260,20 @@ impl Effect {
         let range = match self {
             Effect::Damage => 6..=18,
             Effect::Health => 60..=120,
-            Effect::Range(weapon) => match weapon {
+            Effect::MeleeRange(weapon) => match weapon {
                 WeaponType::Melee(meele) => match meele {
                     MeleeWeapon::SwordAndShield => 20..=30,
                     MeleeWeapon::Pike => 40..=50,
                 },
-                WeaponType::Projectile(_) => 160..=220,
+                WeaponType::Projectile(projectile) => match projectile {
+                    ProjectileWeapon::Bow => 10..=15,
+                },
+            },
+            Effect::ProjectileRange(weapon) => match weapon {
+                WeaponType::Melee(_) => 0..=0,
+                WeaponType::Projectile(projectile) => match projectile {
+                    ProjectileWeapon::Bow => 240..=280,
+                },
             },
             Effect::AttackSpeed => 1..=4,
             Effect::MovementSpeed => 25..=45,
@@ -302,7 +311,8 @@ impl fmt::Display for Effect {
         let s = match self {
             Effect::Damage => "Damage",
             Effect::Health => "Health",
-            Effect::Range(_) => "Range",
+            Effect::MeleeRange(_) => "MeleeRange",
+            Effect::ProjectileRange(_) => "ProjectileRange",
             Effect::AttackSpeed => "AttackSpeed",
             Effect::MovementSpeed => "MovementSpeed",
             Effect::UnitAmount => "UnitAmount",
@@ -349,7 +359,12 @@ impl ItemType {
     fn base(&self) -> Vec<BaseEffect> {
         let effects = match self {
             ItemType::Weapon(weapon) => {
-                vec![Effect::Damage, Effect::AttackSpeed, Effect::Range(*weapon)]
+                vec![
+                    Effect::Damage,
+                    Effect::AttackSpeed,
+                    Effect::MeleeRange(*weapon),
+                    Effect::ProjectileRange(*weapon),
+                ]
             }
             ItemType::Chest => vec![Effect::Health],
             ItemType::Feet => vec![Effect::MovementSpeed],
@@ -368,7 +383,7 @@ impl ItemType {
         ];
 
         if let ItemType::Weapon(weapon_type) = self {
-            effects.push(Effect::Range(*weapon_type));
+            effects.push(Effect::MeleeRange(*weapon_type));
         }
 
         if let ItemType::Head = self {

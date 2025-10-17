@@ -62,7 +62,7 @@ impl Default for Damage {
 pub struct MeleeRange(pub f32);
 
 #[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]
-pub struct DistanceRange(pub f32);
+pub struct ProjectileRange(pub f32);
 
 impl Default for MeleeRange {
     fn default() -> Self {

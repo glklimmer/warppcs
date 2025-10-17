@@ -8,10 +8,10 @@ use crate::{
         Layers,
         buildings::{Building, RespawnZone},
     },
-    networking::{Inventory, UnitType},
+    networking::Inventory,
     server::{
         ai::UnitBehaviour,
-        entities::{DistanceRange, MeleeRange, commander::ArmyFlagAssignments},
+        entities::commander::ArmyFlagAssignments,
         game_scenes::GameSceneId,
         players::items::{CalculatedStats, Effect, Item},
     },
@@ -166,33 +166,22 @@ fn respawn_for_flag(
         }
         inventory.gold -= RESPAWN_COST_GOLD;
 
-        let (unit, health, speed, damage, range, sight) =
+        let (unit, health, speed, damage, melee_range, projectile_range, sight) =
             unit_stats(building.unit_type().unwrap(), &items, flag.color);
 
-        let mut unit_entity = commands.spawn((
+        commands.spawn((
             respawn_transform.translation.with_layer(Layers::Unit),
             unit.clone(),
             health,
             speed,
             damage,
+            melee_range,
+            projectile_range,
             sight,
             *flag_owner,
             *game_scene_id,
             FlagAssignment(flag_entity),
             UnitBehaviour::default(),
         ));
-
-        match unit.unit_type {
-            UnitType::Shieldwarrior
-            | UnitType::Pikeman
-            | UnitType::Commander
-            | UnitType::Bandit => {
-                unit_entity.insert(MeleeRange(range));
-            }
-            UnitType::Archer => {
-                unit_entity.insert(DistanceRange(range));
-                unit_entity.insert(MeleeRange(10.));
-            }
-        }
     }
 }

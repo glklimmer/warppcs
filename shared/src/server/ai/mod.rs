@@ -7,8 +7,8 @@ use movement::{AIMovementPlugin, FollowFlag, Roam};
 
 use crate::{
     Owner,
-    networking::WorldDirection,
-    server::entities::{DistanceRange, Sight},
+    networking::{UnitType, WorldDirection},
+    server::entities::{ProjectileRange, Sight, Unit},
 };
 
 use super::{
@@ -53,9 +53,9 @@ impl Plugin for AIPlugin {
 }
 
 #[derive(Component, Clone)]
-enum AttackingInRange {
+enum Attack {
     Melee,
-    Distance,
+    Projectile,
 }
 
 #[derive(Component, Clone)]
@@ -67,15 +67,53 @@ struct WalkingInDirection(WorldDirection);
 fn on_insert_unit_behaviour(
     trigger: Trigger<OnInsert, UnitBehaviour>,
     mut commands: Commands,
-    query: Query<&UnitBehaviour>,
+    query: Query<(&UnitBehaviour, &Unit)>,
 ) {
     let entity = trigger.target();
-    let behaviour = query.get(entity).unwrap();
+    let (behaviour, unit) = query.get(entity).unwrap();
 
-    let attack_nearby = match behaviour {
-        UnitBehaviour::FollowFlag => attack_in_range(entity),
-        _ => attack_and_walk_in_range(entity),
-    };
+    let mut attack_chain: Vec<Tree<Behave>> = Vec::new();
+
+    attack_chain.push(behave!(
+        Behave::Sequence => {
+            Behave::trigger(TargetInMeleeRange),
+            Behave::spawn_named(
+                "Attack nearest enemy Melee",
+                (
+                    Attack::Melee,
+                    BehaveInterrupt::by(TargetInProjectileRange).or_not(TargetInMeleeRange),
+                    BehaveTarget(entity),
+                ),
+            )
+        }
+    ));
+
+    if let UnitType::Archer = unit.unit_type {
+        attack_chain.push(behave!(
+        Behave::Sequence => {
+            Behave::trigger(TargetInProjectileRange),
+            Behave::spawn_named(
+                "Attack nearest enemy Range",
+                (
+                    Attack::Projectile,
+                    BehaveInterrupt::by_not(TargetInProjectileRange).or(TargetInMeleeRange),
+                    BehaveTarget(entity),
+                ),
+            )
+        }
+        ));
+    }
+
+    if let UnitBehaviour::Idle | UnitBehaviour::Attack(_) = behaviour {
+        attack_chain.push(behave!(Behave::spawn_named(
+            "Walking to target",
+            (
+                WalkIntoRange,
+                BehaveInterrupt::by(TargetInMeleeRange).or(TargetInProjectileRange),
+                BehaveTarget(entity),
+            ),
+        )));
+    }
 
     let stance = match behaviour {
         UnitBehaviour::Idle | UnitBehaviour::FollowFlag => behave!(Behave::spawn_named(
@@ -90,7 +128,7 @@ fn on_insert_unit_behaviour(
             Behave::Sequence => {
                 Behave::spawn((
                     Name::new("Wait until unit can attack in direction"),
-                    AllowToAttack(*direction)
+                    WaitToAttack(*direction)
                 )),
                 Behave::spawn_named(
                 "Attacking direction",
@@ -105,9 +143,14 @@ fn on_insert_unit_behaviour(
 
     let tree = behave!(
         Behave::Forever => {
-                Behave::Fallback => {
-                    @ attack_nearby,
-                    @ stance
+            Behave::Fallback => {
+                Behave::Sequence => {
+                    Behave::trigger(DetermineTarget),
+                    Behave::Fallback => {
+                        ... attack_chain
+                    }
+                },
+                @ stance
             }
         }
     );
@@ -140,10 +183,12 @@ fn on_insert_bandit_behaviour(
         )),
     };
 
+    let attack_chain = attack_and_walk_in_range(entity);
+
     let tree = behave!(
         Behave::Forever => {
             Behave::Fallback => {
-                @ attack_and_walk_in_range(entity),
+                @ attack_chain,
                 @ stance
             }
         }
@@ -153,74 +198,35 @@ fn on_insert_bandit_behaviour(
         .entity(entity)
         .despawn_related::<BehaveSources>()
         .with_child((
-            BehaveTree::new(tree).with_logging(true),
+            BehaveTree::new(tree).with_logging(false),
             BehaveTarget(entity),
         ));
 }
 
 fn attack_and_walk_in_range(entity: Entity) -> Tree<Behave> {
     behave!(
-        Behave::IfThen => {
+        Behave::Sequence => {
             Behave::trigger(DetermineTarget),
-            Behave::IfThen => {
-                Behave::trigger(TargetInProjectileRange),
-                Behave::spawn_named(
-                    "Attack nearest enemy Range",
-                    (
-                        AttackingInRange::Distance,
-                        BehaveInterrupt::by_not(TargetInProjectileRange).or(TargetInMeleeRange),
-                        BehaveTarget(entity)
-                    )
-                ),
-                Behave::IfThen => {
+            Behave::Fallback => {
+                Behave::Sequence => {
                     Behave::trigger(TargetInMeleeRange),
                     Behave::spawn_named(
                         "Attack nearest enemy Melee",
                         (
-                            AttackingInRange::Melee,
-                            BehaveInterrupt::by(TargetInProjectileRange).or_not(TargetInMeleeRange),
-                            BehaveTarget(entity)
-                        ),
-                    ),
-                    Behave::spawn_named(
-                        "Walking to target",
-                        (
-                            WalkIntoRange,
-                            BehaveInterrupt::by(TargetInMeleeRange).or(TargetInProjectileRange),
-                            BehaveTarget(entity)
-                        )
-                    )
-                }
-            }
-        }
-    )
-}
-
-fn attack_in_range(entity: Entity) -> Tree<Behave> {
-    behave!(
-        Behave::IfThen => {
-            Behave::trigger(DetermineTarget),
-            Behave::IfThen => {
-                Behave::trigger(TargetInProjectileRange),
-                Behave::spawn_named(
-                    "Attack nearest enemy Range",
-                    (
-                        AttackingInRange::Distance,
-                        BehaveInterrupt::by_not(TargetInProjectileRange).or(TargetInMeleeRange),
-                        BehaveTarget(entity)
-                    )
-                ),
-                Behave::IfThen => {
-                    Behave::trigger(TargetInMeleeRange),
-                    Behave::spawn_named(
-                        "Attack nearest enemy Melee",
-                        (
-                            AttackingInRange::Melee,
+                            Attack::Melee,
                             BehaveInterrupt::by_not(TargetInMeleeRange),
                             BehaveTarget(entity)
                         ),
                     ),
-                }
+                },
+                Behave::spawn_named(
+                    "Walking to target",
+                    (
+                        WalkIntoRange,
+                        BehaveInterrupt::by(TargetInMeleeRange),
+                        BehaveTarget(entity)
+                    )
+                )
             }
         }
     )
@@ -247,7 +253,7 @@ struct TargetInMeleeRange;
 struct TargetInProjectileRange;
 
 #[derive(Component, Clone, Deref)]
-struct AllowToAttack(WorldDirection);
+struct WaitToAttack(WorldDirection);
 
 #[derive(Component, Deref)]
 #[relationship(relationship_target = TargetedBy)]
@@ -319,13 +325,12 @@ fn determine_target(
 fn check_target_in_melee_proximity(
     trigger: Trigger<BehaveTrigger<TargetInMeleeRange>>,
     mut commands: Commands,
-    query: Query<(&Transform, &MeleeRange, Option<&Target>)>,
+    query: Query<(&Transform, &MeleeRange, &Target)>,
     transform_query: Query<&Transform>,
 ) {
     let ctx = trigger.ctx();
 
-    let (transform, melee_range, maybe_target) = query.get(ctx.target_entity()).unwrap();
-    let Some(target) = maybe_target else {
+    let Ok((transform, range, target)) = query.get(ctx.target_entity()) else {
         commands.trigger(ctx.failure());
         return;
     };
@@ -335,7 +340,7 @@ fn check_target_in_melee_proximity(
         .truncate()
         .distance(other_transform.translation.truncate());
 
-    if distance <= **melee_range {
+    if distance <= **range {
         commands.trigger(ctx.success());
     } else {
         commands.trigger(ctx.failure());
@@ -345,13 +350,11 @@ fn check_target_in_melee_proximity(
 fn check_target_in_range_proximity(
     trigger: Trigger<BehaveTrigger<TargetInProjectileRange>>,
     mut commands: Commands,
-    query: Query<(&Transform, Option<&DistanceRange>, Option<&Target>)>,
+    query: Query<(&Transform, &ProjectileRange, &Target)>,
     transform_query: Query<&Transform>,
 ) {
     let ctx = trigger.ctx();
-
-    let (transform, maybe_distance_range, maybe_target) = query.get(ctx.target_entity()).unwrap();
-    let Some(target) = maybe_target else {
+    let Ok((transform, range, target)) = query.get(ctx.target_entity()) else {
         commands.trigger(ctx.failure());
         return;
     };
@@ -362,12 +365,8 @@ fn check_target_in_range_proximity(
         .truncate()
         .distance(other_transform.translation.truncate());
 
-    if let Some(distance_range) = maybe_distance_range {
-        if distance <= **distance_range {
-            commands.trigger(ctx.success());
-        } else {
-            commands.trigger(ctx.failure());
-        }
+    if distance <= **range {
+        commands.trigger(ctx.success());
     } else {
         commands.trigger(ctx.failure());
     }

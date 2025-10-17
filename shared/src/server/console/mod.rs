@@ -9,8 +9,6 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
-use crate::server::ai::BanditBehaviour;
-use crate::server::game_scenes::GameSceneId;
 use crate::{
     ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
@@ -21,7 +19,12 @@ use crate::{
         },
     },
     networking::UnitType,
-    server::{entities::commander::ArmyFormation, physics::army_slot::ArmySlot},
+    server::{
+        ai::BanditBehaviour,
+        entities::{Sight, commander::ArmyFormation},
+        game_scenes::GameSceneId,
+        physics::army_slot::ArmySlot,
+    },
 };
 
 use super::{
@@ -372,7 +375,7 @@ fn spawn_unit_and_bandits(In(params): In<Option<Value>>, world: &mut World) -> B
         let chest = Item::builder().with_type(ItemType::Chest).build();
         let feet = Item::builder().with_type(ItemType::Feet).build();
 
-        for i in 1..10 {
+        for i in 1..=1 {
             world.spawn((
                 Owner::Bandits,
                 Unit {
@@ -383,6 +386,7 @@ fn spawn_unit_and_bandits(In(params): In<Option<Value>>, world: &mut World) -> B
                 BanditBehaviour::default(),
                 Health { hitpoints: 55. },
                 MeleeRange(10.),
+                Sight::default(),
                 Speed(30.),
                 Damage(10.),
                 game_scene_id,
