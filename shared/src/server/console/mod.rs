@@ -380,7 +380,7 @@ fn spawn_unit_and_bandits(In(params): In<Option<Value>>, world: &mut World) -> B
                 Owner::Bandits,
                 Unit {
                     unit_type: UnitType::Bandit,
-                    swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                    swing_timer: Timer::from_seconds(5., TimerMode::Once),
                     color: PlayerColor::default(),
                 },
                 BanditBehaviour::default(),
@@ -431,7 +431,7 @@ fn spawn_unit(
         .id();
 
     let unit = Unit {
-        swing_timer: Timer::from_seconds(1., TimerMode::Repeating),
+        swing_timer: Timer::from_seconds(4., TimerMode::Repeating),
         unit_type,
         color,
     };
@@ -448,7 +448,7 @@ fn spawn_unit(
     let range = match unit_type {
         UnitType::Shieldwarrior => 10.,
         UnitType::Pikeman => 20.,
-        UnitType::Archer => 100.,
+        UnitType::Archer => 10.,
         UnitType::Bandit => todo!(),
         UnitType::Commander => todo!(),
     };

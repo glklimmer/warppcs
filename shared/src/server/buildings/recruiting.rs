@@ -338,7 +338,7 @@ pub fn recruit_commander(
         color: *color,
     };
 
-    let hitpoints = 100.;
+    let hitpoints = 300.;
     let health = Health { hitpoints };
 
     let movement_speed = 35.;

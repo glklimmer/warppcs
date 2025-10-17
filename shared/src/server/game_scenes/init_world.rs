@@ -217,7 +217,7 @@ fn elite_camp(
             Owner::Bandits,
             Unit {
                 unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                swing_timer: Timer::from_seconds(5., TimerMode::Once),
                 color: PlayerColor::default(),
             },
             BanditBehaviour::default(),
@@ -265,7 +265,7 @@ fn triple_camp(
             Owner::Bandits,
             Unit {
                 unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                swing_timer: Timer::from_seconds(5., TimerMode::Once),
                 color: PlayerColor::default(),
             },
             BanditBehaviour::default(),
@@ -289,7 +289,7 @@ fn triple_camp(
             Owner::Bandits,
             Unit {
                 unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                swing_timer: Timer::from_seconds(5., TimerMode::Once),
                 color: PlayerColor::default(),
             },
             BanditBehaviour::default(),
@@ -313,7 +313,7 @@ fn triple_camp(
             Owner::Bandits,
             Unit {
                 unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                swing_timer: Timer::from_seconds(5., TimerMode::Once),
                 color: PlayerColor::default(),
             },
             BanditBehaviour::default(),
@@ -379,7 +379,7 @@ fn double_camp(
             Owner::Bandits,
             Unit {
                 unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                swing_timer: Timer::from_seconds(5., TimerMode::Once),
                 color: PlayerColor::default(),
             },
             BanditBehaviour::default(),
@@ -403,7 +403,7 @@ fn double_camp(
             Owner::Bandits,
             Unit {
                 unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(4., TimerMode::Once),
+                swing_timer: Timer::from_seconds(5., TimerMode::Once),
                 color: PlayerColor::default(),
             },
             BanditBehaviour::default(),
