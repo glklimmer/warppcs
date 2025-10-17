@@ -162,20 +162,35 @@ fn attack_and_walk_in_range(entity: Entity) -> Tree<Behave> {
     behave!(
         Behave::IfThen => {
             Behave::trigger(DetermineTarget),
+            Behave::IfThen => {
+                Behave::trigger(TargetInProjectileRange),
+                Behave::spawn_named(
+                    "Attack nearest enemy Range",
+                    (
+                        AttackingInRange::Distance,
+                        BehaveInterrupt::by_not(TargetInProjectileRange).or(TargetInMeleeRange),
+                        BehaveTarget(entity)
+                    )
+                ),
                 Behave::IfThen => {
-                    Behave::trigger(TargetInMeleeProximity),
+                    Behave::trigger(TargetInMeleeRange),
                     Behave::spawn_named(
-                        "Attack nearest enemy",
+                        "Attack nearest enemy Melee",
                         (
                             AttackingInRange::Melee,
-                            BehaveInterrupt::by_not(TargetInRangeProximity),
+                            BehaveInterrupt::by(TargetInProjectileRange).or_not(TargetInMeleeRange),
                             BehaveTarget(entity)
-                        )
+                        ),
                     ),
                     Behave::spawn_named(
                         "Walking to target",
-                        (WalkIntoRange, BehaveTarget(entity))
+                        (
+                            WalkIntoRange,
+                            BehaveInterrupt::by(TargetInMeleeRange).or(TargetInProjectileRange),
+                            BehaveTarget(entity)
+                        )
                     )
+                }
             }
         }
     )
@@ -186,24 +201,24 @@ fn attack_in_range(entity: Entity) -> Tree<Behave> {
         Behave::IfThen => {
             Behave::trigger(DetermineTarget),
             Behave::IfThen => {
-                Behave::trigger(TargetInMeleeProximity),
+                Behave::trigger(TargetInProjectileRange),
                 Behave::spawn_named(
-                    "Attack nearest enemy Melee",
+                    "Attack nearest enemy Range",
                     (
-                        AttackingInRange::Melee,
-                        BehaveInterrupt::by_not(TargetInRangeProximity),
+                        AttackingInRange::Distance,
+                        BehaveInterrupt::by_not(TargetInProjectileRange).or(TargetInMeleeRange),
                         BehaveTarget(entity)
-                    ),
+                    )
                 ),
                 Behave::IfThen => {
-                    Behave::trigger(TargetInRangeProximity),
+                    Behave::trigger(TargetInMeleeRange),
                     Behave::spawn_named(
-                        "Attack nearest enemy Range",
+                        "Attack nearest enemy Melee",
                         (
-                            AttackingInRange::Distance,
-                            BehaveInterrupt::by_not(TargetInRangeProximity).or(TargetInMeleeProximity),
+                            AttackingInRange::Melee,
+                            BehaveInterrupt::by_not(TargetInMeleeRange),
                             BehaveTarget(entity)
-                        )
+                        ),
                     ),
                 }
             }
@@ -226,10 +241,10 @@ struct BeingPushed;
 struct DetermineTarget;
 
 #[derive(Clone)]
-struct TargetInMeleeProximity;
+struct TargetInMeleeRange;
 
 #[derive(Clone)]
-struct TargetInRangeProximity;
+struct TargetInProjectileRange;
 
 #[derive(Component, Clone, Deref)]
 struct AllowToAttack(WorldDirection);
@@ -302,7 +317,7 @@ fn determine_target(
 }
 
 fn check_target_in_melee_proximity(
-    trigger: Trigger<BehaveTrigger<TargetInMeleeProximity>>,
+    trigger: Trigger<BehaveTrigger<TargetInMeleeRange>>,
     mut commands: Commands,
     query: Query<(&Transform, &MeleeRange, Option<&Target>)>,
     transform_query: Query<&Transform>,
@@ -328,7 +343,7 @@ fn check_target_in_melee_proximity(
 }
 
 fn check_target_in_range_proximity(
-    trigger: Trigger<BehaveTrigger<TargetInRangeProximity>>,
+    trigger: Trigger<BehaveTrigger<TargetInProjectileRange>>,
     mut commands: Commands,
     query: Query<(&Transform, Option<&DistanceRange>, Option<&Target>)>,
     transform_query: Query<&Transform>,
