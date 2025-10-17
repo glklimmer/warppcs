@@ -110,6 +110,7 @@ fn on_insert_unit_behaviour(
             (
                 WalkIntoRange,
                 BehaveInterrupt::by(TargetInMeleeRange).or(TargetInProjectileRange),
+                BehaveTimeout::from_secs(3.0, false),
                 BehaveTarget(entity),
             ),
         )));
@@ -224,6 +225,7 @@ fn attack_and_walk_in_range(entity: Entity) -> Tree<Behave> {
                     (
                         WalkIntoRange,
                         BehaveInterrupt::by(TargetInMeleeRange),
+                        BehaveTimeout::from_secs(3.0, false),
                         BehaveTarget(entity)
                     )
                 )
