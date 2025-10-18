@@ -46,8 +46,8 @@ impl Plugin for AIPlugin {
             .add_observer(on_insert_bandit_behaviour)
             .add_observer(push_back_check)
             .add_observer(determine_target)
-            .add_observer(check_target_in_melee_proximity)
-            .add_observer(check_target_in_range_proximity)
+            .add_observer(check_target_in_melee_range)
+            .add_observer(check_target_in_projectile_range)
             .add_systems(FixedPostUpdate, remove_target_if_out_of_sight);
     }
 }
@@ -324,7 +324,7 @@ fn determine_target(
     }
 }
 
-fn check_target_in_melee_proximity(
+fn check_target_in_melee_range(
     trigger: Trigger<BehaveTrigger<TargetInMeleeRange>>,
     mut commands: Commands,
     query: Query<(&Transform, &MeleeRange, &Target)>,
@@ -349,7 +349,7 @@ fn check_target_in_melee_proximity(
     }
 }
 
-fn check_target_in_range_proximity(
+fn check_target_in_projectile_range(
     trigger: Trigger<BehaveTrigger<TargetInProjectileRange>>,
     mut commands: Commands,
     query: Query<(&Transform, &ProjectileRange, &Target)>,
