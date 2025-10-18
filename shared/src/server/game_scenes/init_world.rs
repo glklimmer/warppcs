@@ -371,7 +371,7 @@ fn double_camp(
 ) {
     commands.spawn((
         Chest::Normal,
-        offset.offset_x(500.).with_layer(Layers::Chest),
+        offset.offset_x(300.).with_layer(Layers::Chest),
         game_scene_id,
     ));
     for i in 1..10 {
@@ -388,14 +388,14 @@ fn double_camp(
             Speed(30.),
             Damage(10.),
             offset
-                .offset_x(550. - 10. * i as f32)
+                .offset_x(350. - 10. * i as f32)
                 .with_layer(Layers::Unit),
             game_scene_id,
         ));
     }
     commands.spawn((
         Chest::Normal,
-        offset.offset_x(-500.).with_layer(Layers::Chest),
+        offset.offset_x(-300.).with_layer(Layers::Chest),
         game_scene_id,
     ));
     for i in 1..10 {
@@ -412,7 +412,7 @@ fn double_camp(
             Speed(30.),
             Damage(10.),
             offset
-                .offset_x(-550. - 10. * i as f32)
+                .offset_x(-250. - 10. * i as f32)
                 .with_layer(Layers::Unit),
             game_scene_id,
         ));
@@ -420,7 +420,7 @@ fn double_camp(
     commands.entity(left_scene_end).insert((
         SceneEnd,
         offset
-            .offset_x(-900.)
+            .offset_x(-700.)
             .offset_y(-2.)
             .with_layer(Layers::Wall),
         game_scene_id,
@@ -432,7 +432,7 @@ fn double_camp(
     ));
     commands.entity(right_scene_end).insert((
         SceneEnd,
-        offset.offset_x(900.).offset_y(-2.).with_layer(Layers::Wall),
+        offset.offset_x(700.).offset_y(-2.).with_layer(Layers::Wall),
         game_scene_id,
     ));
 }
