@@ -1,4 +1,4 @@
-use bevy::{prelude::*, sprite::Anchor, text::TextBounds};
+use bevy::{math::VectorSpace, prelude::*, sprite::Anchor, text::TextBounds};
 
 use shared::{
     Vec3LayerExt,
@@ -189,14 +189,14 @@ fn init_item_sprite(
 fn init_item_info(
     trigger: Trigger<OnAdd, ItemInfo>,
     mut commands: Commands,
-    mut item: Query<(&ItemInfo, &Transform)>,
+    mut item: Query<&ItemInfo>,
     info: Res<ItemInfoSpriteSheet>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     chests_sprite_sheet: Res<ChestsSpriteSheet>,
     feet_sprite_sheet: Res<FeetSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
 ) {
-    let Ok((ItemInfo { item, tooltip: _ }, transform)) = item.get_mut(trigger.target()) else {
+    let Ok(ItemInfo { item, tooltip: _ }) = item.get_mut(trigger.target()) else {
         return;
     };
 
@@ -208,8 +208,7 @@ fn init_item_info(
                 info.sprite_sheet.texture.clone(),
                 info.sprite_sheet.texture_atlas(ItemInfoParts::ItemPreview),
             ),
-            transform
-                .translation
+            Vec3::ZERO
                 .offset_x(48.)
                 .offset_y(20.)
                 .with_layer(Layers::Item)
