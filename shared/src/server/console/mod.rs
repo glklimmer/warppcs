@@ -375,7 +375,7 @@ fn spawn_unit_and_bandits(In(params): In<Option<Value>>, world: &mut World) -> B
         let chest = Item::builder().with_type(ItemType::Chest).build();
         let feet = Item::builder().with_type(ItemType::Feet).build();
 
-        for i in 1..=1 {
+        for i in 1..=10 {
             world.spawn((
                 Owner::Bandits,
                 Unit {
