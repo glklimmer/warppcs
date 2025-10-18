@@ -150,7 +150,9 @@ fn restore_original_sprite(
 ) {
     if let Ok((mut sprite, original_sprite)) = query.get_mut(trigger.target()) {
         sprite.image = (**original_sprite).clone();
-        commands.entity(trigger.target()).remove::<OriginalSprite>();
+        commands
+            .entity(trigger.target())
+            .try_remove::<OriginalSprite>();
     }
 }
 
