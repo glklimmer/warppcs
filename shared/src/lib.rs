@@ -62,7 +62,7 @@ use crate::{
             travel::{Road, SceneEnd},
             world::{InitPlayerMapNode, RevealMapNode},
         },
-        players::flag::FlagDestroyed,
+        players::{chest::ChestStatus, flag::FlagDestroyed},
     },
 };
 
@@ -118,7 +118,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Road, Transform)>()
         .replicate_group::<(SceneEnd, Transform)>()
         .replicate_group::<(Mount, Transform)>()
-        .replicate_group::<(Chest, Transform)>()
+        .replicate_group::<(Chest, ChestStatus, Transform)>()
         .replicate_group::<(Item, Transform)>()
         .sync_related_entities::<FlagAssignment>()
         .add_client_trigger::<ArmyPosition>(Channel::Ordered)
@@ -137,7 +137,6 @@ impl Plugin for SharedPlugin {
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
         .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
-        .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
         .add_observer(spawn_clients)
         .add_observer(update_visibility)
         .add_observer(hide_on_remove);
@@ -177,24 +176,6 @@ pub struct AnimationChangeEvent {
 }
 
 impl MapEntities for AnimationChangeEvent {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.entity = entity_mapper.get_mapped(self.entity);
-    }
-}
-
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Deserialize, Serialize)]
-pub enum ChestAnimation {
-    Open,
-    Close,
-}
-
-#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct ChestAnimationEvent {
-    pub entity: Entity,
-    pub animation: ChestAnimation,
-}
-
-impl MapEntities for ChestAnimationEvent {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.entity = entity_mapper.get_mapped(self.entity);
     }

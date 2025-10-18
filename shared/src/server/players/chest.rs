@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
-use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
+use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, ChestAnimation, ChestAnimationEvent, Vec3LayerExt,
+    BoxCollider, Vec3LayerExt,
     map::Layers,
     networking::MountType,
     server::{game_scenes::GameSceneId, physics::movement::Velocity},
@@ -39,6 +39,7 @@ pub struct Mount {
     Transform,
     BoxCollider = chest_collider(),
     Sprite{anchor: Anchor::BottomCenter, ..default()},
+    ChestStatus,
     Interactable{
         kind: InteractionType::Chest,
         restricted_to: None,
@@ -49,8 +50,9 @@ pub enum Chest {
     Big,
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Default, Serialize, Deserialize)]
 pub enum ChestStatus {
+    #[default]
     Closed,
     Open,
 }
@@ -58,7 +60,6 @@ pub enum ChestStatus {
 pub fn open_chest(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut commands: Commands,
-    mut animation: EventWriter<ToClients<ChestAnimationEvent>>,
     query: Query<(&Transform, &GameSceneId)>,
 ) {
     for event in interactions.read() {
@@ -66,7 +67,11 @@ pub fn open_chest(
             continue;
         };
 
-        commands.entity(event.interactable).remove::<Interactable>();
+        commands
+            .entity(event.interactable)
+            .insert(ChestStatus::Open)
+            .remove::<Interactable>();
+
         let (chest_transform, game_scene_id) = query.get(event.interactable).unwrap();
         let chest_translation = chest_transform.translation;
 
@@ -80,14 +85,6 @@ pub fn open_chest(
                 Velocity(Vec2::new((fastrand::f32() - 0.5) * 50., 50.)),
             ));
         }
-
-        animation.write(ToClients {
-            mode: SendMode::Broadcast,
-            event: ChestAnimationEvent {
-                entity: event.interactable,
-                animation: ChestAnimation::Open,
-            },
-        });
     }
 }
 

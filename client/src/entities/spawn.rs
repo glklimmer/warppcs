@@ -2,7 +2,7 @@ use bevy::{prelude::*, sprite::Anchor};
 
 use bevy_parallax::CameraFollow;
 use shared::{
-    ChestAnimation, Player, SetLocalPlayer,
+    Player, SetLocalPlayer,
     map::buildings::{Building, RecruitBuilding},
     player_port::Portal,
     server::{
@@ -10,7 +10,10 @@ use shared::{
         entities::{Unit, UnitAnimation, health::Health},
         game_scenes::travel::{Road, SceneEnd},
         physics::projectile::ProjectileType,
-        players::{chest::Chest, mount::Mount},
+        players::{
+            chest::{Chest, ChestStatus},
+            mount::Mount,
+        },
     },
 };
 
@@ -363,15 +366,15 @@ fn init_projectile_sprite(
 
 fn init_chest_sprite(
     trigger: Trigger<OnAdd, Chest>,
-    mut chests: Query<&mut Sprite>,
+    mut chests: Query<(&mut Sprite, &ChestStatus)>,
     sprite_sheets: Res<ChestSpriteSheet>,
 ) {
-    let Ok(mut sprite) = chests.get_mut(trigger.target()) else {
+    let Ok((mut sprite, status)) = chests.get_mut(trigger.target()) else {
         return;
     };
 
     let sprite_sheet = &sprite_sheets.sprite_sheet;
-    let animation = sprite_sheet.animations.get(ChestAnimation::Open);
+    let animation = sprite_sheet.animations.get(status.into());
 
     sprite.image = sprite_sheet.texture.clone();
     sprite.texture_atlas = Some(TextureAtlas {
