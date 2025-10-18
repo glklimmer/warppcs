@@ -5,15 +5,17 @@ use bevy_replicon::prelude::{SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, DelayedDespawn, FlagAnimation, FlagAnimationEvent,
-    Hitby, Owner,
+    AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner,
     map::buildings::{BuildStatus, Building, BuildingType, HealthIndicator},
     networking::{UnitType, WorldDirection},
     server::{
         ai::{BanditBehaviour, BehaveSources, Target, TargetedBy, UnitBehaviour},
         buildings::recruiting::{FlagAssignment, FlagHolder, FlagUnits},
         physics::{attachment::AttachedTo, movement::Velocity},
-        players::interaction::{Interactable, InteractionType},
+        players::{
+            flag::FlagDestroyed,
+            interaction::{Interactable, InteractionType},
+        },
     },
 };
 
@@ -146,7 +148,6 @@ fn on_unit_death(
     mut damage_events: EventReader<TakeDamage>,
     mut commands: Commands,
     mut unit_animation: EventWriter<ToClients<AnimationChangeEvent>>,
-    mut flag_animation: EventWriter<ToClients<FlagAnimationEvent>>,
     units: Query<(
         Entity,
         &Health,
@@ -210,7 +211,10 @@ fn on_unit_death(
 
             commands
                 .entity(flag)
-                .insert(DelayedDespawn(Timer::from_seconds(620., TimerMode::Once)))
+                .insert((
+                    DelayedDespawn(Timer::from_seconds(620., TimerMode::Once)),
+                    FlagDestroyed,
+                ))
                 .remove::<AttachedTo>()
                 .remove::<Interactable>();
 
@@ -235,14 +239,6 @@ fn on_unit_death(
                     ));
                 }
             }
-
-            flag_animation.write(ToClients {
-                mode: SendMode::Broadcast,
-                event: FlagAnimationEvent {
-                    entity: flag,
-                    animation: FlagAnimation::Destroyed,
-                },
-            });
         }
     }
 }

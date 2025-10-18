@@ -62,6 +62,7 @@ use crate::{
             travel::{Road, SceneEnd},
             world::{InitPlayerMapNode, RevealMapNode},
         },
+        players::flag::FlagDestroyed,
     },
 };
 
@@ -104,6 +105,7 @@ impl Plugin for SharedPlugin {
         .replicate::<ArmyFlagAssignments>()
         .replicate::<ArmyFormation>()
         .replicate::<FlagHolder>()
+        .replicate::<FlagDestroyed>()
         .replicate_group::<(Player, Transform, Inventory)>()
         .replicate_group::<(RecruitBuilding, Transform)>()
         .replicate_group::<(Building, BuildStatus, Transform)>()
@@ -136,7 +138,6 @@ impl Plugin for SharedPlugin {
         .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)
         .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
         .add_mapped_server_event::<ChestAnimationEvent>(Channel::Ordered)
-        .add_mapped_server_event::<FlagAnimationEvent>(Channel::Ordered)
         .add_observer(spawn_clients)
         .add_observer(update_visibility)
         .add_observer(hide_on_remove);
@@ -194,27 +195,6 @@ pub struct ChestAnimationEvent {
 }
 
 impl MapEntities for ChestAnimationEvent {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.entity = entity_mapper.get_mapped(self.entity);
-    }
-}
-
-#[derive(
-    Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default, Deserialize, Serialize,
-)]
-pub enum FlagAnimation {
-    #[default]
-    Wave,
-    Destroyed,
-}
-
-#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct FlagAnimationEvent {
-    pub entity: Entity,
-    pub animation: FlagAnimation,
-}
-
-impl MapEntities for FlagAnimationEvent {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.entity = entity_mapper.get_mapped(self.entity);
     }

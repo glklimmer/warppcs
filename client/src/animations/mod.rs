@@ -22,7 +22,7 @@ use king::{
 };
 use objects::{
     chest::{ChestSpriteSheet, play_chest_animation, set_chest_after_play_once},
-    flag::{FlagSpriteSheet, play_flag_animation},
+    flag::{FlagSpriteSheet, on_flag_destroyed},
     items::{
         chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
         weapons::WeaponsSpriteSheet,
@@ -214,10 +214,10 @@ impl Plugin for AnimationPlugin {
                 trigger_king_animation,
                 trigger_unit_animation,
                 play_chest_animation,
-                play_flag_animation,
             )
                 .after(ClientSet::Receive),
         )
+        .add_observer(on_flag_destroyed)
         .add_observer(set_king_defeat)
         .add_observer(remove_animation)
         .add_observer(set_king_walking)
