@@ -160,7 +160,7 @@ fn on_insert_unit_behaviour(
         .entity(entity)
         .despawn_related::<BehaveSources>()
         .with_child((
-            BehaveTree::new(tree).with_logging(true),
+            BehaveTree::new(tree).with_logging(false),
             BehaveTarget(entity),
         ));
 }
