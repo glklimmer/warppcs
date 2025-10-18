@@ -2,7 +2,7 @@ use bevy::{prelude::*, sprite::Anchor};
 
 use bevy_parallax::CameraFollow;
 use shared::{
-    ChestAnimation, Player, SetLocalPlayer,
+    Player, SetLocalPlayer,
     map::buildings::{Building, RecruitBuilding},
     player_port::Portal,
     server::{
@@ -19,7 +19,7 @@ use crate::{
         animals::horse::{HorseAnimation, HorseSpriteSheet},
         king::{KingAnimation, KingSpriteSheet},
         objects::{
-            chest::ChestSpriteSheet,
+            chest::{ChestAnimation, ChestSpriteSheet},
             flag::{FlagAnimation, FlagSpriteSheet},
             portal::{PortalAnimation, PortalSpriteSheet},
             projectiles::{ProjectileSpriteSheet, Projectiles},
