@@ -1,4 +1,6 @@
-use bevy::{math::VectorSpace, prelude::*, sprite::Anchor, text::TextBounds};
+use bevy::prelude::*;
+
+use bevy::{sprite::Anchor, text::TextBounds};
 
 use shared::{
     Vec3LayerExt,
