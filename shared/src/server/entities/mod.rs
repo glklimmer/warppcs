@@ -38,7 +38,7 @@ pub enum UnitAnimation {
     Sprite{anchor: Anchor::BottomCenter, ..default()},
     RandomVelocityMul,
     Health,
-    Range,
+    MeleeRange,
     Speed,
     Damage,
     Sight
@@ -59,9 +59,12 @@ impl Default for Damage {
 }
 
 #[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]
-pub struct Range(pub f32);
+pub struct MeleeRange(pub f32);
 
-impl Default for Range {
+#[derive(Component, Debug, Copy, Clone, Deref, DerefMut)]
+pub struct ProjectileRange(pub f32);
+
+impl Default for MeleeRange {
     fn default() -> Self {
         Self(10.)
     }

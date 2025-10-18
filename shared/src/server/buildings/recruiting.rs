@@ -1,28 +1,34 @@
-use crate::enum_map::EnumIter;
-use crate::server::entities::Sight;
-use crate::server::game_scenes::GameSceneId;
-use crate::server::physics::army_slot::ArmySlot;
 use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
-use crate::enum_map::EnumMap;
-use crate::map::buildings::RecruitBuilding;
-use crate::server::ai::FollowOffset;
-use crate::server::entities::commander::{
-    ArmyFlagAssignments, ArmyFormation, ArmyPosition, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH,
-};
-use crate::server::physics::movement::Velocity;
 use crate::{
-    BoxCollider, Owner, Vec3LayerExt, flag_collider,
-    map::{Layers, buildings::Building},
+    BoxCollider, Owner, Player, PlayerColor, Vec3LayerExt,
+    enum_map::{EnumIter, EnumMap},
+    flag_collider,
+    map::{
+        Layers,
+        buildings::{Building, RecruitBuilding},
+    },
     networking::{Inventory, UnitType},
     server::{
-        ai::UnitBehaviour,
-        entities::{Damage, Range, Unit, health::Health},
-        physics::{attachment::AttachedTo, movement::Speed},
+        ai::{FollowOffset, UnitBehaviour},
+        entities::{
+            Damage, MeleeRange, ProjectileRange, Sight, Unit,
+            commander::{
+                ArmyFlagAssignments, ArmyFormation, ArmyPosition, BASE_FORMATION_OFFSET,
+                BASE_FORMATION_WIDTH,
+            },
+            health::Health,
+        },
+        game_scenes::GameSceneId,
+        physics::{
+            army_slot::ArmySlot,
+            attachment::AttachedTo,
+            movement::{Speed, Velocity},
+        },
         players::{
             interaction::{
                 Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType,
@@ -31,7 +37,6 @@ use crate::{
         },
     },
 };
-use crate::{Player, PlayerColor};
 
 use super::item_assignment::ItemAssignment;
 
@@ -202,7 +207,8 @@ fn spawn_units(
 ) {
     let unit_amount = items.calculated(Effect::UnitAmount) as i32;
 
-    let (unit, health, speed, damage, range, sight) = unit_stats(unit_type, items, color);
+    let (unit, health, speed, damage, melee_range, projectile_range, sight) =
+        unit_stats(unit_type, items, color);
 
     for _ in 1..=unit_amount {
         commands.spawn((
@@ -211,7 +217,8 @@ fn spawn_units(
             health,
             speed,
             damage,
-            range,
+            melee_range,
+            projectile_range,
             sight,
             owner,
             *game_scene_id,
@@ -225,8 +232,16 @@ pub fn unit_stats(
     unit_type: UnitType,
     items: &[Item],
     color: PlayerColor,
-) -> (Unit, Health, Speed, Damage, Range, Sight) {
-    let time = items.calculated(Effect::AttackSpeed) / 2.;
+) -> (
+    Unit,
+    Health,
+    Speed,
+    Damage,
+    MeleeRange,
+    ProjectileRange,
+    Sight,
+) {
+    let time = 60. / items.calculated(Effect::AttackSpeed);
     let unit = Unit {
         swing_timer: Timer::from_seconds(time, TimerMode::Once),
         unit_type,
@@ -242,18 +257,34 @@ pub fn unit_stats(
     let damage = items.calculated(Effect::Damage);
     let damage = Damage(damage);
 
-    let range = items.calculated(|item: &Item| {
+    let melee_range = items.calculated(|item: &Item| {
         let ItemType::Weapon(weapon) = item.item_type else {
             return None;
         };
-        Some(Effect::Range(weapon))
+        Some(Effect::MeleeRange(weapon))
     });
-    let range = Range(range);
+    let melee_range = MeleeRange(melee_range);
+
+    let projectile_range = items.calculated(|item: &Item| {
+        let ItemType::Weapon(weapon) = item.item_type else {
+            return None;
+        };
+        Some(Effect::ProjectileRange(weapon))
+    });
+    let projectile_range = ProjectileRange(projectile_range);
 
     let sight = items.calculated(Effect::Sight);
     let sight = Sight(sight);
 
-    (unit, health, speed, damage, range, sight)
+    (
+        unit,
+        health,
+        speed,
+        damage,
+        melee_range,
+        projectile_range,
+        sight,
+    )
 }
 
 pub fn recruit_commander(
@@ -307,7 +338,7 @@ pub fn recruit_commander(
         color: *color,
     };
 
-    let hitpoints = 100.;
+    let hitpoints = 300.;
     let health = Health { hitpoints };
 
     let movement_speed = 35.;
@@ -317,7 +348,7 @@ pub fn recruit_commander(
     let damage = Damage(damage);
 
     let range = 10.;
-    let range = Range(range);
+    let range = MeleeRange(range);
 
     let offset = Vec2::new(-22., 0.);
     let commander = commands

@@ -166,7 +166,7 @@ fn respawn_for_flag(
         }
         inventory.gold -= RESPAWN_COST_GOLD;
 
-        let (unit, health, speed, damage, range, sight) =
+        let (unit, health, speed, damage, melee_range, projectile_range, sight) =
             unit_stats(building.unit_type().unwrap(), &items, flag.color);
 
         commands.spawn((
@@ -175,7 +175,8 @@ fn respawn_for_flag(
             health,
             speed,
             damage,
-            range,
+            melee_range,
+            projectile_range,
             sight,
             *flag_owner,
             *game_scene_id,
