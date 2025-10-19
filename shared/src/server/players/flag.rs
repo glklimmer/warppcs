@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use serde::{Deserialize, Serialize};
+
 use crate::server::{
     ai::UnitBehaviour, buildings::recruiting::FlagUnits, entities::commander::ArmyFlagAssignments,
 };
@@ -20,6 +22,9 @@ pub struct PickFlagEvent {
     player: Entity,
     flag: Entity,
 }
+
+#[derive(Component, Serialize, Deserialize)]
+pub struct FlagDestroyed;
 
 pub fn flag_interact(
     mut interactions: EventReader<InteractionTriggeredEvent>,

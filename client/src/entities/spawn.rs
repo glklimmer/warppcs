@@ -2,12 +2,12 @@ use bevy::{prelude::*, sprite::Anchor};
 
 use bevy_parallax::CameraFollow;
 use shared::{
-    ChestAnimation, FlagAnimation, Player, SetLocalPlayer,
+    Player, SetLocalPlayer,
     map::buildings::{Building, RecruitBuilding},
     player_port::Portal,
     server::{
         buildings::{recruiting::Flag, siege_camp::SiegeCamp},
-        entities::{Unit, UnitAnimation},
+        entities::{Unit, UnitAnimation, health::Health},
         game_scenes::travel::{Road, SceneEnd},
         physics::projectile::ProjectileType,
         players::{chest::Chest, mount::Mount},
@@ -19,8 +19,8 @@ use crate::{
         animals::horse::{HorseAnimation, HorseSpriteSheet},
         king::{KingAnimation, KingSpriteSheet},
         objects::{
-            chest::ChestSpriteSheet,
-            flag::FlagSpriteSheet,
+            chest::{ChestAnimation, ChestSpriteSheet},
+            flag::{FlagAnimation, FlagSpriteSheet},
             portal::{PortalAnimation, PortalSpriteSheet},
             projectiles::{ProjectileSpriteSheet, Projectiles},
         },
@@ -122,28 +122,32 @@ fn init_camp_sprite(
 
 fn init_unit_sprite(
     trigger: Trigger<OnAdd, Unit>,
-    mut units: Query<(&mut Sprite, &Unit)>,
+    mut units: Query<(&mut Sprite, &Unit, Option<&Health>)>,
     sprite_sheets: Res<UnitSpriteSheets>,
     mut commands: Commands,
     variants: Res<Assets<SpriteVariants>>,
 ) {
-    let Ok((mut sprite, unit)) = units.get_mut(trigger.target()) else {
+    let Ok((mut sprite, unit, maybe_health)) = units.get_mut(trigger.target()) else {
         return;
     };
 
     let sprite_sheet = &sprite_sheets.sprite_sheets.get(unit.unit_type);
     let handle = &sprite_sheet.texture;
     let sprite_variants = variants.get(handle).unwrap();
-    let animation = sprite_sheet.animations.get(UnitAnimation::Idle);
+    let animation = match maybe_health {
+        Some(_) => UnitAnimation::Idle,
+        None => UnitAnimation::Death,
+    };
+    let sprite_sheet_animation = sprite_sheet.animations.get(animation);
 
     sprite.image = sprite_variants.variants.get(unit.color).clone();
     sprite.texture_atlas = Some(TextureAtlas {
         layout: sprite_sheet.layout.clone(),
-        index: animation.first_sprite_index,
+        index: sprite_sheet_animation.first_sprite_index,
     });
 
     let mut commands = commands.entity(trigger.target());
-    commands.insert((animation.clone(), UnitAnimation::default()));
+    commands.insert((sprite_sheet_animation.clone(), animation));
 }
 
 fn init_flag_sprite(
@@ -160,7 +164,7 @@ fn init_flag_sprite(
     let sprite_sheet = &flag_sprite_sheet.sprite_sheet;
     let handle = &sprite_sheet.texture;
     let sprite_variants = variants.get(handle).unwrap();
-    let animation = sprite_sheet.animations.get(FlagAnimation::Wave);
+    let animation = sprite_sheet.animations.get(FlagAnimation::default());
 
     sprite.image = sprite_variants.variants.get(flag.color).clone();
     sprite.texture_atlas = Some(TextureAtlas {

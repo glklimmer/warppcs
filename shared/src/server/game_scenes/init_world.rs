@@ -454,6 +454,11 @@ fn player_base(
         color,
     };
     commands.spawn((
+        Chest::Normal,
+        offset.offset_x(-45.).with_layer(Layers::Chest),
+        game_scene_id,
+    ));
+    commands.spawn((
         building,
         building.collider(),
         building.health(),

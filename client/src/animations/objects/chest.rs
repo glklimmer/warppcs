@@ -1,18 +1,25 @@
 use bevy::prelude::*;
-use shared::enum_map::*;
 
-use shared::ChestAnimation;
-use shared::ChestAnimationEvent;
-use shared::server::players::chest::Chest;
+use shared::{
+    enum_map::*,
+    server::players::{
+        chest::{Chest, ChestOpened},
+        interaction::Interactable,
+    },
+};
 
-use crate::anim_reverse;
-use crate::animations::SpriteSheetAnimation;
 use crate::{
-    anim,
-    animations::{AnimationSpriteSheet, PlayOnce},
+    anim, anim_reverse,
+    animations::{AnimationSpriteSheet, PlayOnce, SpriteSheetAnimation},
 };
 
 const ATLAS_COLUMNS: usize = 3;
+
+#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable)]
+pub enum ChestAnimation {
+    Open,
+    Close,
+}
 
 #[derive(Resource)]
 pub struct ChestSpriteSheet {
@@ -55,29 +62,29 @@ impl FromWorld for ChestSpriteSheet {
     }
 }
 
-pub fn play_chest_animation(
-    mut animation_changes: EventReader<ChestAnimationEvent>,
+pub fn on_chest_opened(
+    trigger: Trigger<OnInsert, ChestOpened>,
     mut commands: Commands,
     mut query: Query<&mut Sprite>,
     chest_sprite_sheet: Res<ChestSpriteSheet>,
 ) {
-    for event in animation_changes.read() {
-        let Ok(mut sprite) = query.get_mut(event.entity) else {
-            continue;
-        };
+    let entity = trigger.target();
+    let Ok(mut sprite) = query.get_mut(entity) else {
+        return;
+    };
 
-        let animation = chest_sprite_sheet
-            .sprite_sheet
-            .animations
-            .get(event.animation);
+    let sprite_sheet_animation = chest_sprite_sheet
+        .sprite_sheet
+        .animations
+        .get(ChestAnimation::Open);
 
-        commands
-            .entity(event.entity)
-            .insert((PlayOnce, animation.clone()));
+    commands
+        .entity(entity)
+        .insert((PlayOnce, sprite_sheet_animation.clone()))
+        .try_remove::<Interactable>();
 
-        if let Some(atlas) = &mut sprite.texture_atlas {
-            atlas.index = animation.first_sprite_index;
-        }
+    if let Some(atlas) = &mut sprite.texture_atlas {
+        atlas.index = sprite_sheet_animation.first_sprite_index;
     }
 }
 

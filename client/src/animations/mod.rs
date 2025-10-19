@@ -1,16 +1,5 @@
 use bevy::prelude::*;
 
-use crate::{
-    animations::{
-        king::{remove_animation, set_king_defeat},
-        ui::{
-            animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
-            commander_menu::CommanderMenuSpriteSheet,
-        },
-        world::{road::RoadSpriteSheet, trees::pine::PineTreeSpriteSheet},
-    },
-    asset_loader::AssetsToLoad,
-};
 use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
@@ -21,8 +10,8 @@ use king::{
     set_king_sprite_animation, set_king_walking, trigger_king_animation,
 };
 use objects::{
-    chest::{ChestSpriteSheet, play_chest_animation, set_chest_after_play_once},
-    flag::{FlagSpriteSheet, play_flag_animation},
+    chest::{ChestSpriteSheet, set_chest_after_play_once},
+    flag::{FlagSpriteSheet, on_flag_destroyed},
     items::{
         chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
         weapons::WeaponsSpriteSheet,
@@ -37,6 +26,19 @@ use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
 use units::{
     UnitSpriteSheets, set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation,
     set_unit_walking, trigger_unit_animation,
+};
+
+use crate::{
+    animations::{
+        king::{remove_animation, set_king_defeat},
+        objects::chest::on_chest_opened,
+        ui::{
+            animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
+            commander_menu::CommanderMenuSpriteSheet,
+        },
+        world::{road::RoadSpriteSheet, trees::pine::PineTreeSpriteSheet},
+    },
+    asset_loader::AssetsToLoad,
 };
 
 pub mod animals;
@@ -210,14 +212,10 @@ impl Plugin for AnimationPlugin {
 
         app.add_systems(
             PreUpdate,
-            (
-                trigger_king_animation,
-                trigger_unit_animation,
-                play_chest_animation,
-                play_flag_animation,
-            )
-                .after(ClientSet::Receive),
+            (trigger_king_animation, trigger_unit_animation).after(ClientSet::Receive),
         )
+        .add_observer(on_flag_destroyed)
+        .add_observer(on_chest_opened)
         .add_observer(set_king_defeat)
         .add_observer(remove_animation)
         .add_observer(set_king_walking)

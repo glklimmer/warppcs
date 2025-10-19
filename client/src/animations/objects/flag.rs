@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use shared::{FlagAnimation, FlagAnimationEvent, enum_map::*};
+use serde::{Deserialize, Serialize};
+use shared::{enum_map::*, server::players::flag::FlagDestroyed};
 
 use crate::{
     anim,
@@ -9,6 +10,15 @@ use crate::{
 };
 
 const ATLAS_COLUMNS: usize = 8;
+
+#[derive(
+    Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default, Deserialize, Serialize,
+)]
+pub enum FlagAnimation {
+    #[default]
+    Wave,
+    Destroyed,
+}
 
 #[derive(Resource)]
 pub struct FlagSpriteSheet {
@@ -52,30 +62,28 @@ impl FromWorld for FlagSpriteSheet {
     }
 }
 
-pub fn play_flag_animation(
-    mut animation_changes: EventReader<FlagAnimationEvent>,
+pub fn on_flag_destroyed(
+    trigger: Trigger<OnAdd, FlagDestroyed>,
     mut commands: Commands,
     mut query: Query<&mut Sprite>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
 ) {
-    for event in animation_changes.read() {
-        let Ok(mut sprite) = query.get_mut(event.entity) else {
-            continue;
-        };
+    let entity = trigger.target();
+    let Ok(mut sprite) = query.get_mut(entity) else {
+        return;
+    };
 
-        let animation = flag_sprite_sheet
-            .sprite_sheet
-            .animations
-            .get(event.animation);
+    let animation = flag_sprite_sheet
+        .sprite_sheet
+        .animations
+        .get(FlagAnimation::Destroyed);
 
-        if let FlagAnimation::Destroyed = event.animation {
-            commands.entity(event.entity).remove::<Highlighted>();
-        }
+    commands
+        .entity(entity)
+        .insert(animation.clone())
+        .remove::<Highlighted>();
 
-        commands.entity(event.entity).insert(animation.clone());
-
-        if let Some(atlas) = &mut sprite.texture_atlas {
-            atlas.index = animation.first_sprite_index;
-        }
+    if let Some(atlas) = &mut sprite.texture_atlas {
+        atlas.index = animation.first_sprite_index;
     }
 }
