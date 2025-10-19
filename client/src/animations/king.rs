@@ -25,6 +25,7 @@ pub enum KingAnimation {
     Attack,
     Hit,
     Death,
+    KnockOut,
     Mount,
     Unmount,
     HorseIdle,
@@ -62,6 +63,11 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Attack => anim!(4, 10),
             KingAnimation::Hit => anim!(5, 3),
             KingAnimation::Death => anim!(6, 6),
+            KingAnimation::KnockOut => SpriteSheetAnimation {
+                first_sprite_index: 6 * ATLAS_COLUMNS + 6,
+                last_sprite_index: 6 * ATLAS_COLUMNS + 6,
+                ..default()
+            },
             KingAnimation::Mount => anim!(7, 6),
             KingAnimation::Unmount => anim_reverse!(7, 6),
             KingAnimation::HorseIdle => anim!(8, 7),
@@ -78,6 +84,7 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Attack => None,
             KingAnimation::Hit => None,
             KingAnimation::Death => None,
+            KingAnimation::KnockOut => None,
             KingAnimation::Mount => Some(AnimationSound {
                 sound_handles: vec![horse_sound.clone()],
                 sound_trigger: AnimationSoundTrigger::OnEnter,
@@ -115,16 +122,20 @@ pub fn trigger_king_animation(
         if let Ok(maybe_mounted) = mounted.get(event.entity) {
             let new_animation = match maybe_mounted {
                 Some(_) => match &event.change {
+                    AnimationChange::Idle => KingAnimation::Mount,
                     AnimationChange::Attack => KingAnimation::Mount,
                     AnimationChange::Hit(_) => KingAnimation::Mount,
                     AnimationChange::Death => KingAnimation::Death,
+                    AnimationChange::KnockOut => KingAnimation::KnockOut,
                     AnimationChange::Mount => KingAnimation::Mount,
                     AnimationChange::Unmount => KingAnimation::Unmount,
                 },
                 None => match &event.change {
+                    AnimationChange::Idle => KingAnimation::Idle,
                     AnimationChange::Attack => KingAnimation::Attack,
                     AnimationChange::Hit(_) => KingAnimation::Hit,
                     AnimationChange::Death => KingAnimation::Death,
+                    AnimationChange::KnockOut => KingAnimation::KnockOut,
                     AnimationChange::Mount => KingAnimation::Mount,
                     AnimationChange::Unmount => KingAnimation::Unmount,
                 },

@@ -6,17 +6,20 @@ use interaction::InteractionTriggeredEvent;
 use items::pickup_item;
 use mount::MountPlugin;
 
+use crate::server::players::killed::KilledPlugin;
+
 pub mod chest;
 pub mod flag;
 pub mod interaction;
 pub mod items;
+pub mod killed;
 pub mod mount;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(MountPlugin)
+        app.add_plugins((MountPlugin, KilledPlugin))
             .add_event::<DropFlagEvent>()
             .add_event::<PickFlagEvent>()
             .add_systems(

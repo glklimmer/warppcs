@@ -67,6 +67,8 @@ pub fn next_horse_animation(
             | AnimationChange::Hit(_)
             | AnimationChange::Death
             | AnimationChange::Mount
+            | AnimationChange::Idle
+            | AnimationChange::KnockOut
             | AnimationChange::Unmount => HorseAnimation::Idle,
         };
 

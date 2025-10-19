@@ -55,7 +55,7 @@ use crate::{
     server::{
         entities::{
             commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
-            health::PlayerDefeated,
+            health::{Health, PlayerDefeated},
         },
         game_scenes::{
             GameSceneId,
@@ -163,9 +163,11 @@ impl ClientPlayerMap {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum AnimationChange {
+    Idle,
     Attack,
     Hit(Hitby),
     Death,
+    KnockOut,
     Mount,
     Unmount,
 }
@@ -196,6 +198,8 @@ fn spawn_clients(
             },
             Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
             GameSceneId::lobby(),
+            Owner::Player(trigger.target()),
+            Health { hitpoints: 200. },
         ))
         .id();
 
@@ -409,6 +413,7 @@ pub enum PlayerState {
     World,
     Interaction,
     Traveling,
+    Respawn,
     Defeated,
 }
 
