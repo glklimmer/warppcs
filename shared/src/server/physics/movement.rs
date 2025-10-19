@@ -199,6 +199,10 @@ fn wall_collision(
                 continue;
             }
 
+            let BuildStatus::Built { indicator: _ } = *building_status else {
+                continue;
+            };
+
             if let BuildingType::Wall { level: _ } = building.building_type {
                 let building_bounds = building_collider.at(building_transform);
 
@@ -207,10 +211,6 @@ fn wall_collision(
                     break;
                 }
             }
-
-            let BuildStatus::Built { indicator: _ } = *building_status else {
-                continue;
-            };
         }
     }
 }
