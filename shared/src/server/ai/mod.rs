@@ -225,7 +225,7 @@ fn attack_and_walk_in_range(entity: Entity) -> Tree<Behave> {
                     (
                         WalkIntoRange,
                         BehaveInterrupt::by(TargetInMeleeRange),
-                        BehaveTimeout::from_secs(3.0, false),
+                        BehaveTimeout::from_secs(2.0, false),
                         BehaveTarget(entity)
                     )
                 )
