@@ -6,14 +6,13 @@ use crate::{
     map::buildings::{Building, BuildingType},
     server::{
         ai::{Target, TargetedBy},
-        buildings::recruiting::{Flag, FlagAssignment, FlagHolder},
+        buildings::recruiting::{Flag, FlagHolder},
         entities::{
             Unit,
             health::{Health, TakeDamage},
         },
         game_scenes::GameSceneId,
         physics::{attachment::AttachedTo, movement::Velocity},
-        players::interaction::{Interactable, InteractionType},
     },
 };
 
