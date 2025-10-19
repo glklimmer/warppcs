@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 
 use bandits::bandit::bandit;
@@ -55,9 +54,11 @@ pub fn trigger_unit_animation(
 ) {
     for event in network_events.read() {
         let new_animation = match &event.change {
+            AnimationChange::Idle => UnitAnimation::Idle,
             AnimationChange::Attack => UnitAnimation::Attack,
             AnimationChange::Hit(_) => UnitAnimation::Hit,
             AnimationChange::Death => UnitAnimation::Death,
+            AnimationChange::KnockOut => UnitAnimation::Death,
             AnimationChange::Mount => UnitAnimation::Idle,
             AnimationChange::Unmount => UnitAnimation::Idle,
         };

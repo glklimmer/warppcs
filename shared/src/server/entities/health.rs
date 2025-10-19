@@ -11,6 +11,7 @@ use crate::{
     server::{
         ai::{BanditBehaviour, BehaveSources, Target, TargetedBy, UnitBehaviour},
         buildings::recruiting::{FlagAssignment, FlagHolder, FlagUnits},
+        entities::Unit,
         physics::{attachment::AttachedTo, movement::Velocity},
         players::{
             flag::FlagDestroyed,
@@ -148,14 +149,17 @@ fn on_unit_death(
     mut damage_events: EventReader<TakeDamage>,
     mut commands: Commands,
     mut unit_animation: EventWriter<ToClients<AnimationChangeEvent>>,
-    units: Query<(
-        Entity,
-        &Health,
-        &Owner,
-        Option<&TargetedBy>,
-        Option<&FlagAssignment>,
-        Option<&ArmyFlagAssignments>,
-    )>,
+    units: Query<
+        (
+            Entity,
+            &Health,
+            &Owner,
+            Option<&TargetedBy>,
+            Option<&FlagAssignment>,
+            Option<&ArmyFlagAssignments>,
+        ),
+        With<Unit>,
+    >,
     group: Query<&FlagUnits>,
     transform: Query<&Transform>,
     holder: Query<&FlagHolder>,
