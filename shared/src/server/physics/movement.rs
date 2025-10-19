@@ -195,13 +195,10 @@ fn wall_collision(
         for (building_transform, building_collider, building_owner, building, building_status) in
             buildings.iter()
         {
-            if building_owner.eq(owner) {
+            if building_owner.is_same_faction(owner) {
                 continue;
             }
 
-            let BuildStatus::Built { indicator: _ } = *building_status else {
-                continue;
-            };
             if let BuildingType::Wall { level: _ } = building.building_type {
                 let building_bounds = building_collider.at(building_transform);
 
@@ -210,6 +207,10 @@ fn wall_collision(
                     break;
                 }
             }
+
+            let BuildStatus::Built { indicator: _ } = *building_status else {
+                continue;
+            };
         }
     }
 }
