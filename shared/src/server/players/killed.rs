@@ -3,7 +3,10 @@ use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
     AnimationChange, AnimationChangeEvent, Owner, Player, PlayerState,
-    map::buildings::{Building, BuildingType},
+    map::{
+        Layers,
+        buildings::{Building, BuildingType},
+    },
     server::{
         ai::{Target, TargetedBy},
         buildings::recruiting::{Flag, FlagHolder},
@@ -24,7 +27,7 @@ pub struct RespawnTimer {
 impl Default for RespawnTimer {
     fn default() -> Self {
         Self {
-            timer: Timer::from_seconds(10., TimerMode::Once),
+            timer: Timer::from_seconds(1., TimerMode::Once),
         }
     }
 }
@@ -108,11 +111,15 @@ fn kill_player(
         for (building_transform, owner, building, building_scene) in main_building.iter() {
             if let BuildingType::MainBuilding { level: _ } = building.building_type {
                 if owner.is_same_faction(player) {
-                    player_transform.translation = building_transform.translation;
                     commands
                         .entity(player_entity)
                         .remove::<(FlagHolder, Health)>()
                         .insert((*building_scene, RespawnTimer::default()));
+
+                    player_transform.translation = building_transform
+                        .translation
+                        .with_z(Layers::Player.as_f32());
+
                     next_state.set(PlayerState::Respawn);
                     break;
                 }
