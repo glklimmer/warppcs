@@ -58,7 +58,9 @@ fn init_world(
             } => {
                 let (mut transform, Player { color }) = players.get_mut(player).unwrap();
                 transform.translation = offset.with_z(Layers::Player.as_f32());
-                commands.entity(player).insert(game_scene_id);
+                commands
+                    .entity(player)
+                    .insert((game_scene_id, Owner::Player(player)));
 
                 player_base(
                     commands.reborrow(),
