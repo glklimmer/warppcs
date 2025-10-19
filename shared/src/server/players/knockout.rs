@@ -32,9 +32,9 @@ impl Default for RespawnTimer {
     }
 }
 
-pub struct KilledPlugin;
+pub struct KnockoutPlugin;
 
-impl Plugin for KilledPlugin {
+impl Plugin for KnockoutPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(FixedUpdate, kill_player);
         app.add_systems(
@@ -109,20 +109,20 @@ fn kill_player(
         }
 
         for (building_transform, owner, building, building_scene) in main_building.iter() {
-            if let BuildingType::MainBuilding { level: _ } = building.building_type {
-                if owner.is_same_faction(player) {
-                    commands
-                        .entity(player_entity)
-                        .remove::<(FlagHolder, Health)>()
-                        .insert((*building_scene, RespawnTimer::default()));
+            if let BuildingType::MainBuilding { level: _ } = building.building_type
+                && owner.is_same_faction(player)
+            {
+                commands
+                    .entity(player_entity)
+                    .remove::<(FlagHolder, Health)>()
+                    .insert((*building_scene, RespawnTimer::default()));
 
-                    player_transform.translation = building_transform
-                        .translation
-                        .with_z(Layers::Player.as_f32());
+                player_transform.translation = building_transform
+                    .translation
+                    .with_z(Layers::Player.as_f32());
 
-                    next_state.set(PlayerState::Respawn);
-                    break;
-                }
+                next_state.set(PlayerState::Respawn);
+                break;
             }
         }
     }
