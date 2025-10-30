@@ -188,16 +188,17 @@ impl MapEntities for AnimationChangeEvent {
 
 fn spawn_clients(
     trigger: Trigger<OnAdd, ConnectedClient>,
-    mut commands: Commands,
     mut visibility: Query<&mut ClientVisibility>,
     mut client_player_map: ResMut<ClientPlayerMap>,
-) {
+    mut commands: Commands,
+) -> Result {
+    let Some(color) = fastrand::choice(PlayerColor::all_variants()) else {
+        return Err(BevyError::from("Failed to choose a player color"));
+    };
     let player = commands
         .entity(trigger.target())
         .insert((
-            Player {
-                color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
-            },
+            Player { color: *color },
             Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
             GameSceneId::lobby(),
             Owner::Player(trigger.target()),
@@ -215,6 +216,7 @@ fn spawn_clients(
         mode: SendMode::Direct(player),
         event: SetLocalPlayer(player),
     });
+    Ok(())
 }
 
 fn update_visibility(
@@ -222,12 +224,9 @@ fn update_visibility(
     mut players: Query<(Entity, &mut ClientVisibility, &GameSceneId), With<Player>>,
     others: Query<(Entity, &GameSceneId)>,
     player_check: Query<(), With<Player>>,
-) {
+) -> Result {
     let entity = trigger.target();
-    let new_entity_scene_id = match others.get(entity) {
-        Ok((_, scene_id)) => scene_id,
-        Err(_) => return,
-    };
+    let new_entity_scene_id = others.get(entity)?.1;
 
     if player_check.get(entity).is_ok() {
         let player_scenes: HashMap<Entity, GameSceneId> = players
@@ -237,12 +236,16 @@ fn update_visibility(
 
         for (player_entity, mut visibility, _player_scene_id) in &mut players {
             if player_entity.eq(&entity) {
-                let player_scene_id = player_scenes.get(&entity).unwrap();
+                let Some(player_scene_id) = player_scenes.get(&entity) else {
+                    return Err(BevyError::from("Player scene ID not found"));
+                };
                 for (other_entity, other_scene_id) in &others {
                     visibility.set_visibility(other_entity, other_scene_id.eq(player_scene_id));
                 }
             } else {
-                let other_player_scene_id = player_scenes.get(&player_entity).unwrap();
+                let Some(other_player_scene_id) = player_scenes.get(&player_entity) else {
+                    return Err(BevyError::from("Other Player scene ID not found"));
+                };
                 visibility.set_visibility(entity, other_player_scene_id.eq(new_entity_scene_id));
             }
         }
@@ -251,16 +254,18 @@ fn update_visibility(
             visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
         }
     }
+    Ok(())
 }
 
 fn hide_on_remove(
     trigger: Trigger<OnRemove, GameSceneId>,
     mut players: Query<(Entity, &mut ClientVisibility), With<Player>>,
-) {
+) -> Result {
     let entity = trigger.target();
     for (player_entity, mut visibility) in &mut players {
         visibility.set_visibility(entity, player_entity == entity);
     }
+    Ok(())
 }
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]

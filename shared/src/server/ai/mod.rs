@@ -66,11 +66,11 @@ struct WalkingInDirection(WorldDirection);
 
 fn on_insert_unit_behaviour(
     trigger: Trigger<OnInsert, UnitBehaviour>,
-    mut commands: Commands,
     query: Query<(&UnitBehaviour, &Unit)>,
-) {
+    mut commands: Commands,
+) -> Result {
     let entity = trigger.target();
-    let (behaviour, unit) = query.get(entity).unwrap();
+    let (behaviour, unit) = query.get(entity)?;
 
     let mut attack_chain: Vec<Tree<Behave>> = Vec::new();
 
@@ -163,15 +163,17 @@ fn on_insert_unit_behaviour(
             BehaveTree::new(tree).with_logging(false),
             BehaveTarget(entity),
         ));
+
+    Ok(())
 }
 
 fn on_insert_bandit_behaviour(
     trigger: Trigger<OnInsert, BanditBehaviour>,
-    mut commands: Commands,
     query: Query<&BanditBehaviour>,
-) {
+    mut commands: Commands,
+) -> Result {
     let entity = trigger.target();
-    let behaviour = query.get(entity).unwrap();
+    let behaviour = query.get(entity)?;
 
     let stance = match behaviour {
         BanditBehaviour::Aggressive => behave!(Behave::spawn_named(
@@ -202,6 +204,7 @@ fn on_insert_bandit_behaviour(
             BehaveTree::new(tree).with_logging(false),
             BehaveTarget(entity),
         ));
+    Ok(())
 }
 
 fn attack_and_walk_in_range(entity: Entity) -> Tree<Behave> {
@@ -267,11 +270,11 @@ pub struct TargetedBy(Vec<Entity>);
 
 fn push_back_check(
     trigger: Trigger<BehaveTrigger<BeingPushed>>,
-    mut commands: Commands,
     query: Query<Option<&PushBack>>,
-) {
+    mut commands: Commands,
+) -> Result {
     let ctx = trigger.event().ctx();
-    let maybe_pushback = query.get(ctx.target_entity()).unwrap();
+    let maybe_pushback = query.get(ctx.target_entity())?;
 
     match maybe_pushback {
         Some(push_back) => {
@@ -283,21 +286,22 @@ fn push_back_check(
         }
         None => commands.trigger(ctx.failure()),
     }
+    Ok(())
 }
 
 fn determine_target(
     trigger: Trigger<BehaveTrigger<DetermineTarget>>,
-    mut commands: Commands,
     query: Query<(&Transform, &Owner, &Sight, Option<&Target>)>,
     others: Query<(Entity, &Transform, &Owner), With<Health>>,
-) {
+    mut commands: Commands,
+) -> Result {
     let ctx = trigger.event().ctx();
     let unit_entity = ctx.target_entity();
-    let (transform, owner, sight, maybe_target) = query.get(unit_entity).unwrap();
+    let (transform, owner, sight, maybe_target) = query.get(unit_entity)?;
 
     if maybe_target.is_some() {
         commands.trigger(ctx.success());
-        return;
+        return Ok(());
     }
 
     let nearest = others
@@ -322,21 +326,22 @@ fn determine_target(
         }
         None => commands.trigger(ctx.failure()),
     }
+    Ok(())
 }
 
 fn check_target_in_melee_range(
     trigger: Trigger<BehaveTrigger<TargetInMeleeRange>>,
-    mut commands: Commands,
     query: Query<(&Transform, &MeleeRange, &Target)>,
     transform_query: Query<&Transform>,
-) {
+    mut commands: Commands,
+) -> Result {
     let ctx = trigger.ctx();
 
     let Ok((transform, range, target)) = query.get(ctx.target_entity()) else {
         commands.trigger(ctx.failure());
-        return;
+        return Ok(());
     };
-    let other_transform = transform_query.get(**target).unwrap();
+    let other_transform = transform_query.get(**target)?;
     let distance = transform
         .translation
         .truncate()
@@ -347,21 +352,22 @@ fn check_target_in_melee_range(
     } else {
         commands.trigger(ctx.failure());
     }
+    Ok(())
 }
 
 fn check_target_in_projectile_range(
     trigger: Trigger<BehaveTrigger<TargetInProjectileRange>>,
-    mut commands: Commands,
     query: Query<(&Transform, &ProjectileRange, &Target)>,
     transform_query: Query<&Transform>,
-) {
+    mut commands: Commands,
+) -> Result {
     let ctx = trigger.ctx();
     let Ok((transform, range, target)) = query.get(ctx.target_entity()) else {
         commands.trigger(ctx.failure());
-        return;
+        return Ok(());
     };
 
-    let other_transform = transform_query.get(**target).unwrap();
+    let other_transform = transform_query.get(**target)?;
     let distance = transform
         .translation
         .truncate()
@@ -372,15 +378,16 @@ fn check_target_in_projectile_range(
     } else {
         commands.trigger(ctx.failure());
     }
+    Ok(())
 }
 
 fn remove_target_if_out_of_sight(
-    mut commands: Commands,
     query: Query<(Entity, &Target, &Transform, &Sight)>,
     other: Query<&Transform>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, target, transform, sight) in query.iter() {
-        let other_transform = other.get(**target).unwrap();
+        let other_transform = other.get(**target)?;
         let distance = transform
             .translation
             .truncate()
@@ -389,4 +396,5 @@ fn remove_target_if_out_of_sight(
             commands.entity(entity).try_remove::<Target>();
         }
     }
+    Ok(())
 }

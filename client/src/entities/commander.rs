@@ -80,15 +80,15 @@ impl Plugin for CommanderInteractionPlugin {
 
 fn open_commander_dialog(
     trigger: Trigger<CommanderInteraction>,
-    mut commands: Commands,
     transform: Query<&Transform>,
     mut next_state: ResMut<NextState<PlayerState>>,
     mut active: ResMut<ActiveCommander>,
     menu_sprite_sheet: Res<CommanderMenuSpriteSheet>,
-) {
+    mut commands: Commands,
+) -> Result {
     let commander = trigger.commander;
 
-    let commander_position = transform.get(commander).unwrap();
+    let commander_position = transform.get(commander)?;
     let texture = menu_sprite_sheet.sprite_sheet.texture.clone();
 
     next_state.set(PlayerState::Interaction);
@@ -145,46 +145,56 @@ fn open_commander_dialog(
     ));
 
     **active = Some(commander);
+    Ok(())
 }
 
-fn open_create_camp(trigger: Trigger<SelectionEvent<MainMenuEntries>>, mut commands: Commands) {
+fn open_create_camp(
+    trigger: Trigger<SelectionEvent<MainMenuEntries>>,
+    mut commands: Commands,
+) -> Result {
     let MainMenuEntries::Camp = trigger.selection else {
-        return;
+        return Ok(());
     };
 
     commands.client_trigger(CommanderCampInteraction);
+    Ok(())
 }
 
 fn pick_commander_flag(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
-    mut commands: Commands,
     mut close_menu: EventWriter<CloseEvent>,
-) {
+    mut commands: Commands,
+) -> Result {
     let MainMenuEntries::Flag = trigger.selection else {
-        return;
+        return Ok(());
     };
 
     commands.client_trigger(CommanderPickFlag);
     close_menu.write(CloseEvent);
+    Ok(())
 }
 
 fn open_slots_dialog(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
-    mut commands: Commands,
     army_flag_assignments: Query<&ArmyFlagAssignments>,
     transform: Query<&GlobalTransform>,
     flag: Query<&Flag>,
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     formations: Res<FormationIconSpriteSheet>,
-) {
+    mut commands: Commands,
+) -> Result {
     let MainMenuEntries::Formation = trigger.selection else {
-        return;
+        return Ok(());
     };
 
-    let entry_position = transform.get(trigger.entry).unwrap().translation();
-    let army_flag_assignments = army_flag_assignments.get(active.unwrap()).unwrap();
-    let commander_facing = transform.get(active.unwrap()).unwrap().scale().x.signum();
+    let Some(active_commander) = active.0 else {
+        return Err(BevyError::from("No active commander found"));
+    };
+
+    let entry_position = transform.get(trigger.entry)?.translation();
+    let army_flag_assignments = army_flag_assignments.get(active_commander)?;
+    let commander_facing = transform.get(active_commander)?.scale().x.signum();
 
     let menu_nodes: Vec<MenuNode<ArmyPosition>> = army_flag_assignments
         .flags
@@ -199,7 +209,7 @@ fn open_slots_dialog(
             let texture = formations.sprite_sheet.texture.clone();
 
             let has_unit_weapon = maybe_flag.map(|flag_entity| {
-                let flag = flag.get(flag_entity).unwrap();
+                let flag = flag.get(flag_entity).expect("No flag found");
                 let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
                 commands
                     .spawn((
@@ -236,9 +246,10 @@ fn open_slots_dialog(
             .with_gap(15.)
             .with_entry_scale(1. / 5.),
     ));
+    Ok(())
 }
 
-fn send_selected(trigger: Trigger<SelectionEvent<ArmyPosition>>, mut commands: Commands) {
+fn send_selected(trigger: Trigger<SelectionEvent<ArmyPosition>>, mut commands: Commands) -> Result {
     let SelectionEvent {
         selection: slot,
         menu: _,
@@ -246,21 +257,21 @@ fn send_selected(trigger: Trigger<SelectionEvent<ArmyPosition>>, mut commands: C
     } = *trigger;
 
     commands.client_trigger(slot);
+    Ok(())
 }
 
 fn assignment_reject(
     _: Trigger<CommanderAssignmentReject>,
     mut current_hover: Query<(Entity, &Transform), With<HoverWeapon>>,
     mut commands: Commands,
-) {
-    let Ok((hover_entity, transform)) = current_hover.single_mut() else {
-        return;
-    };
+) -> Result {
+    let (hover_entity, transform) = current_hover.single_mut()?;
 
     let original_translation = transform.translation;
     commands
         .entity(hover_entity)
         .insert(SpriteShaking::new(0.1, 1.5, original_translation));
+    Ok(())
 }
 
 fn assigment_warning(
@@ -269,11 +280,10 @@ fn assigment_warning(
     hover_disabled_assignment: Query<Entity, With<HoverDisabledWeapon>>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-) {
-    if unit_type
-        .single()
-        .is_ok_and(|flag| flag.0.eq(&UnitType::Commander))
-    {
+) -> Result {
+    let unit = unit_type.single()?;
+
+    if unit.0.eq(&UnitType::Commander) {
         match hover_disabled_assignment.single() {
             Ok(entity_to_despawn) => {
                 commands.entity(entity_to_despawn).despawn();
@@ -293,6 +303,7 @@ fn assigment_warning(
             }
         }
     };
+    Ok(())
 }
 
 fn cleanup_menu_extras(
@@ -300,7 +311,7 @@ fn cleanup_menu_extras(
     current_hover: Query<Entity, With<HoverWeapon>>,
     mesh_highlights: Query<Entity, (With<Mesh2d>, With<MeshMaterial2d<ColorMaterial>>)>,
     mut commands: Commands,
-) {
+)  {
     for entity in mesh_highlights.iter() {
         commands
             .entity(entity)
@@ -322,18 +333,15 @@ fn highligh_formation(
     transform: Query<&Transform>,
     player: Query<Entity, With<ControlledPlayer>>,
     mut commands: Commands,
-) {
-    let Ok(selected_formation) = menu_entries_add.get(**trigger) else {
-        return;
+) -> Result {
+    let selected_formation = menu_entries_add.get(**trigger)?;
+
+    let Some(commander_active) = active.0 else {
+        return Err(BevyError::from("No active commander"));
     };
 
-    let Ok(army_formations) = army_formation.get(active.unwrap()) else {
-        return;
-    };
-    info!(
-        "player position {}",
-        transform.get(player.single().unwrap()).unwrap().translation
-    );
+    let army_formations = army_formation.get(commander_active)?;
+
     army_formations
         .positions
         .iter_enums()
@@ -349,6 +357,7 @@ fn highligh_formation(
                     .remove::<(Mesh2d, MeshMaterial2d<ColorMaterial>)>();
             }
         });
+    Ok(())
 }
 
 fn draw_hovering_flag(
@@ -359,20 +368,16 @@ fn draw_hovering_flag(
     flag: Query<&Flag>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     mut commands: Commands,
-) {
-    let Ok(maybe_flag_holder) = player.single() else {
-        return;
-    };
+) -> Result {
+    let maybe_flag_holder = player.single()?;
     let Some(flag_holder) = maybe_flag_holder else {
-        return;
+        return Ok(());
     };
 
-    let Ok(entry_position) = menu_entries_add.get(trigger.0) else {
-        return;
-    };
+    let entry_position = menu_entries_add.get(trigger.0)?;
 
     let player_flag = **flag_holder;
-    let flag = flag.get(player_flag).unwrap();
+    let flag = flag.get(player_flag)?;
 
     let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
 
@@ -392,18 +397,20 @@ fn draw_hovering_flag(
             ));
         }
     }
+    Ok(())
 }
 
 fn formation_selected(
     menu_entries_add: Query<Entity, (Added<Selected>, With<NodePayload<ArmyPosition>>)>,
     mut commands: Commands,
-) {
+) -> Result {
     let Ok(entry) = menu_entries_add.single() else {
-        return;
+        return Ok(());
     };
 
     commands.client_trigger(CommanderAssignmentRequest);
     commands.trigger(DrawHoverFlag(entry));
+    Ok(())
 }
 
 fn update_flag_assignment(
@@ -414,17 +421,17 @@ fn update_flag_assignment(
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     flag: Query<&Flag>,
     mut commands: Commands,
-) {
+) -> Result {
     let Some(active_commander) = **active else {
-        return;
+        return Ok(());
     };
 
     let Ok(army_flag_assigment) = army_flag_assigments.get(active_commander) else {
-        return;
+        return Ok(());
     };
 
     let Ok((entry, selected_slot)) = menu_entries.single() else {
-        return;
+        return Ok(());
     };
 
     if let Ok(current) = current_hover.single() {
@@ -436,10 +443,10 @@ fn update_flag_assignment(
     let Some(flag_assigned) = maybe_flag_assigned else {
         commands.entity(entry).despawn_related::<Children>();
         commands.trigger(DrawHoverFlag(entry));
-        return;
+        return Ok(());
     };
 
-    let flag = flag.get(*flag_assigned).unwrap();
+    let flag = flag.get(*flag_assigned)?;
     let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
 
     let flag_weapon_slot = commands
@@ -456,4 +463,5 @@ fn update_flag_assignment(
 
     // Flag maybe be swapped between player and unit.
     commands.trigger(DrawHoverFlag(entry));
+    Ok(())
 }

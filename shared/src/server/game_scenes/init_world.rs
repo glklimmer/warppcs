@@ -44,7 +44,7 @@ fn init_world(
     load_map: Trigger<InitWorld>,
     mut players: Query<(&mut Transform, &Player)>,
     mut commands: Commands,
-) {
+) -> Result {
     let map = &**load_map.event();
     for (i, node) in map.node_references() {
         let offset = Vec3::new(10000. * i.index() as f32, 0., 0.);
@@ -56,11 +56,19 @@ fn init_world(
                 left,
                 right,
             } => {
-                let (mut transform, Player { color }) = players.get_mut(player).unwrap();
+                let (mut transform, Player { color }) = players.get_mut(player)?;
                 transform.translation = offset.with_z(Layers::Player.as_f32());
                 commands.entity(player).insert((
                     Owner::Player(player),
                     Health { hitpoints: 200. },
+                    game_scene_id,
+                ));
+
+                commands.spawn((
+                    Mount {
+                        mount_type: MountType::Horse,
+                    },
+                    offset.with_layer(Layers::Mount),
                     game_scene_id,
                 ));
 
@@ -129,6 +137,7 @@ fn init_world(
 
         connect_scenes(commands.reborrow(), scene_a, scene_b, *connection);
     }
+    Ok(())
 }
 
 fn connect_scenes(

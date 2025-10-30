@@ -26,7 +26,7 @@ impl Plugin for PlayerMovement {
 #[derive(Deserialize, Deref, Event, Serialize)]
 struct MovePlayer(Vec2);
 
-fn movement_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
+fn movement_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) -> Result {
     let mut direction = Vec2::ZERO;
     if input.pressed(KeyCode::KeyA) || input.pressed(KeyCode::ArrowLeft) {
         direction.x -= 1.0;
@@ -38,19 +38,21 @@ fn movement_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
     if direction != Vec2::ZERO {
         commands.client_trigger(MovePlayer(direction.normalize_or_zero()));
     }
+    Ok(())
 }
 
 fn apply_movement(
     trigger: Trigger<FromClient<MovePlayer>>,
     mut players: Query<(&mut Velocity, &Speed)>,
     client_player_map: Res<ClientPlayerMap>,
-) {
-    let Ok((mut velocity, speed)) =
-        players.get_mut(*client_player_map.get(&trigger.client_entity).unwrap())
-    else {
-        return;
+) -> Result {
+    let Some(player) = client_player_map.get(&trigger.client_entity) else {
+        return Err(BevyError::from("Player not found"));
     };
+
+    let (mut velocity, speed) = players.get_mut(*player)?;
 
     let direction = Vec2::new(trigger.event.x, 0.).normalize_or_zero();
     velocity.0 = direction * speed.0;
+    Ok(())
 }

@@ -73,9 +73,11 @@ fn interact(
     players: Query<(&Transform, &BoxCollider)>,
     interactables: Query<(Entity, &Transform, &BoxCollider, &Interactable)>,
     client_player_map: Res<ClientPlayerMap>,
-) {
-    let player = *client_player_map.get(&trigger.client_entity).unwrap();
-    let (player_transform, player_collider) = players.get(player).unwrap();
+) -> Result {
+    let Some(player) = client_player_map.get(&trigger.client_entity) else {
+        return Err(BevyError::from("Player not found"));
+    };
+    let (player_transform, player_collider) = players.get(*player)?;
 
     let player_bounds = player_collider.at(player_transform);
 
@@ -83,7 +85,7 @@ fn interact(
         .iter()
         .filter(|(.., transform, collider, _)| player_bounds.intersects(&collider.at(transform)))
         .filter(|(.., interactable)| match interactable.restricted_to {
-            Some(owner) => owner.eq(&player),
+            Some(owner) => owner.eq(player),
             None => true,
         })
         .max_by(
@@ -107,9 +109,10 @@ fn interact(
 
     if let Some((interactable, .., interaction)) = priority_interaction {
         triggered_events.write(InteractionTriggeredEvent {
-            player,
+            player: *player,
             interactable,
             interaction: interaction.kind,
         });
     }
+    Ok(())
 }

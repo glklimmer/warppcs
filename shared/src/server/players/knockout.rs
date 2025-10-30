@@ -65,7 +65,7 @@ fn kill_player(
     mut king_animation: EventWriter<ToClients<AnimationChangeEvent>>,
     transform: Query<&Transform, (With<Flag>, Without<Player>)>,
     mut commands: Commands,
-) {
+) -> Result {
     for damage_event in damage_events.read() {
         let Ok((
             player_entity,
@@ -98,7 +98,7 @@ fn kill_player(
         });
 
         if let Some(flag) = maybe_flag_holder {
-            let flag_transform = transform.get(**flag).unwrap();
+            let flag_transform = transform.get(**flag)?;
 
             commands.entity(**flag).remove::<AttachedTo>();
             commands.entity(**flag).insert((
@@ -126,6 +126,7 @@ fn kill_player(
             }
         }
     }
+    Ok(())
 }
 
 fn respawm_player(
@@ -134,7 +135,7 @@ fn respawm_player(
     mut next_state: ResMut<NextState<PlayerState>>,
     mut king_animation: EventWriter<ToClients<AnimationChangeEvent>>,
     mut commands: Commands,
-) {
+) -> Result {
     for (player_entity, mut timer) in respawn_query.iter_mut() {
         timer.timer.tick(time.delta());
 
@@ -154,4 +155,5 @@ fn respawm_player(
             });
         }
     }
+    Ok(())
 }

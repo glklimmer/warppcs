@@ -20,32 +20,39 @@ impl Default for GoldFarmTimer {
     }
 }
 
-pub fn enable_goldfarm(mut commands: Commands, mut events: EventReader<BuildingChangeEnd>) {
+pub fn enable_goldfarm(
+    mut commands: Commands,
+    mut events: EventReader<BuildingChangeEnd>,
+) -> Result {
     for event in events.read() {
         let BuildingType::GoldFarm = event.building.building_type else {
             continue;
         };
 
-        println!("Bought Gold Farm");
-
         commands
             .entity(event.0.building_entity)
             .insert(GoldFarmTimer::default());
     }
+    Ok(())
 }
 
 pub fn gold_farm_output(
     mut gold_farms_query: Query<(&mut GoldFarmTimer, &Owner)>,
     mut inventory_query: Query<&mut Inventory>,
     time: Res<Time>,
-) {
+) -> Result {
     for (mut farm_timer, owner) in &mut gold_farms_query {
         farm_timer.timer.tick(time.delta());
 
-        if farm_timer.timer.just_finished()
-            && let Ok(mut inventory) = inventory_query.get_mut(owner.entity().unwrap())
-        {
+        if farm_timer.timer.just_finished() {
+            let Some(owner) = owner.entity() else {
+                return Err(BevyError::from("Owner entity not found"));
+            };
+
+            let mut inventory = inventory_query.get_mut(owner)?;
+
             inventory.gold += GOLD_PER_TICK;
         }
     }
+    Ok(())
 }

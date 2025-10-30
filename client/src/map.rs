@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::input::common_conditions::input_just_pressed;
 
 use shared::{
-    PlayerState,
+    GameState, PlayerState,
     server::game_scenes::{
         travel::Traveling,
         world::{InitPlayerMapNode, RevealMapNode, SceneType},
@@ -49,12 +49,15 @@ struct MapIcon;
 
 fn init_map(
     trigger: Trigger<InitPlayerMapNode>,
-    mut commands: Commands,
     assets: Res<AssetServer>,
     map_icons: Res<MapIconSpriteSheet>,
-) {
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut commands: Commands,
+) -> Result {
     let player_scene = **trigger.event();
     let map_texture = assets.load::<Image>("sprites/ui/map.png");
+
+    next_game_state.set(GameState::GameSession);
 
     commands
         .spawn((
@@ -74,17 +77,18 @@ fn init_map(
                 Transform::from_xyz(player_scene.position.x, player_scene.position.y, 2.0),
             ));
         });
+    Ok(())
 }
 
 fn reveal_map_icons(
     trigger: Trigger<RevealMapNode>,
-    mut commands: Commands,
     map: Query<Entity, With<Map>>,
     map_icons: Res<MapIconSpriteSheet>,
-) {
+    mut commands: Commands,
+) -> Result {
     info!("reveal map node");
     let map_node = **trigger.event();
-    let map = map.single().unwrap();
+    let map = map.single()?;
     let icon = match map_node.scene {
         SceneType::Player { .. } => MapIcons::Player,
         SceneType::Traversal { .. } => MapIcons::Bandit,
@@ -102,6 +106,7 @@ fn reveal_map_icons(
         ),
         Transform::from_xyz(map_node.position.x, map_node.position.y, 2.0),
     ));
+    Ok(())
 }
 
 use fastrand::f32 as rand_f32;
@@ -180,7 +185,7 @@ fn animate_dashes(
     mut query: Query<(Entity, &mut DashLine)>,
     time: Res<Time>,
     map: Query<Entity, With<Map>>,
-) {
+) -> Result {
     for (entity, mut line) in query.iter_mut() {
         line.timer.tick(time.delta());
 
@@ -205,7 +210,7 @@ fn animate_dashes(
                 ))
                 .id();
 
-            commands.entity(map.single().unwrap()).add_child(dash);
+            commands.entity(map.single()?).add_child(dash);
 
             line.spawned += 1;
         }
@@ -214,42 +219,45 @@ fn animate_dashes(
             commands.entity(entity).despawn();
         }
     }
+    Ok(())
 }
 
 fn enter_travel_state(
     trigger: Trigger<OnAdd, Traveling>,
     query: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
-) {
+) -> Result {
     let Ok(_) = query.get(trigger.target()) else {
-        return;
+        return Ok(());
     };
     next_state.set(PlayerState::Traveling);
+    Ok(())
 }
 
 fn leave_travel_state(
     trigger: Trigger<OnRemove, Traveling>,
     query: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
-) {
+) -> Result {
     let Ok(_) = query.get(trigger.target()) else {
-        return;
+        return Ok(());
     };
     next_state.set(PlayerState::World);
+    Ok(())
 }
 
 fn spawn_travel_dashline(
     mut commands: Commands,
     traveling: Query<&Traveling, With<ControlledPlayer>>,
-) {
-    let traveling = traveling.single().unwrap();
+) -> Result {
+    let traveling = traveling.single()?;
     let (_, maybe_source_game_scene) = traveling.source;
     let (_, maybe_target_game_scene) = traveling.target;
     let Some(source) = maybe_source_game_scene else {
-        return;
+        return Err(BevyError::from("No source game scene found"));
     };
     let Some(target) = maybe_target_game_scene else {
-        return;
+        return Err(BevyError::from("No target game scene found"));
     };
 
     let dash_len = 4.5;
@@ -269,6 +277,7 @@ fn spawn_travel_dashline(
         color,
         total_time,
     ),));
+    Ok(())
 }
 
 #[derive(Component, Default)]
@@ -277,14 +286,13 @@ struct UIElement;
 fn sync_ui_to_camera(
     mut query: Query<&mut Transform, With<UIElement>>,
     camera: Query<&Transform, (With<Camera>, Without<UIElement>)>,
-) {
-    let Ok(camera) = camera.single() else {
-        return;
-    };
+) -> Result {
+    let camera = camera.single()?;
 
     for mut transform in &mut query.iter_mut() {
         transform.translation = camera.translation.with_z(100.);
     }
+    Ok(())
 }
 
 #[derive(Component)]
@@ -294,11 +302,9 @@ struct Map;
 fn toggle_map(
     mut map: Query<&mut Visibility, With<Map>>,
     mut next_state: ResMut<NextState<PlayerState>>,
-) {
+) -> Result {
     info!("toggle map");
-    let Ok(mut map) = map.single_mut() else {
-        return;
-    };
+    let mut map = map.single_mut()?;
 
     map.toggle_visible_hidden();
 
@@ -307,16 +313,17 @@ fn toggle_map(
     } else {
         next_state.set(PlayerState::Interaction);
     }
+    Ok(())
 }
 
-fn show_map(mut map: Query<&mut Visibility, With<Map>>) {
-    if let Ok(mut map) = map.single_mut() {
-        *map = Visibility::Visible;
-    }
+fn show_map(mut map: Query<&mut Visibility, With<Map>>) -> Result {
+    let mut map = map.single_mut()?;
+    *map = Visibility::Visible;
+    Ok(())
 }
 
-fn hide_map(mut map: Query<&mut Visibility, With<Map>>) {
-    if let Ok(mut map) = map.single_mut() {
-        *map = Visibility::Hidden;
-    }
+fn hide_map(mut map: Query<&mut Visibility, With<Map>>) -> Result {
+    let mut map = map.single_mut()?;
+    *map = Visibility::Hidden;
+    Ok(())
 }

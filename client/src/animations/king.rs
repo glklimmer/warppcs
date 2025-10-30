@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use shared::{
-    AnimationChange, AnimationChangeEvent,
+    AnimationChange, AnimationChangeEvent, Player,
     enum_map::*,
     networking::Mounted,
     server::{entities::health::PlayerDefeated, physics::movement::Moving},
@@ -115,9 +115,9 @@ impl FromWorld for KingSpriteSheet {
 pub fn trigger_king_animation(
     mut animation_changes: EventReader<AnimationChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    mounted: Query<Option<&Mounted>, With<Player>>,
     mut commands: Commands,
-    mounted: Query<Option<&Mounted>>,
-) {
+) -> Result {
     for event in animation_changes.read() {
         if let Ok(maybe_mounted) = mounted.get(event.entity) {
             let new_animation = match maybe_mounted {
@@ -142,20 +142,20 @@ pub fn trigger_king_animation(
             };
 
             commands.entity(event.entity).insert(PlayOnce);
-
             animation_trigger.write(AnimationTrigger {
                 entity: event.entity,
                 state: new_animation,
             });
         }
     }
+    Ok(())
 }
 
 pub fn set_king_walking(
     trigger: Trigger<OnAdd, Moving>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
-    mounted: Query<Option<&Mounted>>,
-) {
+    mounted: Query<Option<&Mounted>, With<Player>>,
+) -> Result {
     if let Ok(maybe_mounted) = mounted.get(trigger.target()) {
         let new_animation = match maybe_mounted {
             Some(_) => KingAnimation::HorseWalk,
@@ -167,37 +167,40 @@ pub fn set_king_walking(
             state: new_animation,
         });
     }
+    Ok(())
 }
 
 pub fn set_king_defeat(
     trigger: Trigger<PlayerDefeated>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mut commands: Commands,
-) {
+) -> Result {
     commands.entity(**trigger).insert(PlayOnce);
     animation_trigger.write(AnimationTrigger {
         entity: **trigger,
         state: KingAnimation::Death,
     });
+    Ok(())
 }
 
 pub fn remove_animation(
     trigger: Trigger<OnRemove, PlayOnce>,
-    mut commands: Commands,
     current_animation: Query<&KingAnimation>,
-) {
+    mut commands: Commands,
+) -> Result {
     if let Ok(KingAnimation::Death) = current_animation.get(trigger.target()) {
         commands
             .entity(trigger.target())
             .remove::<SpriteSheetAnimation>();
-    }
+    };
+    Ok(())
 }
 
 pub fn set_king_after_play_once(
     trigger: Trigger<OnRemove, PlayOnce>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<(&KingAnimation, Option<&Mounted>)>,
-) {
+) -> Result {
     if let Ok((animation, maybe_mounted)) = mounted.get(trigger.target()) {
         let new_animation = match animation {
             KingAnimation::Attack | KingAnimation::Mount | KingAnimation::Unmount => {
@@ -214,13 +217,14 @@ pub fn set_king_after_play_once(
             state: new_animation,
         });
     }
+    Ok(())
 }
 
 pub fn set_king_idle(
     trigger: Trigger<OnRemove, Moving>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
-    mounted: Query<Option<&Mounted>>,
-) {
+    mounted: Query<Option<&Mounted>, With<Player>>,
+) -> Result {
     if let Ok(maybe_mounted) = mounted.get(trigger.target()) {
         let new_animation = match maybe_mounted {
             Some(_) => KingAnimation::HorseIdle,
@@ -232,10 +236,10 @@ pub fn set_king_idle(
             state: new_animation,
         });
     }
+    Ok(())
 }
 
 pub fn set_king_sprite_animation(
-    mut command: Commands,
     mut query: Query<(
         Entity,
         &mut SpriteSheetAnimation,
@@ -244,36 +248,36 @@ pub fn set_king_sprite_animation(
     )>,
     mut animation_changed: EventReader<AnimationTrigger<KingAnimation>>,
     king_sprite_sheet: Res<KingSpriteSheet>,
-) {
+    mut command: Commands,
+) -> Result {
     for new_animation in animation_changed.read() {
-        if let Ok((entity, mut sprite_animation, mut sprite, mut current_animation)) =
-            query.get_mut(new_animation.entity)
-        {
-            let animation = king_sprite_sheet
-                .sprite_sheet
-                .animations
-                .get(new_animation.state);
+        let (entity, mut sprite_animation, mut sprite, mut current_animation) =
+            query.get_mut(new_animation.entity)?;
+        let animation = king_sprite_sheet
+            .sprite_sheet
+            .animations
+            .get(new_animation.state);
 
-            let sound = king_sprite_sheet
-                .sprite_sheet
-                .animations_sound
-                .get(new_animation.state);
+        let sound = king_sprite_sheet
+            .sprite_sheet
+            .animations_sound
+            .get(new_animation.state);
 
-            if let Some(atlas) = &mut sprite.texture_atlas {
-                atlas.index = animation.first_sprite_index;
-            }
-
-            match sound {
-                Some(sound) => {
-                    command.entity(entity).insert(sound.clone());
-                }
-                None => {
-                    command.entity(entity).remove::<AnimationSound>();
-                }
-            }
-
-            *sprite_animation = animation.clone();
-            *current_animation = new_animation.state;
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            atlas.index = animation.first_sprite_index;
         }
+
+        match sound {
+            Some(sound) => {
+                command.entity(entity).insert(sound.clone());
+            }
+            None => {
+                command.entity(entity).remove::<AnimationSound>();
+            }
+        }
+
+        *sprite_animation = animation.clone();
+        *current_animation = new_animation.state;
     }
+    Ok(())
 }

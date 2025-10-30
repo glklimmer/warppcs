@@ -161,16 +161,14 @@ impl ItemSprite for Item {
 
 fn init_item_sprite(
     trigger: Trigger<OnAdd, Item>,
-    mut commands: Commands,
     mut item: Query<&Item>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     chests_sprite_sheet: Res<ChestsSpriteSheet>,
     feet_sprite_sheet: Res<FeetSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
-) {
-    let Ok(item) = item.get_mut(trigger.target()) else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let item = item.get_mut(trigger.target())?;
 
     let sprite = item.sprite(
         &weapons_sprite_sheet,
@@ -186,21 +184,20 @@ fn init_item_sprite(
             tooltip: trigger.target(),
         },
     ));
+    Ok(())
 }
 
 fn init_item_info(
     trigger: Trigger<OnAdd, ItemInfo>,
-    mut commands: Commands,
     mut item: Query<&ItemInfo>,
     info: Res<ItemInfoSpriteSheet>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     chests_sprite_sheet: Res<ChestsSpriteSheet>,
     feet_sprite_sheet: Res<FeetSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
-) {
-    let Ok(ItemInfo { item, tooltip: _ }) = item.get_mut(trigger.target()) else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let ItemInfo { item, tooltip: _ } = item.get_mut(trigger.target())?;
 
     let text_color = Color::srgb_u8(143, 86, 59);
 
@@ -323,32 +320,29 @@ fn init_item_info(
 
     let mut info = commands.entity(info);
     info.add_child(item_sprite);
+    Ok(())
 }
 
 fn show_item_info(
     trigger: Trigger<OnAdd, Highlighted>,
-    mut commands: Commands,
     items: Query<&ItemInfo>,
-) {
-    let Ok(info) = items.get(trigger.target()) else {
-        return;
+    mut commands: Commands,
+) -> Result {
+    if let Ok(info) = items.get(trigger.target()) {
+        let mut entity = commands.get_entity(info.tooltip)?;
+        entity.try_insert(Visibility::Visible);
     };
-    let Ok(mut entity) = commands.get_entity(info.tooltip) else {
-        return;
-    };
-    entity.try_insert(Visibility::Visible);
+    Ok(())
 }
 
 fn hide_item_info(
     trigger: Trigger<OnRemove, Highlighted>,
-    mut commands: Commands,
     items: Query<&ItemInfo>,
-) {
-    let Ok(info) = items.get(trigger.target()) else {
-        return;
+    mut commands: Commands,
+) -> Result {
+    if let Ok(info) = items.get(trigger.target()) {
+        let mut entity = commands.get_entity(info.tooltip)?;
+        entity.try_insert(Visibility::Hidden);
     };
-    let Ok(mut entity) = commands.get_entity(info.tooltip) else {
-        return;
-    };
-    entity.try_insert(Visibility::Hidden);
+    Ok(())
 }

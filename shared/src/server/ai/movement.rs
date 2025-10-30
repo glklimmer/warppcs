@@ -54,9 +54,9 @@ fn follow_flag(
     )>,
     is_attached: Query<&AttachedTo>,
     transform_query: Query<&Transform>,
-) {
+) -> Result {
     for ctx in query.iter() {
-        let Ok((
+        let (
             mut velocity,
             transform,
             follow_offset,
@@ -64,10 +64,8 @@ fn follow_flag(
             speed,
             flag_assignment,
             unit,
-        )) = unit.get_mut(ctx.target_entity())
-        else {
-            continue;
-        };
+        ) = unit.get_mut(ctx.target_entity())?;
+
         let flag_pos = transform_query
             .get(**flag_assignment)
             .unwrap()
@@ -91,13 +89,14 @@ fn follow_flag(
 
         velocity.0.x = direction * **speed * **rand_velocity_mul;
     }
+    Ok(())
 }
 
 fn roam(
     mut query: Query<(&BehaveCtx, &mut Roam)>,
     mut unit: Query<(&mut Velocity, &RandomVelocityMul, &Speed)>,
     time: Res<Time>,
-) {
+) -> Result {
     for (ctx, mut roam) in query.iter_mut() {
         (**roam).tick(time.delta());
 
@@ -105,23 +104,25 @@ fn roam(
             continue;
         }
 
-        if let Ok((mut velocity, rand_velocity_mul, speed)) = unit.get_mut(ctx.target_entity())
-            && fastrand::f32() < 0.02
-        {
-            let choice = fastrand::u8(0..3);
-            match choice {
-                0 => {
-                    velocity.0.x = 0.0;
-                }
-                1 => {
-                    velocity.0.x = -1.0 * **speed * **rand_velocity_mul;
-                }
-                _ => {
-                    velocity.0.x = 1.0 * **speed * **rand_velocity_mul;
-                }
+        if fastrand::f32() > 0.02 {
+            continue;
+        }
+
+        let (mut velocity, rand_velocity_mul, speed) = unit.get_mut(ctx.target_entity())?;
+        let choice = fastrand::u8(0..3);
+        match choice {
+            0 => {
+                velocity.0.x = 0.0;
+            }
+            1 => {
+                velocity.0.x = -1.0 * **speed * **rand_velocity_mul;
+            }
+            _ => {
+                velocity.0.x = 1.0 * **speed * **rand_velocity_mul;
             }
         }
     }
+    Ok(())
 }
 
 #[allow(clippy::type_complexity)]
@@ -137,21 +138,17 @@ fn walk_into_range(
     )>,
     transform_query: Query<&Transform>,
     mut commands: Commands,
-) {
+) -> Result {
     for ctx in query.iter() {
         let (mut velocity, transform, maybe_target, rand_velocity_mul, speed, range) =
-            unit.get_mut(ctx.target_entity()).unwrap();
+            unit.get_mut(ctx.target_entity())?;
 
         let Some(target) = maybe_target else {
             commands.trigger(ctx.failure());
             continue;
         };
 
-        let target = transform_query
-            .get(**target)
-            .unwrap()
-            .translation
-            .truncate();
+        let target = transform_query.get(**target)?.translation.truncate();
 
         let direction = (target.x - transform.translation.x).signum();
 
@@ -163,17 +160,19 @@ fn walk_into_range(
 
         velocity.0.x = direction * **speed * **rand_velocity_mul;
     }
+    Ok(())
 }
 
 fn walk_in_direction(
     query: Query<(&BehaveCtx, &WalkingInDirection)>,
     mut unit: Query<(&mut Velocity, &RandomVelocityMul, &Speed)>,
-) {
+) -> Result {
     for (ctx, walk) in query.iter() {
-        let (mut velocity, rand_velocity_mul, speed) = unit.get_mut(ctx.target_entity()).unwrap();
+        let (mut velocity, rand_velocity_mul, speed) = unit.get_mut(ctx.target_entity())?;
 
         let direction: f32 = (**walk).into();
 
         velocity.0.x = direction * **speed * **rand_velocity_mul;
     }
+    Ok(())
 }

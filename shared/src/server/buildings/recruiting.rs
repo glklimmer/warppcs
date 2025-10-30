@@ -68,12 +68,12 @@ pub fn assign_offset(
     mut units: Query<&mut FollowOffset>,
     flag_units_query: Query<&FlagUnits>,
     flag_assignment_query: Query<&FlagAssignment>,
-) {
-    let flag_assignment = flag_assignment_query.get(trigger.target()).unwrap();
+) -> Result {
+    let flag_assignment = flag_assignment_query.get(trigger.target())?;
     let flag_entity = **flag_assignment;
 
     let Ok(flag_units) = flag_units_query.get(flag_entity) else {
-        return;
+        return Ok(());
     };
 
     let mut unit_entities = (**flag_units).to_vec();
@@ -97,6 +97,7 @@ pub fn assign_offset(
             offset.0 = Vec2::new(offset_x, 0.0);
         }
     }
+    Ok(())
 }
 
 #[derive(Event, Deserialize, Serialize)]
@@ -125,9 +126,9 @@ impl RecruitEvent {
 
 pub fn recruit_units(
     trigger: Trigger<RecruitEvent>,
-    mut commands: Commands,
     mut player_query: Query<(&Transform, &mut Inventory, &Player, &GameSceneId)>,
-) {
+    mut commands: Commands,
+) -> Result {
     let RecruitEvent {
         player,
         unit_type,
@@ -136,16 +137,16 @@ pub fn recruit_units(
     } = &*trigger;
 
     if let UnitType::Commander = unit_type {
-        return;
+        return Ok(());
     }
     let player = *player;
     let unit_type = *unit_type;
     let Some(items) = items else {
-        return;
+        return Err(BevyError::from("No items provided"));
     };
 
     let (player_transform, mut inventory, Player { color }, game_scene_id) =
-        player_query.get_mut(player).unwrap();
+        player_query.get_mut(player)?;
     let player_translation = player_transform.translation;
 
     let cost = &unit_type.recruitment_cost();
@@ -189,6 +190,7 @@ pub fn recruit_units(
             spatial_position: player_transform.translation,
         },
     });
+    Ok(())
 }
 
 fn spawn_units(
@@ -285,9 +287,9 @@ pub fn unit_stats(
 
 pub fn recruit_commander(
     trigger: Trigger<RecruitEvent>,
-    mut commands: Commands,
     mut player_query: Query<(&Transform, &mut Inventory, &Player, &GameSceneId)>,
-) {
+    mut commands: Commands,
+) -> Result {
     let RecruitEvent {
         player,
         unit_type,
@@ -296,12 +298,12 @@ pub fn recruit_commander(
     } = &*trigger;
 
     let UnitType::Commander = unit_type else {
-        return;
+        return Ok(());
     };
 
     let player = *player;
     let (player_transform, mut inventory, Player { color }, game_scene_id) =
-        player_query.get_mut(player).unwrap();
+        player_query.get_mut(player)?;
     let player_translation = player_transform.translation;
 
     let cost = &unit_type.recruitment_cost();
@@ -402,20 +404,21 @@ pub fn recruit_commander(
             spatial_position: player_transform.translation,
         },
     });
+    Ok(())
 }
 
 pub fn check_recruit(
     mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut commands: Commands,
     player: Query<&Inventory>,
     building: Query<(&Building, Option<&ItemAssignment>), With<RecruitBuilding>>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in interactions.read() {
         let InteractionType::Recruit = &event.interaction else {
             continue;
         };
-        let inventory = player.get(event.player).unwrap();
-        let (building, item_assignment) = building.get(event.interactable).unwrap();
+        let inventory = player.get(event.player)?;
+        let (building, item_assignment) = building.get(event.interactable)?;
 
         let Some(unit_type) = building.unit_type() else {
             continue;
@@ -437,4 +440,5 @@ pub fn check_recruit(
             original_building: event.interactable,
         });
     }
+    Ok(())
 }

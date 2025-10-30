@@ -26,9 +26,9 @@ fn check_collider_trigger(
     triggers: Query<(Entity, &ColliderTrigger, &Transform, &BoxCollider)>,
     player_query: Query<(&Transform, &BoxCollider)>,
     mut interaction: EventWriter<InteractionTriggeredEvent>,
-) {
+) -> Result {
     for player in players.iter() {
-        let (player_transform, player_collider) = player_query.get(player).unwrap();
+        let (player_transform, player_collider) = player_query.get(player)?;
         let player_bounds = player_collider.at(player_transform);
 
         for (entity, trigger, transform, collider) in triggers.iter() {
@@ -44,4 +44,5 @@ fn check_collider_trigger(
             };
         }
     }
+    Ok(())
 }
