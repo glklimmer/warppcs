@@ -64,14 +64,12 @@ impl FromWorld for FlagSpriteSheet {
 
 pub fn on_flag_destroyed(
     trigger: Trigger<OnAdd, FlagDestroyed>,
-    mut commands: Commands,
     mut query: Query<&mut Sprite>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
-) {
+    mut commands: Commands,
+) -> Result {
     let entity = trigger.target();
-    let Ok(mut sprite) = query.get_mut(entity) else {
-        return;
-    };
+    let mut sprite = query.get_mut(entity)?;
 
     let animation = flag_sprite_sheet
         .sprite_sheet
@@ -86,4 +84,5 @@ pub fn on_flag_destroyed(
     if let Some(atlas) = &mut sprite.texture_atlas {
         atlas.index = animation.first_sprite_index;
     }
+    Ok(())
 }

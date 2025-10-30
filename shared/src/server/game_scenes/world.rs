@@ -291,18 +291,18 @@ impl WorldGraph {
 
 fn init_world(
     mut lobby_events: EventReader<FromClient<LobbyEvent>>,
-    mut commands: Commands,
     mut next_game_state: ResMut<NextState<GameState>>,
     players: Query<Entity, With<Player>>,
     client_player_map: Res<ClientPlayerMap>,
-) {
+    mut commands: Commands,
+) -> Result {
     let Some(FromClient { event, .. }) = lobby_events.read().next() else {
-        return;
+        return Ok(());
     };
 
     #[allow(irrefutable_let_patterns)]
     let LobbyEvent::StartGame = event else {
-        return;
+        return Ok(());
     };
 
     next_game_state.set(GameState::GameSession);
@@ -318,10 +318,13 @@ fn init_world(
     commands.trigger(InitWorld(map));
 
     for (client, player) in client_player_map.iter() {
-        let game_scene = player_game_scenes.get(player).unwrap();
+        let Some(game_scene) = player_game_scenes.get(player) else {
+            return Err(BevyError::from("Player Game Scene not found"));
+        };
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
             event: InitPlayerMapNode(*game_scene),
         });
     }
+    Ok(())
 }

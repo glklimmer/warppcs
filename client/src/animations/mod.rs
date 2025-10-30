@@ -231,8 +231,8 @@ impl Plugin for AnimationPlugin {
             Update,
             (
                 (
-                    set_unit_sprite_animation,
                     set_king_sprite_animation,
+                    set_unit_sprite_animation,
                     set_horse_sprite_animation,
                     next_horse_animation,
                     update_building_sprite,
@@ -246,18 +246,20 @@ impl Plugin for AnimationPlugin {
 
 #[allow(clippy::type_complexity)]
 fn advance_animation(
-    time: Res<Time>,
-    mut commands: Commands,
     mut query: Query<(
         Entity,
         &mut SpriteSheetAnimation,
         &mut Sprite,
         Option<&PlayOnce>,
     )>,
-) {
+    mut commands: Commands,
+    time: Res<Time>,
+) -> Result {
     for (entity, mut animation, mut sprite, maybe_play_once) in &mut query {
         animation.frame_timer.tick(time.delta());
-        let atlas = sprite.texture_atlas.as_mut().unwrap();
+        let Some(atlas) = sprite.texture_atlas.as_mut() else {
+            return Err(BevyError::from("No Sprite found"));
+        };
 
         if animation.frame_timer.just_finished() {
             atlas.index = if atlas.index == animation.last_sprite_index {
@@ -274,4 +276,5 @@ fn advance_animation(
             };
         }
     }
+    Ok(())
 }

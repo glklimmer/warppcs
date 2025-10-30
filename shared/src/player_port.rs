@@ -90,33 +90,37 @@ fn portal_collider() -> BoxCollider {
 #[derive(Component, Deref)]
 struct PortalDestination(Entity);
 
-fn add_port_cooldown(trigger: Trigger<OnAdd, Player>, mut commands: Commands) {
+fn add_port_cooldown(trigger: Trigger<OnAdd, Player>, mut commands: Commands) -> Result {
     commands
         .entity(trigger.target())
         .insert(PortCooldown::default());
+    Ok(())
 }
 
-fn channel_input(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) {
+fn channel_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) -> Result {
     if input.pressed(KeyCode::KeyT) {
         commands.client_trigger(ChannelPort);
     }
+    Ok(())
 }
 
 fn check_port_cooldown(
     trigger: Trigger<FromClient<ChannelPort>>,
-    mut commands: Commands,
     mut players: Query<&mut PortCooldown>,
     client_player_map: Res<ClientPlayerMap>,
-) {
-    let player = *client_player_map.get(&trigger.client_entity).unwrap();
-    let Ok(mut cooldown) = players.get_mut(player) else {
-        return;
+    mut commands: Commands,
+) -> Result {
+    let Some(player) = client_player_map.get(&trigger.client_entity) else {
+        return Err(BevyError::from("Player not found"));
     };
 
+    let mut cooldown = players.get_mut(*player)?;
+
     if cooldown.summon.finished() {
-        commands.entity(player).trigger(SpawnPortal);
+        commands.entity(*player).trigger(SpawnPortal);
         cooldown.summon.reset();
     }
+    Ok(())
 }
 
 fn progress_cooldown(mut players: Query<&mut PortCooldown>, time: Res<Time>) {
@@ -128,12 +132,12 @@ fn progress_cooldown(mut players: Query<&mut PortCooldown>, time: Res<Time>) {
 
 fn spawn_player_portal(
     trigger: Trigger<SpawnPortal>,
-    mut commands: Commands,
     players: Query<(&Transform, &GameSceneId)>,
     main_buildings: Query<(&Building, &Owner, &Transform, &GameSceneId)>,
-) {
+    mut commands: Commands,
+) -> Result {
     let player = trigger.target();
-    let (player_transform, player_game_scene_id) = players.get(player).unwrap();
+    let (player_transform, player_game_scene_id) = players.get(player)?;
 
     let maybe_base = main_buildings.iter().find(|(building, owner, ..)| {
         match (building.building_type, owner.entity()) {
@@ -142,7 +146,7 @@ fn spawn_player_portal(
         }
     });
     let Some((.., base_transform, base_game_scene_id)) = maybe_base else {
-        return;
+        return Err(BevyError::from("Player base not found"));
     };
 
     let player_portal = commands.spawn_empty().id();
@@ -166,32 +170,33 @@ fn spawn_player_portal(
         PortalDestination(player_portal),
         DelayedDespawn(Timer::from_seconds(30., TimerMode::Once)),
     ));
+    Ok(())
 }
 
 fn port(
     mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut commands: Commands,
     mut players: Query<(Option<&FlagHolder>, &mut PortCooldown)>,
     portal: Query<&PortalDestination>,
     destination: Query<(&Transform, &GameSceneId)>,
     commanders: Query<(&FlagAssignment, &ArmyFlagAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in interactions.read() {
         let InteractionType::Portal = &event.interaction else {
             continue;
         };
 
         let player_entity = event.player;
-        let target_portal = portal.get(event.interactable).unwrap();
-        let (target_transform, target_game_scene_id) = destination.get(**target_portal).unwrap();
+        let target_portal = portal.get(event.interactable)?;
+        let (target_transform, target_game_scene_id) = destination.get(**target_portal)?;
         let target_position = target_transform.translation;
 
-        let (maybe_flag_holder, mut cooldown) = players.get_mut(player_entity).unwrap();
+        let (maybe_flag_holder, mut cooldown) = players.get_mut(player_entity)?;
 
         if !cooldown.usage.finished() {
             info!("Portal usage cooldown");
-            return;
+            return Ok(());
         }
 
         info!("Porting player...");
@@ -242,4 +247,5 @@ fn port(
             ));
         }
     }
+    Ok(())
 }

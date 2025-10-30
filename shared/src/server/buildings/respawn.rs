@@ -26,7 +26,6 @@ use super::{
 
 #[allow(clippy::type_complexity)]
 pub fn respawn_units(
-    mut commands: Commands,
     flags: Query<(
         Entity,
         &Flag,
@@ -41,7 +40,8 @@ pub fn respawn_units(
     commander: Query<&ArmyFlagAssignments>,
     flag_query: Query<(&Flag, Option<&FlagUnits>)>,
     mut inventory_query: Query<&mut Inventory>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (
         flag_entity,
         flag,
@@ -74,16 +74,14 @@ pub fn respawn_units(
 
         recruit_component.respawn_timer_reset();
 
+        let player = match flag_owner.entity() {
+            Some(entity) => entity,
+            None => continue,
+        };
+        let mut inventory = inventory_query.get_mut(player)?;
+
         match original_building.get(flag.original_building) {
             Ok((building, assignment)) => {
-                let player = match flag_owner.entity() {
-                    Some(entity) => entity,
-                    None => continue,
-                };
-                let Ok(mut inventory) = inventory_query.get_mut(player) else {
-                    continue;
-                };
-
                 respawn_for_flag(
                     commands.reborrow(),
                     flag_entity,
@@ -110,17 +108,8 @@ pub fn respawn_units(
                     continue;
                 };
                 for flag_entity in assignment.flags.iter().flatten() {
-                    let (flag, maybe_flag_units) = flag_query.get(*flag_entity).unwrap();
-                    let (building, assignment) =
-                        original_building.get(flag.original_building).unwrap();
-
-                    let player = match flag_owner.entity() {
-                        Some(entity) => entity,
-                        None => continue,
-                    };
-                    let Ok(mut inventory) = inventory_query.get_mut(player) else {
-                        continue;
-                    };
+                    let (flag, maybe_flag_units) = flag_query.get(*flag_entity)?;
+                    let (building, assignment) = original_building.get(flag.original_building)?;
 
                     respawn_for_flag(
                         commands.reborrow(),
@@ -138,6 +127,7 @@ pub fn respawn_units(
             }
         };
     }
+    Ok(())
 }
 
 fn respawn_for_flag(

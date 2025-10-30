@@ -90,8 +90,9 @@ impl Plugin for EntityPlugin {
     }
 }
 
-fn unit_swing_timer(mut query: Query<&mut Unit, With<Health>>, time: Res<Time>) {
+fn unit_swing_timer(mut query: Query<&mut Unit, With<Health>>, time: Res<Time>) -> Result {
     for mut unit in query.iter_mut() {
         unit.swing_timer.tick(time.delta());
     }
+    Ok(())
 }

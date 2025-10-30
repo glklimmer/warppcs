@@ -56,30 +56,31 @@ impl Plugin for SpawnPlugin {
 
 fn init_local_player(
     trigger: Trigger<SetLocalPlayer>,
-    mut commands: Commands,
     camera: Query<Entity, With<Camera>>,
-) {
+    mut commands: Commands,
+) -> Result {
     let player = trigger.entity();
     let mut player_commands = commands.entity(player);
     player_commands.insert((ControlledPlayer, SpatialListener::new(50.0)));
     commands
-        .entity(camera.single().unwrap())
+        .entity(camera.single()?)
         .insert(CameraFollow::fixed(player).with_offset(Vec2 { x: 0., y: 50. }));
+    Ok(())
 }
 
 fn init_player_sprite(
     trigger: Trigger<OnAdd, Player>,
     mut players: Query<(&mut Sprite, &Player)>,
-    mut commands: Commands,
     king_sprite_sheet: Res<KingSpriteSheet>,
     variants: Res<Assets<SpriteVariants>>,
-) {
-    let Ok((mut sprite, player)) = players.get_mut(trigger.target()) else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let (mut sprite, player) = players.get_mut(trigger.target())?;
 
     let handle = &king_sprite_sheet.sprite_sheet.texture;
-    let sprite_variants = variants.get(handle).unwrap();
+    let Some(sprite_variants) = variants.get(handle) else {
+        return Err(BevyError::from("No variant found"));
+    };
     let animation = king_sprite_sheet
         .sprite_sheet
         .animations
@@ -93,47 +94,43 @@ fn init_player_sprite(
 
     let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), KingAnimation::default()));
+    Ok(())
 }
 
 fn init_recruit_building_sprite(
     trigger: Trigger<OnAdd, RecruitBuilding>,
     mut slots: Query<&mut Sprite>,
     asset_server: Res<AssetServer>,
-) {
-    let Ok(mut sprite) = slots.get_mut(trigger.target()) else {
-        return;
-    };
-
+) -> Result {
+    let mut sprite = slots.get_mut(trigger.target())?;
     sprite.image = asset_server.load::<Image>(Building::marker_texture());
+    Ok(())
 }
 
 fn init_camp_sprite(
     trigger: Trigger<OnAdd, SiegeCamp>,
     mut camp: Query<&mut Sprite>,
     asset_server: Res<AssetServer>,
-) {
-    let Ok(mut sprite) = camp.get_mut(trigger.target()) else {
-        return;
-    };
-    info!("setting camp sprite");
-
+) -> Result {
+    let mut sprite = camp.get_mut(trigger.target())?;
     sprite.image = asset_server.load::<Image>("sprites/buildings/siege_camp.png");
+    Ok(())
 }
 
 fn init_unit_sprite(
     trigger: Trigger<OnAdd, Unit>,
     mut units: Query<(&mut Sprite, &Unit, Option<&Health>)>,
     sprite_sheets: Res<UnitSpriteSheets>,
-    mut commands: Commands,
     variants: Res<Assets<SpriteVariants>>,
-) {
-    let Ok((mut sprite, unit, maybe_health)) = units.get_mut(trigger.target()) else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let (mut sprite, unit, maybe_health) = units.get_mut(trigger.target())?;
 
     let sprite_sheet = &sprite_sheets.sprite_sheets.get(unit.unit_type);
     let handle = &sprite_sheet.texture;
-    let sprite_variants = variants.get(handle).unwrap();
+    let Some(sprite_variants) = variants.get(handle) else {
+        return Err(BevyError::from("No variant found"));
+    };
     let animation = match maybe_health {
         Some(_) => UnitAnimation::Idle,
         None => UnitAnimation::Death,
@@ -148,22 +145,23 @@ fn init_unit_sprite(
 
     let mut commands = commands.entity(trigger.target());
     commands.insert((sprite_sheet_animation.clone(), animation));
+    Ok(())
 }
 
 fn init_flag_sprite(
     trigger: Trigger<OnAdd, Flag>,
-    mut commands: Commands,
     mut flag: Query<(&mut Sprite, &Flag)>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
     variants: Res<Assets<SpriteVariants>>,
-) {
-    let Ok((mut sprite, flag)) = flag.get_mut(trigger.target()) else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let (mut sprite, flag) = flag.get_mut(trigger.target())?;
 
     let sprite_sheet = &flag_sprite_sheet.sprite_sheet;
     let handle = &sprite_sheet.texture;
-    let sprite_variants = variants.get(handle).unwrap();
+    let Some(sprite_variants) = variants.get(handle) else {
+        return Err(BevyError::from("No variant found"));
+    };
     let animation = sprite_sheet.animations.get(FlagAnimation::default());
 
     sprite.image = sprite_variants.variants.get(flag.color).clone();
@@ -174,17 +172,16 @@ fn init_flag_sprite(
 
     let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), FlagAnimation::default()));
+    Ok(())
 }
 
 fn init_scene_end_sprite(
     trigger: Trigger<OnAdd, SceneEnd>,
-    mut commands: Commands,
     mut scene_end: Query<&mut Sprite>,
     tree_sprite_sheet: Res<PineTreeSpriteSheet>,
-) {
-    let Ok(mut sprite) = scene_end.get_mut(trigger.target()) else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let mut sprite = scene_end.get_mut(trigger.target())?;
 
     let bright_sprite_sheet = &tree_sprite_sheet.bright_sprite_sheet;
 
@@ -274,17 +271,16 @@ fn init_scene_end_sprite(
             ..default()
         },
     ));
+    Ok(())
 }
 
 fn init_portal_sprite(
     trigger: Trigger<OnAdd, Portal>,
-    mut commands: Commands,
     mut portal: Query<&mut Sprite>,
     portal_sprite_sheet: Res<PortalSpriteSheet>,
-) {
-    let Ok(mut sprite) = portal.get_mut(trigger.target()) else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let mut sprite = portal.get_mut(trigger.target())?;
 
     let sprite_sheet = &portal_sprite_sheet.sprite_sheet;
     let animation = sprite_sheet.animations.get(PortalAnimation::default());
@@ -297,17 +293,16 @@ fn init_portal_sprite(
 
     let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), PortalAnimation::default()));
+    Ok(())
 }
 
 fn init_road_sprite(
     trigger: Trigger<OnAdd, Road>,
-    mut commands: Commands,
     mut road: Query<&mut Sprite>,
     road_sprite_sheet: Res<RoadSpriteSheet>,
-) {
-    let Ok(mut sprite) = road.get_mut(trigger.target()) else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let mut sprite = road.get_mut(trigger.target())?;
 
     let sprite_sheet = &road_sprite_sheet.sprite_sheet;
     let animation = sprite_sheet.animations.get(RoadAnimation::default());
@@ -320,17 +315,16 @@ fn init_road_sprite(
 
     let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), RoadAnimation::default()));
+    Ok(())
 }
 
 fn init_horse_sprite(
     trigger: Trigger<OnAdd, Mount>,
-    mut commands: Commands,
     mut portal: Query<&mut Sprite>,
     horse_sprite_sheet: Res<HorseSpriteSheet>,
-) {
-    let Ok(mut sprite) = portal.get_mut(trigger.target()) else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let mut sprite = portal.get_mut(trigger.target())?;
 
     let sprite_sheet = &horse_sprite_sheet.sprite_sheet;
     let animation = sprite_sheet.animations.get(HorseAnimation::default());
@@ -343,32 +337,30 @@ fn init_horse_sprite(
 
     let mut commands = commands.entity(trigger.target());
     commands.insert((animation.clone(), HorseAnimation::default()));
+    Ok(())
 }
 
 fn init_projectile_sprite(
     trigger: Trigger<OnAdd, ProjectileType>,
     mut projectile: Query<(&mut Sprite, &ProjectileType)>,
     projectiles: Res<ProjectileSpriteSheet>,
-) {
-    let Ok((mut sprite, projectile_type)) = projectile.get_mut(trigger.target()) else {
-        return;
-    };
+) -> Result {
+    let (mut sprite, projectile_type) = projectile.get_mut(trigger.target())?;
 
     let texture = match projectile_type {
         ProjectileType::Arrow => projectiles.sprite_sheet.texture_atlas(Projectiles::Arrow),
     };
     sprite.texture_atlas = Some(texture);
     sprite.image = projectiles.sprite_sheet.texture.clone();
+    Ok(())
 }
 
 fn init_chest_sprite(
     trigger: Trigger<OnAdd, Chest>,
     mut chests: Query<&mut Sprite>,
     sprite_sheets: Res<ChestSpriteSheet>,
-) {
-    let Ok(mut sprite) = chests.get_mut(trigger.target()) else {
-        return;
-    };
+) -> Result {
+    let mut sprite = chests.get_mut(trigger.target())?;
 
     let sprite_sheet = &sprite_sheets.sprite_sheet;
     let animation = sprite_sheet.animations.get(ChestAnimation::Open);
@@ -378,4 +370,5 @@ fn init_chest_sprite(
         layout: sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,
     });
+    Ok(())
 }

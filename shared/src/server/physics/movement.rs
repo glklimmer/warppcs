@@ -95,15 +95,16 @@ fn apply_direction(
         (&Velocity, &mut Transform),
         (Changed<Velocity>, Without<Item>, Without<ArmySlot>),
     >,
-) {
+) -> Result {
     for (velocity, mut transform) in query.iter_mut() {
         if velocity.0.x != 0. {
             transform.scale.x = velocity.0.x.signum();
         }
     }
+    Ok(())
 }
 
-fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Time>) {
+fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Time>) -> Result {
     let friction_force = 400.0 * time.delta_secs();
     for mut velocity in query.iter_mut() {
         if velocity.0.x.abs() <= friction_force {
@@ -112,21 +113,24 @@ fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Tim
             velocity.0.x -= velocity.0.x.signum() * friction_force;
         }
     }
+    Ok(())
 }
 
-fn apply_drag(mut query: Query<&mut Velocity, Without<ProjectileType>>, time: Res<Time>) {
+fn apply_drag(mut query: Query<&mut Velocity, Without<ProjectileType>>, time: Res<Time>) -> Result {
     let drag_coeff = 3.0;
     for mut vel in query.iter_mut() {
         let old = vel.0;
         vel.0 = old - old * drag_coeff * time.delta_secs();
     }
+    Ok(())
 }
 
-fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform, &BoxCollider)>) {
+fn set_grounded(
+    entities: Query<(Entity, &Transform, &BoxCollider)>,
+    mut commands: Commands,
+) -> Result {
     for (entity, transform, collider) in &entities {
-        let Ok(mut entity) = commands.get_entity(entity) else {
-            continue;
-        };
+        let mut entity = commands.get_entity(entity)?;
 
         let bottom = transform.translation.truncate() - collider.half_size()
             + collider.offset.unwrap_or_default();
@@ -137,17 +141,16 @@ fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform, &Bo
             entity.try_remove::<Grounded>();
         }
     }
+    Ok(())
 }
 
 #[allow(clippy::type_complexity)]
 fn set_walking(
-    mut commands: Commands,
     entities: Query<(Entity, &Velocity, Option<&Grounded>, Option<&Health>), Without<Player>>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, velocity, maybe_grounded, maybe_health) in &entities {
-        let Ok(mut entity) = commands.get_entity(entity) else {
-            continue;
-        };
+        let mut entity = commands.get_entity(entity)?;
 
         if maybe_health.is_some() && maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
             entity.try_insert(Moving);
@@ -155,16 +158,15 @@ fn set_walking(
             entity.try_remove::<Moving>();
         }
     }
+    Ok(())
 }
 
 fn set_king_walking(
-    mut commands: Commands,
     players: Query<(Entity, &Velocity, Option<&Grounded>), With<Player>>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, velocity, maybe_grounded) in &players {
-        let Ok(mut entity) = commands.get_entity(entity) else {
-            continue;
-        };
+        let mut entity = commands.get_entity(entity)?;
 
         if maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
             entity.try_insert(Moving);
@@ -172,22 +174,24 @@ fn set_king_walking(
             entity.try_remove::<Moving>();
         }
     }
+    Ok(())
 }
 
 fn set_projectile_rotation(
     mut projectiles: Query<(&mut Transform, &Velocity), With<ProjectileType>>,
-) {
+) -> Result {
     for (mut transform, velocity) in projectiles.iter_mut() {
         let angle = velocity.0.to_angle();
         transform.rotation = Quat::from_rotation_z(angle);
     }
+    Ok(())
 }
 
 fn wall_collision(
     mut query: Query<(&mut Velocity, &Transform, &BoxCollider, &Owner)>,
     buildings: Query<(&Transform, &BoxCollider, &Owner, &Building, &BuildStatus), With<Health>>,
     time: Res<Time>,
-) {
+) -> Result {
     for (mut velocity, transform, collider, owner) in query.iter_mut() {
         let future_position = transform.translation.truncate() + velocity.0 * time.delta_secs();
         let future_bounds = collider.at_pos(future_position);
@@ -213,4 +217,5 @@ fn wall_collision(
             }
         }
     }
+    Ok(())
 }

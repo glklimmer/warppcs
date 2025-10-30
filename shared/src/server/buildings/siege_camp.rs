@@ -32,7 +32,7 @@ pub fn siege_camp_lifetime(
     mut commannds: Commands,
     mut query: Query<(Entity, &mut SiegeCamp)>,
     time: Res<Time>,
-) {
+) -> Result {
     for (entity, mut siege_camp) in query.iter_mut() {
         siege_camp.life.tick(time.delta());
 
@@ -40,4 +40,5 @@ pub fn siege_camp_lifetime(
             commannds.entity(entity).despawn();
         }
     }
+    Ok(())
 }

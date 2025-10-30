@@ -29,7 +29,7 @@ fn apply_shake_effect(
     mut query: Query<(Entity, &mut Transform, &mut SpriteShaking)>,
     mut commands: Commands,
     time: Res<Time>,
-) {
+) -> Result {
     for (entity, mut transform, mut shaking) in query.iter_mut() {
         shaking.timer.tick(time.delta());
 
@@ -45,4 +45,5 @@ fn apply_shake_effect(
                 shaking.original_translation + Vec3::new(offset_x, offset_y, offset_z);
         }
     }
+    Ok(())
 }

@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use bevy::{asset::RenderAssetUsages, math::bounding::IntersectsVolume};
 use image::{GenericImage, GenericImageView, Rgba};
+use shared::GameState;
 use shared::server::physics::attachment::AttachedTo;
 use shared::{BoxCollider, Player, server::players::interaction::Interactable};
 use std::cmp::Ordering;
@@ -35,13 +36,15 @@ impl Plugin for HighlightPlugin {
             .add_observer(outline_sprite)
             .add_observer(restore_original_sprite)
             .add_observer(remove_highlightable)
-            .add_systems(PostUpdate, check_highlight);
+            .add_systems(
+                PostUpdate,
+                check_highlight.run_if(in_state(GameState::GameSession)),
+            );
     }
 }
 
 #[allow(clippy::type_complexity)]
 fn check_highlight(
-    mut commands: Commands,
     outline: Query<
         (
             Entity,
@@ -53,10 +56,9 @@ fn check_highlight(
         With<Highlightable>,
     >,
     player: Query<(&Transform, &BoxCollider), With<ControlledPlayer>>,
-) {
-    let Ok((player_transform, player_collider)) = player.single() else {
-        return;
-    };
+    mut commands: Commands,
+) -> Result {
+    let (player_transform, player_collider) = player.single()?;
 
     let player_bounds = player_collider.at(player_transform);
 
@@ -102,7 +104,7 @@ fn check_highlight(
         for (entity, ..) in outline.iter() {
             commands.entity(entity).try_remove::<Highlighted>();
         }
-        return;
+        return Ok(());
     };
 
     for (entity, .., maybe_attached_to) in outline.iter() {
@@ -112,89 +114,95 @@ fn check_highlight(
             commands.entity(entity).try_remove::<Highlighted>();
         }
     }
+    Ok(())
 }
 
 fn init_highlightable(
     trigger: Trigger<OnAdd, Interactable>,
-    mut commands: Commands,
     controlled_player: Query<Entity, With<ControlledPlayer>>,
     interactable: Query<&Interactable, Without<Player>>,
-) {
+    mut commands: Commands,
+) -> Result {
     let Ok(interactable) = interactable.get(trigger.target()) else {
-        return;
+        return Ok(());
     };
 
-    let controller_player = controlled_player.single().unwrap();
+    let controller_player = controlled_player.single()?;
 
     if let Some(owner) = interactable.restricted_to
         && owner != controller_player
     {
-        return;
+        return Ok(());
     }
     commands
         .entity(trigger.target())
         .try_insert(Highlightable::default());
+    Ok(())
 }
 
-fn remove_highlightable(trigger: Trigger<OnRemove, Interactable>, mut commands: Commands) {
+fn remove_highlightable(
+    trigger: Trigger<OnRemove, Interactable>,
+    mut commands: Commands,
+) -> Result {
     commands
         .entity(trigger.target())
         .try_remove::<Highlightable>()
         .try_remove::<Highlighted>();
+    Ok(())
 }
 
 fn restore_original_sprite(
     trigger: Trigger<OnRemove, Highlighted>,
-    mut commands: Commands,
     mut query: Query<(&mut Sprite, &OriginalSprite)>,
-) {
-    if let Ok((mut sprite, original_sprite)) = query.get_mut(trigger.target()) {
-        sprite.image = (**original_sprite).clone();
-        commands
-            .entity(trigger.target())
-            .try_remove::<OriginalSprite>();
-    }
+    mut commands: Commands,
+) -> Result {
+    let (mut sprite, original_sprite) = query.get_mut(trigger.target())?;
+    sprite.image = (**original_sprite).clone();
+    commands
+        .entity(trigger.target())
+        .try_remove::<OriginalSprite>();
+    Ok(())
 }
 
 fn outline_sprite(
     trigger: Trigger<OnAdd, Highlighted>,
-    mut commands: Commands,
     mut query: Query<(&mut Sprite, &Highlightable)>,
     mut images: ResMut<Assets<Image>>,
-) {
-    if let Ok((mut sprite, highlightable)) = query.get_mut(trigger.target()) {
-        let outline_color = highlightable.outline_color;
+    mut commands: Commands,
+) -> Result {
+    let (mut sprite, highlightable) = query.get_mut(trigger.target())?;
+    let outline_color = highlightable.outline_color;
 
-        commands
-            .entity(trigger.target())
-            .insert(OriginalSprite(sprite.image.clone()));
+    commands
+        .entity(trigger.target())
+        .insert(OriginalSprite(sprite.image.clone()));
 
-        let maybe_image = images.get(sprite.image.id());
+    let maybe_image = images.get(sprite.image.id());
 
-        if let Some(texture) = maybe_image {
-            let width = texture.width();
-            let height = texture.height();
-            let dynamic_image = texture.clone().try_into_dynamic().unwrap();
+    if let Some(texture) = maybe_image {
+        let width = texture.width();
+        let height = texture.height();
+        let dynamic_image = texture.clone().try_into_dynamic()?;
 
-            let mut outlined_image = dynamic_image.clone();
+        let mut outlined_image = dynamic_image.clone();
 
-            for (x, y, p) in dynamic_image.pixels() {
-                if x == 0 || y == 0 || x == width - 1 || y == height - 1 || p.0[3] != 0 {
-                    continue;
-                }
-                let current = dynamic_image.get_pixel(x, y)[3];
-                let left = dynamic_image.get_pixel(x - 1, y)[3];
-                let right = dynamic_image.get_pixel(x + 1, y)[3];
-                let up = dynamic_image.get_pixel(x, y - 1)[3];
-                let down = dynamic_image.get_pixel(x, y + 1)[3];
-                if current != left || current != right || current != up || current != down {
-                    outlined_image.put_pixel(x, y, Rgba(outline_color.to_srgba().to_u8_array()));
-                }
+        for (x, y, p) in dynamic_image.pixels() {
+            if x == 0 || y == 0 || x == width - 1 || y == height - 1 || p.0[3] != 0 {
+                continue;
             }
-
-            let outline_image =
-                Image::from_dynamic(outlined_image, true, RenderAssetUsages::RENDER_WORLD);
-            sprite.image = images.add(outline_image);
+            let current = dynamic_image.get_pixel(x, y)[3];
+            let left = dynamic_image.get_pixel(x - 1, y)[3];
+            let right = dynamic_image.get_pixel(x + 1, y)[3];
+            let up = dynamic_image.get_pixel(x, y - 1)[3];
+            let down = dynamic_image.get_pixel(x, y + 1)[3];
+            if current != left || current != right || current != up || current != down {
+                outlined_image.put_pixel(x, y, Rgba(outline_color.to_srgba().to_u8_array()));
+            }
         }
+
+        let outline_image =
+            Image::from_dynamic(outlined_image, true, RenderAssetUsages::RENDER_WORLD);
+        sprite.image = images.add(outline_image);
     }
+    Ok(())
 }

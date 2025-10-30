@@ -31,14 +31,14 @@ pub fn flag_interact(
     mut drop_flag: EventWriter<DropFlagEvent>,
     mut pick_flag: EventWriter<PickFlagEvent>,
     flag_holder: Query<Option<&FlagHolder>>,
-) {
+) -> Result {
     for event in interactions.read() {
         let InteractionType::Flag = &event.interaction else {
             continue;
         };
 
         let player = event.player;
-        let has_flag = flag_holder.get(player).unwrap();
+        let has_flag = flag_holder.get(player)?;
 
         match has_flag {
             Some(_) => {
@@ -55,34 +55,32 @@ pub fn flag_interact(
             }
         }
     }
+    Ok(())
 }
 
 pub fn pick_flag(
-    mut commands: Commands,
     mut pick_flag: EventReader<PickFlagEvent>,
     mut flag_query: Query<&mut Transform>,
     units: Query<&FlagUnits>,
-    army: Query<&ArmyFlagAssignments>,
-) {
+    army: Query<Option<&ArmyFlagAssignments>>,
+    mut commands: Commands,
+) -> Result {
     for event in pick_flag.read() {
-        let mut transform = flag_query.get_mut(event.flag).unwrap();
+        let mut transform = flag_query.get_mut(event.flag)?;
 
         transform.translation.y = 10.;
 
         commands.entity(event.flag).insert(AttachedTo(event.player));
         commands.entity(event.player).insert(FlagHolder(event.flag));
 
-        let Ok(flag_units) = units.get(event.flag) else {
-            continue;
-        };
+        let flag_units = units.get(event.flag)?;
 
         let mut all_units: Vec<Entity> = flag_units.iter().collect();
-        let first_unit = flag_units.iter().next();
-        if let Some(commander) = first_unit
-            && let Ok(army) = army.get(commander)
+        if let Some(commander) = flag_units.iter().next()
+            && let Some(army) = army.get(commander)?
         {
             for formation_flag in army.flags.iter().flatten() {
-                let formation_units = units.get(*formation_flag).unwrap();
+                let formation_units = units.get(*formation_flag)?;
                 let units: Vec<Entity> = formation_units.iter().collect();
                 all_units.append(&mut units.clone());
             }
@@ -92,34 +90,33 @@ pub fn pick_flag(
             commands.entity(*unit).insert(UnitBehaviour::FollowFlag);
         }
     }
+    Ok(())
 }
 
 pub fn drop_flag(
     mut drop_flag: EventReader<DropFlagEvent>,
-    mut commands: Commands,
     mut flag_query: Query<&mut Transform>,
     units: Query<&FlagUnits>,
-    army: Query<&ArmyFlagAssignments>,
-) {
+    army: Query<Option<&ArmyFlagAssignments>>,
+    mut commands: Commands,
+) -> Result {
     for event in drop_flag.read() {
-        let mut transform = flag_query.get_mut(event.flag).unwrap();
+        let mut transform = flag_query.get_mut(event.flag)?;
 
         transform.translation.y = 0.;
 
         commands.entity(event.flag).remove::<AttachedTo>();
         commands.entity(event.player).remove::<FlagHolder>();
 
-        let Ok(flag_units) = units.get(event.flag) else {
-            continue;
-        };
+        let flag_units = units.get(event.flag)?;
 
         let mut all_units: Vec<Entity> = flag_units.iter().collect();
         let first_unit = flag_units.iter().next();
         if let Some(commander) = first_unit
-            && let Ok(army) = army.get(commander)
+            && let Some(army) = army.get(commander)?
         {
             for formation_flag in army.flags.iter().flatten() {
-                let formation_units = units.get(*formation_flag).unwrap();
+                let formation_units = units.get(*formation_flag)?;
                 let units: Vec<Entity> = formation_units.iter().collect();
                 all_units.append(&mut units.clone());
             }
@@ -129,4 +126,5 @@ pub fn drop_flag(
             commands.entity(*unit).insert(UnitBehaviour::Idle);
         }
     }
+    Ok(())
 }

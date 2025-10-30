@@ -32,9 +32,9 @@ fn draw_range(
         Option<&ProjectileRange>,
         &Sight,
     )>,
-) {
+) -> Result {
     if !settings.on {
-        return;
+        return Ok(());
     }
     for (transform, maybe_melee_range, maybe_projectile_range, sight) in query.iter() {
         if let Some(melee_range) = maybe_melee_range {
@@ -51,15 +51,16 @@ fn draw_range(
 
         gizmos.circle_2d(transform.translation().truncate(), **sight, GREEN);
     }
+    Ok(())
 }
 
 fn draw_collider(
     mut gizmos: Gizmos,
     settings: Res<GizmosSettings>,
     query: Query<(&GlobalTransform, &BoxCollider)>,
-) {
+) -> Result {
     if !settings.on {
-        return;
+        return Ok(());
     }
     for (transform, collider) in query.iter() {
         gizmos.rect_2d(
@@ -71,4 +72,5 @@ fn draw_collider(
             BLUE,
         );
     }
+    Ok(())
 }
