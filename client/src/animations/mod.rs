@@ -257,9 +257,9 @@ fn advance_animation(
 ) -> Result {
     for (entity, mut animation, mut sprite, maybe_play_once) in &mut query {
         animation.frame_timer.tick(time.delta());
-        let Some(atlas) = sprite.texture_atlas.as_mut() else {
-            return Err(BevyError::from("No Sprite found"));
-        };
+        let atlas = sprite.texture_atlas.as_mut().ok_or(
+            "No texture atlas for sprite animation found. Texture atlas needed for animations.",
+        )?;
 
         if animation.frame_timer.just_finished() {
             atlas.index = if atlas.index == animation.last_sprite_index {
