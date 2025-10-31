@@ -59,13 +59,13 @@ impl Plugin for CommanderInteractionPlugin {
             .add_observer(assignment_reject)
             .add_observer(open_commander_dialog)
             .add_observer(highligh_formation)
-            .add_observer(open_create_camp)
+            .add_observer(select_create_camp)
             .add_observer(open_slots_dialog)
             .add_observer(send_selected)
             .add_observer(cleanup_menu_extras)
             .add_observer(draw_hovering_flag)
             .add_observer(assigment_warning)
-            .add_observer(pick_commander_flag)
+            .add_observer(select_commander_flag)
             .add_systems(
                 Update,
                 (formation_selected, update_flag_assignment)
@@ -148,7 +148,7 @@ fn open_commander_dialog(
     Ok(())
 }
 
-fn open_create_camp(
+fn select_create_camp(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
     mut commands: Commands,
 ) -> Result {
@@ -160,7 +160,7 @@ fn open_create_camp(
     Ok(())
 }
 
-fn pick_commander_flag(
+fn select_commander_flag(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
     mut close_menu: EventWriter<CloseEvent>,
     mut commands: Commands,
