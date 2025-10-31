@@ -141,7 +141,7 @@ fn spawn_player_portal(
 
     let maybe_base = main_buildings.iter().find(|(building, owner, ..)| {
         match (building.building_type, owner.entity()) {
-            (BuildingType::MainBuilding { .. }, Some(entity)) => entity.eq(&player),
+            (BuildingType::MainBuilding { .. }, Ok(entity)) => entity.eq(&player),
             _ => false,
         }
     });

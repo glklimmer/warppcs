@@ -227,8 +227,11 @@ fn on_unit_death(
                 .remove::<AttachedTo>()
                 .remove::<Interactable>();
 
-            if let Some(player) = owner.entity()
-                && let Ok(holder) = holder.get(player)
+            let Ok(player) = owner.entity() else {
+                continue;
+            };
+
+            if let Ok(holder) = holder.get(player)
                 && flag.eq(&**holder)
             {
                 commands.entity(player).remove::<FlagHolder>();
@@ -243,7 +246,7 @@ fn on_unit_death(
                         Visibility::Visible,
                         Interactable {
                             kind: InteractionType::Flag,
-                            restricted_to: owner.entity(),
+                            restricted_to: Some(player),
                         },
                     ));
                 }
@@ -282,7 +285,7 @@ fn on_building_destroy(
                 .remove::<Health>()
                 .insert(Interactable {
                     kind: InteractionType::Building,
-                    restricted_to: owner.entity(),
+                    restricted_to: Some(owner.entity()?),
                 });
 
             if let Some(targeted_by) = maybe_targeted_by {
@@ -292,12 +295,9 @@ fn on_building_destroy(
             };
 
             if let BuildingType::MainBuilding { level: _ } = building.building_type {
-                let Some(owner) = owner.entity() else {
-                    return Err(BevyError::from("Owner entity not found"));
-                };
                 commands.server_trigger(ToClients {
                     mode: SendMode::Broadcast,
-                    event: PlayerDefeated(owner),
+                    event: PlayerDefeated(owner.entity()?),
                 });
             }
         }

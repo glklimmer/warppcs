@@ -373,10 +373,10 @@ pub enum Owner {
 }
 
 impl Owner {
-    pub fn entity(&self) -> Option<Entity> {
+    pub fn entity(&self) -> Result<Entity, BevyError> {
         match self {
-            Owner::Player(entity) => Some(*entity),
-            Owner::Bandits => None,
+            Owner::Player(entity) => Ok(*entity),
+            Owner::Bandits => Err(BevyError::from("Not a player")),
         }
     }
 

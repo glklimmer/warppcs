@@ -74,9 +74,8 @@ pub fn respawn_units(
 
         recruit_component.respawn_timer_reset();
 
-        let player = match flag_owner.entity() {
-            Some(entity) => entity,
-            None => continue,
+        let Ok(player) = flag_owner.entity() else {
+            continue;
         };
         let mut inventory = inventory_query.get_mut(player)?;
 

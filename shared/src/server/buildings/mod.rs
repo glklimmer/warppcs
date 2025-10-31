@@ -201,9 +201,7 @@ fn end_construction(
             },
         ));
 
-        let Some(owner) = owner_query.get(event.building_entity)?.entity() else {
-            return Err(BevyError::from("Failed to get owner entity"));
-        };
+        let owner = owner_query.get(event.building_entity)?.entity()?;
 
         if building.can_upgrade() {
             building_commands.insert(Interactable {

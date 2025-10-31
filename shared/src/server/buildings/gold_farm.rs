@@ -45,10 +45,7 @@ pub fn gold_farm_output(
         farm_timer.timer.tick(time.delta());
 
         if farm_timer.timer.just_finished() {
-            let Some(owner) = owner.entity() else {
-                return Err(BevyError::from("Owner entity not found"));
-            };
-
+            let owner = owner.entity()?;
             let mut inventory = inventory_query.get_mut(owner)?;
 
             inventory.gold += GOLD_PER_TICK;
