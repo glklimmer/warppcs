@@ -27,15 +27,17 @@ fn setup_background(
 }
 
 fn change_background(
-    player: Query<&Traveling, With<ControlledPlayer>>,
+    query: Query<&Traveling, With<ControlledPlayer>>,
     camera: Query<Entity, With<Camera2d>>,
     mut create_parallax: EventWriter<CreateParallaxEvent>,
 ) -> Result {
-    let player = player.single()?;
+    let travel = query.single()?;
 
-    let (_, maybe_target) = player.target;
+    let (_, maybe_target) = travel.target;
     let Some(target_game_scene) = maybe_target else {
-        return Err(BevyError::from("No game target scene found"));
+        return Err(BevyError::from(
+            "Player Traveling component has no target game scene set",
+        ));
     };
 
     let camera = camera.single()?;
