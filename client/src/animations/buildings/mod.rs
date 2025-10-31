@@ -92,9 +92,9 @@ pub fn update_building_sprite(
             .get(building.building_type);
 
         let handle = &sprite_sheet.texture;
-        let Some(sprite_variants) = variants.get(handle) else {
-            return Err(BevyError::from("Sprite variants not found"));
-        };
+        let sprite_variants = variants
+            .get(handle)
+            .ok_or("Sprite variant not generated yet")?;
         let mut animation = sprite_sheet.animations.get(*status).clone();
 
         sprite.texture_atlas = Some(TextureAtlas {
