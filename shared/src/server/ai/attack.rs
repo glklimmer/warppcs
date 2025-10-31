@@ -36,42 +36,43 @@ fn wait_to_attack(
     others: Query<(Entity, &Unit, &Transform), With<Health>>,
     units: Query<(&Transform, &FlagAssignment), With<Health>>,
     army: Query<&ArmyFlagAssignments>,
-) {
+) -> Result {
     for (ctx, allow_to_attack) in query.iter() {
         let unit_entity = ctx.target_entity();
-        let (entity, unit, commander_position) = others.get(unit_entity).unwrap();
+        let (entity, unit, commander_position) = others.get(unit_entity)?;
 
         match unit.unit_type {
             UnitType::Shieldwarrior | UnitType::Pikeman | UnitType::Archer | UnitType::Bandit => {
                 commands.trigger(ctx.success());
             }
             UnitType::Commander => {
-                if let Ok(army) = army.get(entity) {
-                    let comparer: fn(f32, f32) -> bool = match **allow_to_attack {
-                        WorldDirection::Left => |a, b| a > b,
-                        WorldDirection::Right => |a, b| a < b,
-                    };
+                let army = army.get(entity)?;
 
-                    let commander_position = commander_position.translation.x;
-                    let mut extreme = commander_position;
+                let comparer: fn(f32, f32) -> bool = match **allow_to_attack {
+                    WorldDirection::Left => |a, b| a > b,
+                    WorldDirection::Right => |a, b| a < b,
+                };
 
-                    for formation_flag in army.flags.iter().flatten() {
-                        for (unit_position, flag) in units.iter() {
-                            if **flag == *formation_flag
-                                && comparer(unit_position.translation.x, extreme)
-                            {
-                                extreme = unit_position.translation.x;
-                            }
+                let commander_position = commander_position.translation.x;
+                let mut extreme = commander_position;
+
+                for formation_flag in army.flags.iter().flatten() {
+                    for (unit_position, flag) in units.iter() {
+                        if **flag == *formation_flag
+                            && comparer(unit_position.translation.x, extreme)
+                        {
+                            extreme = unit_position.translation.x;
                         }
                     }
+                }
 
-                    if (extreme - commander_position).abs() <= 0. {
-                        commands.trigger(ctx.success());
-                    }
+                if (extreme - commander_position).abs() <= 0. {
+                    commands.trigger(ctx.success());
                 }
             }
         }
     }
+    Ok(())
 }
 
 fn process_attacks(
@@ -87,7 +88,7 @@ fn process_attacks(
     )>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
-) {
+) -> Result {
     for (ctx, attacking_range) in query.iter() {
         let entity = ctx.target_entity();
         let Ok((mut unit, target, owner, transform, damage, game_scene_id)) = unit.get_mut(entity)
@@ -180,4 +181,5 @@ fn process_attacks(
         });
         unit.swing_timer.reset();
     }
+    Ok(())
 }

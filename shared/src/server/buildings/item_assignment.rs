@@ -88,18 +88,22 @@ struct ActiveBuilding(HashMap<Entity, Entity>);
 
 fn check_start_building(
     trigger: Trigger<FromClient<StartBuild>>,
-    mut commands: Commands,
     mut interactions: EventWriter<InteractionTriggeredEvent>,
     assignment: Query<&ItemAssignment>,
     active: Res<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
     players: Query<&Player>,
-) {
-    let player_entity = *client_player_map.get(&trigger.client_entity).unwrap();
-    let player = players.get(player_entity).unwrap();
-    let active_building = *active.get(&player_entity).unwrap();
+    mut commands: Commands,
+) -> Result {
+    let Some(player_entity) = client_player_map.get(&trigger.client_entity) else {
+        return Err(BevyError::from("No player entity"));
+    };
+    let player = players.get(*player_entity)?;
+    let Some(active_building) = active.get(player_entity) else {
+        return Err(BevyError::from("No active building"));
+    };
 
-    let assignment = assignment.get(active_building).unwrap();
+    let assignment = assignment.get(*active_building)?;
     let items: Vec<_> = match assignment
         .items
         .clone()
@@ -109,7 +113,7 @@ fn check_start_building(
         Some(v) => v,
         None => {
             info!("Not all items assigned!");
-            return;
+            return Ok(());
         }
     };
 
@@ -120,7 +124,7 @@ fn check_start_building(
             None
         }
     }) {
-        commands.entity(active_building).insert((
+        commands.entity(*active_building).insert((
             Building {
                 building_type: BuildingType::Unit { weapon },
                 color: player.color,
@@ -132,8 +136,8 @@ fn check_start_building(
     }
 
     interactions.write(InteractionTriggeredEvent {
-        player: player_entity,
-        interactable: active_building,
+        player: *player_entity,
+        interactable: *active_building,
         interaction: InteractionType::Building,
     });
 
@@ -141,21 +145,26 @@ fn check_start_building(
         mode: SendMode::Direct(trigger.client_entity),
         event: CloseBuildingDialog,
     });
+    Ok(())
 }
 
 fn start_assignment_dialog(
     mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut commands: Commands,
     mut active: ResMut<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in interactions.read() {
         let InteractionType::ItemAssignment = &event.interaction else {
             continue;
         };
 
+        let Some(player_entity) = client_player_map.get_network_entity(&event.player) else {
+            return Err(BevyError::from("No player entity"));
+        };
+
         commands.server_trigger(ToClients {
-            mode: SendMode::Direct(*client_player_map.get_network_entity(&event.player).unwrap()),
+            mode: SendMode::Direct(*player_entity),
             event: OpenBuildingDialog {
                 building: event.interactable,
             },
@@ -163,6 +172,7 @@ fn start_assignment_dialog(
 
         active.insert(event.player, event.interactable);
     }
+    Ok(())
 }
 
 fn assign_item(
@@ -171,21 +181,26 @@ fn assign_item(
     mut assignment: Query<&mut ItemAssignment>,
     mut inventory: Query<&mut Inventory>,
     client_player_map: Res<ClientPlayerMap>,
-) {
-    let player = *client_player_map.get(&trigger.client_entity).unwrap();
+) -> Result {
+    let Some(player) = client_player_map.get(&trigger.client_entity) else {
+        return Err(BevyError::from("Player not found"));
+    };
 
-    let active_building = active.get(&player);
-    let mut inventory = inventory.get_mut(player).unwrap();
+    let Some(active_building) = active.get(player) else {
+        return Err(BevyError::from("Active building not found"));
+    };
+    let mut inventory = inventory.get_mut(*player)?;
 
     let item = &***trigger;
     let Some(index) = inventory.items.iter().position(|inv_item| inv_item == item) else {
-        return;
+        return Ok(());
     };
     inventory.items.remove(index);
 
-    let mut assignment = assignment.get_mut(*active_building.unwrap()).unwrap();
+    let mut assignment = assignment.get_mut(*active_building)?;
     let maybe_item = assignment.items.set(item.slot(), Some(item.clone()));
     if let Some(item) = maybe_item {
         inventory.items.push(item);
     }
+    Ok(())
 }

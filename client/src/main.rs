@@ -41,7 +41,7 @@ pub mod widgets;
 /// audio.
 const AUDIO_SCALE: f32 = 1. / 200.0;
 
-fn main() {
+fn main() -> Result {
     let args: Vec<String> = env::args().collect();
     let user = if args.contains(&String::from("server")) {
         "server"
@@ -80,7 +80,7 @@ fn main() {
             })
             .set(ImagePlugin::default_nearest())
             .set(AudioPlugin {
-                global_volume: GlobalVolume::new(Volume::Linear(0.35)),
+                global_volume: GlobalVolume::new(Volume::Linear(0.)),
                 default_spatial_scale: SpatialScale::new_2d(AUDIO_SCALE),
             }),
     );
@@ -146,17 +146,19 @@ fn main() {
     }
 
     client.run();
+    Ok(())
 }
 
 fn setup_background(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-) {
+) -> Result {
     // Plain
     commands.spawn((
         Mesh2d(meshes.add(Rectangle::new(90000.0, 2000.0))),
         MeshMaterial2d(materials.add(Color::hsl(332., 0.30, 0.17))),
         Transform::from_xyz(0.0, -1000.0, -1.0),
     ));
+    Ok(())
 }

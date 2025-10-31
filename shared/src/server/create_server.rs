@@ -75,7 +75,10 @@ fn web_transport_config(
 }
 
 #[cfg(feature = "steam")]
-pub fn create_steam_server(mut commands: Commands, client: Res<aeronet_steam::SteamworksClient>) {
+pub fn create_steam_server(
+    mut commands: Commands,
+    client: Res<aeronet_steam::SteamworksClient>,
+) -> Result {
     use aeronet_steam::{
         SessionConfig,
         server::{ListenTarget, SteamNetServer},
@@ -106,14 +109,15 @@ pub fn create_steam_server(mut commands: Commands, client: Res<aeronet_steam::St
             target,
         ));
 
-    info!("Creating server...")
+    info!("Creating server...");
+    Ok(())
 }
 
 fn on_created(
     _: Trigger<OnAdd, Server>,
     mut client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
-) {
+) -> Result {
     info!("Successfully created server");
 
     let server_player = commands
@@ -131,38 +135,45 @@ fn on_created(
         mode: SendMode::Broadcast,
         event: SetLocalPlayer(server_player),
     });
+    Ok(())
 }
 
 #[cfg(feature = "steam")]
-fn on_session_request_steam(mut request: Trigger<aeronet_steam::server::SessionRequest>) {
+fn on_session_request_steam(mut request: Trigger<aeronet_steam::server::SessionRequest>) -> Result {
     use aeronet_steam::server::SessionResponse;
 
     let client = request.steam_id;
     info!("Steamclient {:?} requesting connection...", client);
 
     request.respond(SessionResponse::Accepted);
+    Ok(())
 }
 
 #[cfg(feature = "netcode")]
-fn on_session_request_web(mut request: Trigger<aeronet_webtransport::server::SessionRequest>) {
+fn on_session_request_web(
+    mut request: Trigger<aeronet_webtransport::server::SessionRequest>,
+) -> Result {
     use aeronet_webtransport::server::SessionResponse;
 
     let client = request.target();
     info!("Client {client} requesting connection...");
     request.respond(SessionResponse::Accepted);
+    Ok(())
 }
 
-fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>) {
+fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>) -> Result {
     let client = trigger.target();
     info!("Client {client} connecting...");
+    Ok(())
 }
 
-fn on_connected(trigger: Trigger<OnAdd, Session>) {
+fn on_connected(trigger: Trigger<OnAdd, Session>) -> Result {
     let client = trigger.target();
     info!("Client {client} connected.");
+    Ok(())
 }
 
-fn on_disconnected(trigger: Trigger<Disconnected>) {
+fn on_disconnected(trigger: Trigger<Disconnected>) -> Result {
     let client = trigger.target();
 
     match &*trigger {
@@ -176,4 +187,5 @@ fn on_disconnected(trigger: Trigger<Disconnected>) {
             warn!("Client {client} disconnected from server due to error: {err:?}");
         }
     }
+    Ok(())
 }

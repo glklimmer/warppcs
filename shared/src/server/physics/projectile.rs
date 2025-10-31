@@ -31,7 +31,6 @@ type TargetComponents<'a> = (Entity, &'a Transform, &'a BoxCollider, &'a Owner);
 
 #[allow(clippy::type_complexity)]
 fn projectile_collision(
-    mut commands: Commands,
     mut projectiles: Query<
         (
             Entity,
@@ -45,7 +44,8 @@ fn projectile_collision(
     >,
     targets: Query<TargetComponents, (With<Health>, Without<ProjectileType>)>,
     mut attack_events: EventWriter<TakeDamage>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, transform, mut velocity, collider, owner, damage) in &mut projectiles {
         if transform.translation.y - collider.dimension.y <= 0.0 {
             velocity.0 = Vec2::ZERO;
@@ -77,4 +77,5 @@ fn projectile_collision(
             }
         }
     }
+    Ok(())
 }

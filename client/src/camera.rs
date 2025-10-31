@@ -9,7 +9,7 @@ impl Plugin for CameraPlugin {
     }
 }
 
-fn setup_camera(mut commands: Commands) {
+fn setup_camera(mut commands: Commands) -> Result {
     commands
         .spawn((
             Camera2d,
@@ -19,4 +19,5 @@ fn setup_camera(mut commands: Commands) {
             }),
         ))
         .insert(ParallaxCameraComponent::default());
+    Ok(())
 }

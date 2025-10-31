@@ -46,7 +46,7 @@ impl Default for PushBack {
 fn apply_force_on_hit(
     mut hit: EventReader<TakeDamage>,
     mut query: Query<(&mut Velocity, &mut PushBack)>,
-) {
+) -> Result {
     for event in hit.read() {
         if let Ok((mut velocity, mut push_back)) = query.get_mut(event.target_entity)
             && push_back.timer.finished()
@@ -57,10 +57,12 @@ fn apply_force_on_hit(
             velocity.0 += push;
         }
     }
+    Ok(())
 }
 
-fn push_back_timer(mut query: Query<&mut PushBack>, time: Res<Time>) {
+fn push_back_timer(mut query: Query<&mut PushBack>, time: Res<Time>) -> Result {
     for mut push_back in &mut query {
         push_back.timer.tick(time.delta());
     }
+    Ok(())
 }

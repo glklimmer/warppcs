@@ -60,7 +60,7 @@ impl FromWorld for HorseSpriteSheet {
 pub fn next_horse_animation(
     mut network_events: EventReader<AnimationChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<HorseAnimation>>,
-) {
+) -> Result {
     for event in network_events.read() {
         let new_animation = match &event.change {
             AnimationChange::Attack
@@ -77,10 +77,10 @@ pub fn next_horse_animation(
             state: new_animation,
         });
     }
+    Ok(())
 }
 
 pub fn set_horse_sprite_animation(
-    mut command: Commands,
     mut query: Query<(
         Entity,
         &mut SpriteSheetAnimation,
@@ -89,7 +89,8 @@ pub fn set_horse_sprite_animation(
     )>,
     mut animation_changed: EventReader<AnimationTrigger<HorseAnimation>>,
     horse_sprite_sheet: Res<HorseSpriteSheet>,
-) {
+    mut command: Commands,
+) -> Result {
     for new_animation in animation_changed.read() {
         if let Ok((entity, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
@@ -121,4 +122,5 @@ pub fn set_horse_sprite_animation(
             *current_animation = new_animation.state;
         }
     }
+    Ok(())
 }

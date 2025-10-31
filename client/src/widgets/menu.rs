@@ -170,12 +170,12 @@ pub struct NodePayload<T>(T);
 
 fn open_menu<T: Clone + Send + Sync + 'static>(
     trigger: Trigger<OnAdd, Menu<T>>,
-    mut commands: Commands,
     mut active: ResMut<ActiveMenus>,
     query: Query<&Menu<T>>,
-) {
+    mut commands: Commands,
+) -> Result {
     let menu_entity = trigger.target();
-    let menu = query.get(menu_entity).unwrap();
+    let menu = query.get(menu_entity)?;
 
     let len = menu.nodes.len();
     let mut offset = -((len / 2) as f32 * menu.config.gap);
@@ -205,6 +205,7 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
     }
 
     active.push(menu_entity);
+    Ok(())
 }
 
 #[derive(Event)]
@@ -216,25 +217,23 @@ fn cycle_commands(
     active: Query<Entity, With<Selected>>,
     children_query: Query<&Children>,
     mut commands: Commands,
-) {
+) -> Result {
     let direction = if input.any_just_pressed([KeyCode::KeyD, KeyCode::ArrowRight]) {
         1
     } else if input.any_just_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]) {
         -1
     } else {
-        return;
+        return Ok(());
     };
 
     let Some(active_menu) = active_menu.last() else {
-        return;
+        return Err(BevyError::from("No active menu"));
     };
-    let Ok(descendants) = children_query.get(*active_menu) else {
-        return;
-    };
+    let descendants = children_query.get(*active_menu)?;
 
     let total_items = descendants.len() as i32;
     if total_items == 0 {
-        return;
+        return Ok(());
     }
 
     let mut current_index: i32 = 0;
@@ -251,6 +250,7 @@ fn cycle_commands(
     if let Some(next_entity) = descendants.get(next_index as usize) {
         commands.entity(*next_entity).insert(Selected);
     }
+    Ok(())
 }
 
 #[derive(Event)]
@@ -259,19 +259,19 @@ pub struct CloseEvent;
 fn close_menu(
     mut close_events: EventReader<CloseEvent>,
     input: Res<ButtonInput<KeyCode>>,
-    mut commands: Commands,
     mut active_menus: ResMut<ActiveMenus>,
     children_query: Query<&Children>,
     mut next_state: ResMut<NextState<PlayerState>>,
-) {
+    mut commands: Commands,
+) -> Result {
     let key_pressed = input.any_just_pressed([KeyCode::Escape, KeyCode::KeyS]);
     let event_fired = close_events.read().next().is_some();
     if !(key_pressed || event_fired) {
-        return;
+        return Ok(());
     }
 
     let Some(menu_entity) = active_menus.pop() else {
-        return;
+        return Err(BevyError::from("No active menu"));
     };
 
     if let Ok(children) = children_query.get(menu_entity) {
@@ -283,6 +283,7 @@ fn close_menu(
     if active_menus.is_empty() {
         next_state.set(PlayerState::World);
     }
+    Ok(())
 }
 
 #[derive(Event)]
@@ -298,14 +299,15 @@ fn close_menu_trigger<T: Clone + Send + Sync + 'static>(
     mut close_events: EventReader<ClosedMenu<T>>,
     input: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
-) {
+) -> Result {
     let key_pressed = input.any_just_pressed([KeyCode::Escape, KeyCode::KeyS]);
     let event_fired = close_events.read().next().is_some();
     if !(key_pressed || event_fired) {
-        return;
+        return Ok(());
     }
 
     commands.trigger(ClosedMenu::<T>(PhantomData));
+    Ok(())
 }
 
 #[derive(Resource, Deref, DerefMut, Default)]
@@ -319,17 +321,15 @@ pub struct SelectionEvent<T> {
 }
 
 fn selection_callback<T: Clone + Send + Sync + 'static>(
-    mut commands: Commands,
     active: Res<ActiveMenus>,
     children: Query<&Children>,
     menu_query: Query<&NodePayload<T>, With<Selected>>,
-) {
+    mut commands: Commands,
+) -> Result {
     let Some(menu) = active.last() else {
-        return;
+        return Err(BevyError::from("No active menu found"));
     };
-    let Ok(children) = children.get(*menu) else {
-        return;
-    };
+    let children = children.get(*menu)?;
 
     for child in children.iter() {
         let Ok(selected) = menu_query.get(child) else {
@@ -342,4 +342,5 @@ fn selection_callback<T: Clone + Send + Sync + 'static>(
             entry: child,
         });
     }
+    Ok(())
 }

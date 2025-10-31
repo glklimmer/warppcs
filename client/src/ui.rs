@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use shared::networking::Inventory;
+use shared::{GameState, networking::Inventory};
 
 use crate::networking::ControlledPlayer;
 
@@ -12,11 +12,14 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PostStartup, setup_ui);
 
-        app.add_systems(FixedUpdate, update_gold_amount);
+        app.add_systems(
+            FixedUpdate,
+            update_gold_amount.run_if(in_state(GameState::GameSession)),
+        );
     }
 }
 
-fn setup_ui(mut commands: Commands) {
+fn setup_ui(mut commands: Commands) -> Result {
     commands
         .spawn(Node {
             display: Display::Flex,
@@ -39,14 +42,15 @@ fn setup_ui(mut commands: Commands) {
                 GoldAmountDisplay,
             ));
         });
+    Ok(())
 }
 
 fn update_gold_amount(
     mut gold_display_query: Query<&mut Text, With<GoldAmountDisplay>>,
     inventory_query: Query<&Inventory, With<ControlledPlayer>>,
-) {
-    if let Ok(inventory) = inventory_query.single() {
-        let mut gold_display = gold_display_query.single_mut().unwrap();
-        gold_display.0 = format!("Gold Amount: {}", inventory.gold);
-    }
+) -> Result {
+    let inventory = inventory_query.single()?;
+    let mut gold_display = gold_display_query.single_mut()?;
+    gold_display.0 = format!("Gold Amount: {}", inventory.gold);
+    Ok(())
 }

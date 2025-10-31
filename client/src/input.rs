@@ -20,17 +20,19 @@ impl Plugin for InputPlugin {
 fn lobby_input(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut lobby_events: EventWriter<LobbyEvent>,
-) {
+) -> Result {
     if keyboard_input.just_pressed(KeyCode::Enter) {
         lobby_events.write(LobbyEvent::StartGame);
     }
+    Ok(())
 }
 
 fn gizmos_settings(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut settings: ResMut<GizmosSettings>,
-) {
+) -> Result {
     if keyboard_input.just_pressed(KeyCode::KeyY) {
         settings.on = !settings.on;
     }
+    Ok(())
 }

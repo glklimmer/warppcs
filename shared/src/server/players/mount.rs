@@ -68,14 +68,14 @@ fn mount(
     mut commands: Commands,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     mount_query: Query<&Mount>,
-) {
+) -> Result {
     for event in interactions.read() {
         let InteractionType::Mount = &event.interaction else {
             continue;
         };
 
         let player = event.player;
-        let mount = mount_query.get(event.interactable).unwrap();
+        let mount = mount_query.get(event.interactable)?;
 
         let new_speed: Speed = mount.mount_type.into();
 
@@ -99,21 +99,22 @@ fn mount(
             },
         });
     }
+    Ok(())
 }
 
 fn unmount(
     mut interactions: EventReader<InteractionTriggeredEvent>,
     mut player_query: Query<(&Mounted, &Transform, &GameSceneId)>,
-    mut commands: Commands,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in interactions.read() {
         let InteractionType::Unmount = &event.interaction else {
             continue;
         };
 
         let player = event.player;
-        let (mounted, transform, game_scene_id) = player_query.get_mut(player).unwrap();
+        let (mounted, transform, game_scene_id) = player_query.get_mut(player)?;
 
         let new_speed = Speed::default();
 
@@ -142,13 +143,14 @@ fn unmount(
             },
         });
     }
+    Ok(())
 }
 
 fn spawn_mount_on_unmount(
-    mut commands: Commands,
     mut delayed_spawns: Query<(Entity, &mut DelayedMountSpawn, &GameSceneId)>,
+    mut commands: Commands,
     time: Res<Time>,
-) {
+) -> Result {
     for (entity, mut delayed_spawn, game_scene_id) in delayed_spawns.iter_mut() {
         delayed_spawn.timer.tick(time.delta());
 
@@ -164,4 +166,5 @@ fn spawn_mount_on_unmount(
             commands.entity(entity).despawn();
         }
     }
+    Ok(())
 }

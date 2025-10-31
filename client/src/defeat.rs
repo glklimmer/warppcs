@@ -24,7 +24,7 @@ fn set_defeated(
     }
 }
 
-fn defeat(mut commands: Commands, assets: Res<AssetServer>) {
+fn defeat(assets: Res<AssetServer>, mut commands: Commands) -> Result {
     let defeat_texture = assets.load::<Image>("sprites/ui/defeat.png");
 
     commands.spawn((
@@ -46,4 +46,5 @@ fn defeat(mut commands: Commands, assets: Res<AssetServer>) {
             TextFont::from_font_size(60.)
         )],
     ));
+    Ok(())
 }

@@ -32,7 +32,7 @@ impl Plugin for JoinServerPlugin {
 }
 
 #[cfg(feature = "netcode")]
-pub fn join_web_transport_server(mut commands: Commands) {
+pub fn join_web_transport_server(mut commands: Commands) -> Result {
     use aeronet_webtransport::client::WebTransportClient;
     use shared::server::create_server::WEB_TRANSPORT_PORT;
 
@@ -42,6 +42,7 @@ pub fn join_web_transport_server(mut commands: Commands) {
     commands
         .spawn_empty()
         .queue(WebTransportClient::connect(config, default_target));
+    Ok(())
 }
 
 #[cfg(feature = "netcode")]
@@ -77,7 +78,10 @@ fn web_transport_config(cert_hash: Option<String>) -> WebTransportClientConfig {
 use bevy_steamworks::SteamworksEvent;
 
 #[cfg(feature = "steam")]
-fn join_steam_server(mut join_lobby: EventReader<SteamworksEvent>, mut commands: Commands) {
+fn join_steam_server(
+    mut join_lobby: EventReader<SteamworksEvent>,
+    mut commands: Commands,
+) -> Result {
     use aeronet_steam::SessionConfig;
     use aeronet_steam::client::SteamNetClient;
     use bevy_steamworks::{ClientManager, GameLobbyJoinRequested};
@@ -94,17 +98,19 @@ fn join_steam_server(mut join_lobby: EventReader<SteamworksEvent>, mut commands:
                 friend_steam_id,
             ));
     }
+    Ok(())
 }
 
-fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>, mut commands: Commands) {
+fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>, mut commands: Commands) -> Result {
     let entity = trigger.target();
 
     info!("Joining server...");
 
     commands.entity(entity).insert(AeronetRepliconClient);
+    Ok(())
 }
 
-fn on_connected(trigger: Trigger<OnAdd, Session>, mut commands: Commands) {
+fn on_connected(trigger: Trigger<OnAdd, Session>, mut commands: Commands) -> Result {
     let entity = trigger.target();
 
     info!("Joined server.");
@@ -112,9 +118,10 @@ fn on_connected(trigger: Trigger<OnAdd, Session>, mut commands: Commands) {
     commands
         .entity(entity)
         .insert((TransportConfig { ..default() },));
+    Ok(())
 }
 
-fn on_disconnected(trigger: Trigger<Disconnected>) {
+fn on_disconnected(trigger: Trigger<Disconnected>) -> Result {
     match &*trigger {
         Disconnected::ByUser(reason) => {
             format!("Disconnected by user: {reason}")
@@ -126,4 +133,5 @@ fn on_disconnected(trigger: Trigger<Disconnected>) {
             format!("Disconnected due to error: {err:?}")
         }
     };
+    Ok(())
 }

@@ -19,7 +19,7 @@ fn check_assets_ready(
     mut next_state: ResMut<NextState<GameState>>,
     asset_server: Res<AssetServer>,
     assets_to_load: Res<AssetsToLoad>,
-) {
+) -> Result {
     let all_loaded = assets_to_load
         .iter()
         .all(|handle| asset_server.is_loaded(handle.id()));
@@ -27,4 +27,5 @@ fn check_assets_ready(
     if all_loaded {
         next_state.set(GameState::MainMenu);
     }
+    Ok(())
 }

@@ -77,7 +77,7 @@ impl Plugin for HealthPlugin {
             (
                 (
                     delayed_damage,
-                    apply_damage.run_if(on_event::<TakeDamage>),
+                    apply_damage,
                     (on_building_destroy, on_unit_death),
                     update_build_status,
                 )
@@ -93,7 +93,7 @@ fn delayed_damage(
     mut attack_events: EventWriter<TakeDamage>,
     mut commands: Commands,
     time: Res<Time>,
-) {
+) -> Result {
     for (entity, mut delay) in query.iter_mut() {
         delay.timer.tick(time.delta());
         if delay.timer.finished() {
@@ -101,13 +101,14 @@ fn delayed_damage(
             commands.entity(entity).despawn();
         }
     }
+    Ok(())
 }
 
 fn apply_damage(
     mut attack_events: EventReader<TakeDamage>,
     mut query: Query<(Entity, &mut Health)>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
-) {
+) -> Result {
     for event in attack_events.read() {
         if let Ok((entity, mut health)) = query.get_mut(event.target_entity) {
             health.hitpoints -= event.damage;
@@ -121,9 +122,12 @@ fn apply_damage(
             });
         }
     }
+    Ok(())
 }
 
-fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), Changed<Health>>) {
+fn update_build_status(
+    mut query: Query<(&Health, &mut BuildStatus, &Building), Changed<Health>>,
+) -> Result {
     for (health, mut status, building) in query.iter_mut() {
         let percentage = health.hitpoints / building.health().hitpoints * 100.0;
         let percentage_i32 = percentage.clamp(0.0, 100.0) as i32;
@@ -143,11 +147,11 @@ fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), 
             };
         }
     }
+    Ok(())
 }
 
 fn on_unit_death(
     mut damage_events: EventReader<TakeDamage>,
-    mut commands: Commands,
     mut unit_animation: EventWriter<ToClients<AnimationChangeEvent>>,
     units: Query<
         (
@@ -163,7 +167,8 @@ fn on_unit_death(
     group: Query<&FlagUnits>,
     transform: Query<&Transform>,
     holder: Query<&FlagHolder>,
-) {
+    mut commands: Commands,
+) -> Result {
     for damage_event in damage_events.read() {
         let Ok((entity, health, owner, maybe_targeted_by, maybe_flag_assignment, maybe_army)) =
             units.get(damage_event.target_entity)
@@ -206,12 +211,12 @@ fn on_unit_death(
             .remove::<UnitBehaviour>();
 
         let flag = flag_assignment.entity();
-        let group = group.get(flag).unwrap();
+        let group = group.get(flag)?;
         let num_alive = group.len();
 
         // last unit from flag died
         if num_alive == 1 {
-            let flag_transform = transform.get(flag).unwrap();
+            let flag_transform = transform.get(flag)?;
 
             commands
                 .entity(flag)
@@ -222,8 +227,11 @@ fn on_unit_death(
                 .remove::<AttachedTo>()
                 .remove::<Interactable>();
 
-            if let Some(player) = owner.entity()
-                && let Ok(holder) = holder.get(player)
+            let Ok(player) = owner.entity() else {
+                continue;
+            };
+
+            if let Ok(holder) = holder.get(player)
                 && flag.eq(&**holder)
             {
                 commands.entity(player).remove::<FlagHolder>();
@@ -238,13 +246,14 @@ fn on_unit_death(
                         Visibility::Visible,
                         Interactable {
                             kind: InteractionType::Flag,
-                            restricted_to: owner.entity(),
+                            restricted_to: Some(player),
                         },
                     ));
                 }
             }
         }
     }
+    Ok(())
 }
 
 #[derive(Event, Clone, Copy, Deserialize, Serialize, Deref)]
@@ -257,7 +266,6 @@ impl MapEntities for PlayerDefeated {
 }
 
 fn on_building_destroy(
-    mut commands: Commands,
     mut query: Query<(
         Entity,
         &Health,
@@ -266,7 +274,8 @@ fn on_building_destroy(
         &Owner,
         Option<&TargetedBy>,
     )>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, health, building, mut status, owner, maybe_targeted_by) in query.iter_mut() {
         if health.hitpoints <= 0. {
             *status = BuildStatus::Destroyed;
@@ -276,7 +285,7 @@ fn on_building_destroy(
                 .remove::<Health>()
                 .insert(Interactable {
                     kind: InteractionType::Building,
-                    restricted_to: owner.entity(),
+                    restricted_to: Some(owner.entity()?),
                 });
 
             if let Some(targeted_by) = maybe_targeted_by {
@@ -288,18 +297,19 @@ fn on_building_destroy(
             if let BuildingType::MainBuilding { level: _ } = building.building_type {
                 commands.server_trigger(ToClients {
                     mode: SendMode::Broadcast,
-                    event: PlayerDefeated(owner.entity().unwrap()),
+                    event: PlayerDefeated(owner.entity()?),
                 });
             }
         }
     }
+    Ok(())
 }
 
 fn delayed_despawn(
-    mut commands: Commands,
     mut query: Query<(Entity, &mut DelayedDespawn)>,
+    mut commands: Commands,
     time: Res<Time>,
-) {
+) -> Result {
     for (entity, mut delayed) in &mut query {
         let timer = &mut delayed.0;
         timer.tick(time.delta());
@@ -308,4 +318,5 @@ fn delayed_despawn(
             commands.entity(entity).despawn();
         }
     }
+    Ok(())
 }
