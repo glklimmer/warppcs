@@ -62,6 +62,7 @@ use crate::{
             travel::{Road, SceneEnd},
             world::{InitPlayerMapNode, RevealMapNode},
         },
+        physics::army_slot::ArmySlot,
         players::{chest::ChestOpened, flag::FlagDestroyed},
     },
 };
@@ -121,6 +122,7 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(Mount, Transform)>()
         .replicate_group::<(Chest, Transform)>()
         .replicate_group::<(Item, Transform)>()
+        .replicate_group::<(ArmySlot, Transform)>()
         .sync_related_entities::<FlagAssignment>()
         .add_client_trigger::<ArmyPosition>(Channel::Ordered)
         .add_client_trigger::<CommanderCampInteraction>(Channel::Ordered)
