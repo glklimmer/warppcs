@@ -11,7 +11,7 @@ use king::{
 };
 use objects::{
     chest::{ChestSpriteSheet, set_chest_after_play_once},
-    flag::{FlagSpriteSheet, on_flag_destroyed},
+    flag::{FlagSpriteSheet, on_flag_destroyed, update_flag_visibility},
     items::{
         chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
         weapons::WeaponsSpriteSheet,
@@ -226,7 +226,7 @@ impl Plugin for AnimationPlugin {
         .add_observer(set_unit_after_play_once)
         .add_observer(set_chest_after_play_once)
         .add_observer(remove_animation_after_play_once);
-
+        app.add_systems(Update, update_flag_visibility);
         app.add_systems(
             Update,
             (

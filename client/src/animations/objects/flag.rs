@@ -1,7 +1,11 @@
 use bevy::prelude::*;
 
 use serde::{Deserialize, Serialize};
-use shared::{enum_map::*, server::players::flag::FlagDestroyed};
+use shared::{
+    Player,
+    enum_map::*,
+    server::{physics::attachment::AttachedTo, players::flag::FlagDestroyed},
+};
 
 use crate::{
     anim,
@@ -58,6 +62,21 @@ impl FromWorld for FlagSpriteSheet {
                 animations,
                 animations_sound,
             ),
+        }
+    }
+}
+
+// TODO: Change to Observer after Replcion 0.34 update
+pub fn update_flag_visibility(
+    flag: Query<(Entity, &AttachedTo), Changed<AttachedTo>>,
+    player: Query<&Player>,
+    mut commands: Commands,
+) {
+    for (flag, attachted_to) in flag.iter() {
+        if player.get(**attachted_to).is_ok() {
+            commands.entity(flag).insert(Visibility::Visible);
+        } else {
+            commands.entity(flag).insert(Visibility::Hidden);
         }
     }
 }
