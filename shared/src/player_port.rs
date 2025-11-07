@@ -143,9 +143,7 @@ fn spawn_player_portal(
             _ => false,
         }
     });
-    let Some((.., base_transform, base_game_scene_id)) = maybe_base else {
-        return Err(BevyError::from("Player base not found"));
-    };
+    let (.., base_transform, base_game_scene_id) = maybe_base.ok_or("Player base not found")?;
 
     let player_portal = commands.spawn_empty().id();
     let base_portal = commands.spawn_empty().id();
