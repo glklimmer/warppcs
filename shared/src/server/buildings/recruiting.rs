@@ -24,11 +24,7 @@ use crate::{
             health::Health,
         },
         game_scenes::GameSceneId,
-        physics::{
-            army_slot::ArmySlot,
-            attachment::AttachedTo,
-            movement::{Speed, Velocity},
-        },
+        physics::{army_slot::ArmySlot, attachment::AttachedTo, movement::Speed},
         players::{
             interaction::{
                 Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType,
@@ -384,7 +380,7 @@ pub fn recruit_commander(
                     commander,
                     offset: formation_offset,
                 },
-                Velocity::default(),
+                *game_scene_id,
                 Transform::from_translation(Vec3::new(-formation_offset, 0., 0.))
                     .with_scale(Vec3::new(BASE_FORMATION_WIDTH, 1., 1.)),
             ))

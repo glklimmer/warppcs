@@ -1,9 +1,12 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::Replicated;
+use serde::{Deserialize, Serialize};
 
 use crate::{networking::WorldDirection, server::physics::movement::Velocity};
 
-#[derive(Component)]
+#[derive(Component, Serialize, Deserialize)]
 #[relationship(relationship_target = ArmySlots)]
+#[require(Replicated, Velocity, Transform)]
 pub struct ArmySlot {
     #[relationship]
     pub commander: Entity,

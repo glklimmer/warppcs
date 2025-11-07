@@ -298,22 +298,18 @@ fn assigment_warning(
 fn cleanup_menu_extras(
     _: Trigger<ClosedMenu<ArmyPosition>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
-    child: Query<&Children>,
-    active: Res<ActiveCommander>,
+    mesh_highlights: Query<Entity, (With<Mesh2d>, With<MeshMaterial2d<ColorMaterial>>)>,
     mut commands: Commands,
 ) {
-    if let Some(active_commander) = **active {
-        child.iter_descendants(active_commander).for_each(|entity| {
-            commands
-                .entity(entity)
-                .remove::<(Mesh2d, MeshMaterial2d<ColorMaterial>)>();
-        });
+    for entity in mesh_highlights.iter() {
+        commands
+            .entity(entity)
+            .remove::<(Mesh2d, MeshMaterial2d<ColorMaterial>)>();
     }
 
-    let Ok(current) = current_hover.single() else {
-        return;
-    };
-    commands.entity(current).despawn();
+    if let Ok(current) = current_hover.single() {
+        commands.entity(current).despawn();
+    }
 }
 
 fn highligh_formation(
@@ -323,6 +319,8 @@ fn highligh_formation(
     active: Res<ActiveCommander>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    transform: Query<&Transform>,
+    player: Query<Entity, With<ControlledPlayer>>,
     mut commands: Commands,
 ) {
     let Ok(selected_formation) = menu_entries_add.get(**trigger) else {
@@ -332,7 +330,10 @@ fn highligh_formation(
     let Ok(army_formations) = army_formation.get(active.unwrap()) else {
         return;
     };
-
+    info!(
+        "player position {}",
+        transform.get(player.single().unwrap()).unwrap().translation
+    );
     army_formations
         .positions
         .iter_enums()
@@ -412,7 +413,6 @@ fn update_flag_assignment(
     active: Res<ActiveCommander>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     flag: Query<&Flag>,
-    player: Query<&FlagHolder, With<ControlledPlayer>>,
     mut commands: Commands,
 ) {
     let Some(active_commander) = **active else {
@@ -423,12 +423,6 @@ fn update_flag_assignment(
         return;
     };
 
-    army_flag_assigment.flags.iter().for_each(|flag| {
-        if let Some(flag) = flag {
-            commands.entity(*flag).insert(Visibility::Hidden);
-        }
-    });
-
     let Ok((entry, selected_slot)) = menu_entries.single() else {
         return;
     };
@@ -436,10 +430,6 @@ fn update_flag_assignment(
     if let Ok(current) = current_hover.single() {
         commands.entity(current).despawn();
     };
-
-    if let Ok(player_flag) = player.single() {
-        commands.entity(**player_flag).insert(Visibility::Visible);
-    }
 
     let maybe_flag_assigned = army_flag_assigment.flags.get(**selected_slot);
 
