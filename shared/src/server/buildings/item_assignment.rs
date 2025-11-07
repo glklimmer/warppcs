@@ -86,6 +86,17 @@ pub struct StartBuild;
 #[derive(Resource, Default, Deref, DerefMut)]
 struct ActiveBuilding(HashMap<Entity, Entity>);
 
+trait ActiveBuildingExt {
+    fn get_entity(&self, entity: &Entity) -> Result<&Entity>;
+}
+
+impl ActiveBuildingExt for ActiveBuilding {
+    fn get_entity(&self, entity: &Entity) -> Result<&Entity> {
+        self.get(entity)
+            .ok_or("No building set as ActiveBuilding".into())
+    }
+}
+
 fn check_start_building(
     trigger: Trigger<FromClient<StartBuild>>,
     mut interactions: EventWriter<InteractionTriggeredEvent>,
@@ -95,15 +106,11 @@ fn check_start_building(
     players: Query<&Player>,
     mut commands: Commands,
 ) -> Result {
-    let Some(player_entity) = client_player_map.get(&trigger.client_entity) else {
-        return Err(BevyError::from("No player entity"));
-    };
+    let player_entity = client_player_map.get_player(&trigger.client_entity)?;
     let player = players.get(*player_entity)?;
-    let Some(active_building) = active.get(player_entity) else {
-        return Err(BevyError::from("No active building"));
-    };
+    let active_building = *active.get_entity(player_entity)?;
 
-    let assignment = assignment.get(*active_building)?;
+    let assignment = assignment.get(active_building)?;
     let items: Vec<_> = match assignment
         .items
         .clone()
@@ -124,7 +131,7 @@ fn check_start_building(
             None
         }
     }) {
-        commands.entity(*active_building).insert((
+        commands.entity(active_building).insert((
             Building {
                 building_type: BuildingType::Unit { weapon },
                 color: player.color,
@@ -137,7 +144,7 @@ fn check_start_building(
 
     interactions.write(InteractionTriggeredEvent {
         player: *player_entity,
-        interactable: *active_building,
+        interactable: active_building,
         interaction: InteractionType::Building,
     });
 
@@ -181,9 +188,7 @@ fn assign_item(
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {
     let player = client_player_map.get_player(&trigger.client_entity)?;
-    let active_building = active
-        .get(player)
-        .ok_or("No building is set as ActiveBuilding")?;
+    let active_building = *active.get_entity(player)?;
     let mut inventory = inventory.get_mut(*player)?;
 
     let item = &***trigger;
@@ -192,7 +197,7 @@ fn assign_item(
     };
     inventory.items.remove(index);
 
-    let mut assignment = assignment.get_mut(*active_building)?;
+    let mut assignment = assignment.get_mut(active_building)?;
     let maybe_item = assignment.items.set(item.slot(), Some(item.clone()));
     if let Some(item) = maybe_item {
         inventory.items.push(item);
