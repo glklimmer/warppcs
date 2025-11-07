@@ -203,15 +203,18 @@ fn open_slots_dialog(
             let atlas = formations.sprite_sheet.texture_atlas(icon);
             let texture = formations.sprite_sheet.texture.clone();
 
-            let has_unit_weapon = maybe_flag.map(|flag_entity| {
-                let flag = flag.get(flag_entity).expect("No flag found");
+            let maybe_weapon_sprite = maybe_flag.and_then(|flag_entity| {
+                let Ok(flag) = flag.get(flag_entity) else {
+                    return None;
+                };
                 let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
-                commands
+                let weapon_sprite_entity = commands
                     .spawn((
                         weapon_sprite,
                         Transform::from_xyz(0., 0., 1.).with_scale(Vec3::new(4., 4., 1.)),
                     ))
-                    .id()
+                    .id();
+                Some(weapon_sprite_entity)
             });
 
             MenuNode::with_fn(formation, move |commands, entry| {
@@ -224,7 +227,7 @@ fn open_slots_dialog(
                     ..Default::default()
                 });
 
-                if let Some(flag_weapon) = has_unit_weapon {
+                if let Some(flag_weapon) = maybe_weapon_sprite {
                     entry.add_child(flag_weapon);
                 }
             })
