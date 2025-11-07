@@ -139,11 +139,13 @@ pub fn recruit_units(
     if let UnitType::Commander = unit_type {
         return Ok(());
     }
+    // No items when commander, but already handled
+    let Some(items) = items else {
+        return Ok(());
+    };
+
     let player = *player;
     let unit_type = *unit_type;
-    let Some(items) = items else {
-        return Err(BevyError::from("No items provided"));
-    };
 
     let (player_transform, mut inventory, Player { color }, game_scene_id) =
         player_query.get_mut(player)?;
