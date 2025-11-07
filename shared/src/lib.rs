@@ -374,7 +374,7 @@ impl Owner {
     pub fn entity(&self) -> Result<Entity, BevyError> {
         match self {
             Owner::Player(entity) => Ok(*entity),
-            Owner::Bandits => Err(BevyError::from("Not a player")),
+            Owner::Bandits => Err(BevyError::from("Owner is not a player")),
         }
     }
 
