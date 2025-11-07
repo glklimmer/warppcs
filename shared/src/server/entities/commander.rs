@@ -308,9 +308,7 @@ fn assign_flag_to_formation(
     };
 
     let (mut units_assignments, army_formation) = commanders.get_mut(trigger.commander)?;
-    let Some(flag) = trigger.flag else {
-        return Err(BevyError::from("No new flag provided"));
-    };
+    let flag = trigger.flag.ok_or("No new flag provided")?;
 
     units_assignments
         .flags
@@ -337,9 +335,10 @@ fn remove_flag_from_formation(
 
     let mut units_assignments = commanders.get_mut(trigger.commander)?;
 
-    let Some(flag) = units_assignments.flags.set(trigger.selected_slot, None) else {
-        return Err(BevyError::from("Failed to remove flag"));
-    };
+    let flag = units_assignments
+        .flags
+        .set(trigger.selected_slot, None)
+        .ok_or("There is no flag to be removed")?;
 
     commands.entity(flag).insert((
         AttachedTo(trigger.player),
@@ -364,14 +363,12 @@ fn swap_flag_from_formation(
 
     let (mut army_flag_assignments, army_formation) = commanders.get_mut(trigger.commander)?;
 
-    let Some(new_flag) = trigger.flag else {
-        return Err(BevyError::from("No new flag provided"));
-    };
+    let new_flag = trigger.flag.ok_or("No new flag provided")?;
 
-    let old_flag = match army_flag_assignments.flags.get(trigger.selected_slot) {
-        Some(flag) => *flag,
-        None => return Err(BevyError::from("No old flag provided")),
-    };
+    let old_flag = army_flag_assignments
+        .flags
+        .get(trigger.selected_slot)
+        .ok_or("There is no flag to be swapped")?;
 
     army_flag_assignments
         .flags
