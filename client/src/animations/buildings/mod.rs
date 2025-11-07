@@ -17,7 +17,9 @@ use wall_tower::wall_tower_building;
 use wall_wood::wall_wood_building;
 
 use crate::{
-    animations::{AnimationSound, AnimationSoundTrigger},
+    animations::{
+        AnimationSound, AnimationSoundTrigger, sprite_variant_loader::SpriteVariantsAssetsExt,
+    },
     sound::CRAFTING_SOUND_PATH,
 };
 
@@ -92,9 +94,7 @@ pub fn update_building_sprite(
             .get(building.building_type);
 
         let handle = &sprite_sheet.texture;
-        let sprite_variants = variants
-            .get(handle)
-            .ok_or("Sprite variant not generated yet")?;
+        let sprite_variants = variants.get_variant(handle)?;
         let mut animation = sprite_sheet.animations.get(*status).clone();
 
         sprite.texture_atlas = Some(TextureAtlas {

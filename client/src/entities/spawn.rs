@@ -24,7 +24,7 @@ use crate::{
             portal::{PortalAnimation, PortalSpriteSheet},
             projectiles::{ProjectileSpriteSheet, Projectiles},
         },
-        sprite_variant_loader::SpriteVariants,
+        sprite_variant_loader::{SpriteVariants, SpriteVariantsAssetsExt},
         units::UnitSpriteSheets,
         world::{
             TreeAnimation,
@@ -78,9 +78,7 @@ fn init_player_sprite(
     let (mut sprite, player) = players.get_mut(trigger.target())?;
 
     let handle = &king_sprite_sheet.sprite_sheet.texture;
-    let Some(sprite_variants) = variants.get(handle) else {
-        return Err(BevyError::from("No variant found"));
-    };
+    let sprite_variants = variants.get_variant(handle)?;
     let animation = king_sprite_sheet
         .sprite_sheet
         .animations
@@ -128,9 +126,7 @@ fn init_unit_sprite(
 
     let sprite_sheet = &sprite_sheets.sprite_sheets.get(unit.unit_type);
     let handle = &sprite_sheet.texture;
-    let Some(sprite_variants) = variants.get(handle) else {
-        return Err(BevyError::from("No variant found"));
-    };
+    let sprite_variants = variants.get_variant(handle)?;
     let animation = match maybe_health {
         Some(_) => UnitAnimation::Idle,
         None => UnitAnimation::Death,
@@ -159,9 +155,7 @@ fn init_flag_sprite(
 
     let sprite_sheet = &flag_sprite_sheet.sprite_sheet;
     let handle = &sprite_sheet.texture;
-    let Some(sprite_variants) = variants.get(handle) else {
-        return Err(BevyError::from("No variant found"));
-    };
+    let sprite_variants = variants.get_variant(handle)?;
     let animation = sprite_sheet.animations.get(FlagAnimation::default());
 
     sprite.image = sprite_variants.variants.get(flag.color).clone();
