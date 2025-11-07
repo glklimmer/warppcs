@@ -63,12 +63,8 @@ fn handle_multiple_animation_sound(
     mut commands: Commands,
 ) -> Result {
     for event in sound_events.read() {
-        if event.sound_handles.is_empty() {
-            continue;
-        }
-
         let Some(random_sound) = fastrand::choice(event.sound_handles.iter()) else {
-            return Err(BevyError::from("No sound handle prvided"));
+            continue;
         };
         if let Ok(mut entity_command) = commands.get_entity(event.entity) {
             entity_command.insert((
