@@ -176,7 +176,8 @@ fn handle_pick_flag(
 
     if let Ok(Some(current_flag)) = flag_holder.get(*player) {
         let all_army_flags_assigned = army_flag_assignments.flags.iter().all(Option::is_some);
-        let unit_type = flag.get(**current_flag)?.1.unit_type;
+        let (_, flag) = flag.get(**current_flag)?;
+        let unit_type = flag.unit_type;
 
         if all_army_flags_assigned || unit_type.eq(&UnitType::Commander) {
             commands.entity(**current_flag).remove::<AttachedTo>();
