@@ -192,9 +192,7 @@ fn spawn_clients(
     mut client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let Some(color) = fastrand::choice(PlayerColor::all_variants()) else {
-        return Err(BevyError::from("Failed to choose a player color"));
-    };
+    let color = fastrand::choice(PlayerColor::all_variants()).ok_or("No PlayerColor available")?;
     let player = commands
         .entity(trigger.target())
         .insert((
