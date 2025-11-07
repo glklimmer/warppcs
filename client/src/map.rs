@@ -253,12 +253,8 @@ fn spawn_travel_dashline(
     let traveling = traveling.single()?;
     let (_, maybe_source_game_scene) = traveling.source;
     let (_, maybe_target_game_scene) = traveling.target;
-    let Some(source) = maybe_source_game_scene else {
-        return Err(BevyError::from("No source game scene found"));
-    };
-    let Some(target) = maybe_target_game_scene else {
-        return Err(BevyError::from("No target game scene found"));
-    };
+    let source = maybe_source_game_scene.ok_or("No source game scene found")?;
+    let target = maybe_target_game_scene.ok_or("No target game scene found")?;
 
     let dash_len = 4.5;
     let gap = 3.0;
