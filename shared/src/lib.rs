@@ -224,7 +224,7 @@ fn update_visibility(
     player_check: Query<(), With<Player>>,
 ) -> Result {
     let entity = trigger.target();
-    let new_entity_scene_id = others.get(entity)?.1;
+    let (_, new_entity_scene_id) = others.get(entity)?;
 
     if player_check.get(entity).is_ok() {
         let player_scenes: HashMap<Entity, GameSceneId> = players
@@ -234,17 +234,17 @@ fn update_visibility(
 
         for (player_entity, mut visibility, _player_scene_id) in &mut players {
             if player_entity.eq(&entity) {
-                let Some(player_scene_id) = player_scenes.get(&entity) else {
-                    return Err(BevyError::from("Player scene ID not found"));
-                };
+                let player_scene_id = player_scenes
+                    .get(&entity)
+                    .ok_or("GameSceneId for player not found")?;
                 for (other_entity, other_scene_id) in &others {
                     visibility.set_visibility(other_entity, other_scene_id.eq(player_scene_id));
                 }
             } else {
-                let Some(other_player_scene_id) = player_scenes.get(&player_entity) else {
-                    return Err(BevyError::from("Other Player scene ID not found"));
-                };
-                visibility.set_visibility(entity, other_player_scene_id.eq(new_entity_scene_id));
+                let player_scene_id = player_scenes
+                    .get(&player_entity)
+                    .ok_or("GameSceneId for player not found")?;
+                visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
             }
         }
     } else {
