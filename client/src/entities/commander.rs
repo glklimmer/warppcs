@@ -183,10 +183,7 @@ fn open_slots_dialog(
         return Ok(());
     };
 
-    let Some(active_commander) = active.0 else {
-        return Err(BevyError::from("No active commander found"));
-    };
-
+    let active_commander = (**active).ok_or("No active commander found")?;
     let entry_position = transform.get(trigger.entry)?.translation();
     let army_flag_assignments = army_flag_assignments.get(active_commander)?;
     let commander_facing = transform.get(active_commander)?.scale().x.signum();
