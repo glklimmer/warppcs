@@ -135,7 +135,7 @@ fn respawm_player(
     mut next_state: ResMut<NextState<PlayerState>>,
     mut king_animation: EventWriter<ToClients<AnimationChangeEvent>>,
     mut commands: Commands,
-) -> Result {
+) {
     for (player_entity, mut timer) in respawn_query.iter_mut() {
         timer.timer.tick(time.delta());
 
@@ -155,5 +155,4 @@ fn respawm_player(
             });
         }
     }
-    Ok(())
 }

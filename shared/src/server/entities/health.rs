@@ -93,7 +93,7 @@ fn delayed_damage(
     mut attack_events: EventWriter<TakeDamage>,
     mut commands: Commands,
     time: Res<Time>,
-) -> Result {
+) {
     for (entity, mut delay) in query.iter_mut() {
         delay.timer.tick(time.delta());
         if delay.timer.finished() {
@@ -101,14 +101,13 @@ fn delayed_damage(
             commands.entity(entity).despawn();
         }
     }
-    Ok(())
 }
 
 fn apply_damage(
     mut attack_events: EventReader<TakeDamage>,
     mut query: Query<(Entity, &mut Health)>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
-) -> Result {
+) {
     for event in attack_events.read() {
         if let Ok((entity, mut health)) = query.get_mut(event.target_entity) {
             health.hitpoints -= event.damage;
@@ -122,12 +121,9 @@ fn apply_damage(
             });
         }
     }
-    Ok(())
 }
 
-fn update_build_status(
-    mut query: Query<(&Health, &mut BuildStatus, &Building), Changed<Health>>,
-) -> Result {
+fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), Changed<Health>>) {
     for (health, mut status, building) in query.iter_mut() {
         let percentage = health.hitpoints / building.health().hitpoints * 100.0;
         let percentage_i32 = percentage.clamp(0.0, 100.0) as i32;
@@ -147,7 +143,6 @@ fn update_build_status(
             };
         }
     }
-    Ok(())
 }
 
 fn on_unit_death(
@@ -309,7 +304,7 @@ fn delayed_despawn(
     mut query: Query<(Entity, &mut DelayedDespawn)>,
     mut commands: Commands,
     time: Res<Time>,
-) -> Result {
+) {
     for (entity, mut delayed) in &mut query {
         let timer = &mut delayed.0;
         timer.tick(time.delta());
@@ -318,5 +313,4 @@ fn delayed_despawn(
             commands.entity(entity).despawn();
         }
     }
-    Ok(())
 }

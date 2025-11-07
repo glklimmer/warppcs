@@ -170,7 +170,7 @@ fn progess_construction(
     time: Res<Time>,
     mut writer: EventWriter<BuildingChangeEnd>,
     mut commands: Commands,
-) -> Result {
+) {
     for (entity, mut building) in &mut query {
         building.timer.tick(time.delta());
 
@@ -179,7 +179,6 @@ fn progess_construction(
             commands.entity(entity).remove::<BuildingConstructing>();
         }
     }
-    Ok(())
 }
 
 fn end_construction(

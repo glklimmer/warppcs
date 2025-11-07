@@ -26,7 +26,7 @@ impl Plugin for PlayerMovement {
 #[derive(Deserialize, Deref, Event, Serialize)]
 struct MovePlayer(Vec2);
 
-fn movement_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) -> Result {
+fn movement_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) {
     let mut direction = Vec2::ZERO;
     if input.pressed(KeyCode::KeyA) || input.pressed(KeyCode::ArrowLeft) {
         direction.x -= 1.0;
@@ -38,7 +38,6 @@ fn movement_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) -> R
     if direction != Vec2::ZERO {
         commands.client_trigger(MovePlayer(direction.normalize_or_zero()));
     }
-    Ok(())
 }
 
 fn apply_movement(

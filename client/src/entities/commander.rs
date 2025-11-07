@@ -148,30 +148,25 @@ fn open_commander_dialog(
     Ok(())
 }
 
-fn select_create_camp(
-    trigger: Trigger<SelectionEvent<MainMenuEntries>>,
-    mut commands: Commands,
-) -> Result {
+fn select_create_camp(trigger: Trigger<SelectionEvent<MainMenuEntries>>, mut commands: Commands) {
     let MainMenuEntries::Camp = trigger.selection else {
-        return Ok(());
+        return;
     };
 
     commands.client_trigger(CommanderCampInteraction);
-    Ok(())
 }
 
 fn select_commander_flag(
     trigger: Trigger<SelectionEvent<MainMenuEntries>>,
     mut close_menu: EventWriter<CloseEvent>,
     mut commands: Commands,
-) -> Result {
+) {
     let MainMenuEntries::Flag = trigger.selection else {
-        return Ok(());
+        return;
     };
 
     commands.client_trigger(CommanderPickFlag);
     close_menu.write(CloseEvent);
-    Ok(())
 }
 
 fn open_slots_dialog(
@@ -249,7 +244,7 @@ fn open_slots_dialog(
     Ok(())
 }
 
-fn send_selected(trigger: Trigger<SelectionEvent<ArmyPosition>>, mut commands: Commands) -> Result {
+fn send_selected(trigger: Trigger<SelectionEvent<ArmyPosition>>, mut commands: Commands) {
     let SelectionEvent {
         selection: slot,
         menu: _,
@@ -257,7 +252,6 @@ fn send_selected(trigger: Trigger<SelectionEvent<ArmyPosition>>, mut commands: C
     } = *trigger;
 
     commands.client_trigger(slot);
-    Ok(())
 }
 
 fn assignment_reject(

@@ -88,7 +88,7 @@ fn process_attacks(
     )>,
     mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
-) -> Result {
+) {
     for (ctx, attacking_range) in query.iter() {
         let entity = ctx.target_entity();
         let Ok((mut unit, target, owner, transform, damage, game_scene_id)) = unit.get_mut(entity)
@@ -181,5 +181,4 @@ fn process_attacks(
         });
         unit.swing_timer.reset();
     }
-    Ok(())
 }

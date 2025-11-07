@@ -299,15 +299,14 @@ fn close_menu_trigger<T: Clone + Send + Sync + 'static>(
     mut close_events: EventReader<ClosedMenu<T>>,
     input: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
-) -> Result {
+) {
     let key_pressed = input.any_just_pressed([KeyCode::Escape, KeyCode::KeyS]);
     let event_fired = close_events.read().next().is_some();
     if !(key_pressed || event_fired) {
-        return Ok(());
+        return;
     }
 
     commands.trigger(ClosedMenu::<T>(PhantomData));
-    Ok(())
 }
 
 #[derive(Resource, Deref, DerefMut, Default)]

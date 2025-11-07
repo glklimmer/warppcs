@@ -117,7 +117,7 @@ pub fn trigger_king_animation(
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<Option<&Mounted>, With<Player>>,
     mut commands: Commands,
-) -> Result {
+) {
     for event in animation_changes.read() {
         if let Ok(maybe_mounted) = mounted.get(event.entity) {
             let new_animation = match maybe_mounted {
@@ -148,14 +148,13 @@ pub fn trigger_king_animation(
             });
         }
     }
-    Ok(())
 }
 
 pub fn set_king_walking(
     trigger: Trigger<OnAdd, Moving>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<Option<&Mounted>, With<Player>>,
-) -> Result {
+) {
     if let Ok(maybe_mounted) = mounted.get(trigger.target()) {
         let new_animation = match maybe_mounted {
             Some(_) => KingAnimation::HorseWalk,
@@ -167,40 +166,37 @@ pub fn set_king_walking(
             state: new_animation,
         });
     }
-    Ok(())
 }
 
 pub fn set_king_defeat(
     trigger: Trigger<PlayerDefeated>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mut commands: Commands,
-) -> Result {
+) {
     commands.entity(**trigger).insert(PlayOnce);
     animation_trigger.write(AnimationTrigger {
         entity: **trigger,
         state: KingAnimation::Death,
     });
-    Ok(())
 }
 
 pub fn remove_animation(
     trigger: Trigger<OnRemove, PlayOnce>,
     current_animation: Query<&KingAnimation>,
     mut commands: Commands,
-) -> Result {
+) {
     if let Ok(KingAnimation::Death) = current_animation.get(trigger.target()) {
         commands
             .entity(trigger.target())
             .remove::<SpriteSheetAnimation>();
     };
-    Ok(())
 }
 
 pub fn set_king_after_play_once(
     trigger: Trigger<OnRemove, PlayOnce>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<(&KingAnimation, Option<&Mounted>)>,
-) -> Result {
+) {
     if let Ok((animation, maybe_mounted)) = mounted.get(trigger.target()) {
         let new_animation = match animation {
             KingAnimation::Attack | KingAnimation::Mount | KingAnimation::Unmount => {
@@ -217,14 +213,13 @@ pub fn set_king_after_play_once(
             state: new_animation,
         });
     }
-    Ok(())
 }
 
 pub fn set_king_idle(
     trigger: Trigger<OnRemove, Moving>,
     mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<Option<&Mounted>, With<Player>>,
-) -> Result {
+) {
     if let Ok(maybe_mounted) = mounted.get(trigger.target()) {
         let new_animation = match maybe_mounted {
             Some(_) => KingAnimation::HorseIdle,
@@ -236,7 +231,6 @@ pub fn set_king_idle(
             state: new_animation,
         });
     }
-    Ok(())
 }
 
 pub fn set_king_sprite_animation(

@@ -114,7 +114,7 @@ fn play_sound_on_entity_change(
     mut sound_events: EventWriter<PlayAnimationSoundEvent>,
     mut entity_change_events: EventReader<AnimationChangeEvent>,
     asset_server: Res<AssetServer>,
-) -> Result {
+) {
     for event in entity_change_events.read() {
         let sound = match event.change {
             AnimationChange::Hit(hit_by) => match hit_by {
@@ -136,7 +136,6 @@ fn play_sound_on_entity_change(
             volume: Volume::Linear(ANIMATION_VOLUME),
         });
     }
-    Ok(())
 }
 
 fn play_animation_on_projectile_spawn(
@@ -164,7 +163,7 @@ fn play_on_interactable(
     trigger: Trigger<InteractableSound>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-) -> Result {
+) {
     let audio_file = match trigger.kind {
         InteractionType::Recruit => {
             asset_server.load("animation_sound/recruitment/recruite_call.ogg")
@@ -191,7 +190,6 @@ fn play_on_interactable(
         },
         Transform::from_translation(trigger.spatial_position),
     ));
-    Ok(())
 }
 
 fn play_animation_on_frame_timer(
@@ -202,7 +200,7 @@ fn play_animation_on_frame_timer(
         Option<&AnimationSound>,
         &Sprite,
     )>,
-) -> Result {
+) {
     for (entity, sprite_animation, animation, sprite) in query.iter() {
         let Some(sound) = &animation else {
             continue;
@@ -223,14 +221,13 @@ fn play_animation_on_frame_timer(
             });
         }
     }
-    Ok(())
 }
 
 fn play_animation_on_enter(
     mut sound_events: EventWriter<PlayAnimationSoundEvent>,
     mut query: Query<(Entity, Option<&AnimationSound>)>,
     mut commands: Commands,
-) -> Result {
+) {
     for (entity, animation) in query.iter_mut() {
         let Some(sound) = &animation else {
             continue;
@@ -249,5 +246,4 @@ fn play_animation_on_enter(
 
         commands.entity(entity).remove::<AnimationSound>();
     }
-    Ok(())
 }

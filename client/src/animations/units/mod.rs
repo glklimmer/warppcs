@@ -51,7 +51,7 @@ pub fn trigger_unit_animation(
     mut network_events: EventReader<AnimationChangeEvent>,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
     mut commands: Commands,
-) -> Result {
+) {
     for event in network_events.read() {
         let new_animation = match &event.change {
             AnimationChange::Idle => UnitAnimation::Idle,
@@ -70,21 +70,19 @@ pub fn trigger_unit_animation(
             state: new_animation,
         });
     }
-    Ok(())
 }
 
 pub fn set_unit_walking(
     trigger: Trigger<OnAdd, Moving>,
     is_unit: Query<Entity, With<Unit>>,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
-) -> Result {
+) {
     if is_unit.get(trigger.target()).is_ok() {
         animation_trigger.write(AnimationTrigger {
             entity: trigger.target(),
             state: UnitAnimation::Walk,
         });
     }
-    Ok(())
 }
 
 pub fn set_unit_after_play_once(
@@ -92,12 +90,12 @@ pub fn set_unit_after_play_once(
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
     unit_animation: Query<&UnitAnimation>,
     mut commands: Commands,
-) -> Result {
+) {
     if let Ok(animation) = unit_animation.get(trigger.target()) {
         let mut entity = commands.entity(trigger.target());
         if let UnitAnimation::Death = animation {
             entity.remove::<SpriteSheetAnimation>();
-            return Ok(());
+            return;
         }
 
         let new_animation = match animation {
@@ -110,21 +108,19 @@ pub fn set_unit_after_play_once(
             state: new_animation,
         });
     }
-    Ok(())
 }
 
 pub fn set_unit_idle(
     trigger: Trigger<OnRemove, Moving>,
     is_unit: Query<Entity, With<Unit>>,
     mut animation_trigger: EventWriter<AnimationTrigger<UnitAnimation>>,
-) -> Result {
+) {
     if is_unit.get(trigger.target()).is_ok() {
         animation_trigger.write(AnimationTrigger {
             entity: trigger.target(),
             state: UnitAnimation::Idle,
         });
     }
-    Ok(())
 }
 
 pub fn set_unit_sprite_animation(
@@ -138,7 +134,7 @@ pub fn set_unit_sprite_animation(
     mut animation_changed: EventReader<AnimationTrigger<UnitAnimation>>,
     sprite_sheets: Res<UnitSpriteSheets>,
     mut command: Commands,
-) -> Result {
+) {
     for new_animation in animation_changed.read() {
         if let Ok((entity, unit, mut sprite_animation, mut sprite, mut current_animation)) =
             query.get_mut(new_animation.entity)
@@ -176,5 +172,4 @@ pub fn set_unit_sprite_animation(
             *current_animation = new_animation.state;
         }
     }
-    Ok(())
 }

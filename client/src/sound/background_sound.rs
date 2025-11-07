@@ -112,7 +112,7 @@ impl Plugin for BackgroundSoundPlugin {
     }
 }
 
-fn setup_music(asset_server: Res<AssetServer>, mut commands: Commands) -> Result {
+fn setup_music(asset_server: Res<AssetServer>, mut commands: Commands) {
     let menu_track = asset_server.load("music/music_chill.ogg");
     let combat_track = asset_server.load("music/music_fight.ogg");
 
@@ -138,14 +138,13 @@ fn setup_music(asset_server: Res<AssetServer>, mut commands: Commands) -> Result
             },
         )
     }));
-    Ok(())
 }
 
 fn handle_music_transitions(
     mut music_state: ResMut<MusicState>,
     mut music_players: Query<(&mut MusicPlayer, &AudioSink)>,
     mut transition_events: EventReader<MusicTransitionEvent>,
-) -> Result {
+) {
     for event in transition_events.read() {
         music_state.is_transitioning = true;
 
@@ -168,7 +167,6 @@ fn handle_music_transitions(
             }
         }
     }
-    Ok(())
 }
 
 /// System to update music volume for smooth transitions
@@ -176,9 +174,9 @@ fn update_music_volume(
     mut music_state: ResMut<MusicState>,
     mut music_players: Query<(&mut MusicPlayer, &mut AudioSink)>,
     time: Res<Time>,
-) -> Result {
+) {
     if !music_state.is_transitioning {
-        return Ok(());
+        return;
     }
 
     let dt = time.delta_secs();
@@ -208,7 +206,6 @@ fn update_music_volume(
     if all_faded {
         music_state.is_transitioning = false;
     }
-    Ok(())
 }
 
 fn play_fight_music(

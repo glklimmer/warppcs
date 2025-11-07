@@ -166,18 +166,16 @@ fn open_building_dialog(
     Ok(())
 }
 
-fn start_build(trigger: Trigger<SelectionEvent<BuildingDialog>>, mut commands: Commands) -> Result {
+fn start_build(trigger: Trigger<SelectionEvent<BuildingDialog>>, mut commands: Commands) {
     let BuildingDialog::Build = trigger.selection else {
-        return Ok(());
+        return;
     };
 
     commands.client_trigger(StartBuild);
-    Ok(())
 }
 
-fn close_assignment_dialog(_: Trigger<CloseBuildingDialog>, mut commands: Commands) -> Result {
+fn close_assignment_dialog(_: Trigger<CloseBuildingDialog>, mut commands: Commands) {
     commands.send_event(CloseEvent);
-    Ok(())
 }
 
 fn show_item_info(

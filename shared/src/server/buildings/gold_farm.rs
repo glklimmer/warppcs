@@ -20,10 +20,7 @@ impl Default for GoldFarmTimer {
     }
 }
 
-pub fn enable_goldfarm(
-    mut commands: Commands,
-    mut events: EventReader<BuildingChangeEnd>,
-) -> Result {
+pub fn enable_goldfarm(mut commands: Commands, mut events: EventReader<BuildingChangeEnd>) {
     for event in events.read() {
         let BuildingType::GoldFarm = event.building.building_type else {
             continue;
@@ -33,7 +30,6 @@ pub fn enable_goldfarm(
             .entity(event.0.building_entity)
             .insert(GoldFarmTimer::default());
     }
-    Ok(())
 }
 
 pub fn gold_farm_output(

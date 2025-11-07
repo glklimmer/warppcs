@@ -150,7 +150,7 @@ fn spawn_mount_on_unmount(
     mut delayed_spawns: Query<(Entity, &mut DelayedMountSpawn, &GameSceneId)>,
     mut commands: Commands,
     time: Res<Time>,
-) -> Result {
+) {
     for (entity, mut delayed_spawn, game_scene_id) in delayed_spawns.iter_mut() {
         delayed_spawn.timer.tick(time.delta());
 
@@ -166,5 +166,4 @@ fn spawn_mount_on_unmount(
             commands.entity(entity).despawn();
         }
     }
-    Ok(())
 }
