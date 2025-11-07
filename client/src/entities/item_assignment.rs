@@ -270,10 +270,7 @@ fn open_assignment_dialog(
         return Ok(());
     };
 
-    let Some(current_building) = **current_building else {
-        return Err(BevyError::from("Current building not found"));
-    };
-
+    let current_building = (**current_building).ok_or("Current building not found")?;
     let assignment = assignment.get(current_building)?;
     let transform = transform.get(trigger.entry)?;
     let translation = transform.translation();
