@@ -268,9 +268,7 @@ fn close_menu(
         return Ok(());
     }
 
-    let Some(menu_entity) = active_menus.pop() else {
-        return Err(BevyError::from("No active menu"));
-    };
+    let menu_entity = active_menus.pop().ok_or("No active menu")?;
 
     if let Ok(children) = children_query.get(menu_entity) {
         for child in children.iter() {
@@ -323,9 +321,7 @@ fn selection_callback<T: Clone + Send + Sync + 'static>(
     menu_query: Query<&NodePayload<T>, With<Selected>>,
     mut commands: Commands,
 ) -> Result {
-    let Some(menu) = active.last() else {
-        return Err(BevyError::from("No active menu found"));
-    };
+    let menu = active.last().ok_or("No active menu")?;
     let children = children.get(*menu)?;
 
     for child in children.iter() {
