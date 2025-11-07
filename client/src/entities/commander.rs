@@ -324,7 +324,7 @@ fn highligh_formation(
     trigger: Trigger<DrawHoverFlag>,
     menu_entries_add: Query<&NodePayload<ArmyPosition>>,
     army_formation: Query<&ArmyFormation>,
-    active: Res<ActiveCommander>,
+    active_commander: Res<ActiveCommander>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     transform: Query<&Transform>,
@@ -332,12 +332,8 @@ fn highligh_formation(
     mut commands: Commands,
 ) -> Result {
     let selected_formation = menu_entries_add.get(**trigger)?;
-
-    let Some(commander_active) = active.0 else {
-        return Err(BevyError::from("No active commander"));
-    };
-
-    let army_formations = army_formation.get(commander_active)?;
+    let active_commander = (**active_commander).ok_or("No active commander")?;
+    let army_formations = army_formation.get(active_commander)?;
 
     army_formations
         .positions
