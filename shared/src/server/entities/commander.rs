@@ -22,6 +22,17 @@ use crate::{
 #[derive(Resource, Default, DerefMut, Deref)]
 struct ActiveCommander(HashMap<Entity, Entity>);
 
+trait ActiveCommanderExt {
+    fn get_entity(&self, entity: &Entity) -> Result<&Entity>;
+}
+
+impl ActiveCommanderExt for ActiveCommander {
+    fn get_entity(&self, entity: &Entity) -> Result<&Entity> {
+        self.get(entity)
+            .ok_or("No commander set as ActiveCommander".into())
+    }
+}
+
 #[derive(Event, Serialize, Deserialize)]
 pub struct CommanderInteraction {
     pub commander: Entity,
@@ -158,9 +169,7 @@ fn handle_pick_flag(
     mut commands: Commands,
 ) -> Result {
     let player = client_player_map.get_player(&trigger.client_entity)?;
-    let Some(commander) = active.0.get(player) else {
-        return Err(BevyError::from("No commander found"));
-    };
+    let commander = active.get_entity(player)?;
     let commander_flag = commander_flag_assignment.get(*commander)?;
     let army_flag_assignments = formations.get(*commander)?;
     let (flag_entity, _) = flag.get(**commander_flag)?;
@@ -199,9 +208,7 @@ fn handle_camp_interaction(
     mut commands: Commands,
 ) -> Result {
     let player = client_player_map.get_player(&trigger.client_entity)?;
-    let Some(commander) = active.0.get(player) else {
-        return Err(BevyError::from("No commander found"));
-    };
+    let commander = active.get_entity(player)?;
     let (commander_transform, game_scene_id) = query.get(*commander)?;
     let commander_pos = commander_transform.translation;
 
@@ -250,9 +257,7 @@ fn handle_slot_selection(
     flag_holder: Query<&FlagHolder>,
 ) -> Result {
     let player = &trigger.player;
-    let Some(commander) = active.0.get(player) else {
-        return Err(BevyError::from("No commander found"));
-    };
+    let commander = active.get_entity(player)?;
     let formation = formations.get(*commander)?;
 
     let selected_slot = trigger.slot;
