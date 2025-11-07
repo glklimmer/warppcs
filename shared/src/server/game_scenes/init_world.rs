@@ -64,14 +64,6 @@ fn init_world(
                     game_scene_id,
                 ));
 
-                commands.spawn((
-                    Mount {
-                        mount_type: MountType::Horse,
-                    },
-                    offset.with_layer(Layers::Mount),
-                    game_scene_id,
-                ));
-
                 player_base(
                     commands.reborrow(),
                     offset,
