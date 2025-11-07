@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::{
-    BoxCollider, ClientPlayerMap, DelayedDespawn, Owner, Player, PlayerState, Vec3LayerExt,
+    BoxCollider, ClientPlayerMap, ClientPlayerMapExt, DelayedDespawn, Owner, Player, PlayerState,
+    Vec3LayerExt,
     map::{
         Layers,
         buildings::{Building, BuildingType},
@@ -110,10 +111,7 @@ fn check_port_cooldown(
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let Some(player) = client_player_map.get(&trigger.client_entity) else {
-        return Err(BevyError::from("Player not found"));
-    };
-
+    let player = client_player_map.get_player(&trigger.client_entity)?;
     let mut cooldown = players.get_mut(*player)?;
 
     if cooldown.summon.finished() {

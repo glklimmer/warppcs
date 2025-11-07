@@ -4,6 +4,7 @@ use bevy::{ecs::entity::MapEntities, platform::collections::HashMap};
 use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
+use crate::ClientPlayerMapExt;
 use crate::networking::UnitType;
 use crate::server::buildings::recruiting::{Flag, FlagAssignment};
 use crate::server::game_scenes::GameSceneId;
@@ -133,9 +134,7 @@ fn commander_interaction(
             continue;
         };
 
-        let Some(player) = client_player_map.get_network_entity(&event.player) else {
-            return Err(BevyError::from("Player not found"));
-        };
+        let player = client_player_map.get_network_entity(&event.player)?;
 
         let commander = event.interactable;
         commands.server_trigger(ToClients {
@@ -158,9 +157,7 @@ fn handle_pick_flag(
     flag: Query<(Entity, &Flag)>,
     mut commands: Commands,
 ) -> Result {
-    let Some(player) = client_player_map.get(&trigger.client_entity) else {
-        return Err(BevyError::from("Player not found"));
-    };
+    let player = client_player_map.get_player(&trigger.client_entity)?;
     let Some(commander) = active.0.get(player) else {
         return Err(BevyError::from("No commander found"));
     };
@@ -201,9 +198,7 @@ fn handle_camp_interaction(
     query: Query<(&Transform, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
-    let Some(player) = client_player_map.get(&trigger.client_entity) else {
-        return Err(BevyError::from("Player not found"));
-    };
+    let player = client_player_map.get_player(&trigger.client_entity)?;
     let Some(commander) = active.0.get(player) else {
         return Err(BevyError::from("No commander found"));
     };
@@ -226,9 +221,7 @@ fn commander_assignment_validation(
     flag: Query<&Flag>,
     mut commands: Commands,
 ) -> Result {
-    let Some(player) = client_player_map.get(&trigger.client_entity) else {
-        return Err(BevyError::from("Player not found"));
-    };
+    let player = client_player_map.get_player(&trigger.client_entity)?;
     let player_flag = flag_holder.get(*player);
 
     if let Ok(unit_flag) = player_flag {

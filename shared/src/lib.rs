@@ -157,9 +157,20 @@ pub enum Hitby {
 pub struct ClientPlayerMap(HashMap<Entity, Entity>);
 
 impl ClientPlayerMap {
-    pub fn get_network_entity(&self, value: &Entity) -> Option<&Entity> {
+    pub fn get_network_entity(&self, value: &Entity) -> Result<&Entity> {
         self.iter()
             .find_map(|(key, val)| if val == value { Some(key) } else { None })
+            .ok_or("Network entity not found for player entity".into())
+    }
+}
+
+pub trait ClientPlayerMapExt {
+    fn get_player(&self, entity: &Entity) -> Result<&Entity>;
+}
+
+impl ClientPlayerMapExt for ClientPlayerMap {
+    fn get_player(&self, entity: &Entity) -> Result<&Entity> {
+        self.get(entity).ok_or("Player not found".into())
     }
 }
 

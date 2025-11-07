@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, ClientPlayerMap,
+    AnimationChange, AnimationChangeEvent, ClientPlayerMap, ClientPlayerMapExt,
     networking::WorldDirection,
     server::{
         ai::UnitBehaviour,
@@ -48,10 +48,7 @@ fn attack(
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let Some(player) = client_player_map.get(&trigger.client_entity) else {
-        return Err(BevyError::from("Player not found"));
-    };
-
+    let player = client_player_map.get_player(&trigger.client_entity)?;
     let (maybe_flag_holder, transform) = flag_holder.get(*player)?;
 
     let Some(flag_holder) = maybe_flag_holder else {

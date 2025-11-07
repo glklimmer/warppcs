@@ -4,7 +4,7 @@ use bevy_replicon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ClientPlayerMap, PlayerState,
+    ClientPlayerMap, ClientPlayerMapExt, PlayerState,
     server::physics::movement::{Speed, Velocity},
 };
 
@@ -45,9 +45,7 @@ fn apply_movement(
     mut players: Query<(&mut Velocity, &Speed)>,
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {
-    let Some(player) = client_player_map.get(&trigger.client_entity) else {
-        return Err(BevyError::from("Player not found"));
-    };
+    let player = client_player_map.get_player(&trigger.client_entity)?;
 
     let (mut velocity, speed) = players.get_mut(*player)?;
 

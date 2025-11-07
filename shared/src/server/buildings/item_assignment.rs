@@ -6,7 +6,7 @@ use bevy_replicon::prelude::{FromClient, Replicated, SendMode, ServerTriggerExt,
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ClientPlayerMap, Player,
+    ClientPlayerMap, ClientPlayerMapExt, Player,
     enum_map::*,
     map::buildings::{Building, BuildingType, RespawnZone},
     networking::Inventory,
@@ -159,12 +159,10 @@ fn start_assignment_dialog(
             continue;
         };
 
-        let Some(player_entity) = client_player_map.get_network_entity(&event.player) else {
-            return Err(BevyError::from("No player entity"));
-        };
+        let player = client_player_map.get_network_entity(&event.player)?;
 
         commands.server_trigger(ToClients {
-            mode: SendMode::Direct(*player_entity),
+            mode: SendMode::Direct(*player),
             event: OpenBuildingDialog {
                 building: event.interactable,
             },
@@ -182,9 +180,7 @@ fn assign_item(
     mut inventory: Query<&mut Inventory>,
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {
-    let Some(player) = client_player_map.get(&trigger.client_entity) else {
-        return Err(BevyError::from("Player not found"));
-    };
+    let player = client_player_map.get_player(&trigger.client_entity)?;
 
     let Some(active_building) = active.get(player) else {
         return Err(BevyError::from("Active building not found"));
