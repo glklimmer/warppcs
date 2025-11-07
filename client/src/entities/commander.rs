@@ -339,11 +339,7 @@ fn highligh_formation(
         .iter_enums()
         .for_each(|(formation, entity)| {
             if formation == **selected_formation {
-                // info!(
-                //     "formatoin position {}",
-                //     transform.get(*entity).unwrap().translation
-                // );
-                commands.entity(*entity).log_components().insert((
+                commands.entity(*entity).insert((
                     Mesh2d(meshes.add(Rectangle::default())),
                     MeshMaterial2d(materials.add(Color::from(YELLOW))),
                 ));
