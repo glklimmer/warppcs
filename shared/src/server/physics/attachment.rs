@@ -1,7 +1,9 @@
 use bevy::prelude::*;
+
 use serde::{Deserialize, Serialize};
 
 use super::movement::{Moving, Velocity};
+
 use crate::player_attacks::AttackIndicator;
 
 #[derive(Component, Serialize, Deserialize, Deref)]
@@ -25,7 +27,7 @@ fn attachment_follow(
     time: Res<Time>,
 ) -> Result {
     for (attached, mut transform, attack_indicator) in query.iter_mut() {
-        let (target_transform, velocity, moving) = target.get(attached.0)?;
+        let (target_transform, velocity, moving) = target.get(**attached)?;
         let sin_offset = if moving.is_some() {
             (time.elapsed_secs() * 10.0).sin() * 0.75
         } else {
