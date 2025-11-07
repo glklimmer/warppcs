@@ -318,9 +318,10 @@ fn init_world(
     commands.trigger(InitWorld(map));
 
     for (client, player) in client_player_map.iter() {
-        let Some(game_scene) = player_game_scenes.get(player) else {
-            return Err(BevyError::from("Player Game Scene not found"));
-        };
+        let game_scene = player_game_scenes
+            .get(player)
+            .ok_or("GameScene for player not found")?;
+
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
             event: InitPlayerMapNode(*game_scene),
