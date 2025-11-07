@@ -226,9 +226,7 @@ fn cycle_commands(
         return Ok(());
     };
 
-    let Some(active_menu) = active_menu.last() else {
-        return Err(BevyError::from("No active menu"));
-    };
+    let active_menu = active_menu.last().ok_or("No active menu")?;
     let descendants = children_query.get(*active_menu)?;
 
     let total_items = descendants.len() as i32;
