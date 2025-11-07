@@ -181,10 +181,9 @@ fn assign_item(
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {
     let player = client_player_map.get_player(&trigger.client_entity)?;
-
-    let Some(active_building) = active.get(player) else {
-        return Err(BevyError::from("Active building not found"));
-    };
+    let active_building = active
+        .get(player)
+        .ok_or("No building is set as ActiveBuilding")?;
     let mut inventory = inventory.get_mut(*player)?;
 
     let item = &***trigger;
