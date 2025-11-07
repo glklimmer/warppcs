@@ -34,12 +34,8 @@ fn change_background(
     let travel = query.single()?;
 
     let (_, maybe_target) = travel.target;
-    let Some(target_game_scene) = maybe_target else {
-        return Err(BevyError::from(
-            "Player Traveling component has no target game scene set",
-        ));
-    };
-
+    let target_game_scene =
+        maybe_target.ok_or("Player Traveling component has no target game scene set")?;
     let camera = camera.single()?;
 
     let event = match target_game_scene.scene {
