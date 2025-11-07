@@ -106,9 +106,9 @@ fn check_start_building(
     players: Query<&Player>,
     mut commands: Commands,
 ) -> Result {
-    let player_entity = client_player_map.get_player(&trigger.client_entity)?;
-    let player = players.get(*player_entity)?;
-    let active_building = *active.get_entity(player_entity)?;
+    let player_entity = *client_player_map.get_player(&trigger.client_entity)?;
+    let player = players.get(player_entity)?;
+    let active_building = *active.get_entity(&player_entity)?;
 
     let assignment = assignment.get(active_building)?;
     let items: Vec<_> = match assignment
@@ -143,7 +143,7 @@ fn check_start_building(
     }
 
     interactions.write(InteractionTriggeredEvent {
-        player: *player_entity,
+        player: player_entity,
         interactable: active_building,
         interaction: InteractionType::Building,
     });
