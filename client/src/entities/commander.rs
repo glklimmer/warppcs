@@ -324,8 +324,6 @@ fn highligh_formation(
     active_commander: Res<ActiveCommander>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    transform: Query<&Transform>,
-    player: Query<Entity, With<ControlledPlayer>>,
     mut commands: Commands,
 ) -> Result {
     let selected_formation = menu_entries_add.get(**trigger)?;
