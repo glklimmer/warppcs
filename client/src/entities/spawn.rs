@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use bevy_parallax::CameraFollow;
+use bevy_parallax::{CameraFollow, LinearAxisStrategy, TranslationStrategy};
 use shared::{
     Player, SetLocalPlayer,
     map::buildings::{Building, RecruitBuilding},
@@ -62,9 +62,14 @@ fn init_local_player(
     let player = trigger.entity();
     let mut player_commands = commands.entity(player);
     player_commands.insert((ControlledPlayer, SpatialListener::new(50.0)));
-    commands
-        .entity(camera.single()?)
-        .insert(CameraFollow::fixed(player).with_offset(Vec2 { x: 0., y: 50. }));
+    commands.entity(camera.single()?).insert(
+        CameraFollow::fixed(player)
+            .with_offset(Vec2 { x: 50., y: 50. })
+            .with_translation(TranslationStrategy {
+                x: LinearAxisStrategy::P(0.03),
+                y: LinearAxisStrategy::P(0.9),
+            }),
+    );
     Ok(())
 }
 
