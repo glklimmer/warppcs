@@ -305,7 +305,7 @@ fn cleanup_menu_extras(
     current_hover: Query<Entity, With<HoverWeapon>>,
     mesh_highlights: Query<Entity, (With<Mesh2d>, With<MeshMaterial2d<ColorMaterial>>)>,
     mut commands: Commands,
-)  {
+) {
     for entity in mesh_highlights.iter() {
         commands
             .entity(entity)
