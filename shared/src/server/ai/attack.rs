@@ -124,7 +124,7 @@ fn process_attacks(
             Attack::Projectile => {
                 let arrow_position = Vec3::new(
                     transform.translation.x,
-                    transform.translation.y + 1.,
+                    transform.translation.y + 5.,
                     Layers::Projectile.as_f32(),
                 );
                 let projectile_type = ProjectileType::Arrow;
