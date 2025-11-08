@@ -64,14 +64,12 @@ impl FromWorld for ChestSpriteSheet {
 
 pub fn on_chest_opened(
     trigger: Trigger<OnInsert, ChestOpened>,
-    mut commands: Commands,
     mut query: Query<&mut Sprite>,
     chest_sprite_sheet: Res<ChestSpriteSheet>,
-) {
+    mut commands: Commands,
+) -> Result {
     let entity = trigger.target();
-    let Ok(mut sprite) = query.get_mut(entity) else {
-        return;
-    };
+    let mut sprite = query.get_mut(entity)?;
 
     let sprite_sheet_animation = chest_sprite_sheet
         .sprite_sheet
@@ -86,16 +84,18 @@ pub fn on_chest_opened(
     if let Some(atlas) = &mut sprite.texture_atlas {
         atlas.index = sprite_sheet_animation.first_sprite_index;
     }
+    Ok(())
 }
 
 pub fn set_chest_after_play_once(
     trigger: Trigger<OnRemove, PlayOnce>,
+    chest: Query<Option<&Chest>>,
     mut commands: Commands,
-    chest: Query<&Chest>,
-) {
-    if chest.get(trigger.target()).is_ok() {
+) -> Result {
+    if chest.get(trigger.target())?.is_some() {
         commands
             .entity(trigger.target())
             .remove::<SpriteSheetAnimation>();
     }
+    Ok(())
 }

@@ -26,8 +26,6 @@ pub fn enable_goldfarm(mut commands: Commands, mut events: EventReader<BuildingC
             continue;
         };
 
-        println!("Bought Gold Farm");
-
         commands
             .entity(event.0.building_entity)
             .insert(GoldFarmTimer::default());
@@ -38,14 +36,16 @@ pub fn gold_farm_output(
     mut gold_farms_query: Query<(&mut GoldFarmTimer, &Owner)>,
     mut inventory_query: Query<&mut Inventory>,
     time: Res<Time>,
-) {
+) -> Result {
     for (mut farm_timer, owner) in &mut gold_farms_query {
         farm_timer.timer.tick(time.delta());
 
-        if farm_timer.timer.just_finished()
-            && let Ok(mut inventory) = inventory_query.get_mut(owner.entity().unwrap())
-        {
+        if farm_timer.timer.just_finished() {
+            let owner = owner.entity()?;
+            let mut inventory = inventory_query.get_mut(owner)?;
+
             inventory.gold += GOLD_PER_TICK;
         }
     }
+    Ok(())
 }

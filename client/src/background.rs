@@ -19,31 +19,25 @@ impl Plugin for BackgroundPlugin {
 fn setup_background(
     camera: Query<Entity, With<Camera2d>>,
     mut create_parallax: EventWriter<CreateParallaxEvent>,
-) {
-    let Ok(camera) = camera.single() else {
-        return;
-    };
+) -> Result {
+    let camera = camera.single()?;
     let event = player_background(camera);
     create_parallax.write(event);
+    Ok(())
 }
 
 fn change_background(
-    player: Query<&Traveling, With<ControlledPlayer>>,
+    query: Query<&Traveling, With<ControlledPlayer>>,
     camera: Query<Entity, With<Camera2d>>,
     mut create_parallax: EventWriter<CreateParallaxEvent>,
-) {
-    let Ok(player) = player.single() else {
-        return;
-    };
+) -> Result {
+    let travel = query.single()?;
 
-    let (_, maybe_target) = player.target;
-    let Some(target_game_scene) = maybe_target else {
-        return;
-    };
+    let (_, maybe_target) = travel.target;
+    let target_game_scene =
+        maybe_target.ok_or("Player Traveling component has no target game scene set")?;
+    let camera = camera.single()?;
 
-    let Ok(camera) = camera.single() else {
-        return;
-    };
     let event = match target_game_scene.scene {
         SceneType::Player { .. } => player_background(camera),
         SceneType::Traversal { .. } => bandit_background(camera),
@@ -51,6 +45,7 @@ fn change_background(
         SceneType::DoubleConnection { .. } => bandit_background(camera),
     };
     create_parallax.write(event);
+    Ok(())
 }
 
 fn player_background(camera: Entity) -> CreateParallaxEvent {

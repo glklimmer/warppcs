@@ -4,7 +4,7 @@ use bevy::{
     audio::{PlaybackMode, Volume},
     prelude::*,
 };
-use shared::{Owner, server::entities::UnitAnimation};
+use shared::{GameState, Owner, server::entities::UnitAnimation};
 
 use crate::networking::ControlledPlayer;
 
@@ -105,11 +105,14 @@ impl Plugin for BackgroundSoundPlugin {
             ),
         );
 
-        app.add_systems(Update, play_fight_music);
+        app.add_systems(
+            Update,
+            play_fight_music.run_if(in_state(GameState::GameSession)),
+        );
     }
 }
 
-fn setup_music(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_music(asset_server: Res<AssetServer>, mut commands: Commands) {
     let menu_track = asset_server.load("music/music_chill.ogg");
     let combat_track = asset_server.load("music/music_fight.ogg");
 
@@ -168,9 +171,9 @@ fn handle_music_transitions(
 
 /// System to update music volume for smooth transitions
 fn update_music_volume(
-    time: Res<Time>,
     mut music_state: ResMut<MusicState>,
     mut music_players: Query<(&mut MusicPlayer, &mut AudioSink)>,
+    time: Res<Time>,
 ) {
     if !music_state.is_transitioning {
         return;
@@ -210,37 +213,37 @@ fn play_fight_music(
     mut music_events: EventWriter<MusicTransitionEvent>,
     player_query: Query<(&Transform, &Owner), With<ControlledPlayer>>,
     unit_query: Query<(&Transform, &Owner, &UnitAnimation), Without<ControlledPlayer>>,
-) {
-    if let Ok((player_transform, player_owner)) = player_query.single() {
-        let mut enemy_nearby = false;
-        for (unit_transform, unit_owner, unit_animations) in unit_query.iter() {
-            if unit_animations.eq(&UnitAnimation::Death) {
-                continue;
-            }
-            if player_owner.ne(unit_owner) {
-                let enemy_distance = player_transform
-                    .translation
-                    .distance(unit_transform.translation);
-                if enemy_distance <= COMBAT_DISTANCE_THRESHOLD {
-                    enemy_nearby = true;
-                    break;
-                }
+) -> Result {
+    let (player_transform, player_owner) = player_query.single()?;
+    let mut enemy_nearby = false;
+    for (unit_transform, unit_owner, unit_animations) in unit_query.iter() {
+        if unit_animations.eq(&UnitAnimation::Death) {
+            continue;
+        }
+        if player_owner.ne(unit_owner) {
+            let enemy_distance = player_transform
+                .translation
+                .distance(unit_transform.translation);
+            if enemy_distance <= COMBAT_DISTANCE_THRESHOLD {
+                enemy_nearby = true;
+                break;
             }
         }
-        if enemy_nearby {
-            if MusicTrack::Combat != music_state.desired_track {
-                music_state.desired_track = MusicTrack::Combat;
-                music_events.write(MusicTransitionEvent {
-                    track: MusicTrack::Combat,
-                    fade_time: 1.5.into(),
-                });
-            }
-        } else if MusicTrack::Base != music_state.desired_track {
-            music_state.desired_track = MusicTrack::Base;
+    }
+    if enemy_nearby {
+        if MusicTrack::Combat != music_state.desired_track {
+            music_state.desired_track = MusicTrack::Combat;
             music_events.write(MusicTransitionEvent {
-                track: MusicTrack::Base,
+                track: MusicTrack::Combat,
                 fade_time: 1.5.into(),
             });
         }
+    } else if MusicTrack::Base != music_state.desired_track {
+        music_state.desired_track = MusicTrack::Base;
+        music_events.write(MusicTransitionEvent {
+            track: MusicTrack::Base,
+            fade_time: 1.5.into(),
+        });
     }
+    Ok(())
 }

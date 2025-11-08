@@ -54,9 +54,9 @@ pub struct ChestOpened;
 
 pub fn open_chest(
     mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut commands: Commands,
     query: Query<(&Transform, &GameSceneId)>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in interactions.read() {
         let InteractionType::Chest = &event.interaction else {
             continue;
@@ -67,7 +67,7 @@ pub fn open_chest(
             .insert(ChestOpened)
             .remove::<Interactable>();
 
-        let (chest_transform, game_scene_id) = query.get(event.interactable).unwrap();
+        let (chest_transform, game_scene_id) = query.get(event.interactable)?;
         let chest_translation = chest_transform.translation;
 
         for _ in 0..3 {
@@ -81,6 +81,7 @@ pub fn open_chest(
             ));
         }
     }
+    Ok(())
 }
 
 fn chest_collider() -> BoxCollider {

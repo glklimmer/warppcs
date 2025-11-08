@@ -79,16 +79,16 @@ fn check_building_interaction(
     mut writer: EventWriter<BuildingChangeStart>,
     player: Query<&Inventory>,
     building: Query<(Entity, &Building, &BuildStatus)>,
-) {
+) -> Result {
     for event in interactions.read() {
         let InteractionType::Building = &event.interaction else {
             continue;
         };
         info!("Checking building interact.");
 
-        let inventory = player.get(event.player).unwrap();
+        let inventory = player.get(event.player)?;
 
-        let (entity, building, status) = building.get(event.interactable).unwrap();
+        let (entity, building, status) = building.get(event.interactable)?;
 
         match status {
             BuildStatus::Constructing => {
@@ -131,19 +131,20 @@ fn check_building_interaction(
             }
         }
     }
+    Ok(())
 }
 
 fn start_construction(
-    mut commands: Commands,
     mut events: EventReader<BuildingChangeStart>,
     mut inventory: Query<&mut Inventory>,
     mut building_query: Query<&mut Building>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in events.read() {
         let mut building_entity = commands.entity(event.building_entity);
         let building = event.building;
 
-        let mut building_state = building_query.get_mut(event.building_entity).unwrap();
+        let mut building_state = building_query.get_mut(event.building_entity)?;
         *building_state = building;
 
         info!("Start constructing: {:?}", building);
@@ -158,9 +159,10 @@ fn start_construction(
             ))
             .remove::<Interactable>();
 
-        let mut inventory = inventory.get_mut(event.player_entity).unwrap();
+        let mut inventory = inventory.get_mut(event.player_entity)?;
         inventory.gold -= building.cost().gold;
     }
+    Ok(())
 }
 
 fn progess_construction(
@@ -180,10 +182,10 @@ fn progess_construction(
 }
 
 fn end_construction(
-    mut commands: Commands,
     mut events: EventReader<BuildingChangeEnd>,
     owner_query: Query<&Owner>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in events.read() {
         let building = event.building;
 
@@ -198,11 +200,7 @@ fn end_construction(
             },
         ));
 
-        let owner = owner_query
-            .get(event.building_entity)
-            .unwrap()
-            .entity()
-            .unwrap();
+        let owner = owner_query.get(event.building_entity)?.entity()?;
 
         if building.can_upgrade() {
             building_commands.insert(Interactable {
@@ -218,4 +216,5 @@ fn end_construction(
             });
         }
     }
+    Ok(())
 }

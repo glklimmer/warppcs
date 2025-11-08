@@ -46,26 +46,26 @@ impl Plugin for AnimationSoundPlugin {
 
 fn stop_animation_sound_on_remove(
     trigger: Trigger<OnRemove, AnimationSound>,
-    query: Query<&SpatialAudioSink>,
+    query: Query<Option<&SpatialAudioSink>>,
     mut commands: Commands,
-) {
-    if let Ok(sink) = query.get(trigger.target()) {
+) -> Result {
+    let maybe_sink = query.get(trigger.target())?;
+    if let Some(sink) = maybe_sink {
         sink.stop();
         sink.pause();
-        commands.entity(trigger.target()).remove::<AudioPlayer>();
-    }
+    };
+    commands.entity(trigger.target()).remove::<AudioPlayer>();
+    Ok(())
 }
 
 fn handle_multiple_animation_sound(
-    mut commands: Commands,
     mut sound_events: EventReader<PlayAnimationSoundEvent>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in sound_events.read() {
-        if event.sound_handles.is_empty() {
+        let Some(random_sound) = fastrand::choice(event.sound_handles.iter()) else {
             continue;
-        }
-
-        let random_sound = fastrand::choice(event.sound_handles.iter()).unwrap();
+        };
         if let Ok(mut entity_command) = commands.get_entity(event.entity) {
             entity_command.insert((
                 AudioPlayer::<AudioSource>(random_sound.clone_weak()),
@@ -79,30 +79,31 @@ fn handle_multiple_animation_sound(
             ));
         }
     }
+    Ok(())
 }
 
 fn handle_single_animation_sound(
-    mut commands: Commands,
     mut sound_events: EventReader<PlayAnimationSoundEvent>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in sound_events.read() {
         if event.sound_handles.len() != 1 {
             continue;
         };
 
-        if let Ok(mut entity_command) = commands.get_entity(event.entity) {
-            entity_command.insert((
-                AudioPlayer::<AudioSource>(event.sound_handles[0].clone_weak()),
-                PlaybackSettings {
-                    mode: PlaybackMode::Remove,
-                    speed: event.speed,
-                    volume: event.volume,
-                    spatial: true,
-                    ..default()
-                },
-            ));
-        }
+        let mut entity_command = commands.get_entity(event.entity)?;
+        entity_command.insert((
+            AudioPlayer::<AudioSource>(event.sound_handles[0].clone_weak()),
+            PlaybackSettings {
+                mode: PlaybackMode::Remove,
+                speed: event.speed,
+                volume: event.volume,
+                spatial: true,
+                ..default()
+            },
+        ));
     }
+    Ok(())
 }
 
 fn play_sound_on_entity_change(
@@ -138,10 +139,8 @@ fn play_animation_on_projectile_spawn(
     mut projectile: Query<&ProjectileType>,
     mut sound_events: EventWriter<PlayAnimationSoundEvent>,
     asset_server: Res<AssetServer>,
-) {
-    let Ok(projectile_type) = projectile.get_mut(trigger.target()) else {
-        return;
-    };
+) -> Result {
+    let projectile_type = projectile.get_mut(trigger.target())?;
 
     let sound_handles = match projectile_type {
         ProjectileType::Arrow => vec![asset_server.load("animation_sound/arrow/arrow_flying.ogg")],
@@ -153,12 +152,13 @@ fn play_animation_on_projectile_spawn(
         speed: 1.5,
         volume: Volume::Linear(ANIMATION_VOLUME),
     });
+    Ok(())
 }
 
 fn play_on_interactable(
     trigger: Trigger<InteractableSound>,
-    mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut commands: Commands,
 ) {
     let audio_file = match trigger.kind {
         InteractionType::Recruit => {

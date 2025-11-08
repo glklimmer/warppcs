@@ -35,31 +35,28 @@ fn army_slot_follow(
     mut query: Query<(&ArmySlot, &mut Transform)>,
     target: Query<&Transform, Without<ArmySlot>>,
     commander: Query<&ArmySlots>,
-) {
+) -> Result {
     for (slot, mut transform) in query.iter_mut() {
-        let Ok(army) = commander.get(slot.commander) else {
-            continue;
-        };
+        let army = commander.get(slot.commander)?;
 
-        if let Ok(target_transform) = target.get(slot.commander) {
-            let direction: f32 = army.target_direction.into();
-            transform.translation.x = target_transform.translation.x + -(slot.offset * direction);
-        }
+        let target_transform = target.get(slot.commander)?;
+        let direction: f32 = army.target_direction.into();
+        transform.translation.x = target_transform.translation.x + -(slot.offset * direction);
     }
+    Ok(())
 }
 
 fn init_army_direction_timer(
     trigger: Trigger<OnInsert, ArmySlots>,
     mut query: Query<&mut ArmySlots>,
-) {
-    let Ok(mut army) = query.get_mut(trigger.target()) else {
-        return;
-    };
+) -> Result {
+    let mut army = query.get_mut(trigger.target())?;
 
     army.opposite_direction_timer = Timer::from_seconds(2., TimerMode::Once);
+    Ok(())
 }
 
-fn army_change_direction(mut query: Query<(&mut ArmySlots, &Velocity)>, time: Res<Time>) {
+fn army_change_direction(mut query: Query<(&mut ArmySlots, &Velocity)>, time: Res<Time>) -> Result {
     for (mut army, velocity) in &mut query {
         army.opposite_direction_timer.tick(time.delta());
 
@@ -72,4 +69,5 @@ fn army_change_direction(mut query: Query<(&mut ArmySlots, &Velocity)>, time: Re
             army.target_direction = current_direction;
         }
     }
+    Ok(())
 }

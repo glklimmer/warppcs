@@ -6,7 +6,7 @@ use bevy_replicon::prelude::{FromClient, Replicated, SendMode, ServerTriggerExt,
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ClientPlayerMap, Player,
+    ClientPlayerMap, ClientPlayerMapExt, Player,
     enum_map::*,
     map::buildings::{Building, BuildingType, RespawnZone},
     networking::Inventory,
@@ -86,20 +86,31 @@ pub struct StartBuild;
 #[derive(Resource, Default, Deref, DerefMut)]
 struct ActiveBuilding(HashMap<Entity, Entity>);
 
+trait ActiveBuildingExt {
+    fn get_entity(&self, entity: &Entity) -> Result<&Entity>;
+}
+
+impl ActiveBuildingExt for ActiveBuilding {
+    fn get_entity(&self, entity: &Entity) -> Result<&Entity> {
+        self.get(entity)
+            .ok_or("No building set as ActiveBuilding".into())
+    }
+}
+
 fn check_start_building(
     trigger: Trigger<FromClient<StartBuild>>,
-    mut commands: Commands,
     mut interactions: EventWriter<InteractionTriggeredEvent>,
     assignment: Query<&ItemAssignment>,
     active: Res<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
     players: Query<&Player>,
-) {
-    let player_entity = *client_player_map.get(&trigger.client_entity).unwrap();
-    let player = players.get(player_entity).unwrap();
-    let active_building = *active.get(&player_entity).unwrap();
+    mut commands: Commands,
+) -> Result {
+    let player_entity = *client_player_map.get_player(&trigger.client_entity)?;
+    let player = players.get(player_entity)?;
+    let active_building = *active.get_entity(&player_entity)?;
 
-    let assignment = assignment.get(active_building).unwrap();
+    let assignment = assignment.get(active_building)?;
     let items: Vec<_> = match assignment
         .items
         .clone()
@@ -109,7 +120,7 @@ fn check_start_building(
         Some(v) => v,
         None => {
             info!("Not all items assigned!");
-            return;
+            return Ok(());
         }
     };
 
@@ -141,21 +152,24 @@ fn check_start_building(
         mode: SendMode::Direct(trigger.client_entity),
         event: CloseBuildingDialog,
     });
+    Ok(())
 }
 
 fn start_assignment_dialog(
     mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut commands: Commands,
     mut active: ResMut<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in interactions.read() {
         let InteractionType::ItemAssignment = &event.interaction else {
             continue;
         };
 
+        let player = client_player_map.get_network_entity(&event.player)?;
+
         commands.server_trigger(ToClients {
-            mode: SendMode::Direct(*client_player_map.get_network_entity(&event.player).unwrap()),
+            mode: SendMode::Direct(*player),
             event: OpenBuildingDialog {
                 building: event.interactable,
             },
@@ -163,6 +177,7 @@ fn start_assignment_dialog(
 
         active.insert(event.player, event.interactable);
     }
+    Ok(())
 }
 
 fn assign_item(
@@ -171,21 +186,21 @@ fn assign_item(
     mut assignment: Query<&mut ItemAssignment>,
     mut inventory: Query<&mut Inventory>,
     client_player_map: Res<ClientPlayerMap>,
-) {
-    let player = *client_player_map.get(&trigger.client_entity).unwrap();
-
-    let active_building = active.get(&player);
-    let mut inventory = inventory.get_mut(player).unwrap();
+) -> Result {
+    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let active_building = *active.get_entity(player)?;
+    let mut inventory = inventory.get_mut(*player)?;
 
     let item = &***trigger;
     let Some(index) = inventory.items.iter().position(|inv_item| inv_item == item) else {
-        return;
+        return Ok(());
     };
     inventory.items.remove(index);
 
-    let mut assignment = assignment.get_mut(*active_building.unwrap()).unwrap();
+    let mut assignment = assignment.get_mut(active_building)?;
     let maybe_item = assignment.items.set(item.slot(), Some(item.clone()));
     if let Some(item) = maybe_item {
         inventory.items.push(item);
     }
+    Ok(())
 }

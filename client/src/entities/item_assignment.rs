@@ -64,30 +64,31 @@ enum BuildingDialog {
 #[derive(Resource, Default, Deref, DerefMut)]
 struct CurrentBuilding(Option<Entity>);
 
-fn item_selected(trigger: Trigger<SelectionEvent<Item>>, mut commands: Commands) {
+fn item_selected(trigger: Trigger<SelectionEvent<Item>>, mut commands: Commands) -> Result {
     let item = &trigger.selection;
 
     commands.client_trigger(AssignItem::new(item.clone()));
     commands.send_event(CloseEvent);
+    Ok(())
 }
 
 fn slot_selected(
     trigger: Trigger<SelectionEvent<ItemSlot>>,
-    mut commands: Commands,
     inventory: Query<&Inventory, With<ControlledPlayer>>,
     transform: Query<&GlobalTransform>,
     weapons_ss: Res<WeaponsSpriteSheet>,
     chests_ss: Res<ChestsSpriteSheet>,
     heads_ss: Res<HeadsSpriteSheet>,
     feet_ss: Res<FeetSpriteSheet>,
-) {
+    mut commands: Commands,
+) -> Result {
     let SelectionEvent {
         selection: slot,
         menu: _,
         entry,
     } = *trigger;
-    let items = &inventory.single().unwrap().items;
-    let transform = transform.get(entry).unwrap().translation();
+    let items = &inventory.single()?.items;
+    let transform = transform.get(entry)?.translation();
 
     let sheets = SpriteSheets {
         weapons: &weapons_ss.sprite_sheet,
@@ -107,6 +108,7 @@ fn slot_selected(
         transform.offset_y(25.).with_layer(Layers::UI),
         Menu::new(nodes),
     ));
+    Ok(())
 }
 
 struct SpriteSheets<'a> {
@@ -129,13 +131,13 @@ fn build_node(item: &Item, sheets: &SpriteSheets) -> MenuNode<Item> {
 
 fn open_building_dialog(
     trigger: Trigger<OpenBuildingDialog>,
-    mut commands: Commands,
     mut current_building: ResMut<CurrentBuilding>,
     building: Query<&Transform>,
     asset_server: Res<AssetServer>,
     mut next_state: ResMut<NextState<PlayerState>>,
-) {
-    let transform = building.get(trigger.building).unwrap();
+    mut commands: Commands,
+) -> Result {
+    let transform = building.get(trigger.building)?;
     let translation = transform.translation;
 
     commands.spawn((
@@ -161,6 +163,7 @@ fn open_building_dialog(
 
     **current_building = Some(trigger.building);
     next_state.set(PlayerState::Interaction);
+    Ok(())
 }
 
 fn start_build(trigger: Trigger<SelectionEvent<BuildingDialog>>, mut commands: Commands) {
@@ -177,42 +180,38 @@ fn close_assignment_dialog(_: Trigger<CloseBuildingDialog>, mut commands: Comman
 
 fn show_item_info(
     trigger: Trigger<OnAdd, Selected>,
-    mut commands: Commands,
     items: Query<&ItemInfo>,
-) {
-    let Ok(info) = items.get(trigger.target()) else {
-        return;
+    mut commands: Commands,
+) -> Result {
+    if let Ok(info) = items.get(trigger.target()) {
+        let mut entity = commands.get_entity(info.tooltip)?;
+        entity.try_insert(Visibility::Visible);
     };
-    let Ok(mut entity) = commands.get_entity(info.tooltip) else {
-        return;
-    };
-    entity.try_insert(Visibility::Visible);
+    Ok(())
 }
 
 fn hide_item_info(
     trigger: Trigger<OnRemove, Selected>,
-    mut commands: Commands,
     items: Query<&ItemInfo>,
-) {
-    let Ok(info) = items.get(trigger.target()) else {
-        return;
+    mut commands: Commands,
+) -> Result {
+    if let Ok(info) = items.get(trigger.target()) {
+        let mut entity = commands.get_entity(info.tooltip)?;
+        entity.try_insert(Visibility::Hidden);
     };
-    let Ok(mut entity) = commands.get_entity(info.tooltip) else {
-        return;
-    };
-    entity.try_insert(Visibility::Hidden);
+    Ok(())
 }
 
 fn update_assignment(
     query: Query<(Entity, &ItemAssignment), Changed<ItemAssignment>>,
     maybe_current_building: Res<CurrentBuilding>,
-    mut commands: Commands,
     menu_entries: Query<(Entity, &NodePayload<ItemSlot>, Option<&Selected>)>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     chests_sprite_sheet: Res<ChestsSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
     feet_sprite_sheet: Res<FeetSpriteSheet>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, item_assignment) in query.iter() {
         let Some(current_building) = **maybe_current_building else {
             continue;
@@ -252,11 +251,11 @@ fn update_assignment(
             entity.despawn_related::<Children>().add_child(item_sprite);
         }
     }
+    Ok(())
 }
 
 fn open_assignment_dialog(
     trigger: Trigger<SelectionEvent<BuildingDialog>>,
-    mut commands: Commands,
     current_building: Res<CurrentBuilding>,
     assignment: Query<&ItemAssignment>,
     transform: Query<&GlobalTransform>,
@@ -265,13 +264,15 @@ fn open_assignment_dialog(
     chests_sprite_sheet: Res<ChestsSpriteSheet>,
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
     feet_sprite_sheet: Res<FeetSpriteSheet>,
-) {
+    mut commands: Commands,
+) -> Result {
     let BuildingDialog::ItemSlots = trigger.selection else {
-        return;
+        return Ok(());
     };
 
-    let assignment = assignment.get((**current_building).unwrap()).unwrap();
-    let transform = transform.get(trigger.entry).unwrap();
+    let current_building = (**current_building).ok_or("Current building not found")?;
+    let assignment = assignment.get(current_building)?;
+    let transform = transform.get(trigger.entry)?;
     let translation = transform.translation();
 
     let nodes = assignment
@@ -328,4 +329,6 @@ fn open_assignment_dialog(
         Menu::new(nodes),
         translation.offset_y(25.).with_layer(Layers::UI),
     ));
+
+    Ok(())
 }

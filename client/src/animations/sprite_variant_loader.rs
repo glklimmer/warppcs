@@ -16,6 +16,17 @@ pub struct SpriteVariants {
     pub variants: EnumMap<PlayerColor, Handle<Image>>,
 }
 
+pub trait SpriteVariantsAssetsExt {
+    fn get_variant(&self, handle: &Handle<SpriteVariants>) -> Result<&SpriteVariants>;
+}
+
+impl SpriteVariantsAssetsExt for Assets<SpriteVariants> {
+    fn get_variant(&self, handle: &Handle<SpriteVariants>) -> Result<&SpriteVariants> {
+        self.get(handle)
+            .ok_or("Sprite variant not generated yet".into())
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 struct ColorPalette {
     pub primary: Rgba<u8>,

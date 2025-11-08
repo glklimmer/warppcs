@@ -157,9 +157,20 @@ pub enum Hitby {
 pub struct ClientPlayerMap(HashMap<Entity, Entity>);
 
 impl ClientPlayerMap {
-    pub fn get_network_entity(&self, value: &Entity) -> Option<&Entity> {
+    pub fn get_network_entity(&self, value: &Entity) -> Result<&Entity> {
         self.iter()
             .find_map(|(key, val)| if val == value { Some(key) } else { None })
+            .ok_or("Network entity not found for player entity".into())
+    }
+}
+
+pub trait ClientPlayerMapExt {
+    fn get_player(&self, entity: &Entity) -> Result<&Entity>;
+}
+
+impl ClientPlayerMapExt for ClientPlayerMap {
+    fn get_player(&self, entity: &Entity) -> Result<&Entity> {
+        self.get(entity).ok_or("Player not found".into())
     }
 }
 
@@ -188,16 +199,15 @@ impl MapEntities for AnimationChangeEvent {
 
 fn spawn_clients(
     trigger: Trigger<OnAdd, ConnectedClient>,
-    mut commands: Commands,
     mut visibility: Query<&mut ClientVisibility>,
     mut client_player_map: ResMut<ClientPlayerMap>,
-) {
+    mut commands: Commands,
+) -> Result {
+    let color = fastrand::choice(PlayerColor::all_variants()).ok_or("No PlayerColor available")?;
     let player = commands
         .entity(trigger.target())
         .insert((
-            Player {
-                color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
-            },
+            Player { color: *color },
             Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
             GameSceneId::lobby(),
             Owner::Player(trigger.target()),
@@ -215,6 +225,7 @@ fn spawn_clients(
         mode: SendMode::Direct(player),
         event: SetLocalPlayer(player),
     });
+    Ok(())
 }
 
 fn update_visibility(
@@ -222,12 +233,9 @@ fn update_visibility(
     mut players: Query<(Entity, &mut ClientVisibility, &GameSceneId), With<Player>>,
     others: Query<(Entity, &GameSceneId)>,
     player_check: Query<(), With<Player>>,
-) {
+) -> Result {
     let entity = trigger.target();
-    let new_entity_scene_id = match others.get(entity) {
-        Ok((_, scene_id)) => scene_id,
-        Err(_) => return,
-    };
+    let (_, new_entity_scene_id) = others.get(entity)?;
 
     if player_check.get(entity).is_ok() {
         let player_scenes: HashMap<Entity, GameSceneId> = players
@@ -237,13 +245,17 @@ fn update_visibility(
 
         for (player_entity, mut visibility, _player_scene_id) in &mut players {
             if player_entity.eq(&entity) {
-                let player_scene_id = player_scenes.get(&entity).unwrap();
+                let player_scene_id = player_scenes
+                    .get(&entity)
+                    .ok_or("GameSceneId for player not found")?;
                 for (other_entity, other_scene_id) in &others {
                     visibility.set_visibility(other_entity, other_scene_id.eq(player_scene_id));
                 }
             } else {
-                let other_player_scene_id = player_scenes.get(&player_entity).unwrap();
-                visibility.set_visibility(entity, other_player_scene_id.eq(new_entity_scene_id));
+                let player_scene_id = player_scenes
+                    .get(&player_entity)
+                    .ok_or("GameSceneId for player not found")?;
+                visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
             }
         }
     } else {
@@ -251,16 +263,18 @@ fn update_visibility(
             visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
         }
     }
+    Ok(())
 }
 
 fn hide_on_remove(
     trigger: Trigger<OnRemove, GameSceneId>,
     mut players: Query<(Entity, &mut ClientVisibility), With<Player>>,
-) {
+) -> Result {
     let entity = trigger.target();
     for (player_entity, mut visibility) in &mut players {
         visibility.set_visibility(entity, player_entity == entity);
     }
+    Ok(())
 }
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
@@ -368,10 +382,10 @@ pub enum Owner {
 }
 
 impl Owner {
-    pub fn entity(&self) -> Option<Entity> {
+    pub fn entity(&self) -> Result<Entity, BevyError> {
         match self {
-            Owner::Player(entity) => Some(*entity),
-            Owner::Bandits => None,
+            Owner::Player(entity) => Ok(*entity),
+            Owner::Bandits => Err(BevyError::from("Owner is not a player")),
         }
     }
 

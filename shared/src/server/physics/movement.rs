@@ -122,11 +122,12 @@ fn apply_drag(mut query: Query<&mut Velocity, Without<ProjectileType>>, time: Re
     }
 }
 
-fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform, &BoxCollider)>) {
+fn set_grounded(
+    entities: Query<(Entity, &Transform, &BoxCollider)>,
+    mut commands: Commands,
+) -> Result {
     for (entity, transform, collider) in &entities {
-        let Ok(mut entity) = commands.get_entity(entity) else {
-            continue;
-        };
+        let mut entity = commands.get_entity(entity)?;
 
         let bottom = transform.translation.truncate() - collider.half_size()
             + collider.offset.unwrap_or_default();
@@ -137,17 +138,16 @@ fn set_grounded(mut commands: Commands, entities: Query<(Entity, &Transform, &Bo
             entity.try_remove::<Grounded>();
         }
     }
+    Ok(())
 }
 
 #[allow(clippy::type_complexity)]
 fn set_walking(
-    mut commands: Commands,
     entities: Query<(Entity, &Velocity, Option<&Grounded>, Option<&Health>), Without<Player>>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, velocity, maybe_grounded, maybe_health) in &entities {
-        let Ok(mut entity) = commands.get_entity(entity) else {
-            continue;
-        };
+        let mut entity = commands.get_entity(entity)?;
 
         if maybe_health.is_some() && maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
             entity.try_insert(Moving);
@@ -155,16 +155,15 @@ fn set_walking(
             entity.try_remove::<Moving>();
         }
     }
+    Ok(())
 }
 
 fn set_king_walking(
-    mut commands: Commands,
     players: Query<(Entity, &Velocity, Option<&Grounded>), With<Player>>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, velocity, maybe_grounded) in &players {
-        let Ok(mut entity) = commands.get_entity(entity) else {
-            continue;
-        };
+        let mut entity = commands.get_entity(entity)?;
 
         if maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
             entity.try_insert(Moving);
@@ -172,6 +171,7 @@ fn set_king_walking(
             entity.try_remove::<Moving>();
         }
     }
+    Ok(())
 }
 
 fn set_projectile_rotation(

@@ -143,31 +143,31 @@ fn travel_timer(mut query: Query<&mut Traveling>, time: Res<Time>) {
 }
 
 fn start_travel(
-    mut commands: Commands,
     mut traveling: EventReader<InteractionTriggeredEvent>,
-    flag_holders: Query<&FlagHolder>,
+    flag_holders: Query<Option<&FlagHolder>>,
     commanders: Query<(&FlagAssignment, &ArmyFlagAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
     destination: Query<(Entity, &TravelDestination)>,
     game_scenes: Query<&GameScene>,
-) {
+    mut commands: Commands,
+) -> Result {
     for event in traveling.read() {
         let InteractionType::Travel = &event.interaction else {
             continue;
         };
 
         let player_entity = event.player;
-        let (source, destination) = destination.get(event.interactable).unwrap();
-        let source_game_scene = game_scenes.get(source).unwrap();
-        let destination_game_scene = game_scenes.get(**destination).unwrap();
+        let (source, destination) = destination.get(event.interactable)?;
+        let source_game_scene = game_scenes.get(source)?;
+        let destination_game_scene = game_scenes.get(**destination)?;
 
-        let flag_holder = flag_holders.get(player_entity);
+        let flag_holder = flag_holders.get(player_entity)?;
 
         info!("Travel starting...");
 
         let mut travel_entities = Vec::new();
 
-        if let Ok(flag_holder) = flag_holder {
+        if let Some(flag_holder) = flag_holder {
             units_on_flag
                 .iter()
                 .filter(|(_, assignment, _)| assignment.0 == flag_holder.0)
@@ -210,14 +210,15 @@ fn start_travel(
                 .remove::<GameSceneId>();
         }
     }
+    Ok(())
 }
 
 fn end_travel(
-    mut commands: Commands,
     query: Query<(Entity, &Traveling)>,
     target: Query<(&Transform, &GameSceneId, Option<&TravelDestinationOffset>)>,
     client_player_map: Res<ClientPlayerMap>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, travel) in query.iter() {
         if !travel.time_left.finished() {
             continue;
@@ -225,8 +226,7 @@ fn end_travel(
 
         let (target_entity, maybe_target_game_scene) = travel.target;
 
-        let (target_transform, target_game_scene_id, maybe_offset) =
-            target.get(target_entity).unwrap();
+        let (target_transform, target_game_scene_id, maybe_offset) = target.get(target_entity)?;
         let target_position = target_transform.translation;
 
         info!("Travel finished to target position: {:?}", target_position);
@@ -261,4 +261,5 @@ fn end_travel(
             event: RevealMapNode::to(target_game_scene),
         });
     }
+    Ok(())
 }

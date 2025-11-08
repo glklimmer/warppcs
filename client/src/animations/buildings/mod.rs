@@ -17,7 +17,9 @@ use wall_tower::wall_tower_building;
 use wall_wood::wall_wood_building;
 
 use crate::{
-    animations::{AnimationSound, AnimationSoundTrigger},
+    animations::{
+        AnimationSound, AnimationSoundTrigger, sprite_variant_loader::SpriteVariantsAssetsExt,
+    },
     sound::CRAFTING_SOUND_PATH,
 };
 
@@ -81,17 +83,18 @@ pub fn update_building_sprite(
         (Entity, &mut Sprite, &Building, &BuildStatus),
         Or<(Changed<Building>, Changed<BuildStatus>)>,
     >,
-    mut commands: Commands,
     asset_server: Res<AssetServer>,
     building_sprite_sheet: Res<BuildingSpriteSheets>,
     variants: Res<Assets<SpriteVariants>>,
-) {
+    mut commands: Commands,
+) -> Result {
     for (entity, mut sprite, building, status) in buildings.iter_mut() {
         let sprite_sheet = building_sprite_sheet
             .sprite_sheets
             .get(building.building_type);
+
         let handle = &sprite_sheet.texture;
-        let sprite_variants = variants.get(handle).unwrap();
+        let sprite_variants = variants.get_variant(handle)?;
         let mut animation = sprite_sheet.animations.get(*status).clone();
 
         sprite.texture_atlas = Some(TextureAtlas {
@@ -147,13 +150,14 @@ pub fn update_building_sprite(
             });
         }
     }
+    Ok(())
 }
 
 pub fn remove_animation_after_play_once(
     trigger: Trigger<OnRemove, PlayOnce>,
-    mut commands: Commands,
     building: Query<&BuildStatus>,
-) {
+    mut commands: Commands,
+) -> Result {
     if let Ok(status) = building.get(trigger.target()) {
         let should_remove = match status {
             BuildStatus::Built { indicator } => {
@@ -167,4 +171,5 @@ pub fn remove_animation_after_play_once(
                 .remove::<SpriteSheetAnimation>();
         }
     }
+    Ok(())
 }
