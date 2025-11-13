@@ -1,8 +1,24 @@
 use bevy::{prelude::*, sprite::Anchor};
 
+use animations::{
+    animals::horse::{HorseAnimation, HorseSpriteSheet},
+    king::{KingAnimation, KingSpriteSheet},
+    objects::{
+        chest::{ChestAnimation, ChestSpriteSheet},
+        flag::{FlagAnimation, FlagSpriteSheet},
+        portal::{PortalAnimation, PortalSpriteSheet},
+        projectiles::{ProjectileSpriteSheet, Projectiles},
+    },
+    units::UnitSpriteSheets,
+    world::{
+        TreeAnimation,
+        road::{RoadAnimation, RoadSpriteSheet},
+        trees::pine::PineTreeSpriteSheet,
+    },
+};
 use bevy_parallax::{CameraFollow, LinearAxisStrategy, TranslationStrategy};
 use shared::{
-    Player, SetLocalPlayer,
+    ControlledPlayer, Player, SetLocalPlayer,
     map::buildings::{Building, RecruitBuilding},
     player_port::Portal,
     server::{
@@ -14,26 +30,6 @@ use shared::{
     },
 };
 use sprite_variant_loader::loader::{SpriteVariants, SpriteVariantsAssetsExt};
-
-use crate::{
-    animations::{
-        animals::horse::{HorseAnimation, HorseSpriteSheet},
-        king::{KingAnimation, KingSpriteSheet},
-        objects::{
-            chest::{ChestAnimation, ChestSpriteSheet},
-            flag::{FlagAnimation, FlagSpriteSheet},
-            portal::{PortalAnimation, PortalSpriteSheet},
-            projectiles::{ProjectileSpriteSheet, Projectiles},
-        },
-        units::UnitSpriteSheets,
-        world::{
-            TreeAnimation,
-            road::{RoadAnimation, RoadSpriteSheet},
-            trees::pine::PineTreeSpriteSheet,
-        },
-    },
-    networking::ControlledPlayer,
-};
 
 pub struct SpawnPlugin;
 
@@ -61,7 +57,11 @@ fn init_local_player(
 ) -> Result {
     let player = trigger.entity();
     let mut player_commands = commands.entity(player);
-    player_commands.insert((ControlledPlayer, SpatialListener::new(50.0)));
+    player_commands.insert((
+        ControlledPlayer,
+        KingAnimation::default(),
+        SpatialListener::new(50.0),
+    ));
     commands.entity(camera.single()?).insert(
         CameraFollow::fixed(player)
             .with_offset(Vec2 { x: 50., y: 50. })

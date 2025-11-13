@@ -1,9 +1,17 @@
 use bevy::prelude::*;
 
+use animations::{
+    objects::items::weapons::WeaponsSpriteSheet,
+    ui::{
+        animations::SpriteShaking,
+        army_formations::{FormationIconSpriteSheet, FormationIcons},
+        commander_menu::{CommanderMenuNodes, CommanderMenuSpriteSheet},
+    },
+};
 use bevy::color::palettes::css::YELLOW;
 use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
-    PlayerState, Vec3LayerExt,
+    ControlledPlayer, PlayerState, Vec3LayerExt,
     map::Layers,
     networking::UnitType,
     server::{
@@ -16,19 +24,8 @@ use shared::{
     },
 };
 
-use crate::{
-    animations::{
-        objects::items::weapons::WeaponsSpriteSheet,
-        ui::{
-            animations::SpriteShaking,
-            army_formations::{FormationIconSpriteSheet, FormationIcons},
-            commander_menu::{CommanderMenuNodes, CommanderMenuSpriteSheet},
-        },
-    },
-    networking::ControlledPlayer,
-    widgets::menu::{
-        CloseEvent, ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
-    },
+use crate::widgets::menu::{
+    CloseEvent, ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
 };
 
 pub struct CommanderInteractionPlugin;

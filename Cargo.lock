@@ -305,6 +305,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "animations"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "fastrand",
+ "highlight",
+ "serde",
+ "shared",
+ "sprite_variant_loader",
+]
+
+[[package]]
 name = "anstream"
 version = "0.6.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2183,6 +2196,7 @@ dependencies = [
  "aeronet_replicon",
  "aeronet_steam",
  "aeronet_webtransport",
+ "animations",
  "arboard",
  "bevy",
  "bevy-parallax",
@@ -2190,6 +2204,7 @@ dependencies = [
  "bevy_replicon",
  "bincode",
  "fastrand",
+ "highlight",
  "image",
  "petgraph 0.8.3",
  "serde",
@@ -3552,6 +3567,15 @@ name = "hexf-parse"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
+
+[[package]]
+name = "highlight"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "image",
+ "shared",
+]
 
 [[package]]
 name = "httlib-huffman"

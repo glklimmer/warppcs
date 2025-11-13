@@ -1,8 +1,17 @@
 use bevy::{color::palettes::css::GREY, prelude::*};
 
+use animations::{
+    AnimationSpriteSheet, BuildSprite,
+    objects::items::{
+        chests::{Chests, ChestsSpriteSheet},
+        feet::{Feet, FeetSpriteSheet},
+        heads::{Heads, HeadsSpriteSheet},
+        weapons::{Weapons, WeaponsSpriteSheet},
+    },
+};
 use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
-    PlayerState, Vec3LayerExt,
+    ControlledPlayer, PlayerState, Vec3LayerExt,
     map::Layers,
     networking::Inventory,
     server::{
@@ -15,23 +24,13 @@ use shared::{
 };
 
 use crate::{
-    animations::{
-        AnimationSpriteSheet,
-        objects::items::{
-            chests::{Chests, ChestsSpriteSheet},
-            feet::{Feet, FeetSpriteSheet},
-            heads::{Heads, HeadsSpriteSheet},
-            weapons::{Weapons, WeaponsSpriteSheet},
-        },
-    },
     entities::items::ItemSprite,
-    networking::ControlledPlayer,
     widgets::menu::{
         CloseEvent, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,
     },
 };
 
-use super::items::{BuildSprite, ItemInfo};
+use super::items::ItemInfo;
 
 pub struct ItemAssignmentPlugin;
 

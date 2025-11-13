@@ -1,5 +1,5 @@
 [package]
-name = "sprite_variant_loader"
+name = "highlight"
 version = "0.1.0"
 edition = "2024"
 
@@ -34,6 +34,4 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
-serde = { workspace = true }
 image = { workspace = true }
-thiserror = "2.0.12"
