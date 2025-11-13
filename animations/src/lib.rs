@@ -1,17 +1,17 @@
 use bevy::prelude::*;
 
 use animals::horse::{
-    next_horse_animation, set_horse_sprite_animation, HorseAnimation, HorseSpriteSheet,
+    HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
 use bevy_replicon::client::ClientSet;
-use buildings::{remove_animation_after_play_once, update_building_sprite, BuildingSpriteSheets};
+use buildings::{BuildingSpriteSheets, remove_animation_after_play_once, update_building_sprite};
 use king::{
-    set_king_after_play_once, set_king_idle, set_king_sprite_animation, set_king_walking,
-    trigger_king_animation, KingAnimation, KingSpriteSheet,
+    KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
+    set_king_sprite_animation, set_king_walking, trigger_king_animation,
 };
 use objects::{
-    chest::{set_chest_after_play_once, ChestSpriteSheet},
-    flag::{on_flag_destroyed, update_flag_visibility, FlagSpriteSheet},
+    chest::{ChestSpriteSheet, set_chest_after_play_once},
+    flag::{FlagSpriteSheet, on_flag_destroyed, update_flag_visibility},
     items::{
         chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
         weapons::WeaponsSpriteSheet,
@@ -24,8 +24,8 @@ use shared::{enum_map::*, server::entities::UnitAnimation};
 use sprite_variant_loader::AssetsToLoad;
 use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
 use units::{
-    set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation, set_unit_walking,
-    trigger_unit_animation, UnitSpriteSheets,
+    UnitSpriteSheets, set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation,
+    set_unit_walking, trigger_unit_animation,
 };
 
 use crate::{
@@ -42,13 +42,13 @@ use crate::{
 pub mod animals;
 pub mod buildings;
 pub mod king;
-pub mod macros;
 pub mod objects;
 pub mod ui;
 pub mod units;
 pub mod world;
 
-pub mod sound;
+mod macros;
+mod sound;
 
 #[derive(Clone)]
 pub struct StaticSpriteSheet<E: EnumIter> {
