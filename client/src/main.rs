@@ -8,7 +8,7 @@ use networking::join_server::JoinServerPlugin;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
-use sprite_variant_loader::AssetLoaderPlugin;
+use sprite_variant_loader::SpriteVariantLoaderPlugin;
 use std::env;
 use ui::UiPlugin;
 use widgets::WidgetsPlugin;
@@ -87,7 +87,7 @@ fn main() {
     client.add_plugins(SharedPlugin);
 
     client.insert_state(GameState::Loading).add_plugins((
-        AssetLoaderPlugin,
+        SpriteVariantLoaderPlugin,
         ParallaxPlugin,
         CameraPlugin,
         InputPlugin,

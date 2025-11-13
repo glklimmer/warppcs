@@ -9,9 +9,9 @@ pub mod loader;
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct AssetsToLoad(pub Vec<UntypedHandle>);
 
-pub struct AssetLoaderPlugin;
+pub struct SpriteVariantLoaderPlugin;
 
-impl Plugin for AssetLoaderPlugin {
+impl Plugin for SpriteVariantLoaderPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<AssetsToLoad>()
             .init_asset::<SpriteVariants>()
