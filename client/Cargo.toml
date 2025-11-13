@@ -59,7 +59,6 @@ aeronet_steam = { workspace = true, features = [
 ], optional = true }
 
 bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax" }
-arboard = "3.5.0"
 image = { workspace = true }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
 
