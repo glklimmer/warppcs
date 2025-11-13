@@ -39,6 +39,7 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
+sprite_variant_loader = { path = "../sprite_variant_loader" }
 bevy-steamworks = { workspace = true, optional = true }
 bevy_replicon = { workspace = true, features = ["client"] }
 bincode = { workspace = true }
@@ -57,8 +58,7 @@ aeronet_steam = { workspace = true, features = [
 
 bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax" }
 arboard = "3.5.0"
-image = { version = "0.25.6", features = ["png"] }
-thiserror = "2.0.12"
+image = { workspace = true }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
 
 [lints.clippy]

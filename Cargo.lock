@@ -2194,7 +2194,7 @@ dependencies = [
  "petgraph 0.8.3",
  "serde",
  "shared",
- "thiserror 2.0.17",
+ "sprite_variant_loader",
 ]
 
 [[package]]
@@ -6000,6 +6000,17 @@ dependencies = [
  "base64ct",
  "der",
  "sha2",
+]
+
+[[package]]
+name = "sprite_variant_loader"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "image",
+ "serde",
+ "shared",
+ "thiserror 2.0.17",
 ]
 
 [[package]]

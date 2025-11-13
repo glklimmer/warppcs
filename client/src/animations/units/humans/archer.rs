@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 
 use shared::enum_map::*;
+use sprite_variant_loader::loader::SpriteVariants;
 
 use crate::{
     anim,
-    animations::{AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, sprite_variant_loader::SpriteVariants},
+    animations::{AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet},
     sound::GRASS_FOOTSTEPS_SOUND_PATH,
 };
 
@@ -66,3 +67,4 @@ pub fn archer(world: &mut World) -> AnimationSpriteSheet<UnitAnimation, SpriteVa
         animations_sound,
     }
 }
+

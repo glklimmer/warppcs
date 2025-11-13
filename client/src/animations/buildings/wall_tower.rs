@@ -1,10 +1,9 @@
 use bevy::prelude::*;
 
 use shared::{enum_map::*, map::buildings::BuildStatus};
+use sprite_variant_loader::loader::SpriteVariants;
 
-use crate::animations::{
-    AnimationSpriteSheet, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
-};
+use crate::animations::{AnimationSpriteSheet, SpriteSheetAnimation};
 
 pub fn wall_tower_building(world: &mut World) -> AnimationSpriteSheet<BuildStatus, SpriteVariants> {
     let asset_server = world.resource::<AssetServer>();

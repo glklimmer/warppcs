@@ -11,21 +11,18 @@ use shared::{
     networking::UnitType,
 };
 use shieldwarrior::shieldwarrior_building;
+use sprite_variant_loader::loader::{SpriteVariants, SpriteVariantsAssetsExt};
 use tent::tent_building;
 use wall_basic::wall_basic_building;
 use wall_tower::wall_tower_building;
 use wall_wood::wall_wood_building;
 
 use crate::{
-    animations::{
-        AnimationSound, AnimationSoundTrigger, sprite_variant_loader::SpriteVariantsAssetsExt,
-    },
+    animations::{AnimationSound, AnimationSoundTrigger},
     sound::CRAFTING_SOUND_PATH,
 };
 
-use super::{
-    AnimationSpriteSheet, PlayOnce, SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
-};
+use super::{AnimationSpriteSheet, PlayOnce, SpriteSheetAnimation};
 
 mod archer;
 mod gold_farm;

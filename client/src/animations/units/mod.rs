@@ -13,10 +13,10 @@ use shared::{
         physics::movement::Moving,
     },
 };
+use sprite_variant_loader::loader::SpriteVariants;
 
 use super::{
     AnimationSound, AnimationSpriteSheet, AnimationTrigger, PlayOnce, SpriteSheetAnimation,
-    sprite_variant_loader::SpriteVariants,
 };
 
 pub mod bandits;

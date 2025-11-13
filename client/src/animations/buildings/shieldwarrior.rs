@@ -4,11 +4,9 @@ use shared::{
     enum_map::*,
     map::buildings::{BuildStatus, HealthIndicator},
 };
+use sprite_variant_loader::loader::SpriteVariants;
 
-use crate::{
-    anim,
-    animations::{AnimationSpriteSheet, sprite_variant_loader::SpriteVariants},
-};
+use crate::{anim, animations::AnimationSpriteSheet};
 
 const ATLAS_COLUMNS: usize = 11;
 

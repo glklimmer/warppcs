@@ -8,12 +8,12 @@ use networking::join_server::JoinServerPlugin;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
+use sprite_variant_loader::AssetLoaderPlugin;
 use std::env;
 use ui::UiPlugin;
 use widgets::WidgetsPlugin;
 
 use animations::AnimationPlugin;
-use asset_loader::AssetLoaderPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
@@ -23,7 +23,6 @@ use crate::background::BackgroundPlugin;
 use crate::defeat::DefeatPlugin;
 
 pub mod animations;
-pub mod asset_loader;
 pub mod background;
 pub mod camera;
 pub mod defeat;

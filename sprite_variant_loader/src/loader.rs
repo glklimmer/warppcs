@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 
-use bevy::asset::{AssetLoader, LoadContext, RenderAssetUsages, io::Reader};
+use bevy::asset::{io::Reader, AssetLoader, LoadContext, RenderAssetUsages};
 use image::{DynamicImage, Rgba};
 use serde::{Deserialize, Serialize};
-use shared::PlayerColor;
 use shared::enum_map::{EnumIter, EnumMap};
+use shared::PlayerColor;
 use std::collections::HashMap;
 use thiserror::Error;
 

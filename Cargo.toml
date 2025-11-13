@@ -8,6 +8,7 @@ members = [
     "enum_mappable",
     "ppc_console",
     "console_protocol",
+    "sprite_variant_loader"
 ]
 
 # Enable a small amount of optimization in the dev profile.
@@ -34,3 +35,4 @@ bevy-steamworks = { git = "https://github.com/glklimmer/bevy_steamworks" }
 aeronet_webtransport = { version = "0.14.0" }
 aeronet_replicon = { version = "0.14.0" }
 aeronet_steam = { version = "0.14.0" }
+image = { version = "0.25.6", features = ["png"] }
