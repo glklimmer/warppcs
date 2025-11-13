@@ -2,11 +2,11 @@ use bevy::prelude::*;
 
 use bevy::audio::{PlaybackMode, Volume};
 use shared::{
+    AnimationChange, AnimationChangeEvent, Hitby,
     server::{
         physics::projectile::ProjectileType,
         players::interaction::{InteractableSound, InteractionType},
     },
-    AnimationChange, AnimationChangeEvent, Hitby,
 };
 
 use crate::SpriteSheetAnimation;
@@ -14,10 +14,10 @@ use crate::SpriteSheetAnimation;
 pub const CRAFTING_SOUND_PATH: &str = "animation_sound/crafting";
 pub const DIRT_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/dirt_footsteps";
 pub const GRASS_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/grass_footsteps";
-pub const SNOW_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/snow_footsteps";
-pub const STONE_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/stone_footsteps";
-pub const WATER_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/water_footsteps";
-pub const HORSE_SOUND_PATH: &str = "animation_sound/horse";
+// pub const SNOW_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/snow_footsteps";
+// pub const STONE_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/stone_footsteps";
+// pub const WATER_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/water_footsteps";
+// pub const HORSE_SOUND_PATH: &str = "animation_sound/horse";
 
 #[derive(Event)]
 struct PlayAnimationSoundEvent {
@@ -32,9 +32,9 @@ const ANIMATION_VOLUME: f32 = 0.25;
 #[derive(Component, Clone, Default, PartialEq, Eq)]
 pub enum AnimationSoundTrigger {
     #[default]
-    OnEnter,
-    OnStartFrameTimer,
-    OnEndFrameTimer,
+    Enter,
+    StartFrameTimer,
+    EndFrameTimer,
 }
 
 #[derive(Component, Clone)]
@@ -223,7 +223,7 @@ fn play_animation_on_frame_timer(
         let Some(sound) = &animation else {
             continue;
         };
-        let AnimationSoundTrigger::OnStartFrameTimer = sound.sound_trigger else {
+        let AnimationSoundTrigger::StartFrameTimer = sound.sound_trigger else {
             continue;
         };
 
@@ -251,7 +251,7 @@ fn play_animation_on_enter(
             continue;
         };
 
-        let AnimationSoundTrigger::OnEnter = sound.sound_trigger else {
+        let AnimationSoundTrigger::Enter = sound.sound_trigger else {
             continue;
         };
 
