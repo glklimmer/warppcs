@@ -3,17 +3,14 @@ use bevy::prelude::*;
 use bevy::input::common_conditions::input_just_pressed;
 
 use shared::{
-    GameState, PlayerState,
+    ControlledPlayer, GameState, PlayerState,
     server::game_scenes::{
         travel::Traveling,
         world::{InitPlayerMapNode, RevealMapNode, SceneType},
     },
 };
 
-use crate::{
-    animations::ui::map_icon::{MapIconSpriteSheet, MapIcons},
-    networking::ControlledPlayer,
-};
+use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
 
 pub struct MapPlugin;
 

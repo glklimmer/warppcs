@@ -1,7 +1,5 @@
 use bevy::prelude::*;
-use shared::{PlayerState, server::entities::health::PlayerDefeated};
-
-use crate::networking::ControlledPlayer;
+use shared::{ControlledPlayer, PlayerState, server::entities::health::PlayerDefeated};
 
 pub struct DefeatPlugin;
 

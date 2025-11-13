@@ -17,12 +17,11 @@ use animations::AnimationPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
-use sound::SoundPlugin;
 
-use crate::background::BackgroundPlugin;
-use crate::defeat::DefeatPlugin;
+use crate::{
+    background::BackgroundPlugin, background_sound::BackgroundSoundPlugin, defeat::DefeatPlugin,
+};
 
-pub mod animations;
 pub mod background;
 pub mod camera;
 pub mod defeat;
@@ -31,9 +30,10 @@ pub mod gizmos;
 pub mod input;
 pub mod map;
 pub mod networking;
-pub mod sound;
 pub mod ui;
 pub mod widgets;
+
+mod background_sound;
 
 /// Spatial audio uses the distance to attenuate the sound volume. In 2D with the default camera,
 /// 1 pixel is 1 unit of distance, so we use a scale so that 100 pixels is 1 unit of distance for
@@ -98,7 +98,7 @@ fn main() {
         WidgetsPlugin,
         UiPlugin,
         MapPlugin,
-        SoundPlugin,
+        BackgroundSoundPlugin,
         GizmosPlugin,
         DefeatPlugin,
     ));

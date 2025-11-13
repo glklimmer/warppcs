@@ -10,7 +10,6 @@ mod item_assignment;
 mod spawn;
 
 pub mod commander;
-pub mod highlight;
 pub mod items;
 
 pub struct EntitiesPlugin;

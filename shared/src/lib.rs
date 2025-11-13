@@ -300,6 +300,10 @@ pub struct Player {
     pub color: PlayerColor,
 }
 
+#[derive(Component)]
+#[require(BoxCollider = player_collider())]
+pub struct ControlledPlayer;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Mappable, Serialize, Deserialize)]
 pub enum PlayerColor {
     #[default]

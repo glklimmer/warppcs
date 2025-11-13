@@ -8,7 +8,9 @@ members = [
     "enum_mappable",
     "ppc_console",
     "console_protocol",
-    "sprite_variant_loader"
+    "sprite_variant_loader",
+    "animations",
+    "highlight"
 ]
 
 # Enable a small amount of optimization in the dev profile.

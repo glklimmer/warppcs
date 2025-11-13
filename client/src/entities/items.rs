@@ -1,29 +1,21 @@
+use animations::BuildSprite;
 use bevy::prelude::*;
 
 use bevy::{sprite::Anchor, text::TextBounds};
 
-use shared::{
-    Vec3LayerExt,
-    enum_map::EnumIter,
-    map::Layers,
-    server::players::items::{
-        BaseEffect, Item, ItemColor, ItemType, MeleeWeapon, Modifier, ModifierSign,
-        ProjectileWeapon, WeaponType,
-    },
-};
-
-use crate::animations::{
-    AnimationSpriteSheet,
+use animations::{
     objects::items::{
-        chests::{Chests, ChestsSpriteSheet},
-        feet::{Feet, FeetSpriteSheet},
-        heads::{Heads, HeadsSpriteSheet},
-        weapons::{Weapons, WeaponsSpriteSheet},
+        chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
+        weapons::WeaponsSpriteSheet,
     },
     ui::item_info::{ItemInfoParts, ItemInfoSpriteSheet},
 };
-
-use super::highlight::Highlighted;
+use highlight::Highlighted;
+use shared::{
+    Vec3LayerExt,
+    map::Layers,
+    server::players::items::{BaseEffect, Item, ItemType, Modifier, ModifierSign},
+};
 
 pub struct ItemsPlugin;
 
@@ -47,81 +39,6 @@ impl ItemInfo {
         Self {
             item,
             tooltip: Entity::PLACEHOLDER,
-        }
-    }
-}
-
-pub trait BuildSprite<K> {
-    fn sprite_for<T: Into<K>>(&self, kind: T) -> Sprite;
-}
-
-impl<K> BuildSprite<K> for AnimationSpriteSheet<K, Image>
-where
-    K: EnumIter,
-{
-    fn sprite_for<T: Into<K>>(&self, kind: T) -> Sprite {
-        let animation = kind.into();
-        let sprite_animation = self.animations.get(animation);
-        Sprite {
-            image: self.texture.clone(),
-            texture_atlas: Some(TextureAtlas {
-                layout: self.layout.clone(),
-                index: sprite_animation.first_sprite_index,
-            }),
-            ..Default::default()
-        }
-    }
-}
-
-impl From<WeaponType> for Weapons {
-    fn from(wt: WeaponType) -> Self {
-        match wt {
-            WeaponType::Melee(m) => match m {
-                MeleeWeapon::SwordAndShield => Weapons::SwordAndShield,
-                MeleeWeapon::Pike => Weapons::Pike,
-            },
-            WeaponType::Projectile(p) => match p {
-                ProjectileWeapon::Bow => Weapons::Bow,
-            },
-        }
-    }
-}
-
-impl From<ItemColor> for Chests {
-    fn from(c: ItemColor) -> Self {
-        match c {
-            ItemColor::Brown => Chests::Brown,
-            ItemColor::Blue => Chests::Blue,
-            ItemColor::Red => Chests::Red,
-            ItemColor::Violet => Chests::Violet,
-            ItemColor::Green => Chests::Green,
-            ItemColor::Beige => Chests::Beige,
-        }
-    }
-}
-
-impl From<ItemColor> for Heads {
-    fn from(c: ItemColor) -> Self {
-        match c {
-            ItemColor::Brown => Heads::Brown,
-            ItemColor::Blue => Heads::Blue,
-            ItemColor::Red => Heads::Red,
-            ItemColor::Violet => Heads::Violet,
-            ItemColor::Green => Heads::Green,
-            ItemColor::Beige => Heads::Beige,
-        }
-    }
-}
-
-impl From<ItemColor> for Feet {
-    fn from(c: ItemColor) -> Self {
-        match c {
-            ItemColor::Brown => Feet::Brown,
-            ItemColor::Blue => Feet::Blue,
-            ItemColor::Red => Feet::Red,
-            ItemColor::Violet => Feet::Violet,
-            ItemColor::Green => Feet::Green,
-            ItemColor::Beige => Feet::Beige,
         }
     }
 }

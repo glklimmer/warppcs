@@ -1,7 +1,5 @@
 use bevy::prelude::*;
-use shared::{GameState, networking::Inventory};
-
-use crate::networking::ControlledPlayer;
+use shared::{ControlledPlayer, GameState, networking::Inventory};
 
 #[derive(Component)]
 pub struct GoldAmountDisplay;

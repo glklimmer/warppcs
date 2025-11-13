@@ -1,11 +1,9 @@
 use bevy::prelude::*;
 use bevy_parallax::{CreateParallaxEvent, LayerData, LayerRepeat, LayerSpeed, RepeatStrategy};
 use shared::{
-    PlayerState,
+    ControlledPlayer, PlayerState,
     server::game_scenes::{travel::Traveling, world::SceneType},
 };
-
-use crate::networking::ControlledPlayer;
 
 pub struct BackgroundPlugin;
 
