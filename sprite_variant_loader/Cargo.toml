@@ -35,5 +35,5 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 serde = { workspace = true }
-image = { version = "0.25.6", features = ["png"] }
+image = { workspace = true }
 thiserror = "2.0.12"
