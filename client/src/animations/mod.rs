@@ -21,24 +21,21 @@ use objects::{
 };
 use shared::{enum_map::*, server::entities::UnitAnimation};
 
-use sprite_variant_loader::{SpriteVariantLoader, SpriteVariants};
+use sprite_variant_loader::AssetsToLoad;
 use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
 use units::{
     UnitSpriteSheets, set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation,
     set_unit_walking, trigger_unit_animation,
 };
 
-use crate::{
-    animations::{
-        king::{remove_animation, set_king_defeat},
-        objects::chest::on_chest_opened,
-        ui::{
-            animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
-            commander_menu::CommanderMenuSpriteSheet,
-        },
-        world::{road::RoadSpriteSheet, trees::pine::PineTreeSpriteSheet},
+use crate::animations::{
+    king::{remove_animation, set_king_defeat},
+    objects::chest::on_chest_opened,
+    ui::{
+        animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
+        commander_menu::CommanderMenuSpriteSheet,
     },
-    asset_loader::AssetsToLoad,
+    world::{road::RoadSpriteSheet, trees::pine::PineTreeSpriteSheet},
 };
 
 pub mod animals;
@@ -46,7 +43,6 @@ pub mod buildings;
 pub mod king;
 pub mod macros;
 pub mod objects;
-pub mod sprite_variant_loader;
 pub mod ui;
 pub mod units;
 pub mod world;
@@ -180,8 +176,6 @@ pub struct AnimationPlugin;
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(UIAnimationsPlugin);
-        app.init_asset::<SpriteVariants>();
-        app.init_asset_loader::<SpriteVariantLoader>();
 
         app.init_resource::<UnitSpriteSheets>();
         app.add_event::<AnimationTrigger<UnitAnimation>>();

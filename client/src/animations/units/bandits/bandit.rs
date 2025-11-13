@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 
 use shared::enum_map::*;
+use sprite_variant_loader::loader::SpriteVariants;
 
 use crate::{
     anim,
-    animations::{AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, sprite_variant_loader::SpriteVariants},
+    animations::{AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet},
     sound::DIRT_FOOTSTEPS_SOUND_PATH,
 };
 

@@ -6,12 +6,9 @@ use shared::{
     enum_map::*,
     server::{physics::attachment::AttachedTo, players::flag::FlagDestroyed},
 };
+use sprite_variant_loader::loader::SpriteVariants;
 
-use crate::{
-    anim,
-    animations::{AnimationSpriteSheet, sprite_variant_loader::SpriteVariants},
-    entities::highlight::Highlighted,
-};
+use crate::{anim, animations::AnimationSpriteSheet, entities::highlight::Highlighted};
 
 const ATLAS_COLUMNS: usize = 8;
 

@@ -13,6 +13,7 @@ use shared::{
         players::{chest::Chest, mount::Mount},
     },
 };
+use sprite_variant_loader::loader::{SpriteVariants, SpriteVariantsAssetsExt};
 
 use crate::{
     animations::{
@@ -24,7 +25,6 @@ use crate::{
             portal::{PortalAnimation, PortalSpriteSheet},
             projectiles::{ProjectileSpriteSheet, Projectiles},
         },
-        sprite_variant_loader::{SpriteVariants, SpriteVariantsAssetsExt},
         units::UnitSpriteSheets,
         world::{
             TreeAnimation,

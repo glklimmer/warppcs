@@ -1,17 +1,25 @@
 use bevy::prelude::*;
+
 use shared::GameState;
+
+use crate::loader::{SpriteVariantLoader, SpriteVariants};
+
+pub mod loader;
 
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct AssetsToLoad(pub Vec<UntypedHandle>);
 
-pub struct AssetLoaderPlugin;
+pub struct SpriteVariantLoaderPlugin;
 
-impl Plugin for AssetLoaderPlugin {
+impl Plugin for SpriteVariantLoaderPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<AssetsToLoad>().add_systems(
-            Update,
-            check_assets_ready.run_if(in_state(GameState::Loading)),
-        );
+        app.init_resource::<AssetsToLoad>()
+            .init_asset::<SpriteVariants>()
+            .init_asset_loader::<SpriteVariantLoader>()
+            .add_systems(
+                Update,
+                check_assets_ready.run_if(in_state(GameState::Loading)),
+            );
     }
 }
 

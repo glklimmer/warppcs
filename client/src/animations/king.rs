@@ -6,12 +6,13 @@ use shared::{
     networking::Mounted,
     server::{entities::health::PlayerDefeated, physics::movement::Moving},
 };
+use sprite_variant_loader::loader::SpriteVariants;
 
 use crate::{anim, anim_reverse};
 
 use super::{
     AnimationSound, AnimationSoundTrigger, AnimationSpriteSheet, AnimationTrigger, PlayOnce,
-    SpriteSheetAnimation, sprite_variant_loader::SpriteVariants,
+    SpriteSheetAnimation,
 };
 
 const ATLAS_COLUMNS: usize = 11;
