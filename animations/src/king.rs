@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 
 use shared::{
+    AnimationChange, AnimationChangeEvent, Player,
     enum_map::*,
     networking::Mounted,
     server::{entities::health::PlayerDefeated, physics::movement::Moving},
-    AnimationChange, AnimationChangeEvent, Player,
 };
 use sprite_variant_loader::loader::SpriteVariants;
 
@@ -79,7 +79,7 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Drink => None,
             KingAnimation::Walk => Some(AnimationSound {
                 sound_handles: vec![walk_sound.clone()],
-                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+                sound_trigger: AnimationSoundTrigger::StartFrameTimer,
             }),
             KingAnimation::Attack => None,
             KingAnimation::Hit => None,
@@ -87,16 +87,16 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::KnockOut => None,
             KingAnimation::Mount => Some(AnimationSound {
                 sound_handles: vec![horse_sound.clone()],
-                sound_trigger: AnimationSoundTrigger::OnEnter,
+                sound_trigger: AnimationSoundTrigger::Enter,
             }),
             KingAnimation::Unmount => Some(AnimationSound {
                 sound_handles: vec![horse_sound.clone()],
-                sound_trigger: AnimationSoundTrigger::OnEnter,
+                sound_trigger: AnimationSoundTrigger::Enter,
             }),
             KingAnimation::HorseIdle => None,
             KingAnimation::HorseWalk => Some(AnimationSound {
                 sound_handles: vec![horse_gallop.clone()],
-                sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+                sound_trigger: AnimationSoundTrigger::StartFrameTimer,
             }),
         });
 

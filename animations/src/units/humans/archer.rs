@@ -4,9 +4,8 @@ use shared::enum_map::*;
 use sprite_variant_loader::loader::SpriteVariants;
 
 use crate::{
-    anim,
+    AnimationSound, AnimationSpriteSheet, anim,
     sound::{AnimationSoundTrigger, GRASS_FOOTSTEPS_SOUND_PATH},
-    AnimationSound, AnimationSpriteSheet,
 };
 
 use super::super::UnitAnimation;
@@ -53,7 +52,7 @@ pub fn archer(world: &mut World) -> AnimationSpriteSheet<UnitAnimation, SpriteVa
                 footstep5.clone(),
                 footstep6.clone(),
             ],
-            sound_trigger: AnimationSoundTrigger::OnStartFrameTimer,
+            sound_trigger: AnimationSoundTrigger::StartFrameTimer,
         }),
         UnitAnimation::Attack => None,
         UnitAnimation::Hit => None,

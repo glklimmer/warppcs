@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use shared::enum_map::*;
 use sprite_variant_loader::loader::SpriteVariants;
 
-use crate::{anim, sound::AnimationSoundTrigger, AnimationSound, AnimationSpriteSheet};
+use crate::{AnimationSound, AnimationSpriteSheet, anim, sound::AnimationSoundTrigger};
 
 use super::super::UnitAnimation;
 
@@ -37,7 +37,7 @@ pub fn shieldwarrior(world: &mut World) -> AnimationSpriteSheet<UnitAnimation, S
         UnitAnimation::Walk => None,
         UnitAnimation::Attack => Some(AnimationSound {
             sound_handles: vec![attack_sound.clone()],
-            sound_trigger: AnimationSoundTrigger::OnEndFrameTimer,
+            sound_trigger: AnimationSoundTrigger::EndFrameTimer,
         }),
         UnitAnimation::Hit => None,
         UnitAnimation::Death => None,

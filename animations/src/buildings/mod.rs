@@ -144,7 +144,7 @@ pub fn update_building_sprite(
                         "{CRAFTING_SOUND_PATH}/hammering_&_sawing/hammering_&_chiseling_stone_1.ogg"
                     )),
                 ],
-                sound_trigger: AnimationSoundTrigger::OnEnter,
+                sound_trigger: AnimationSoundTrigger::Enter,
             });
         }
     }
