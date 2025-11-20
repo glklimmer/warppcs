@@ -88,9 +88,8 @@ fn reveal_map_icons(
     let map = map.single()?;
     let icon = match map_node.scene {
         SceneType::Player { .. } => MapIcons::Player,
-        SceneType::Traversal { .. } => MapIcons::Bandit,
-        SceneType::TJunction { .. } => MapIcons::Bandit,
-        SceneType::DoubleConnection { .. } => MapIcons::Bandit,
+        SceneType::Camp { .. } => MapIcons::Bandit,
+        SceneType::Meadow { .. } => MapIcons::Bandit,
     };
 
     commands.spawn((

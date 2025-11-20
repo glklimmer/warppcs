@@ -18,7 +18,7 @@ use crate::{
         entities::{Damage, MeleeRange, Unit, health::Health},
         game_scenes::{
             GameSceneId,
-            travel::{Road, SceneEnd, TravelDestination, TravelDestinationOffset},
+            travel::{SceneEnd, TravelDestination, TravelDestinationOffset},
         },
         physics::movement::{Speed, Velocity},
         players::{
@@ -51,11 +51,7 @@ fn init_world(
         let game_scene_id = GameSceneId(i.index() + 1);
 
         match node.scene {
-            SceneType::Player {
-                player,
-                left,
-                right,
-            } => {
+            SceneType::Player { player, exit } => {
                 let (mut transform, Player { color }) = players.get_mut(player)?;
                 transform.translation = offset.with_z(Layers::Player.as_f32());
                 commands.entity(player).insert((
@@ -69,8 +65,7 @@ fn init_world(
                     offset,
                     player,
                     *color,
-                    left,
-                    right,
+                    exit,
                     game_scene_id,
                 );
 
@@ -90,35 +85,12 @@ fn init_world(
                     ));
                 }
             }
-            SceneType::Traversal { left, right } => {
-                elite_camp(commands.reborrow(), offset, left, right, game_scene_id)
+            SceneType::Camp { left, right } => {
+                camp(commands.reborrow(), offset, left, right, game_scene_id)
             }
-            SceneType::TJunction {
-                left,
-                middle,
-                right,
-            } => double_camp(
-                commands.reborrow(),
-                offset,
-                left,
-                middle,
-                right,
-                game_scene_id,
-            ),
-            SceneType::DoubleConnection {
-                left,
-                left_connection,
-                right_connection,
-                right,
-            } => triple_camp(
-                commands.reborrow(),
-                offset,
-                left,
-                left_connection,
-                right_connection,
-                right,
-                game_scene_id,
-            ),
+            SceneType::Meadow { left, right } => {
+                meadow(commands.reborrow(), offset, left, right, game_scene_id)
+            }
         };
     }
 
@@ -140,31 +112,12 @@ fn connect_scenes(
 ) {
     fn get_entity_for_exit(scene: GameScene, exit_type: ExitType) -> Entity {
         match (scene.scene, exit_type) {
-            (SceneType::Player { left, .. }, ExitType::PlayerLeft) => left,
-            (SceneType::Player { right, .. }, ExitType::PlayerRight) => right,
-            (SceneType::Traversal { left, .. }, ExitType::TraversalLeft) => left,
-            (SceneType::Traversal { right, .. }, ExitType::TraversalRight) => right,
-            (SceneType::TJunction { left, .. }, ExitType::TJunctionLeft) => left,
-            (SceneType::TJunction { middle, .. }, ExitType::TJunctionMiddle) => middle,
-            (SceneType::TJunction { right, .. }, ExitType::TJunctionRight) => right,
-            (SceneType::DoubleConnection { left, .. }, ExitType::DoubleConnectionLeft) => left,
-            (
-                SceneType::DoubleConnection {
-                    left_connection, ..
-                },
-                ExitType::DoubleConnectionLeftConn,
-            ) => left_connection,
-            (
-                SceneType::DoubleConnection {
-                    right_connection, ..
-                },
-                ExitType::DoubleConnectionRightConn,
-            ) => right_connection,
-            (SceneType::DoubleConnection { right, .. }, ExitType::DoubleConnectionRight) => right,
-            _ => panic!(
-                "Mismatched scene and exit type: {:?}, {:?}",
-                scene, exit_type
-            ),
+            (SceneType::Player { exit, .. }, ExitType::Left) => exit,
+            (SceneType::Player { exit, .. }, ExitType::Right) => exit,
+            (SceneType::Camp { left, .. }, ExitType::Left) => left,
+            (SceneType::Camp { right, .. }, ExitType::Right) => right,
+            (SceneType::Meadow { left, .. }, ExitType::Left) => left,
+            (SceneType::Meadow { right, .. }, ExitType::Right) => right,
         }
     }
 
@@ -174,16 +127,16 @@ fn connect_scenes(
     commands.entity(entity_a).insert((
         scene_a,
         TravelDestination::new(entity_b),
-        TravelDestinationOffset::to(type_a),
+        TravelDestinationOffset::from(type_a),
     ));
     commands.entity(entity_b).insert((
         scene_b,
         TravelDestination::new(entity_a),
-        TravelDestinationOffset::to(type_b),
+        TravelDestinationOffset::from(type_b),
     ));
 }
 
-fn elite_camp(
+fn meadow(
     mut commands: Commands,
     offset: Vec3,
     left_scene_end: Entity,
@@ -251,12 +204,10 @@ fn elite_camp(
     ));
 }
 
-fn triple_camp(
+fn camp(
     mut commands: Commands,
     offset: Vec3,
     left_scene_end: Entity,
-    left_connection: Entity,
-    right_connection: Entity,
     right_scene_end: Entity,
     game_scene_id: GameSceneId,
 ) {
@@ -278,166 +229,21 @@ fn triple_camp(
             MeleeRange(10.),
             Speed(30.),
             Damage(10.),
-            offset
-                .offset_x(50. - 10. * i as f32)
-                .with_layer(Layers::Unit),
-            game_scene_id,
-        ));
-    }
-    commands.spawn((
-        Chest::Normal,
-        offset.offset_x(600.).with_layer(Layers::Chest),
-        game_scene_id,
-    ));
-    for i in 1..10 {
-        commands.spawn((
-            Owner::Bandits,
-            Unit {
-                unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(5., TimerMode::Once),
-                color: PlayerColor::default(),
-            },
-            BanditBehaviour::default(),
-            Health { hitpoints: 25. },
-            MeleeRange(10.),
-            Speed(30.),
-            Damage(10.),
-            offset
-                .offset_x(650. - 10. * i as f32)
-                .with_layer(Layers::Unit),
-            game_scene_id,
-        ));
-    }
-    commands.spawn((
-        Chest::Normal,
-        offset.offset_x(-600.).with_layer(Layers::Chest),
-        game_scene_id,
-    ));
-    for i in 1..10 {
-        commands.spawn((
-            Owner::Bandits,
-            Unit {
-                unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(5., TimerMode::Once),
-                color: PlayerColor::default(),
-            },
-            BanditBehaviour::default(),
-            Health { hitpoints: 25. },
-            MeleeRange(10.),
-            Speed(30.),
-            Damage(10.),
-            offset
-                .offset_x(-550. - 10. * i as f32)
-                .with_layer(Layers::Unit),
+            offset.offset_x(-10. * i as f32).with_layer(Layers::Unit),
             game_scene_id,
         ));
     }
     commands.entity(left_scene_end).insert((
         SceneEnd,
         offset
-            .offset_x(-1000.)
+            .offset_x(-500.)
             .offset_y(-2.)
             .with_layer(Layers::Wall),
-        game_scene_id,
-    ));
-    commands.entity(left_connection).insert((
-        Road,
-        offset
-            .offset_x(-300.)
-            .offset_y(-2.)
-            .with_layer(Layers::Building),
-        game_scene_id,
-    ));
-    commands.entity(right_connection).insert((
-        Road,
-        offset
-            .offset_x(300.)
-            .offset_y(-2.)
-            .with_layer(Layers::Building),
         game_scene_id,
     ));
     commands.entity(right_scene_end).insert((
         SceneEnd,
-        offset
-            .offset_x(1000.)
-            .offset_y(-2.)
-            .with_layer(Layers::Wall),
-        game_scene_id,
-    ));
-}
-
-fn double_camp(
-    mut commands: Commands,
-    offset: Vec3,
-    left_scene_end: Entity,
-    middle_connection: Entity,
-    right_scene_end: Entity,
-    game_scene_id: GameSceneId,
-) {
-    commands.spawn((
-        Chest::Normal,
-        offset.offset_x(500.).with_layer(Layers::Chest),
-        game_scene_id,
-    ));
-    for i in 1..10 {
-        commands.spawn((
-            Owner::Bandits,
-            Unit {
-                unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(5., TimerMode::Once),
-                color: PlayerColor::default(),
-            },
-            BanditBehaviour::default(),
-            Health { hitpoints: 25. },
-            MeleeRange(10.),
-            Speed(30.),
-            Damage(10.),
-            offset
-                .offset_x(550. - 10. * i as f32)
-                .with_layer(Layers::Unit),
-            game_scene_id,
-        ));
-    }
-    commands.spawn((
-        Chest::Normal,
-        offset.offset_x(-500.).with_layer(Layers::Chest),
-        game_scene_id,
-    ));
-    for i in 1..10 {
-        commands.spawn((
-            Owner::Bandits,
-            Unit {
-                unit_type: UnitType::Bandit,
-                swing_timer: Timer::from_seconds(5., TimerMode::Once),
-                color: PlayerColor::default(),
-            },
-            BanditBehaviour::default(),
-            Health { hitpoints: 25. },
-            MeleeRange(10.),
-            Speed(30.),
-            Damage(10.),
-            offset
-                .offset_x(-550. - 10. * i as f32)
-                .with_layer(Layers::Unit),
-            game_scene_id,
-        ));
-    }
-    commands.entity(left_scene_end).insert((
-        SceneEnd,
-        offset
-            .offset_x(-900.)
-            .offset_y(-2.)
-            .with_layer(Layers::Wall),
-        game_scene_id,
-    ));
-    commands.entity(middle_connection).insert((
-        Road,
-        offset.offset_y(-2.).with_layer(Layers::Building),
-        game_scene_id,
-    ));
-    commands.entity(right_scene_end).insert((
-        SceneEnd,
-        offset.offset_x(900.).offset_y(-2.).with_layer(Layers::Wall),
+        offset.offset_x(500.).offset_y(-2.).with_layer(Layers::Wall),
         game_scene_id,
     ));
 }
@@ -447,21 +253,20 @@ fn player_base(
     offset: Vec3,
     player: Entity,
     color: PlayerColor,
-    left_scene_end: Entity,
-    right_scene_end: Entity,
+    exit: Entity,
     game_scene_id: GameSceneId,
 ) {
     let owner = Owner::Player(player);
-    let building = Building {
+    let main_building = Building {
         building_type: BuildingType::MainBuilding {
             level: MainBuildingLevels::Tent,
         },
         color,
     };
     commands.spawn((
-        building,
-        building.collider(),
-        building.health(),
+        main_building,
+        main_building.collider(),
+        main_building.health(),
         BuildStatus::Built {
             indicator: HealthIndicator::Healthy,
         },
@@ -522,38 +327,16 @@ fn player_base(
         },
         game_scene_id,
     ));
+    let gold_building = Building {
+        building_type: BuildingType::GoldFarm,
+        color,
+    };
     commands.spawn((
-        Building {
-            building_type: BuildingType::Wall {
-                level: WallLevels::Basic,
-            },
-            color,
-        },
-        offset.offset_x(-345.).with_layer(Layers::Wall),
-        owner,
-        Interactable {
-            kind: InteractionType::Building,
-            restricted_to: Some(player),
-        },
-        game_scene_id,
-    ));
-    commands.spawn((
-        Building {
-            building_type: BuildingType::GoldFarm,
-            color,
-        },
-        offset.offset_x(320.).with_layer(Layers::Building),
-        owner,
-        Interactable {
-            kind: InteractionType::Building,
-            restricted_to: Some(player),
-        },
-        game_scene_id,
-    ));
-    commands.spawn((
-        Building {
-            building_type: BuildingType::GoldFarm,
-            color,
+        gold_building,
+        gold_building.collider(),
+        gold_building.health(),
+        BuildStatus::Built {
+            indicator: HealthIndicator::Healthy,
         },
         offset.offset_x(-265.).with_layer(Layers::Building),
         owner,
@@ -564,17 +347,12 @@ fn player_base(
         game_scene_id,
     ));
 
-    commands.entity(left_scene_end).insert((
+    commands.entity(exit).insert((
         SceneEnd,
         offset
             .offset_x(-700.)
             .offset_y(-2.)
             .with_layer(Layers::Wall),
-        game_scene_id,
-    ));
-    commands.entity(right_scene_end).insert((
-        SceneEnd,
-        offset.offset_x(700.).offset_y(-2.).with_layer(Layers::Wall),
         game_scene_id,
     ));
 }

@@ -80,20 +80,11 @@ impl TravelDestination {
 #[derive(Component, Clone, Deref, Default)]
 pub struct TravelDestinationOffset(f32);
 
-impl TravelDestinationOffset {
-    pub fn to(exit_type: ExitType) -> Self {
-        let offset = match exit_type {
-            ExitType::PlayerLeft
-            | ExitType::TraversalLeft
-            | ExitType::TJunctionLeft
-            | ExitType::DoubleConnectionLeft => 50.,
-            ExitType::PlayerRight
-            | ExitType::TraversalRight
-            | ExitType::TJunctionRight
-            | ExitType::DoubleConnectionRight => -50.,
-            ExitType::TJunctionMiddle
-            | ExitType::DoubleConnectionLeftConn
-            | ExitType::DoubleConnectionRightConn => 0.,
+impl From<ExitType> for TravelDestinationOffset {
+    fn from(value: ExitType) -> Self {
+        let offset = match value {
+            ExitType::Left => 50.,
+            ExitType::Right => -50.,
         };
         Self(offset)
     }

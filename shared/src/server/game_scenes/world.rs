@@ -41,17 +41,8 @@ impl RevealMapNode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExitType {
-    PlayerLeft,
-    PlayerRight,
-    TraversalLeft,
-    TraversalRight,
-    TJunctionLeft,
-    TJunctionMiddle,
-    TJunctionRight,
-    DoubleConnectionLeft,
-    DoubleConnectionLeftConn,
-    DoubleConnectionRightConn,
-    DoubleConnectionRight,
+    Left,
+    Right,
 }
 
 #[derive(Clone, Default, Deref, DerefMut)]
@@ -59,26 +50,9 @@ pub struct WorldGraph(Graph<GameScene, (ExitType, ExitType), Undirected>);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum SceneType {
-    Player {
-        player: Entity,
-        left: Entity,
-        right: Entity,
-    },
-    Traversal {
-        left: Entity,
-        right: Entity,
-    },
-    TJunction {
-        left: Entity,
-        middle: Entity,
-        right: Entity,
-    },
-    DoubleConnection {
-        left: Entity,
-        left_connection: Entity,
-        right_connection: Entity,
-        right: Entity,
-    },
+    Player { player: Entity, exit: Entity },
+    Camp { left: Entity, right: Entity },
+    Meadow { left: Entity, right: Entity },
 }
 
 #[derive(Component, Debug, Clone, Serialize, Deserialize, Copy)]
@@ -119,8 +93,7 @@ impl WorldGraph {
             let game_scene = GameScene {
                 scene: SceneType::Player {
                     player: players[i],
-                    left: commands.spawn_empty().id(),
-                    right: commands.spawn_empty().id(),
+                    exit: commands.spawn_empty().id(),
                 },
                 position: pos,
             };
@@ -156,18 +129,16 @@ impl WorldGraph {
             let outer_pos = mid_point - offset_dir * offset_dist + outward_dir * push_out_dist;
 
             let tj_a_idx = graph.add_node(GameScene {
-                scene: SceneType::TJunction {
+                scene: SceneType::Camp {
                     left: commands.spawn_empty().id(),
-                    middle: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
                 },
                 position: tj_a_pos,
             });
             tj_a_nodes.push(tj_a_idx);
             let tj_b_idx = graph.add_node(GameScene {
-                scene: SceneType::TJunction {
+                scene: SceneType::Camp {
                     left: commands.spawn_empty().id(),
-                    middle: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
                 },
                 position: tj_b_pos,
@@ -175,7 +146,7 @@ impl WorldGraph {
             tj_b_nodes.push(tj_b_idx);
 
             let outer_idx = graph.add_node(GameScene {
-                scene: SceneType::Traversal {
+                scene: SceneType::Meadow {
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
                 },
@@ -183,19 +154,9 @@ impl WorldGraph {
             });
             outer_nodes.push(outer_idx);
 
-            let inner_scene = if num_players > 2 {
-                SceneType::DoubleConnection {
-                    left: commands.spawn_empty().id(),
-                    left_connection: commands.spawn_empty().id(),
-                    right_connection: commands.spawn_empty().id(),
-                    right: commands.spawn_empty().id(),
-                }
-            } else {
-                SceneType::TJunction {
-                    left: commands.spawn_empty().id(),
-                    middle: commands.spawn_empty().id(),
-                    right: commands.spawn_empty().id(),
-                }
+            let inner_scene = SceneType::Camp {
+                left: commands.spawn_empty().id(),
+                right: commands.spawn_empty().id(),
             };
             let inner_idx = graph.add_node(GameScene {
                 scene: inner_scene,
@@ -213,54 +174,17 @@ impl WorldGraph {
             let t1_idx = inner_nodes[i];
             let t2_idx = outer_nodes[i];
 
-            // Player -> TJunction connections
-            graph.add_edge(
-                p_idx,
-                tj_a_idx,
-                (ExitType::PlayerRight, ExitType::TJunctionMiddle),
-            );
-            graph.add_edge(
-                next_p_idx,
-                tj_b_idx,
-                (ExitType::PlayerLeft, ExitType::TJunctionMiddle),
-            );
+            // Player connections
+            graph.add_edge(p_idx, tj_a_idx, (ExitType::Right, ExitType::Left));
+            graph.add_edge(next_p_idx, tj_b_idx, (ExitType::Right, ExitType::Left));
 
-            // TJunction -> Outer Traversal (outer_idx) connections
-            graph.add_edge(
-                tj_a_idx,
-                t2_idx,
-                (ExitType::TJunctionLeft, ExitType::TraversalRight),
-            );
-            graph.add_edge(
-                tj_b_idx,
-                t2_idx,
-                (ExitType::TJunctionRight, ExitType::TraversalLeft),
-            );
+            // Outer Traversal (outer_idx) connections
+            graph.add_edge(tj_a_idx, t2_idx, (ExitType::Left, ExitType::Right));
+            graph.add_edge(tj_b_idx, t2_idx, (ExitType::Right, ExitType::Left));
 
-            // TJunction -> Inner Node (inner_idx) connections
-            if num_players > 2 {
-                graph.add_edge(
-                    tj_a_idx,
-                    t1_idx,
-                    (ExitType::TJunctionRight, ExitType::DoubleConnectionLeft),
-                );
-                graph.add_edge(
-                    tj_b_idx,
-                    t1_idx,
-                    (ExitType::TJunctionLeft, ExitType::DoubleConnectionRight),
-                );
-            } else {
-                graph.add_edge(
-                    tj_a_idx,
-                    t1_idx,
-                    (ExitType::TJunctionRight, ExitType::TJunctionLeft),
-                );
-                graph.add_edge(
-                    tj_b_idx,
-                    t1_idx,
-                    (ExitType::TJunctionLeft, ExitType::TJunctionRight),
-                );
-            }
+            // Inner Node (inner_idx) connections
+            graph.add_edge(tj_a_idx, t1_idx, (ExitType::Right, ExitType::Left));
+            graph.add_edge(tj_b_idx, t1_idx, (ExitType::Left, ExitType::Right));
         }
 
         // Add inner circle connections
@@ -268,20 +192,10 @@ impl WorldGraph {
             let node_a = inner_nodes[i];
             let node_b = inner_nodes[(i + 1) % num_players];
             if num_players > 2 {
-                graph.add_edge(
-                    node_a,
-                    node_b,
-                    (
-                        ExitType::DoubleConnectionRightConn,
-                        ExitType::DoubleConnectionLeftConn,
-                    ),
-                );
+                graph.add_edge(node_a, node_b, (ExitType::Right, ExitType::Left));
             } else {
-                graph.add_edge(
-                    node_a,
-                    node_b,
-                    (ExitType::TJunctionMiddle, ExitType::TJunctionMiddle),
-                );
+                graph.add_edge(node_a, node_b, (ExitType::Left, ExitType::Right));
+                // graph.add_edge(node_a, node_b, (ExitType::Right, ExitType::Left));
             }
         }
 

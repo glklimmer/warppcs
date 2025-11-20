@@ -38,9 +38,8 @@ fn change_background(
 
     let event = match target_game_scene.scene {
         SceneType::Player { .. } => player_background(camera),
-        SceneType::Traversal { .. } => bandit_background(camera),
-        SceneType::TJunction { .. } => bandit_background(camera),
-        SceneType::DoubleConnection { .. } => bandit_background(camera),
+        SceneType::Camp { .. } => bandit_background(camera),
+        SceneType::Meadow { .. } => bandit_background(camera),
     };
     create_parallax.write(event);
     Ok(())
