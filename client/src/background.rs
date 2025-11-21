@@ -20,7 +20,9 @@ fn setup_background(
 ) -> Result {
     let camera = camera.single()?;
     let event = player_background(camera);
+
     create_parallax.write(event);
+
     Ok(())
 }
 
@@ -30,19 +32,16 @@ fn change_background(
     mut create_parallax: EventWriter<CreateParallaxEvent>,
 ) -> Result {
     let travel = query.single()?;
-
-    let (_, maybe_target) = travel.target;
-    let target_game_scene =
-        maybe_target.ok_or("Player Traveling component has no target game scene set")?;
     let camera = camera.single()?;
 
-    let event = match target_game_scene.scene {
+    let event = match travel.target.scene {
         SceneType::Player { .. } => player_background(camera),
-        SceneType::Traversal { .. } => bandit_background(camera),
-        SceneType::TJunction { .. } => bandit_background(camera),
-        SceneType::DoubleConnection { .. } => bandit_background(camera),
+        SceneType::Camp { .. } => bandit_background(camera),
+        SceneType::Meadow { .. } => bandit_background(camera),
     };
+
     create_parallax.write(event);
+
     Ok(())
 }
 

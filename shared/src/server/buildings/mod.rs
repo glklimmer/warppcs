@@ -15,9 +15,9 @@ use crate::{
 
 use super::players::interaction::{InteractionTriggeredEvent, InteractionType};
 
-mod gold_farm;
 mod respawn;
 
+pub mod gold_farm;
 pub mod item_assignment;
 pub mod recruiting;
 pub mod siege_camp;
@@ -39,7 +39,7 @@ struct BuildingConstructing {
 }
 
 #[derive(Event, Deref)]
-struct BuildingChangeEnd(pub BuildingEventInfo);
+pub struct BuildingChangeEnd(pub BuildingEventInfo);
 
 pub struct BuildingsPlugins;
 

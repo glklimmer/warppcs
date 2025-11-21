@@ -42,6 +42,11 @@ pub struct InteractionTriggeredEvent {
     pub interaction: InteractionType,
 }
 
+#[derive(Component)]
+pub struct ActiveInteraction {
+    pub interactable: Entity,
+}
+
 pub struct InteractPlugin;
 
 impl Plugin for InteractPlugin {

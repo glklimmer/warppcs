@@ -4,7 +4,7 @@ use crate::{
     BoxCollider, Player,
     server::{
         game_scenes::travel::Traveling,
-        players::interaction::{InteractionTriggeredEvent, InteractionType},
+        players::interaction::{ActiveInteraction, InteractionTriggeredEvent, InteractionType},
     },
 };
 
@@ -22,10 +22,11 @@ impl Plugin for ColliderTriggerPlugin {
 }
 
 fn check_collider_trigger(
-    players: Query<Entity, (With<Player>, Without<Traveling>)>,
+    players: Query<Entity, (With<Player>, Without<Traveling>, Without<ActiveInteraction>)>,
     triggers: Query<(Entity, &ColliderTrigger, &Transform, &BoxCollider)>,
     player_query: Query<(&Transform, &BoxCollider)>,
     mut interaction: EventWriter<InteractionTriggeredEvent>,
+    mut commands: Commands,
 ) -> Result {
     for player in players.iter() {
         let (player_transform, player_collider) = player_query.get(player)?;
@@ -35,6 +36,11 @@ fn check_collider_trigger(
             if !(player_bounds.intersects(&collider.at(transform))) {
                 continue;
             }
+
+            commands.entity(player).insert(ActiveInteraction {
+                interactable: entity,
+            });
+
             match trigger {
                 ColliderTrigger::Travel => interaction.write(InteractionTriggeredEvent {
                     player,

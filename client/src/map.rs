@@ -2,11 +2,16 @@ use bevy::prelude::*;
 
 use bevy::input::common_conditions::input_just_pressed;
 
+use bevy_replicon::prelude::ClientTriggerExt;
+use highlight::{
+    Highlightable,
+    utils::{add_highlight_on, remove_highlight_on},
+};
 use shared::{
     ControlledPlayer, GameState, PlayerState,
     server::game_scenes::{
-        travel::Traveling,
-        world::{InitPlayerMapNode, RevealMapNode, SceneType},
+        travel::{AddMapIcon, OpenTravelDialog, RevealMapIcon, SelectTravelDestination, Traveling},
+        world::{GameScene, InitPlayerMapNode, SceneType},
     },
 };
 
@@ -22,7 +27,9 @@ impl Plugin for MapPlugin {
             .add_observer(enter_travel_state)
             .add_observer(leave_travel_state)
             // ------------
+            .add_observer(add_map_icons)
             .add_observer(reveal_map_icons)
+            .add_observer(open_travel_dialog)
             .add_systems(
                 OnEnter(PlayerState::Traveling),
                 (show_map, spawn_travel_dashline),
@@ -41,8 +48,8 @@ impl Plugin for MapPlugin {
     }
 }
 
-#[derive(Component)]
-struct MapIcon;
+#[derive(Component, Deref)]
+struct MapNode(GameScene);
 
 fn init_map(
     trigger: Trigger<InitPlayerMapNode>,
@@ -64,44 +71,103 @@ fn init_map(
             Transform::from_scale(Vec3::splat(1.0 / 3.0)),
         ))
         .with_children(|parent| {
-            parent.spawn((
-                MapIcon,
-                Visibility::Inherited,
-                Sprite::from_atlas_image(
-                    map_icons.sprite_sheet.texture.clone(),
-                    map_icons.sprite_sheet.texture_atlas(MapIcons::Player),
-                ),
-                Transform::from_xyz(player_scene.position.x, player_scene.position.y, 2.0),
-            ));
+            parent
+                .spawn((
+                    MapNode(player_scene),
+                    Visibility::Inherited,
+                    Sprite::from_atlas_image(
+                        map_icons.sprite_sheet.texture.clone(),
+                        map_icons.sprite_sheet.texture_atlas(MapIcons::Player),
+                    ),
+                    Highlightable::default(),
+                    Pickable::default(),
+                    Transform::from_xyz(player_scene.position.x, player_scene.position.y, 2.0),
+                ))
+                .observe(add_highlight_on::<Pointer<Over>>)
+                .observe(remove_highlight_on::<Pointer<Out>>)
+                .observe(destination_selected);
         });
     Ok(())
 }
 
-fn reveal_map_icons(
-    trigger: Trigger<RevealMapNode>,
+fn open_travel_dialog(
+    _trigger: Trigger<OpenTravelDialog>,
+    mut map: Query<&mut Visibility, With<Map>>,
+    mut next_state: ResMut<NextState<PlayerState>>,
+) -> Result {
+    let mut map = map.single_mut()?;
+    *map = Visibility::Visible;
+    next_state.set(PlayerState::Interaction);
+
+    Ok(())
+}
+
+fn destination_selected(
+    trigger: Trigger<Pointer<Released>>,
+    map_node: Query<&MapNode>,
+    mut commands: Commands,
+) -> Result {
+    let entity = trigger.target();
+    let game_scene = **map_node.get(entity)?;
+
+    commands.client_trigger(SelectTravelDestination(game_scene));
+    Ok(())
+}
+
+fn add_map_icons(
+    trigger: Trigger<AddMapIcon>,
     map: Query<Entity, With<Map>>,
     map_icons: Res<MapIconSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    info!("reveal map node");
-    let map_node = **trigger.event();
     let map = map.single()?;
-    let icon = match map_node.scene {
+
+    let update_map_icon = trigger.event();
+    let game_scene = **update_map_icon;
+    let icon = MapIcons::Mystery;
+
+    commands
+        .spawn((
+            ChildOf(map),
+            MapNode(game_scene),
+            Visibility::Inherited,
+            Sprite::from_atlas_image(
+                map_icons.sprite_sheet.texture.clone(),
+                map_icons.sprite_sheet.texture_atlas(icon),
+            ),
+            Highlightable::default(),
+            Pickable::default(),
+            Transform::from_xyz(game_scene.position.x, game_scene.position.y, 2.0),
+        ))
+        .observe(add_highlight_on::<Pointer<Over>>)
+        .observe(remove_highlight_on::<Pointer<Out>>)
+        .observe(destination_selected);
+    Ok(())
+}
+
+fn reveal_map_icons(
+    trigger: Trigger<RevealMapIcon>,
+    query: Query<(Entity, &MapNode)>,
+    map_icons: Res<MapIconSpriteSheet>,
+    mut commands: Commands,
+) -> Result {
+    let update_map_icon = trigger.event();
+    let game_scene = **update_map_icon;
+
+    let (entity, _) = query
+        .iter()
+        .find(|(_, node)| node.id.eq(&game_scene.id))
+        .ok_or("GameScene not added yet.")?;
+
+    let icon = match game_scene.scene {
         SceneType::Player { .. } => MapIcons::Player,
-        SceneType::Traversal { .. } => MapIcons::Bandit,
-        SceneType::TJunction { .. } => MapIcons::Bandit,
-        SceneType::DoubleConnection { .. } => MapIcons::Bandit,
+        SceneType::Camp { .. } => MapIcons::Bandit,
+        SceneType::Meadow { .. } => MapIcons::Bandit,
     };
 
-    commands.spawn((
-        ChildOf(map),
-        MapIcon,
-        Visibility::Inherited,
-        Sprite::from_atlas_image(
-            map_icons.sprite_sheet.texture.clone(),
-            map_icons.sprite_sheet.texture_atlas(icon),
-        ),
-        Transform::from_xyz(map_node.position.x, map_node.position.y, 2.0),
+    commands.entity(entity).insert(Sprite::from_atlas_image(
+        map_icons.sprite_sheet.texture.clone(),
+        map_icons.sprite_sheet.texture_atlas(icon),
     ));
     Ok(())
 }
@@ -248,10 +314,8 @@ fn spawn_travel_dashline(
     traveling: Query<&Traveling, With<ControlledPlayer>>,
 ) -> Result {
     let traveling = traveling.single()?;
-    let (_, maybe_source_game_scene) = traveling.source;
-    let (_, maybe_target_game_scene) = traveling.target;
-    let source = maybe_source_game_scene.ok_or("No source game scene found")?;
-    let target = maybe_target_game_scene.ok_or("No target game scene found")?;
+    let source = traveling.source;
+    let target = traveling.target;
 
     let dash_len = 4.5;
     let gap = 3.0;
@@ -296,7 +360,6 @@ fn toggle_map(
     mut map: Query<&mut Visibility, With<Map>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
-    info!("toggle map");
     let mut map = map.single_mut()?;
 
     map.toggle_visible_hidden();

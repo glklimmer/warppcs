@@ -2,11 +2,16 @@ use bevy::prelude::*;
 
 use bevy::{asset::RenderAssetUsages, math::bounding::IntersectsVolume};
 use image::{GenericImage, GenericImageView, Rgba};
-use shared::{server::{physics::attachment::AttachedTo, players::interaction::Interactable}, BoxCollider, ControlledPlayer, GameState, Player};
+use shared::{
+    BoxCollider, ControlledPlayer, GameState, Player,
+    server::{physics::attachment::AttachedTo, players::interaction::Interactable},
+};
 use std::cmp::Ordering;
 
+pub mod utils;
+
 #[derive(Component)]
-struct Highlightable {
+pub struct Highlightable {
     outline_color: Color,
 }
 
