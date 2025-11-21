@@ -11,7 +11,7 @@ use crate::{
             RecruitBuilding, WallLevels,
         },
     },
-    networking::{MountType, UnitType},
+    networking::{MountType, UnitType, WorldDirection},
     server::{
         ai::BanditBehaviour,
         buildings::{gold_farm::GoldFarmTimer, item_assignment::ItemAssignment},
@@ -22,7 +22,7 @@ use crate::{
         },
         physics::{
             collider_trigger::ColliderTrigger,
-            movement::{Speed, Velocity},
+            movement::{NoWalkZone, Speed, Velocity},
         },
         players::{
             chest::Chest,
@@ -180,10 +180,20 @@ fn meadow(
             .with_layer(Layers::Wall),
         game_scene_id,
     ));
+    commands.spawn((
+        NoWalkZone::to_the(WorldDirection::Left),
+        Transform::from_translation(offset.offset_x(-410.)),
+        game_scene_id,
+    ));
     commands.entity(right_scene_end).insert((
         SceneEnd,
         ColliderTrigger::Travel,
         offset.offset_x(400.).offset_y(-2.).with_layer(Layers::Wall),
+        game_scene_id,
+    ));
+    commands.spawn((
+        NoWalkZone::to_the(WorldDirection::Right),
+        Transform::from_translation(offset.offset_x(410.)),
         game_scene_id,
     ));
 }
@@ -226,10 +236,20 @@ fn camp(
             .with_layer(Layers::Wall),
         game_scene_id,
     ));
+    commands.spawn((
+        NoWalkZone::to_the(WorldDirection::Left),
+        Transform::from_translation(offset.offset_x(-510.)),
+        game_scene_id,
+    ));
     commands.entity(right_scene_end).insert((
         SceneEnd,
         ColliderTrigger::Travel,
         offset.offset_x(500.).offset_y(-2.).with_layer(Layers::Wall),
+        game_scene_id,
+    ));
+    commands.spawn((
+        NoWalkZone::to_the(WorldDirection::Right),
+        Transform::from_translation(offset.offset_x(510.)),
         game_scene_id,
     ));
 }
@@ -329,11 +349,21 @@ fn player_base(
         owner,
         game_scene_id,
     ));
+    commands.spawn((
+        NoWalkZone::to_the(WorldDirection::Left),
+        Transform::from_translation(offset.offset_x(-300.)),
+        game_scene_id,
+    ));
     commands.entity(exit).insert((
         SceneEnd,
         ColliderTrigger::Travel,
         TravelDestinationOffset::player(),
         offset.offset_x(700.).offset_y(-2.).with_layer(Layers::Wall),
+        game_scene_id,
+    ));
+    commands.spawn((
+        NoWalkZone::to_the(WorldDirection::Right),
+        Transform::from_translation(offset.offset_x(710.)),
         game_scene_id,
     ));
 }

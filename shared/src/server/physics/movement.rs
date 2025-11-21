@@ -1,13 +1,18 @@
 use bevy::prelude::*;
+
+use bevy::math::bounding::IntersectsVolume;
 use bevy_replicon::prelude::server_or_singleplayer;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     BoxCollider, GRAVITY_G, Owner, Player,
     map::buildings::{BuildStatus, Building, BuildingType},
-    server::{entities::health::Health, physics::army_slot::ArmySlot, players::items::Item},
+    networking::WorldDirection,
+    server::{
+        entities::health::Health, game_scenes::GameSceneId, physics::army_slot::ArmySlot,
+        players::items::Item,
+    },
 };
-use bevy::math::bounding::IntersectsVolume;
 
 use super::projectile::ProjectileType;
 
@@ -38,6 +43,16 @@ impl Default for RandomVelocityMul {
     }
 }
 
+#[derive(Component, Deref)]
+#[require(Transform)]
+pub struct NoWalkZone(WorldDirection);
+
+impl NoWalkZone {
+    pub fn to_the(direction: WorldDirection) -> Self {
+        Self(direction)
+    }
+}
+
 pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
@@ -53,7 +68,7 @@ impl Plugin for MovementPlugin {
                     apply_drag,
                     set_projectile_rotation,
                 ),
-                wall_collision,
+                (wall_collision, no_walk_zone_collision),
             )
                 .chain()
                 .run_if(server_or_singleplayer),
@@ -210,6 +225,32 @@ fn wall_collision(
                     velocity.0.x = 0.;
                     break;
                 }
+            }
+        }
+    }
+}
+
+fn no_walk_zone_collision(
+    mut query: Query<(&mut Velocity, &Transform, &GameSceneId), With<BoxCollider>>,
+    no_walk_zone: Query<(&Transform, &NoWalkZone, &GameSceneId)>,
+    time: Res<Time>,
+) {
+    for (mut velocity, transform, game_scene_id) in query.iter_mut() {
+        let future_position = transform.translation.truncate() + velocity.0 * time.delta_secs();
+
+        for (zone_transform, zone, zone_game_scene_id) in no_walk_zone.iter() {
+            if game_scene_id.ne(zone_game_scene_id) {
+                continue;
+            }
+
+            let overstepped = match **zone {
+                WorldDirection::Left => future_position.x <= zone_transform.translation.x,
+                WorldDirection::Right => future_position.x >= zone_transform.translation.x,
+            };
+
+            if overstepped {
+                velocity.0.x = 0.;
+                break;
             }
         }
     }
