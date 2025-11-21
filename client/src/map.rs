@@ -94,8 +94,6 @@ fn open_travel_dialog(
     mut map: Query<&mut Visibility, With<Map>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
-    info!("TESTING this");
-
     let mut map = map.single_mut()?;
     *map = Visibility::Visible;
     next_state.set(PlayerState::Interaction);
@@ -109,7 +107,6 @@ fn destination_selected(
     mut commands: Commands,
 ) -> Result {
     let entity = trigger.target();
-    info!("TEST selected");
     let game_scene = **query.get(entity)?;
 
     commands.client_trigger(SelectTravelDestination(game_scene));
@@ -122,7 +119,6 @@ fn reveal_map_icons(
     map_icons: Res<MapIconSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    info!("reveal map node");
     let map_node = **trigger.event();
     let map = map.single()?;
     let icon = match map_node.scene {
@@ -338,7 +334,6 @@ fn toggle_map(
     mut map: Query<&mut Visibility, With<Map>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
-    info!("toggle map");
     let mut map = map.single_mut()?;
 
     map.toggle_visible_hidden();

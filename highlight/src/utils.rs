@@ -4,7 +4,6 @@ use crate::Highlighted;
 
 pub fn add_highlight_on<E: Clone + Reflect>(trigger: Trigger<E>, mut commands: Commands) {
     let entity = trigger.target();
-    info!("TEST");
     commands.entity(entity).try_insert(Highlighted);
 }
 
