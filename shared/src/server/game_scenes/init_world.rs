@@ -108,7 +108,7 @@ fn init_world(
         for end in scene_ends {
             commands
                 .entity(end)
-                .insert(TravelDestinations::new(destinations.clone()));
+                .insert((*node, TravelDestinations::new(destinations.clone())));
         }
     }
 

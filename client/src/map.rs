@@ -3,6 +3,10 @@ use bevy::prelude::*;
 use bevy::input::common_conditions::input_just_pressed;
 
 use bevy_replicon::prelude::ClientTriggerExt;
+use highlight::{
+    Highlightable,
+    utils::{add_highlight_on, remove_highlight_on},
+};
 use shared::{
     ControlledPlayer, GameState, PlayerState,
     server::game_scenes::{
@@ -74,8 +78,11 @@ fn init_map(
                         map_icons.sprite_sheet.texture.clone(),
                         map_icons.sprite_sheet.texture_atlas(MapIcons::Player),
                     ),
+                    Highlightable::default(),
                     Transform::from_xyz(player_scene.position.x, player_scene.position.y, 2.0),
                 ))
+                .observe(add_highlight_on::<Pointer<Over>>)
+                .observe(remove_highlight_on::<Pointer<Out>>)
                 .observe(destination_selected);
         });
     Ok(())
@@ -101,6 +108,7 @@ fn destination_selected(
     mut commands: Commands,
 ) -> Result {
     let entity = trigger.target();
+    info!("TEST selected");
     let game_scene = **query.get(entity)?;
 
     commands.client_trigger(SelectTravelDestination(game_scene));
@@ -131,8 +139,11 @@ fn reveal_map_icons(
                 map_icons.sprite_sheet.texture.clone(),
                 map_icons.sprite_sheet.texture_atlas(icon),
             ),
+            Highlightable::default(),
             Transform::from_xyz(map_node.position.x, map_node.position.y, 2.0),
         ))
+        .observe(add_highlight_on::<Pointer<Over>>)
+        .observe(remove_highlight_on::<Pointer<Out>>)
         .observe(destination_selected);
     Ok(())
 }

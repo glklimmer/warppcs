@@ -4,7 +4,7 @@ use crate::{
     BoxCollider, Player,
     server::{
         game_scenes::travel::Traveling,
-        players::interaction::{InteractionTriggeredEvent, InteractionType},
+        players::interaction::{ActiveInteraction, InteractionTriggeredEvent, InteractionType},
     },
 };
 
@@ -22,7 +22,7 @@ impl Plugin for ColliderTriggerPlugin {
 }
 
 fn check_collider_trigger(
-    players: Query<Entity, (With<Player>, Without<Traveling>)>,
+    players: Query<Entity, (With<Player>, Without<Traveling>, Without<ActiveInteraction>)>,
     triggers: Query<(Entity, &ColliderTrigger, &Transform, &BoxCollider)>,
     player_query: Query<(&Transform, &BoxCollider)>,
     mut interaction: EventWriter<InteractionTriggeredEvent>,

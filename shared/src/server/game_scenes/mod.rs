@@ -8,7 +8,7 @@ pub mod init_world;
 pub mod travel;
 pub mod world;
 
-#[derive(Component, PartialEq, Eq, Copy, Clone)]
+#[derive(Component, PartialEq, Eq, Copy, Clone, Debug)]
 pub struct GameSceneId(usize);
 impl GameSceneId {
     pub(crate) fn lobby() -> Self {
