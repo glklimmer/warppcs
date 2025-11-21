@@ -2,8 +2,7 @@ use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{
-    Channel, ClientTriggerAppExt, FromClient, Replicated, SendMode, ServerTriggerExt, ToClients,
-    server_or_singleplayer,
+    FromClient, Replicated, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer,
 };
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +13,7 @@ use crate::{
         entities::commander::ArmyFlagAssignments,
         game_scenes::{
             GameSceneId,
-            world::{ExitType, GameScene, RevealMapNode},
+            world::{GameScene, RevealMapNode},
         },
         physics::collider_trigger::ColliderTrigger,
         players::interaction::{ActiveInteraction, InteractionType},
@@ -31,40 +30,27 @@ pub struct TravelPlugin;
 
 impl Plugin for TravelPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, travel_timer.run_if(server_or_singleplayer))
+        app.add_observer(start_travel)
+            .add_systems(Update, travel_timer.run_if(server_or_singleplayer))
             .add_systems(
                 FixedUpdate,
-                (init_travel_dialog).run_if(server_or_singleplayer),
-                // (start_travel, end_travel).run_if(server_or_singleplayer),
+                (init_travel_dialog, end_travel).run_if(server_or_singleplayer),
             );
     }
 }
 
 #[derive(Component, Serialize, Deserialize)]
 pub struct Traveling {
-    pub source: (Entity, Option<GameScene>),
-    pub target: (Entity, Option<GameScene>),
+    pub source: GameScene,
+    pub target: GameScene,
     time_left: Timer,
 }
 
 impl Traveling {
-    fn player(
-        source: Entity,
-        source_game_scene: GameScene,
-        target: Entity,
-        target_game_scene: GameScene,
-    ) -> Self {
+    fn between(source: GameScene, target: GameScene) -> Self {
         Self {
-            source: (source, Some(source_game_scene)),
-            target: (target, Some(target_game_scene)),
-            time_left: Timer::from_seconds(5., TimerMode::Once),
-        }
-    }
-
-    fn entity(source: Entity, target: Entity) -> Self {
-        Self {
-            source: (source, None),
-            target: (target, None),
+            source,
+            target,
             time_left: Timer::from_seconds(5., TimerMode::Once),
         }
     }
@@ -79,16 +65,16 @@ impl TravelDestinations {
     }
 }
 
-#[derive(Component, Clone, Deref, Default)]
+#[derive(Component, Clone, Deref)]
 pub struct TravelDestinationOffset(f32);
 
-impl From<ExitType> for TravelDestinationOffset {
-    fn from(value: ExitType) -> Self {
-        let offset = match value {
-            ExitType::Left => 50.,
-            ExitType::Right => -50.,
-        };
-        Self(offset)
+impl TravelDestinationOffset {
+    pub fn non_player() -> Self {
+        Self(50.)
+    }
+
+    pub fn player() -> Self {
+        Self(-50.)
     }
 }
 
@@ -179,7 +165,6 @@ fn init_travel_dialog(
 
 fn start_travel(
     trigger: Trigger<FromClient<SelectTravelDestination>>,
-    mut traveling: EventReader<InteractionTriggeredEvent>,
     flag_holders: Query<Option<&FlagHolder>>,
     commanders: Query<(&FlagAssignment, &ArmyFlagAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
@@ -188,14 +173,13 @@ fn start_travel(
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let selection = **trigger.event();
+    let selection = &**trigger.event();
     let player_entity = *client_player_map.get_player(&trigger.client_entity)?;
 
     let source = interaction.get(player_entity)?.interactable;
-    let source_game_scene = game_scenes.get(source)?;
+    let source = *game_scenes.get(source)?;
 
-    let destination = *selection;
-    let destination_game_scene = *selection;
+    let target = **selection;
 
     let flag_holder = flag_holders.get(player_entity)?;
 
@@ -230,18 +214,13 @@ fn start_travel(
     commands
         .entity(player_entity)
         .remove::<ActiveInteraction>()
-        .insert(Traveling::player(
-            source,
-            *source_game_scene,
-            **destination,
-            *destination_game_scene,
-        ))
+        .insert(Traveling::between(source, target))
         .remove::<GameSceneId>();
 
     for entity in travel_entities {
         commands
             .entity(entity)
-            .insert(Traveling::entity(source, **destination))
+            .insert(Traveling::between(source, target))
             .remove::<GameSceneId>();
     }
 
@@ -259,7 +238,8 @@ fn end_travel(
             continue;
         }
 
-        let (target_entity, maybe_target_game_scene) = travel.target;
+        let game_scene = travel.target;
+        let target_entity = game_scene.entry_entity();
 
         let (target_transform, target_game_scene_id, maybe_offset) = target.get(target_entity)?;
         let target_position = target_transform.translation;
@@ -280,15 +260,13 @@ fn end_travel(
             *target_game_scene_id,
         ));
 
-        let Some(target_game_scene) = maybe_target_game_scene else {
+        let Ok(client) = client_player_map.get_network_entity(&entity) else {
             continue;
         };
 
-        let client = client_player_map.get_network_entity(&entity)?;
-
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
-            event: RevealMapNode::to(target_game_scene),
+            event: RevealMapNode::to(travel.target),
         });
     }
     Ok(())

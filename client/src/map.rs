@@ -279,10 +279,8 @@ fn spawn_travel_dashline(
     traveling: Query<&Traveling, With<ControlledPlayer>>,
 ) -> Result {
     let traveling = traveling.single()?;
-    let (_, maybe_source_game_scene) = traveling.source;
-    let (_, maybe_target_game_scene) = traveling.target;
-    let source = maybe_source_game_scene.ok_or("No source game scene found")?;
-    let target = maybe_target_game_scene.ok_or("No target game scene found")?;
+    let source = traveling.source;
+    let target = traveling.target;
 
     let dash_len = 4.5;
     let gap = 3.0;

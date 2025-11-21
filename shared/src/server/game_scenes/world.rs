@@ -39,14 +39,8 @@ impl RevealMapNode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExitType {
-    Left,
-    Right,
-}
-
 #[derive(Clone, Default, Deref, DerefMut)]
-pub struct WorldGraph(Graph<GameScene, (ExitType, ExitType), Undirected>);
+pub struct WorldGraph(Graph<GameScene, (), Undirected>);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum SceneType {
@@ -62,21 +56,11 @@ pub struct GameScene {
 }
 
 impl GameScene {
-    pub fn entity(&self, exit_type: Option<ExitType>) -> Entity {
-        match exit_type {
-            Some(exit_type) => match (self.scene, exit_type) {
-                (SceneType::Player { exit, .. }, ExitType::Left) => exit,
-                (SceneType::Player { exit, .. }, ExitType::Right) => exit,
-                (SceneType::Camp { left, .. }, ExitType::Left) => left,
-                (SceneType::Camp { right, .. }, ExitType::Right) => right,
-                (SceneType::Meadow { left, .. }, ExitType::Left) => left,
-                (SceneType::Meadow { right, .. }, ExitType::Right) => right,
-            },
-            None => match self.scene {
-                SceneType::Player { exit, .. } => exit,
-                SceneType::Camp { left, .. } => left,
-                SceneType::Meadow { left, .. } => left,
-            },
+    pub fn entry_entity(&self) -> Entity {
+        match self.scene {
+            SceneType::Player { exit, .. } => exit,
+            SceneType::Camp { left, .. } => left,
+            SceneType::Meadow { left, .. } => left,
         }
     }
 }
@@ -95,7 +79,7 @@ impl WorldGraph {
             return (WorldGraph::default(), PlayerGameScenes::default());
         }
 
-        let mut graph = Graph::<GameScene, (ExitType, ExitType), Undirected>::new_undirected();
+        let mut graph = Graph::<GameScene, (), Undirected>::new_undirected();
         let mut player_game_scenes = HashMap::new();
 
         // Create all nodes and store their indices
@@ -195,28 +179,23 @@ impl WorldGraph {
             let t2_idx = outer_nodes[i];
 
             // Player connections
-            graph.add_edge(p_idx, tj_a_idx, (ExitType::Right, ExitType::Left));
-            graph.add_edge(next_p_idx, tj_b_idx, (ExitType::Right, ExitType::Left));
+            graph.add_edge(p_idx, tj_a_idx, ());
+            graph.add_edge(next_p_idx, tj_b_idx, ());
 
             // Outer Traversal (outer_idx) connections
-            graph.add_edge(tj_a_idx, t2_idx, (ExitType::Left, ExitType::Right));
-            graph.add_edge(tj_b_idx, t2_idx, (ExitType::Right, ExitType::Left));
+            graph.add_edge(tj_a_idx, t2_idx, ());
+            graph.add_edge(tj_b_idx, t2_idx, ());
 
             // Inner Node (inner_idx) connections
-            graph.add_edge(tj_a_idx, t1_idx, (ExitType::Right, ExitType::Left));
-            graph.add_edge(tj_b_idx, t1_idx, (ExitType::Left, ExitType::Right));
+            graph.add_edge(tj_a_idx, t1_idx, ());
+            graph.add_edge(tj_b_idx, t1_idx, ());
         }
 
         // Add inner circle connections
         for i in 0..num_players {
             let node_a = inner_nodes[i];
             let node_b = inner_nodes[(i + 1) % num_players];
-            if num_players > 2 {
-                graph.add_edge(node_a, node_b, (ExitType::Right, ExitType::Left));
-            } else {
-                graph.add_edge(node_a, node_b, (ExitType::Left, ExitType::Right));
-                // graph.add_edge(node_a, node_b, (ExitType::Right, ExitType::Left));
-            }
+            graph.add_edge(node_a, node_b, ());
         }
 
         (WorldGraph(graph), PlayerGameScenes(player_game_scenes))

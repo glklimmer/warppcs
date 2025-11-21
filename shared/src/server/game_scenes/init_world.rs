@@ -30,7 +30,7 @@ use crate::{
     },
 };
 
-use super::world::{ExitType, GameScene, InitWorld, SceneType};
+use super::world::{InitWorld, SceneType};
 
 pub struct StartGamePlugin;
 
@@ -96,47 +96,23 @@ fn init_world(
 
         let destinations = world
             .edges(i)
-            .map(|edge| world[edge.target()].entity(Some(edge.weight().1)))
+            .map(|edge| world[edge.target()].entry_entity())
             .collect::<Vec<_>>();
 
-        let start_points = match node.scene {
+        let scene_ends = match node.scene {
             SceneType::Player { exit, .. } => vec![exit],
             SceneType::Camp { left, right } => vec![left, right],
             SceneType::Meadow { left, right } => vec![left, right],
         };
 
-        for start_point in start_points {
+        for end in scene_ends {
             commands
-                .entity(start_point)
+                .entity(end)
                 .insert(TravelDestinations::new(destinations.clone()));
         }
     }
 
-    for edge in world.edge_references() {
-        let scene_a = world[edge.source()];
-        let scene_b = world[edge.target()];
-        let connection = edge.weight();
-
-        setup_destination_offsets(commands.reborrow(), scene_a, scene_b, *connection);
-    }
     Ok(())
-}
-
-fn setup_destination_offsets(
-    mut commands: Commands,
-    scene_a: GameScene,
-    scene_b: GameScene,
-    (type_a, type_b): (ExitType, ExitType),
-) {
-    let entity_a = scene_a.entity(Some(type_a));
-    let entity_b = scene_b.entity(Some(type_b));
-
-    commands
-        .entity(entity_a)
-        .insert((scene_a, TravelDestinationOffset::from(type_a)));
-    commands
-        .entity(entity_b)
-        .insert((scene_b, TravelDestinationOffset::from(type_b)));
 }
 
 fn meadow(
@@ -194,6 +170,7 @@ fn meadow(
     }
     commands.entity(left_scene_end).insert((
         SceneEnd,
+        TravelDestinationOffset::non_player(),
         offset
             .offset_x(-400.)
             .offset_y(-2.)
@@ -238,6 +215,7 @@ fn camp(
     }
     commands.entity(left_scene_end).insert((
         SceneEnd,
+        TravelDestinationOffset::non_player(),
         offset
             .offset_x(-500.)
             .offset_y(-2.)
@@ -351,6 +329,7 @@ fn player_base(
     ));
     commands.entity(exit).insert((
         SceneEnd,
+        TravelDestinationOffset::player(),
         offset.offset_x(700.).offset_y(-2.).with_layer(Layers::Wall),
         game_scene_id,
     ));
