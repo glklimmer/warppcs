@@ -79,6 +79,7 @@ fn init_map(
                         map_icons.sprite_sheet.texture_atlas(MapIcons::Player),
                     ),
                     Highlightable::default(),
+                    Pickable::default(),
                     Transform::from_xyz(player_scene.position.x, player_scene.position.y, 2.0),
                 ))
                 .observe(add_highlight_on::<Pointer<Over>>)
@@ -140,6 +141,7 @@ fn reveal_map_icons(
                 map_icons.sprite_sheet.texture_atlas(icon),
             ),
             Highlightable::default(),
+            Pickable::default(),
             Transform::from_xyz(map_node.position.x, map_node.position.y, 2.0),
         ))
         .observe(add_highlight_on::<Pointer<Over>>)
