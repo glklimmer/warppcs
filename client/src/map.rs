@@ -5,7 +5,7 @@ use bevy::input::common_conditions::input_just_pressed;
 use shared::{
     ControlledPlayer, GameState, PlayerState,
     server::game_scenes::{
-        travel::Traveling,
+        travel::{OpenTravelDialog, Traveling},
         world::{InitPlayerMapNode, RevealMapNode, SceneType},
     },
 };
@@ -23,6 +23,7 @@ impl Plugin for MapPlugin {
             .add_observer(leave_travel_state)
             // ------------
             .add_observer(reveal_map_icons)
+            .add_observer(open_travel_dialog)
             .add_systems(
                 OnEnter(PlayerState::Traveling),
                 (show_map, spawn_travel_dashline),
@@ -74,6 +75,20 @@ fn init_map(
                 Transform::from_xyz(player_scene.position.x, player_scene.position.y, 2.0),
             ));
         });
+    Ok(())
+}
+
+fn open_travel_dialog(
+    _trigger: Trigger<OpenTravelDialog>,
+    mut map: Query<&mut Visibility, With<Map>>,
+    mut next_state: ResMut<NextState<PlayerState>>,
+) -> Result {
+    info!("TESTING this");
+
+    let mut map = map.single_mut()?;
+    *map = Visibility::Visible;
+    next_state.set(PlayerState::Interaction);
+
     Ok(())
 }
 

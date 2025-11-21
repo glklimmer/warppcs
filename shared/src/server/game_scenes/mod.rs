@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use init_world::StartGamePlugin;
 use travel::TravelPlugin;
-use world::MapPlugin;
+use world::WorldPlugin;
 
 pub mod init_world;
 pub mod travel;
@@ -20,6 +20,6 @@ pub struct GameScenesPlugin;
 
 impl Plugin for GameScenesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((StartGamePlugin, MapPlugin, TravelPlugin));
+        app.add_plugins((StartGamePlugin, WorldPlugin, TravelPlugin));
     }
 }

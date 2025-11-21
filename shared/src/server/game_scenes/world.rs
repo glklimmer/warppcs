@@ -10,9 +10,9 @@ use std::collections::HashMap;
 
 use crate::{ClientPlayerMap, GameState, Player, networking::LobbyEvent};
 
-pub struct MapPlugin;
+pub struct WorldPlugin;
 
-impl Plugin for MapPlugin {
+impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             PreUpdate,

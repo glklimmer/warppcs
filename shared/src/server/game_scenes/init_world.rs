@@ -18,7 +18,7 @@ use crate::{
         entities::{Damage, MeleeRange, Unit, health::Health},
         game_scenes::{
             GameSceneId,
-            travel::{SceneEnd, TravelDestination, TravelDestinationOffset},
+            travel::{SceneEnd, TravelDestinationOffset, TravelDestinations},
         },
         physics::movement::{Speed, Velocity},
         players::{
@@ -41,12 +41,13 @@ impl Plugin for StartGamePlugin {
 }
 
 fn init_world(
-    load_map: Trigger<InitWorld>,
+    init_world: Trigger<InitWorld>,
     mut players: Query<(&mut Transform, &Player)>,
     mut commands: Commands,
 ) -> Result {
-    let map = &**load_map.event();
-    for (i, node) in map.node_references() {
+    let world = &**init_world.event();
+
+    for (i, node) in world.node_references() {
         let offset = Vec3::new(10000. * i.index() as f32, 0., 0.);
         let game_scene_id = GameSceneId(i.index() + 1);
 
@@ -92,19 +93,47 @@ fn init_world(
                 meadow(commands.reborrow(), offset, left, right, game_scene_id)
             }
         };
+
+        let destinations = world
+            .edges(i)
+            .map(|edge| get_entity_for_exit(world[edge.target()], edge.weight().1))
+            .collect::<Vec<_>>();
+
+        let start_points = match node.scene {
+            SceneType::Player { exit, .. } => vec![exit],
+            SceneType::Camp { left, right } => vec![left, right],
+            SceneType::Meadow { left, right } => vec![left, right],
+        };
+
+        for start_point in start_points {
+            commands
+                .entity(start_point)
+                .insert(TravelDestinations::new(destinations.clone()));
+        }
     }
 
-    for edge in map.edge_references() {
-        let scene_a = map[edge.source()];
-        let scene_b = map[edge.target()];
+    for edge in world.edge_references() {
+        let scene_a = world[edge.source()];
+        let scene_b = world[edge.target()];
         let connection = edge.weight();
 
-        connect_scenes(commands.reborrow(), scene_a, scene_b, *connection);
+        setup_destination_offsets(commands.reborrow(), scene_a, scene_b, *connection);
     }
     Ok(())
 }
 
-fn connect_scenes(
+fn get_entity_for_exit(scene: GameScene, exit_type: ExitType) -> Entity {
+    match (scene.scene, exit_type) {
+        (SceneType::Player { exit, .. }, ExitType::Left) => exit,
+        (SceneType::Player { exit, .. }, ExitType::Right) => exit,
+        (SceneType::Camp { left, .. }, ExitType::Left) => left,
+        (SceneType::Camp { right, .. }, ExitType::Right) => right,
+        (SceneType::Meadow { left, .. }, ExitType::Left) => left,
+        (SceneType::Meadow { right, .. }, ExitType::Right) => right,
+    }
+}
+
+fn setup_destination_offsets(
     mut commands: Commands,
     scene_a: GameScene,
     scene_b: GameScene,
@@ -124,16 +153,12 @@ fn connect_scenes(
     let entity_a = get_entity_for_exit(scene_a, type_a);
     let entity_b = get_entity_for_exit(scene_b, type_b);
 
-    commands.entity(entity_a).insert((
-        scene_a,
-        TravelDestination::new(entity_b),
-        TravelDestinationOffset::from(type_a),
-    ));
-    commands.entity(entity_b).insert((
-        scene_b,
-        TravelDestination::new(entity_a),
-        TravelDestinationOffset::from(type_b),
-    ));
+    commands
+        .entity(entity_a)
+        .insert((scene_a, TravelDestinationOffset::from(type_a)));
+    commands
+        .entity(entity_b)
+        .insert((scene_b, TravelDestinationOffset::from(type_b)));
 }
 
 fn meadow(
@@ -346,13 +371,9 @@ fn player_base(
         },
         game_scene_id,
     ));
-
     commands.entity(exit).insert((
         SceneEnd,
-        offset
-            .offset_x(-700.)
-            .offset_y(-2.)
-            .with_layer(Layers::Wall),
+        offset.offset_x(700.).offset_y(-2.).with_layer(Layers::Wall),
         game_scene_id,
     ));
 }
