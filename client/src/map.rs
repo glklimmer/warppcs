@@ -10,8 +10,8 @@ use highlight::{
 use shared::{
     ControlledPlayer, GameState, PlayerState,
     server::game_scenes::{
-        travel::{OpenTravelDialog, SelectTravelDestination, Traveling},
-        world::{GameScene, InitPlayerMapNode, RevealMapNode, SceneType},
+        travel::{AddMapIcon, OpenTravelDialog, RevealMapIcon, SelectTravelDestination, Traveling},
+        world::{GameScene, InitPlayerMapNode, SceneType},
     },
 };
 
@@ -27,6 +27,7 @@ impl Plugin for MapPlugin {
             .add_observer(enter_travel_state)
             .add_observer(leave_travel_state)
             // ------------
+            .add_observer(add_map_icons)
             .add_observer(reveal_map_icons)
             .add_observer(open_travel_dialog)
             .add_systems(
@@ -48,7 +49,7 @@ impl Plugin for MapPlugin {
 }
 
 #[derive(Component, Deref)]
-struct MapIcon(GameScene);
+struct MapNode(GameScene);
 
 fn init_map(
     trigger: Trigger<InitPlayerMapNode>,
@@ -72,7 +73,7 @@ fn init_map(
         .with_children(|parent| {
             parent
                 .spawn((
-                    MapIcon(player_scene),
+                    MapNode(player_scene),
                     Visibility::Inherited,
                     Sprite::from_atlas_image(
                         map_icons.sprite_sheet.texture.clone(),
@@ -103,34 +104,32 @@ fn open_travel_dialog(
 
 fn destination_selected(
     trigger: Trigger<Pointer<Released>>,
-    query: Query<&MapIcon>,
+    map_node: Query<&MapNode>,
     mut commands: Commands,
 ) -> Result {
     let entity = trigger.target();
-    let game_scene = **query.get(entity)?;
+    let game_scene = **map_node.get(entity)?;
 
     commands.client_trigger(SelectTravelDestination(game_scene));
     Ok(())
 }
 
-fn reveal_map_icons(
-    trigger: Trigger<RevealMapNode>,
+fn add_map_icons(
+    trigger: Trigger<AddMapIcon>,
     map: Query<Entity, With<Map>>,
     map_icons: Res<MapIconSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let map_node = **trigger.event();
     let map = map.single()?;
-    let icon = match map_node.scene {
-        SceneType::Player { .. } => MapIcons::Player,
-        SceneType::Camp { .. } => MapIcons::Bandit,
-        SceneType::Meadow { .. } => MapIcons::Bandit,
-    };
+
+    let update_map_icon = trigger.event();
+    let game_scene = **update_map_icon;
+    let icon = MapIcons::Mystery;
 
     commands
         .spawn((
             ChildOf(map),
-            MapIcon(map_node),
+            MapNode(game_scene),
             Visibility::Inherited,
             Sprite::from_atlas_image(
                 map_icons.sprite_sheet.texture.clone(),
@@ -138,11 +137,38 @@ fn reveal_map_icons(
             ),
             Highlightable::default(),
             Pickable::default(),
-            Transform::from_xyz(map_node.position.x, map_node.position.y, 2.0),
+            Transform::from_xyz(game_scene.position.x, game_scene.position.y, 2.0),
         ))
         .observe(add_highlight_on::<Pointer<Over>>)
         .observe(remove_highlight_on::<Pointer<Out>>)
         .observe(destination_selected);
+    Ok(())
+}
+
+fn reveal_map_icons(
+    trigger: Trigger<RevealMapIcon>,
+    query: Query<(Entity, &MapNode)>,
+    map_icons: Res<MapIconSpriteSheet>,
+    mut commands: Commands,
+) -> Result {
+    let update_map_icon = trigger.event();
+    let game_scene = **update_map_icon;
+
+    let (entity, _) = query
+        .iter()
+        .find(|(_, node)| node.id.eq(&game_scene.id))
+        .ok_or("GameScene not added yet.")?;
+
+    let icon = match game_scene.scene {
+        SceneType::Player { .. } => MapIcons::Player,
+        SceneType::Camp { .. } => MapIcons::Bandit,
+        SceneType::Meadow { .. } => MapIcons::Bandit,
+    };
+
+    commands.entity(entity).insert(Sprite::from_atlas_image(
+        map_icons.sprite_sheet.texture.clone(),
+        map_icons.sprite_sheet.texture_atlas(icon),
+    ));
     Ok(())
 }
 

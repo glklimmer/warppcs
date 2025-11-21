@@ -11,10 +11,7 @@ use crate::{
     map::Layers,
     server::{
         entities::commander::ArmyFlagAssignments,
-        game_scenes::{
-            GameSceneId,
-            world::{GameScene, RevealMapNode},
-        },
+        game_scenes::{GameSceneId, world::GameScene},
         players::interaction::{ActiveInteraction, InteractionType},
     },
 };
@@ -119,6 +116,12 @@ pub struct OpenTravelDialog;
 #[derive(Event, Deserialize, Serialize, Deref)]
 pub struct SelectTravelDestination(pub GameScene);
 
+#[derive(Event, Deref, Serialize, Deserialize)]
+pub struct AddMapIcon(GameScene);
+
+#[derive(Event, Deref, Serialize, Deserialize)]
+pub struct RevealMapIcon(GameScene);
+
 fn travel_timer(mut query: Query<&mut Traveling>, time: Res<Time>) {
     for mut traveling in &mut query {
         traveling.time_left.tick(time.delta());
@@ -142,17 +145,14 @@ fn init_travel_dialog(
         let client = client_player_map.get_network_entity(&player_entity)?;
 
         for destination in &**destinations {
-            let game_scene = game_scene.get(*destination)?;
+            let game_scene = *game_scene.get(*destination)?;
 
             commands.server_trigger(ToClients {
                 mode: SendMode::Direct(*client),
-                event: RevealMapNode::to(*game_scene),
+                event: AddMapIcon(game_scene),
             });
         }
 
-        commands.entity(player_entity).insert(ActiveInteraction {
-            interactable: event.interactable,
-        });
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
             event: OpenTravelDialog,
@@ -264,7 +264,7 @@ fn end_travel(
 
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
-            event: RevealMapNode::to(travel.target),
+            event: RevealMapIcon(travel.target),
         });
     }
     Ok(())

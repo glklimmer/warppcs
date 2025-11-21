@@ -59,8 +59,11 @@ use crate::{
         },
         game_scenes::{
             GameSceneId,
-            travel::{OpenTravelDialog, Road, SceneEnd, SelectTravelDestination},
-            world::{InitPlayerMapNode, RevealMapNode},
+            travel::{
+                AddMapIcon, OpenTravelDialog, RevealMapIcon, Road, SceneEnd,
+                SelectTravelDestination,
+            },
+            world::InitPlayerMapNode,
         },
         physics::army_slot::ArmySlot,
         players::{chest::ChestOpened, flag::FlagDestroyed},
@@ -135,7 +138,8 @@ impl Plugin for SharedPlugin {
         .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
         .add_server_trigger::<InitPlayerMapNode>(Channel::Ordered)
-        .add_server_trigger::<RevealMapNode>(Channel::Ordered)
+        .add_server_trigger::<AddMapIcon>(Channel::Ordered)
+        .add_server_trigger::<RevealMapIcon>(Channel::Ordered)
         .add_server_trigger::<OpenTravelDialog>(Channel::Ordered)
         .add_mapped_server_trigger::<PlayerDefeated>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)

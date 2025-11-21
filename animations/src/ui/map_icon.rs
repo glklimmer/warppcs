@@ -9,6 +9,7 @@ pub enum MapIcons {
     #[default]
     Player,
     Bandit,
+    Mystery,
 }
 
 #[derive(Resource)]
@@ -24,15 +25,16 @@ impl FromWorld for MapIconSpriteSheet {
 
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2 { x: 46, y: 36 },
-            2,
+            3,
             1,
             None,
             None,
         ));
 
         let parts = EnumMap::new(|c| match c {
-            MapIcons::Bandit => 0,
-            MapIcons::Player => 1,
+            MapIcons::Player => 0,
+            MapIcons::Bandit => 1,
+            MapIcons::Mystery => 2,
         });
 
         Self {

@@ -26,6 +26,7 @@ fn check_collider_trigger(
     triggers: Query<(Entity, &ColliderTrigger, &Transform, &BoxCollider)>,
     player_query: Query<(&Transform, &BoxCollider)>,
     mut interaction: EventWriter<InteractionTriggeredEvent>,
+    mut commands: Commands,
 ) -> Result {
     for player in players.iter() {
         let (player_transform, player_collider) = player_query.get(player)?;
@@ -35,6 +36,11 @@ fn check_collider_trigger(
             if !(player_bounds.intersects(&collider.at(transform))) {
                 continue;
             }
+
+            commands.entity(player).insert(ActiveInteraction {
+                interactable: entity,
+            });
+
             match trigger {
                 ColliderTrigger::Travel => interaction.write(InteractionTriggeredEvent {
                     player,

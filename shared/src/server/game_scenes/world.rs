@@ -8,7 +8,9 @@ use petgraph::{Graph, Undirected};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{ClientPlayerMap, GameState, Player, networking::LobbyEvent};
+use crate::{
+    ClientPlayerMap, GameState, Player, networking::LobbyEvent, server::game_scenes::GameSceneId,
+};
 
 pub struct WorldPlugin;
 
@@ -30,15 +32,6 @@ pub struct InitWorld(WorldGraph);
 #[derive(Event, Deref, Serialize, Deserialize)]
 pub struct InitPlayerMapNode(GameScene);
 
-#[derive(Event, Deref, Serialize, Deserialize)]
-pub struct RevealMapNode(GameScene);
-
-impl RevealMapNode {
-    pub fn to(game_scene: GameScene) -> Self {
-        Self(game_scene)
-    }
-}
-
 #[derive(Clone, Default, Deref, DerefMut)]
 pub struct WorldGraph(Graph<GameScene, (), Undirected>);
 
@@ -51,6 +44,7 @@ pub enum SceneType {
 
 #[derive(Component, Debug, Clone, Serialize, Deserialize, Copy)]
 pub struct GameScene {
+    pub id: GameSceneId,
     pub scene: SceneType,
     pub position: Vec2,
 }
@@ -95,6 +89,7 @@ impl WorldGraph {
             let angle = frac * std::f32::consts::TAU;
             let pos = Vec2::new(radius * angle.cos(), radius * angle.sin());
             let game_scene = GameScene {
+                id: GameSceneId(i * 6 + 1),
                 scene: SceneType::Player {
                     player: players[i],
                     exit: commands.spawn_empty().id(),
@@ -133,6 +128,7 @@ impl WorldGraph {
             let outer_pos = mid_point - offset_dir * offset_dist + outward_dir * push_out_dist;
 
             let tj_a_idx = graph.add_node(GameScene {
+                id: GameSceneId(i * 6 + 2),
                 scene: SceneType::Camp {
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
@@ -141,6 +137,7 @@ impl WorldGraph {
             });
             tj_a_nodes.push(tj_a_idx);
             let tj_b_idx = graph.add_node(GameScene {
+                id: GameSceneId(i * 6 + 3),
                 scene: SceneType::Camp {
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
@@ -150,6 +147,7 @@ impl WorldGraph {
             tj_b_nodes.push(tj_b_idx);
 
             let outer_idx = graph.add_node(GameScene {
+                id: GameSceneId(i * 6 + 4),
                 scene: SceneType::Meadow {
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
@@ -163,6 +161,7 @@ impl WorldGraph {
                 right: commands.spawn_empty().id(),
             };
             let inner_idx = graph.add_node(GameScene {
+                id: GameSceneId(i * 6 + 5),
                 scene: inner_scene,
                 position: inner_pos,
             });

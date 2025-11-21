@@ -52,7 +52,7 @@ fn init_world(
 
     for (i, node) in world.node_references() {
         let offset = Vec3::new(10000. * i.index() as f32, 0., 0.);
-        let game_scene_id = GameSceneId(i.index() + 1);
+        let game_scene_id = node.id;
 
         match node.scene {
             SceneType::Player { player, exit } => {
