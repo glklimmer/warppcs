@@ -14,13 +14,16 @@ use crate::{
     networking::{MountType, UnitType},
     server::{
         ai::BanditBehaviour,
-        buildings::item_assignment::ItemAssignment,
+        buildings::{gold_farm::GoldFarmTimer, item_assignment::ItemAssignment},
         entities::{Damage, MeleeRange, Unit, health::Health},
         game_scenes::{
             GameSceneId,
             travel::{SceneEnd, TravelDestinationOffset, TravelDestinations},
         },
-        physics::movement::{Speed, Velocity},
+        physics::{
+            collider_trigger::ColliderTrigger,
+            movement::{Speed, Velocity},
+        },
         players::{
             chest::Chest,
             interaction::{Interactable, InteractionType},
@@ -179,6 +182,7 @@ fn meadow(
     ));
     commands.entity(right_scene_end).insert((
         SceneEnd,
+        ColliderTrigger::Travel,
         offset.offset_x(400.).offset_y(-2.).with_layer(Layers::Wall),
         game_scene_id,
     ));
@@ -224,6 +228,7 @@ fn camp(
     ));
     commands.entity(right_scene_end).insert((
         SceneEnd,
+        ColliderTrigger::Travel,
         offset.offset_x(500.).offset_y(-2.).with_layer(Layers::Wall),
         game_scene_id,
     ));
@@ -319,16 +324,14 @@ fn player_base(
         BuildStatus::Built {
             indicator: HealthIndicator::Healthy,
         },
+        GoldFarmTimer::default(),
         offset.offset_x(-265.).with_layer(Layers::Building),
         owner,
-        Interactable {
-            kind: InteractionType::Building,
-            restricted_to: Some(player),
-        },
         game_scene_id,
     ));
     commands.entity(exit).insert((
         SceneEnd,
+        ColliderTrigger::Travel,
         TravelDestinationOffset::player(),
         offset.offset_x(700.).offset_y(-2.).with_layer(Layers::Wall),
         game_scene_id,

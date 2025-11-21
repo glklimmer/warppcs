@@ -15,7 +15,6 @@ use crate::{
             GameSceneId,
             world::{GameScene, RevealMapNode},
         },
-        physics::collider_trigger::ColliderTrigger,
         players::interaction::{ActiveInteraction, InteractionType},
     },
 };
@@ -84,7 +83,6 @@ impl TravelDestinationOffset {
     Transform,
     BoxCollider = scene_end_collider(),
     Sprite{anchor: Anchor::BottomCenter, ..default()},
-    ColliderTrigger = ColliderTrigger::Travel
 )]
 pub struct SceneEnd;
 
