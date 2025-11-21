@@ -61,6 +61,26 @@ pub struct GameScene {
     pub position: Vec2,
 }
 
+impl GameScene {
+    pub fn entity(&self, exit_type: Option<ExitType>) -> Entity {
+        match exit_type {
+            Some(exit_type) => match (self.scene, exit_type) {
+                (SceneType::Player { exit, .. }, ExitType::Left) => exit,
+                (SceneType::Player { exit, .. }, ExitType::Right) => exit,
+                (SceneType::Camp { left, .. }, ExitType::Left) => left,
+                (SceneType::Camp { right, .. }, ExitType::Right) => right,
+                (SceneType::Meadow { left, .. }, ExitType::Left) => left,
+                (SceneType::Meadow { right, .. }, ExitType::Right) => right,
+            },
+            None => match self.scene {
+                SceneType::Player { exit, .. } => exit,
+                SceneType::Camp { left, .. } => left,
+                SceneType::Meadow { left, .. } => left,
+            },
+        }
+    }
+}
+
 #[derive(Default, Clone, Deref)]
 struct PlayerGameScenes(HashMap<Entity, GameScene>);
 

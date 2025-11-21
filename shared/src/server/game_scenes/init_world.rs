@@ -96,7 +96,7 @@ fn init_world(
 
         let destinations = world
             .edges(i)
-            .map(|edge| get_entity_for_exit(world[edge.target()], edge.weight().1))
+            .map(|edge| world[edge.target()].entity(Some(edge.weight().1)))
             .collect::<Vec<_>>();
 
         let start_points = match node.scene {
@@ -122,36 +122,14 @@ fn init_world(
     Ok(())
 }
 
-fn get_entity_for_exit(scene: GameScene, exit_type: ExitType) -> Entity {
-    match (scene.scene, exit_type) {
-        (SceneType::Player { exit, .. }, ExitType::Left) => exit,
-        (SceneType::Player { exit, .. }, ExitType::Right) => exit,
-        (SceneType::Camp { left, .. }, ExitType::Left) => left,
-        (SceneType::Camp { right, .. }, ExitType::Right) => right,
-        (SceneType::Meadow { left, .. }, ExitType::Left) => left,
-        (SceneType::Meadow { right, .. }, ExitType::Right) => right,
-    }
-}
-
 fn setup_destination_offsets(
     mut commands: Commands,
     scene_a: GameScene,
     scene_b: GameScene,
     (type_a, type_b): (ExitType, ExitType),
 ) {
-    fn get_entity_for_exit(scene: GameScene, exit_type: ExitType) -> Entity {
-        match (scene.scene, exit_type) {
-            (SceneType::Player { exit, .. }, ExitType::Left) => exit,
-            (SceneType::Player { exit, .. }, ExitType::Right) => exit,
-            (SceneType::Camp { left, .. }, ExitType::Left) => left,
-            (SceneType::Camp { right, .. }, ExitType::Right) => right,
-            (SceneType::Meadow { left, .. }, ExitType::Left) => left,
-            (SceneType::Meadow { right, .. }, ExitType::Right) => right,
-        }
-    }
-
-    let entity_a = get_entity_for_exit(scene_a, type_a);
-    let entity_b = get_entity_for_exit(scene_b, type_b);
+    let entity_a = scene_a.entity(Some(type_a));
+    let entity_b = scene_b.entity(Some(type_b));
 
     commands
         .entity(entity_a)

@@ -59,7 +59,7 @@ use crate::{
         },
         game_scenes::{
             GameSceneId,
-            travel::{OpenTravelDialog, Road, SceneEnd},
+            travel::{OpenTravelDialog, Road, SceneEnd, SelectTravelDestination},
             world::{InitPlayerMapNode, RevealMapNode},
         },
         physics::army_slot::ArmySlot,
@@ -130,6 +130,7 @@ impl Plugin for SharedPlugin {
         .add_client_trigger::<StartBuild>(Channel::Ordered)
         .add_client_trigger::<CommanderAssignmentRequest>(Channel::Ordered)
         .add_client_trigger::<CommanderPickFlag>(Channel::Ordered)
+        .add_client_trigger::<SelectTravelDestination>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)

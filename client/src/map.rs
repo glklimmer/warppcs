@@ -2,11 +2,12 @@ use bevy::prelude::*;
 
 use bevy::input::common_conditions::input_just_pressed;
 
+use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
     ControlledPlayer, GameState, PlayerState,
     server::game_scenes::{
-        travel::{OpenTravelDialog, Traveling},
-        world::{InitPlayerMapNode, RevealMapNode, SceneType},
+        travel::{OpenTravelDialog, SelectTravelDestination, Traveling},
+        world::{GameScene, InitPlayerMapNode, RevealMapNode, SceneType},
     },
 };
 
@@ -42,8 +43,8 @@ impl Plugin for MapPlugin {
     }
 }
 
-#[derive(Component)]
-struct MapIcon;
+#[derive(Component, Deref)]
+struct MapIcon(GameScene);
 
 fn init_map(
     trigger: Trigger<InitPlayerMapNode>,
@@ -65,15 +66,17 @@ fn init_map(
             Transform::from_scale(Vec3::splat(1.0 / 3.0)),
         ))
         .with_children(|parent| {
-            parent.spawn((
-                MapIcon,
-                Visibility::Inherited,
-                Sprite::from_atlas_image(
-                    map_icons.sprite_sheet.texture.clone(),
-                    map_icons.sprite_sheet.texture_atlas(MapIcons::Player),
-                ),
-                Transform::from_xyz(player_scene.position.x, player_scene.position.y, 2.0),
-            ));
+            parent
+                .spawn((
+                    MapIcon(player_scene),
+                    Visibility::Inherited,
+                    Sprite::from_atlas_image(
+                        map_icons.sprite_sheet.texture.clone(),
+                        map_icons.sprite_sheet.texture_atlas(MapIcons::Player),
+                    ),
+                    Transform::from_xyz(player_scene.position.x, player_scene.position.y, 2.0),
+                ))
+                .observe(destination_selected);
         });
     Ok(())
 }
@@ -92,6 +95,18 @@ fn open_travel_dialog(
     Ok(())
 }
 
+fn destination_selected(
+    trigger: Trigger<Pointer<Released>>,
+    query: Query<&MapIcon>,
+    mut commands: Commands,
+) -> Result {
+    let entity = trigger.target();
+    let game_scene = **query.get(entity)?;
+
+    commands.client_trigger(SelectTravelDestination(game_scene));
+    Ok(())
+}
+
 fn reveal_map_icons(
     trigger: Trigger<RevealMapNode>,
     map: Query<Entity, With<Map>>,
@@ -107,16 +122,18 @@ fn reveal_map_icons(
         SceneType::Meadow { .. } => MapIcons::Bandit,
     };
 
-    commands.spawn((
-        ChildOf(map),
-        MapIcon,
-        Visibility::Inherited,
-        Sprite::from_atlas_image(
-            map_icons.sprite_sheet.texture.clone(),
-            map_icons.sprite_sheet.texture_atlas(icon),
-        ),
-        Transform::from_xyz(map_node.position.x, map_node.position.y, 2.0),
-    ));
+    commands
+        .spawn((
+            ChildOf(map),
+            MapIcon(map_node),
+            Visibility::Inherited,
+            Sprite::from_atlas_image(
+                map_icons.sprite_sheet.texture.clone(),
+                map_icons.sprite_sheet.texture_atlas(icon),
+            ),
+            Transform::from_xyz(map_node.position.x, map_node.position.y, 2.0),
+        ))
+        .observe(destination_selected);
     Ok(())
 }
 
