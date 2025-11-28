@@ -60,7 +60,7 @@ use crate::{
         game_scenes::{
             GameSceneId,
             travel::{
-                AddMapIcon, OpenTravelDialog, RevealMapIcon, Road, SceneEnd,
+                AddMysteryMapIcon, OpenTravelDialog, RevealMapIcon, Road, SceneEnd,
                 SelectTravelDestination,
             },
             world::InitPlayerMapNode,
@@ -138,7 +138,7 @@ impl Plugin for SharedPlugin {
         .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
         .add_server_trigger::<InitPlayerMapNode>(Channel::Ordered)
-        .add_server_trigger::<AddMapIcon>(Channel::Ordered)
+        .add_server_trigger::<AddMysteryMapIcon>(Channel::Ordered)
         .add_server_trigger::<RevealMapIcon>(Channel::Ordered)
         .add_server_trigger::<OpenTravelDialog>(Channel::Ordered)
         .add_mapped_server_trigger::<PlayerDefeated>(Channel::Ordered)

@@ -111,13 +111,15 @@ fn road_collider() -> BoxCollider {
 }
 
 #[derive(Event, Deserialize, Serialize)]
-pub struct OpenTravelDialog;
+pub struct OpenTravelDialog {
+    pub current_scene: GameScene,
+}
 
 #[derive(Event, Deserialize, Serialize, Deref)]
 pub struct SelectTravelDestination(pub GameScene);
 
 #[derive(Event, Deref, Serialize, Deserialize)]
-pub struct AddMapIcon(GameScene);
+pub struct AddMysteryMapIcon(GameScene);
 
 #[derive(Event, Deref, Serialize, Deserialize)]
 pub struct RevealMapIcon(GameScene);
@@ -149,13 +151,15 @@ fn init_travel_dialog(
 
             commands.server_trigger(ToClients {
                 mode: SendMode::Direct(*client),
-                event: AddMapIcon(game_scene),
+                event: AddMysteryMapIcon(game_scene),
             });
         }
 
+        let current_scene = *game_scene.get(event.interactable)?;
+
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
-            event: OpenTravelDialog,
+            event: OpenTravelDialog { current_scene },
         });
     }
     Ok(())
