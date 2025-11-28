@@ -6,7 +6,10 @@ use bevy_replicon::{
 };
 use petgraph::{Graph, Undirected};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+};
 
 use crate::{
     ClientPlayerMap, GameState, Player, networking::LobbyEvent, server::game_scenes::GameSceneId,
@@ -56,6 +59,20 @@ impl GameScene {
             SceneType::Camp { left, .. } => left,
             SceneType::Meadow { left, .. } => left,
         }
+    }
+}
+
+impl PartialEq for GameScene {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for GameScene {}
+
+impl Hash for GameScene {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
     }
 }
 

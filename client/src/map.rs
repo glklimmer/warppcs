@@ -10,7 +10,9 @@ use highlight::{
 use shared::{
     ControlledPlayer, GameState, PlayerState,
     server::game_scenes::{
-        travel::{AddMapIcon, OpenTravelDialog, RevealMapIcon, SelectTravelDestination, Traveling},
+        travel::{
+            AddMysteryMapIcon, OpenTravelDialog, RevealMapIcon, SelectTravelDestination, Traveling,
+        },
         world::{GameScene, InitPlayerMapNode, SceneType},
     },
 };
@@ -21,7 +23,7 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<MapState>()
+        app.insert_state(MapState::View)
             .add_observer(init_map)
             // ------------
             // todo: move to state(?) plugin
@@ -53,11 +55,10 @@ impl Plugin for MapPlugin {
 #[derive(Component, Deref)]
 struct MapNode(GameScene);
 
-#[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
 enum MapState {
-    #[default]
     View,
-    Selection,
+    Selection { current_scene: GameScene },
 }
 
 fn init_map(
@@ -100,15 +101,19 @@ fn init_map(
 }
 
 fn open_travel_dialog(
-    _trigger: Trigger<OpenTravelDialog>,
+    trigger: Trigger<OpenTravelDialog>,
     mut map: Query<&mut Visibility, With<Map>>,
     mut next_player_state: ResMut<NextState<PlayerState>>,
     mut next_map_state: ResMut<NextState<MapState>>,
 ) -> Result {
     let mut map = map.single_mut()?;
     *map = Visibility::Visible;
+
     next_player_state.set(PlayerState::Interaction);
-    next_map_state.set(MapState::Selection);
+
+    next_map_state.set(MapState::Selection {
+        current_scene: trigger.current_scene,
+    });
 
     Ok(())
 }
@@ -120,29 +125,39 @@ fn destination_selected(
     mut next_map_state: ResMut<NextState<MapState>>,
     map_node: Query<&MapNode>,
 ) -> Result {
-    let MapState::Selection = map_state.get() else {
+    let MapState::Selection { current_scene } = map_state.get() else {
         return Ok(());
     };
 
-    next_map_state.set(MapState::View);
-
     let entity = trigger.target();
     let game_scene = **map_node.get(entity)?;
+
+    if game_scene.eq(current_scene) {
+        return Ok(());
+    }
+
+    next_map_state.set(MapState::View);
 
     commands.client_trigger(SelectTravelDestination(game_scene));
     Ok(())
 }
 
 fn add_map_icons(
-    trigger: Trigger<AddMapIcon>,
+    trigger: Trigger<AddMysteryMapIcon>,
     map: Query<Entity, With<Map>>,
     map_icons: Res<MapIconSpriteSheet>,
+    query: Query<(Entity, &MapNode)>,
     mut commands: Commands,
 ) -> Result {
     let map = map.single()?;
 
     let update_map_icon = trigger.event();
     let game_scene = **update_map_icon;
+
+    let None = query.iter().find(|(_, node)| node.eq(&game_scene)) else {
+        return Ok(());
+    };
+
     let icon = MapIcons::Mystery;
 
     commands
@@ -173,9 +188,11 @@ fn reveal_map_icons(
     let update_map_icon = trigger.event();
     let game_scene = **update_map_icon;
 
+    info!("revealing: {:?}", game_scene.scene);
+
     let (entity, _) = query
         .iter()
-        .find(|(_, node)| node.id.eq(&game_scene.id))
+        .find(|(_, node)| node.eq(&game_scene))
         .ok_or("GameScene not added yet.")?;
 
     let icon = match game_scene.scene {

@@ -9,7 +9,7 @@ pub mod init_world;
 pub mod travel;
 pub mod world;
 
-#[derive(Component, PartialEq, Eq, Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Component, PartialEq, Eq, Hash, Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct GameSceneId(usize);
 impl GameSceneId {
     pub(crate) fn lobby() -> Self {
