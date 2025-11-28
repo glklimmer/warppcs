@@ -21,7 +21,8 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(init_map)
+        app.init_state::<MapState>()
+            .add_observer(init_map)
             // ------------
             // todo: move to state(?) plugin
             .add_observer(enter_travel_state)
@@ -51,6 +52,13 @@ impl Plugin for MapPlugin {
 
 #[derive(Component, Deref)]
 struct MapNode(GameScene);
+
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
+enum MapState {
+    #[default]
+    View,
+    Selection,
+}
 
 fn init_map(
     trigger: Trigger<InitPlayerMapNode>,
@@ -94,20 +102,30 @@ fn init_map(
 fn open_travel_dialog(
     _trigger: Trigger<OpenTravelDialog>,
     mut map: Query<&mut Visibility, With<Map>>,
-    mut next_state: ResMut<NextState<PlayerState>>,
+    mut next_player_state: ResMut<NextState<PlayerState>>,
+    mut next_map_state: ResMut<NextState<MapState>>,
 ) -> Result {
     let mut map = map.single_mut()?;
     *map = Visibility::Visible;
-    next_state.set(PlayerState::Interaction);
+    next_player_state.set(PlayerState::Interaction);
+    next_map_state.set(MapState::Selection);
 
     Ok(())
 }
 
 fn destination_selected(
     trigger: Trigger<Pointer<Released>>,
-    map_node: Query<&MapNode>,
     mut commands: Commands,
+    map_state: ResMut<State<MapState>>,
+    mut next_map_state: ResMut<NextState<MapState>>,
+    map_node: Query<&MapNode>,
 ) -> Result {
+    let MapState::Selection = map_state.get() else {
+        return Ok(());
+    };
+
+    next_map_state.set(MapState::View);
+
     let entity = trigger.target();
     let game_scene = **map_node.get(entity)?;
 
