@@ -41,7 +41,8 @@ impl Plugin for MapPlugin {
                     sync_ui_to_camera,
                     toggle_map
                         .run_if(input_just_pressed(KeyCode::KeyM))
-                        .run_if(not(in_state(PlayerState::Traveling))),
+                        .run_if(not(in_state(PlayerState::Traveling)))
+                        .run_if(in_state(GameState::GameSession)),
                 ),
             )
             .add_systems(Update, animate_dashes);
