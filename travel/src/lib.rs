@@ -607,9 +607,11 @@ fn enter_travel_state(
     query: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
+    info!("start enter travel state");
     let Ok(_) = query.get(trigger.target()) else {
         return Ok(());
     };
+    info!("is controlled player, setting travel state");
     next_state.set(PlayerState::Traveling);
     Ok(())
 }
@@ -619,9 +621,11 @@ fn leave_travel_state(
     query: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
+    info!("start leave travel state");
     let Ok(_) = query.get(trigger.target()) else {
         return Ok(());
     };
+    info!("is controlled player, setting world state");
     next_state.set(PlayerState::World);
     Ok(())
 }
@@ -670,6 +674,7 @@ fn toggle_map(
     mut map: Query<&mut Visibility, With<Map>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
+    info!("toggle map");
     let mut map = map.single_mut()?;
 
     map.toggle_visible_hidden();
@@ -683,12 +688,14 @@ fn toggle_map(
 }
 
 fn show_map(mut map: Query<&mut Visibility, With<Map>>) -> Result {
+    info!("show map");
     let mut map = map.single_mut()?;
     *map = Visibility::Visible;
     Ok(())
 }
 
 fn hide_map(mut map: Query<&mut Visibility, With<Map>>) -> Result {
+    info!("hide map");
     let mut map = map.single_mut()?;
     *map = Visibility::Hidden;
     Ok(())
