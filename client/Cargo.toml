@@ -39,6 +39,8 @@ shared = { path = "../shared", default-features = false }
 sprite_variant_loader = { path = "../sprite_variant_loader" }
 animations = { path = "../animations" }
 highlight = { path = "../highlight" }
+travel = { path = "../travel" }
+game_world = { path = "../game_world" }
 bevy-steamworks = { workspace = true, optional = true }
 bevy_replicon = { workspace = true, features = ["client"] }
 bincode = { workspace = true }
@@ -57,7 +59,6 @@ aeronet_steam = { workspace = true, features = [
 
 bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax" }
 image = { workspace = true }
-petgraph = { version = "0.8.1", features = ["serde-1"] }
 
 [lints.clippy]
 type_complexity = "allow"

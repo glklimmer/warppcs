@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::{
-    BoxCollider, ClientPlayerMap, ClientPlayerMapExt, DelayedDespawn, Owner, Player, PlayerState,
-    Vec3LayerExt,
+    BoxCollider, ClientPlayerMap, ClientPlayerMapExt, DelayedDespawn, GameSceneId, Owner, Player,
+    PlayerState, Vec3LayerExt,
     map::{
         Layers,
         buildings::{Building, BuildingType},
@@ -15,7 +15,6 @@ use crate::{
     server::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         entities::{Unit, commander::ArmyFlagAssignments},
-        game_scenes::GameSceneId,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
 };

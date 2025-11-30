@@ -1,19 +1,27 @@
-use bevy::{input::common_conditions::input_just_pressed, prelude::*, sprite::Anchor};
+use bevy::prelude::*;
+
+use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
+use bevy::{input::common_conditions::input_just_pressed, sprite::Anchor};
 use bevy_replicon::prelude::{
     AppRuleExt, Channel, ClientTriggerAppExt, ClientTriggerExt, FromClient, Replicated, SendMode,
     ServerTriggerAppExt, ServerTriggerExt, ToClients, server_or_singleplayer,
 };
-use fastrand;
-use serde::{Deserialize, Serialize};
-
-use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
 use highlight::{
     Highlightable,
     utils::{add_highlight_on, remove_highlight_on},
 };
+use serde::{Deserialize, Serialize};
 use shared::{
-    server::game_scenes::world::{GameScene, InitPlayerMapNode, SceneType},
-    *,
+    BoxCollider, ClientPlayerMap, ClientPlayerMapExt, ControlledPlayer, GameScene, GameSceneId,
+    GameState, PlayerState, SceneType,
+    map::Layers,
+    server::{
+        buildings::recruiting::{FlagAssignment, FlagHolder},
+        entities::{Unit, commander::ArmyFlagAssignments},
+        players::interaction::{
+            ActiveInteraction, Interactable, InteractionTriggeredEvent, InteractionType,
+        },
+    },
 };
 
 pub struct TravelPlugin;
@@ -52,7 +60,6 @@ impl Plugin for TravelPlugin {
                     animate_dashes,
                 ),
             )
-            // Server-only systems
             .add_systems(Update, travel_timer.run_if(server_or_singleplayer))
             .add_systems(
                 FixedUpdate,
@@ -61,7 +68,15 @@ impl Plugin for TravelPlugin {
     }
 }
 
-// All travel events
+#[derive(Event, Deref, Serialize, Deserialize)]
+pub struct InitPlayerMapNode(GameScene);
+
+impl InitPlayerMapNode {
+    pub fn new(game_scene: GameScene) -> Self {
+        Self(game_scene)
+    }
+}
+
 #[derive(Event, Deserialize, Serialize)]
 pub struct OpenTravelDialog {
     pub current_scene: GameScene,
@@ -76,7 +91,6 @@ pub struct AddMysteryMapIcon(GameScene);
 #[derive(Event, Deref, Serialize, Deserialize)]
 pub struct RevealMapIcon(GameScene);
 
-// All travel components
 #[derive(Component, Serialize, Deserialize)]
 pub struct Traveling {
     pub source: GameScene,
@@ -198,7 +212,7 @@ fn init_travel_dialog(
     destinations: Query<&TravelDestinations>,
     game_scene: Query<&GameScene>,
     client_player_map: Res<ClientPlayerMap>,
-) -> Result<(), BevyError> {
+) -> Result {
     for event in traveling.read() {
         let InteractionType::Travel = &event.interaction else {
             continue;
@@ -576,7 +590,7 @@ fn animate_dashes(
                 ))
                 .id();
 
-            if let Ok(map_entity) = map.get_single() {
+            if let Ok(map_entity) = map.single() {
                 commands.entity(map_entity).add_child(dash);
             }
 
@@ -646,7 +660,7 @@ fn sync_ui_to_camera(
     mut query: Query<&mut Transform, With<UIElement>>,
     camera: Query<&Transform, (With<Camera>, Without<UIElement>)>,
 ) -> Result {
-    if let Ok(camera) = camera.get_single() {
+    if let Ok(camera) = camera.single() {
         for mut transform in &mut query.iter_mut() {
             transform.translation = camera.translation.with_z(100.);
         }

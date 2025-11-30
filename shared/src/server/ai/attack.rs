@@ -6,7 +6,7 @@ use std::f32::consts::FRAC_PI_4;
 
 use super::{Attack, Target};
 use crate::{
-    AnimationChange, AnimationChangeEvent, GRAVITY_G, Hitby, Owner,
+    AnimationChange, AnimationChangeEvent, GRAVITY_G, GameSceneId, Hitby, Owner,
     map::Layers,
     networking::{UnitType, WorldDirection},
     server::{
@@ -17,7 +17,6 @@ use crate::{
             commander::ArmyFlagAssignments,
             health::{DelayedDamage, Health, TakeDamage},
         },
-        game_scenes::GameSceneId,
         physics::{movement::Velocity, projectile::ProjectileType},
     },
 };

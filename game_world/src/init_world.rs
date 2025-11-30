@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 
 use petgraph::visit::{EdgeRef, IntoNodeReferences};
-
-use crate::{
-    Owner, Player, PlayerColor, Vec3LayerExt,
+use shared::{
+    GameSceneId, Owner, Player, PlayerColor, SceneType, Vec3LayerExt,
     map::{
         Layers,
         buildings::{
@@ -16,10 +15,6 @@ use crate::{
         ai::BanditBehaviour,
         buildings::{gold_farm::GoldFarmTimer, item_assignment::ItemAssignment},
         entities::{Damage, MeleeRange, Unit, health::Health},
-        game_scenes::{
-            GameSceneId,
-            travel::{SceneEnd, TravelDestinationOffset, TravelDestinations},
-        },
         physics::{
             collider_trigger::ColliderTrigger,
             movement::{NoWalkZone, Speed, Velocity},
@@ -32,8 +27,9 @@ use crate::{
         },
     },
 };
+use travel::{SceneEnd, TravelDestinationOffset, TravelDestinations};
 
-use super::world::{InitWorld, SceneType};
+use super::world::InitWorld;
 
 pub struct StartGamePlugin;
 

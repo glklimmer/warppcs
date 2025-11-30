@@ -13,6 +13,7 @@ use bevy_replicon::{
     },
     server::{ServerPlugin, TickPolicy, VisibilityPolicy},
 };
+use core::hash::{Hash, Hasher};
 use enum_map::*;
 use map::{
     Layers,
@@ -37,7 +38,6 @@ use server::{
             CommanderCampInteraction, CommanderInteraction,
         },
     },
-    game_scenes::{travel::Traveling, world::GameScene},
     physics::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},
@@ -50,7 +50,6 @@ use server::{
         mount::Mount,
     },
 };
-use travel::TravelPlugin;
 
 use crate::{
     player_port::{PlayerPort, Portal},
@@ -59,7 +58,6 @@ use crate::{
             commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
             health::{Health, PlayerDefeated},
         },
-        game_scenes::GameSceneId,
         physics::army_slot::ArmySlot,
         players::{chest::ChestOpened, flag::FlagDestroyed},
     },
@@ -88,7 +86,6 @@ impl Plugin for SharedPlugin {
             PlayerMovement,
             PlayerAttacks,
             PlayerPort,
-            TravelPlugin,
             InteractPlugin,
         ))
         .init_resource::<ClientPlayerMap>()
@@ -98,7 +95,6 @@ impl Plugin for SharedPlugin {
         .replicate::<Owner>()
         .replicate::<Mounted>()
         .replicate::<ItemAssignment>()
-        .replicate::<GameScene>()
         .replicate::<Interactable>()
         .replicate::<AttachedTo>()
         .replicate::<ArmyFlagAssignments>()
@@ -188,6 +184,57 @@ pub struct AnimationChangeEvent {
 impl MapEntities for AnimationChangeEvent {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.entity = entity_mapper.get_mapped(self.entity);
+    }
+}
+
+#[derive(Component, PartialEq, Eq, Hash, Copy, Clone, Debug, Serialize, Deserialize)]
+pub struct GameSceneId(usize);
+
+impl GameSceneId {
+    pub fn custom(id: usize) -> Self {
+        Self(id)
+    }
+
+    pub(crate) fn lobby() -> Self {
+        Self(0)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum SceneType {
+    Player { player: Entity, exit: Entity },
+    Camp { left: Entity, right: Entity },
+    Meadow { left: Entity, right: Entity },
+}
+
+#[derive(Component, Debug, Clone, Serialize, Deserialize, Copy)]
+pub struct GameScene {
+    pub id: GameSceneId,
+    pub scene: SceneType,
+    pub position: Vec2,
+}
+
+impl GameScene {
+    pub fn entry_entity(&self) -> Entity {
+        match self.scene {
+            SceneType::Player { exit, .. } => exit,
+            SceneType::Camp { left, .. } => left,
+            SceneType::Meadow { left, .. } => left,
+        }
+    }
+}
+
+impl PartialEq for GameScene {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for GameScene {}
+
+impl Hash for GameScene {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
     }
 }
 

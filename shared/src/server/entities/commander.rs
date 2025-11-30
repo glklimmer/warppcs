@@ -4,16 +4,17 @@ use bevy::{ecs::entity::MapEntities, platform::collections::HashMap};
 use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
-use crate::ClientPlayerMapExt;
-use crate::networking::UnitType;
-use crate::server::buildings::recruiting::{Flag, FlagAssignment};
-use crate::server::game_scenes::GameSceneId;
+use crate::GameSceneId;
 use crate::{
-    ClientPlayerMap, Owner, Vec3LayerExt,
+    ClientPlayerMap, ClientPlayerMapExt, Owner, Vec3LayerExt,
     enum_map::*,
     map::Layers,
+    networking::UnitType,
     server::{
-        buildings::{recruiting::FlagHolder, siege_camp::SiegeCamp},
+        buildings::{
+            recruiting::{Flag, FlagAssignment, FlagHolder},
+            siege_camp::SiegeCamp,
+        },
         physics::attachment::AttachedTo,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },

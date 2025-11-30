@@ -4,10 +4,7 @@ use bevy_replicon::prelude::*;
 use aeronet::io::{Session, SessionEndpoint, connection::Disconnected, server::Server};
 use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
 
-use crate::{
-    ClientPlayerMap, Player, PlayerColor, SetLocalPlayer, enum_map::*,
-    server::game_scenes::GameSceneId,
-};
+use crate::{ClientPlayerMap, GameSceneId, Player, PlayerColor, SetLocalPlayer, enum_map::*};
 
 pub struct CreateServerPlugin;
 

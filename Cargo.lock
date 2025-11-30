@@ -2183,12 +2183,13 @@ dependencies = [
  "bevy_replicon",
  "bincode",
  "fastrand",
+ "game_world",
  "highlight",
  "image",
- "petgraph 0.8.3",
  "serde",
  "shared",
  "sprite_variant_loader",
+ "travel",
 ]
 
 [[package]]
@@ -3220,6 +3221,19 @@ dependencies = [
  "pin-project-lite",
  "pin-utils",
  "slab",
+]
+
+[[package]]
+name = "game_world"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "fastrand",
+ "petgraph 0.8.3",
+ "serde",
+ "shared",
+ "travel",
 ]
 
 [[package]]

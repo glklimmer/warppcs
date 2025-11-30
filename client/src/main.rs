@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use bevy::audio::{AudioPlugin, SpatialScale, Volume};
 use bevy_parallax::ParallaxPlugin;
+use game_world::GameScenesPlugin;
 use gizmos::GizmosPlugin;
 use networking::join_server::JoinServerPlugin;
 use shared::{
@@ -16,6 +17,7 @@ use animations::AnimationPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
+use travel::TravelPlugin;
 
 use crate::{
     background::BackgroundPlugin, background_sound::BackgroundSoundPlugin, defeat::DefeatPlugin,
@@ -82,7 +84,7 @@ fn main() {
             }),
     );
 
-    client.add_plugins(SharedPlugin);
+    client.add_plugins((SharedPlugin, TravelPlugin, GameScenesPlugin));
 
     client.insert_state(GameState::Loading).add_plugins((
         SpriteVariantLoaderPlugin,

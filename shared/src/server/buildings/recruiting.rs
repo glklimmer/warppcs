@@ -5,7 +5,7 @@ use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, Owner, Player, PlayerColor, Vec3LayerExt,
+    BoxCollider, GameSceneId, Owner, Player, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
     flag_collider,
     map::{
@@ -23,7 +23,6 @@ use crate::{
             },
             health::Health,
         },
-        game_scenes::GameSceneId,
         physics::{army_slot::ArmySlot, attachment::AttachedTo, movement::Speed},
         players::{
             interaction::{

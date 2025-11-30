@@ -27,6 +27,11 @@ default = ["client/default", "shared/default"]
 steam = ["client/steam", "shared/steam"]
 netcode = ["client/netcode", "shared/netcode"]
 
+[workspace.lints.clippy]
+type_complexity = "allow"
+too_many_arguments = "allow"
+let_and_return = "allow"
+
 [workspace.dependencies]
 bincode = "2.0.1"
 fastrand = "2.3.0"
@@ -39,3 +44,5 @@ aeronet_webtransport = { version = "0.14.0" }
 aeronet_replicon = { version = "0.14.0" }
 aeronet_steam = { version = "0.14.0" }
 image = { version = "0.25.6", features = ["png"] }
+petgraph = { version = "0.8.1", features = ["serde-1"] }
+

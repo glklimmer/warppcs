@@ -9,6 +9,7 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
+use crate::GameSceneId;
 use crate::{
     ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
@@ -22,7 +23,6 @@ use crate::{
     server::{
         ai::BanditBehaviour,
         entities::{Sight, commander::ArmyFormation},
-        game_scenes::GameSceneId,
         physics::army_slot::ArmySlot,
     },
 };

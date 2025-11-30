@@ -24,12 +24,12 @@ use shared::{
     server::{
         buildings::{recruiting::Flag, siege_camp::SiegeCamp},
         entities::{Unit, UnitAnimation, health::Health},
-        game_scenes::travel::{Road, SceneEnd},
         physics::projectile::ProjectileType,
         players::{chest::Chest, mount::Mount},
     },
 };
 use sprite_variant_loader::loader::{SpriteVariants, SpriteVariantsAssetsExt};
+use travel::{Road, SceneEnd};
 
 pub struct SpawnPlugin;
 

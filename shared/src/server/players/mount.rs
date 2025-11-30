@@ -6,13 +6,10 @@ use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, BoxCollider,
+    AnimationChange, AnimationChangeEvent, BoxCollider, GameSceneId,
     map::Layers,
     networking::{MountType, Mounted},
-    server::{
-        game_scenes::GameSceneId,
-        physics::movement::{Speed, Velocity},
-    },
+    server::physics::movement::{Speed, Velocity},
     unit_collider,
 };
 

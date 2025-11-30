@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, Owner, Player, PlayerState,
+    AnimationChange, AnimationChangeEvent, GameSceneId, Owner, Player, PlayerState,
     map::{
         Layers,
         buildings::{Building, BuildingType},
@@ -14,7 +14,6 @@ use crate::{
             Unit,
             health::{Health, TakeDamage},
         },
-        game_scenes::GameSceneId,
         physics::{attachment::AttachedTo, movement::Velocity},
     },
 };

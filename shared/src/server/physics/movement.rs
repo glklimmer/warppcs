@@ -5,13 +5,10 @@ use bevy_replicon::prelude::server_or_singleplayer;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, GRAVITY_G, Owner, Player,
+    BoxCollider, GRAVITY_G, GameSceneId, Owner, Player,
     map::buildings::{BuildStatus, Building, BuildingType},
     networking::WorldDirection,
-    server::{
-        entities::health::Health, game_scenes::GameSceneId, physics::army_slot::ArmySlot,
-        players::items::Item,
-    },
+    server::{entities::health::Health, physics::army_slot::ArmySlot, players::items::Item},
 };
 
 use super::projectile::ProjectileType;
