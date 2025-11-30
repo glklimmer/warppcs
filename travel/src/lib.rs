@@ -166,7 +166,6 @@ fn road_collider() -> BoxCollider {
     }
 }
 
-// All map components
 #[derive(Component, Deref)]
 struct MapNode(GameScene);
 
@@ -199,7 +198,6 @@ struct UIElement;
 #[require(UIElement)]
 struct Map;
 
-// All travel and map systems
 fn travel_timer(mut query: Query<&mut Traveling>, time: Res<Time>) {
     for mut traveling in &mut query {
         traveling.time_left.tick(time.delta());
