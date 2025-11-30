@@ -3,6 +3,9 @@ name = "game_world"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [dependencies]
 bevy = { workspace = true, default-features = false, features = [
     "std",

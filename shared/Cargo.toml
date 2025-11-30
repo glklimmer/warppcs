@@ -3,6 +3,9 @@ name = "shared"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [features]
 default = ["netcode", "bevy/dynamic_linking"]
 steam = ["bevy-steamworks", "aeronet_steam"]

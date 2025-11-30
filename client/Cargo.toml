@@ -3,6 +3,9 @@ name = "client"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [features]
 default = ["netcode", "bevy/dynamic_linking"]
 steam = ["shared/steam", "bevy-steamworks", "aeronet_steam"]
@@ -59,8 +62,3 @@ aeronet_steam = { workspace = true, features = [
 
 bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax" }
 image = { workspace = true }
-
-[lints.clippy]
-type_complexity = "allow"
-too_many_arguments = "allow"
-let_and_return = "allow"
