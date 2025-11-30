@@ -2,16 +2,16 @@ use bevy::prelude::*;
 
 use bevy::audio::{AudioPlugin, SpatialScale, Volume};
 use bevy_parallax::ParallaxPlugin;
-use game_world::GameScenesPlugin;
+use game_world::GameWorldPlugin;
 use gizmos::GizmosPlugin;
 use networking::join_server::JoinServerPlugin;
+use shared::PlayerState;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
 use sprite_variant_loader::SpriteVariantLoaderPlugin;
 use std::env;
 use ui::UiPlugin;
-use widgets::WidgetsPlugin;
 
 use animations::AnimationPlugin;
 use camera::CameraPlugin;
@@ -84,23 +84,26 @@ fn main() {
             }),
     );
 
-    client.add_plugins((SharedPlugin, TravelPlugin, GameScenesPlugin));
+    client.add_plugins(SharedPlugin);
 
-    client.insert_state(GameState::Loading).add_plugins((
-        SpriteVariantLoaderPlugin,
-        ParallaxPlugin,
-        CameraPlugin,
-        InputPlugin,
-        AnimationPlugin,
-        BackgroundPlugin,
-        // MenuPlugin,
-        EntitiesPlugin,
-        WidgetsPlugin,
-        UiPlugin,
-        BackgroundSoundPlugin,
-        GizmosPlugin,
-        DefeatPlugin,
-    ));
+    client
+        .insert_state(GameState::Loading)
+        .insert_state(PlayerState::World)
+        .add_plugins((
+            SpriteVariantLoaderPlugin,
+            ParallaxPlugin,
+            CameraPlugin,
+            InputPlugin,
+            AnimationPlugin,
+            BackgroundPlugin,
+            EntitiesPlugin,
+            UiPlugin,
+            BackgroundSoundPlugin,
+            GizmosPlugin,
+            DefeatPlugin,
+            GameWorldPlugin,
+            TravelPlugin,
+        ));
 
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);
 

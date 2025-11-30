@@ -93,7 +93,7 @@ pub struct RevealMapIcon(GameScene);
 
 #[derive(Component, Serialize, Deserialize)]
 pub struct Traveling {
-    pub source: GameScene,
+    source: GameScene,
     pub target: GameScene,
     time_left: Timer,
 }

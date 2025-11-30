@@ -8,9 +8,9 @@ use world::WorldPlugin;
 pub mod init_world;
 pub mod world;
 
-pub struct GameScenesPlugin;
+pub struct GameWorldPlugin;
 
-impl Plugin for GameScenesPlugin {
+impl Plugin for GameWorldPlugin {
     fn build(&self, app: &mut App) {
         app.replicate::<GameScene>()
             .add_plugins((StartGamePlugin, WorldPlugin));
