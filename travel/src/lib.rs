@@ -1,38 +1,41 @@
-use bevy::prelude::*;
+use bevy::{input::common_conditions::input_just_pressed, prelude::*, sprite::Anchor};
+use bevy_replicon::prelude::{
+    AppRuleExt, Channel, ClientTriggerAppExt, ClientTriggerExt, FromClient, Replicated, SendMode,
+    ServerTriggerAppExt, ServerTriggerExt, ToClients, server_or_singleplayer,
+};
+use fastrand;
+use serde::{Deserialize, Serialize};
 
-use bevy::input::common_conditions::input_just_pressed;
-
-use bevy_replicon::prelude::ClientTriggerExt;
+use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
 use highlight::{
     Highlightable,
     utils::{add_highlight_on, remove_highlight_on},
 };
 use shared::{
-    ControlledPlayer, GameState, PlayerState,
-    server::game_scenes::{
-        travel::{
-            AddMysteryMapIcon, OpenTravelDialog, RevealMapIcon, SelectTravelDestination, Traveling,
-        },
-        world::{GameScene, InitPlayerMapNode, SceneType},
-    },
+    server::game_scenes::world::{GameScene, InitPlayerMapNode, SceneType},
+    *,
 };
 
-use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
+pub struct TravelPlugin;
 
-pub struct MapPlugin;
-
-impl Plugin for MapPlugin {
+impl Plugin for TravelPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_state(MapState::View)
+        app.replicate::<Traveling>()
+            .replicate_group::<(Road, Transform)>()
+            .replicate_group::<(SceneEnd, Transform)>()
+            .add_client_trigger::<SelectTravelDestination>(Channel::Ordered)
+            .add_server_trigger::<AddMysteryMapIcon>(Channel::Ordered)
+            .add_server_trigger::<RevealMapIcon>(Channel::Ordered)
+            .add_server_trigger::<OpenTravelDialog>(Channel::Ordered)
+            .add_server_trigger::<InitPlayerMapNode>(Channel::Ordered)
+            .insert_state(MapState::View)
             .add_observer(init_map)
-            // ------------
-            // todo: move to state(?) plugin
             .add_observer(enter_travel_state)
             .add_observer(leave_travel_state)
-            // ------------
             .add_observer(add_map_icons)
             .add_observer(reveal_map_icons)
             .add_observer(open_travel_dialog)
+            .add_observer(start_travel)
             .add_systems(
                 OnEnter(PlayerState::Traveling),
                 (show_map, spawn_travel_dashline),
@@ -46,12 +49,110 @@ impl Plugin for MapPlugin {
                         .run_if(input_just_pressed(KeyCode::KeyM))
                         .run_if(not(in_state(PlayerState::Traveling)))
                         .run_if(in_state(GameState::GameSession)),
+                    animate_dashes,
                 ),
             )
-            .add_systems(Update, animate_dashes);
+            // Server-only systems
+            .add_systems(Update, travel_timer.run_if(server_or_singleplayer))
+            .add_systems(
+                FixedUpdate,
+                (init_travel_dialog, end_travel).run_if(server_or_singleplayer),
+            );
     }
 }
 
+// All travel events
+#[derive(Event, Deserialize, Serialize)]
+pub struct OpenTravelDialog {
+    pub current_scene: GameScene,
+}
+
+#[derive(Event, Deserialize, Serialize, Deref)]
+pub struct SelectTravelDestination(pub GameScene);
+
+#[derive(Event, Deref, Serialize, Deserialize)]
+pub struct AddMysteryMapIcon(GameScene);
+
+#[derive(Event, Deref, Serialize, Deserialize)]
+pub struct RevealMapIcon(GameScene);
+
+// All travel components
+#[derive(Component, Serialize, Deserialize)]
+pub struct Traveling {
+    pub source: GameScene,
+    pub target: GameScene,
+    time_left: Timer,
+}
+
+impl Traveling {
+    fn between(source: GameScene, target: GameScene) -> Self {
+        Self {
+            source,
+            target,
+            time_left: Timer::from_seconds(5., TimerMode::Once),
+        }
+    }
+}
+
+#[derive(Component, Clone, Deref)]
+pub struct TravelDestinations(Vec<Entity>);
+
+impl TravelDestinations {
+    pub fn new(destinations: Vec<Entity>) -> Self {
+        Self(destinations)
+    }
+}
+
+#[derive(Component, Clone, Deref)]
+pub struct TravelDestinationOffset(f32);
+
+impl TravelDestinationOffset {
+    pub fn non_player() -> Self {
+        Self(50.)
+    }
+
+    pub fn player() -> Self {
+        Self(-50.)
+    }
+}
+
+#[derive(Component, Clone, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    Transform,
+    BoxCollider = scene_end_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+)]
+pub struct SceneEnd;
+
+fn scene_end_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(32., 32.),
+        offset: Some(Vec2::new(0., 16.)),
+    }
+}
+
+#[derive(Component, Clone, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    Transform,
+    BoxCollider = road_collider(),
+    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Interactable{
+        kind: InteractionType::Travel,
+        restricted_to: None,
+    },
+)]
+pub struct Road;
+
+fn road_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(32., 32.),
+        offset: Some(Vec2::new(0., 16.)),
+    }
+}
+
+// All map components
 #[derive(Component, Deref)]
 struct MapNode(GameScene);
 
@@ -59,6 +160,190 @@ struct MapNode(GameScene);
 enum MapState {
     View,
     Selection { current_scene: GameScene },
+}
+
+#[derive(Component)]
+pub struct DashLine {
+    pub a: Vec2,
+    pub b: Vec2,
+    pub dash_len: f32,
+    pub gap: f32,
+    pub thickness: f32,
+    pub color: Color,
+
+    pub cp1: Vec2,
+    pub cp2: Vec2,
+    pub total_dashes: usize,
+    pub spawned: usize,
+    pub timer: Timer,
+}
+
+#[derive(Component, Default)]
+struct UIElement;
+
+#[derive(Component)]
+#[require(UIElement)]
+struct Map;
+
+// All travel and map systems
+fn travel_timer(mut query: Query<&mut Traveling>, time: Res<Time>) {
+    for mut traveling in &mut query {
+        traveling.time_left.tick(time.delta());
+    }
+}
+
+fn init_travel_dialog(
+    mut traveling: EventReader<InteractionTriggeredEvent>,
+    mut commands: Commands,
+    destinations: Query<&TravelDestinations>,
+    game_scene: Query<&GameScene>,
+    client_player_map: Res<ClientPlayerMap>,
+) -> Result<(), BevyError> {
+    for event in traveling.read() {
+        let InteractionType::Travel = &event.interaction else {
+            continue;
+        };
+
+        let player_entity = event.player;
+        let Ok(destinations) = destinations.get(event.interactable) else {
+            continue;
+        };
+        let Ok(client) = client_player_map.get_network_entity(&player_entity) else {
+            continue;
+        };
+
+        for destination in &**destinations {
+            let Ok(game_scene) = game_scene.get(*destination) else {
+                continue;
+            };
+
+            commands.server_trigger(ToClients {
+                mode: SendMode::Direct(*client),
+                event: AddMysteryMapIcon(*game_scene),
+            });
+        }
+
+        let Ok(current_scene) = game_scene.get(event.interactable) else {
+            continue;
+        };
+
+        commands.server_trigger(ToClients {
+            mode: SendMode::Direct(*client),
+            event: OpenTravelDialog {
+                current_scene: *current_scene,
+            },
+        });
+    }
+    Ok(())
+}
+
+fn start_travel(
+    trigger: Trigger<FromClient<SelectTravelDestination>>,
+    flag_holders: Query<Option<&FlagHolder>>,
+    commanders: Query<(&FlagAssignment, &ArmyFlagAssignments)>,
+    units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
+    interaction: Query<&ActiveInteraction>,
+    game_scenes: Query<&GameScene>,
+    client_player_map: Res<ClientPlayerMap>,
+    mut commands: Commands,
+) -> Result {
+    let selection = &**trigger.event();
+    let player_entity = *client_player_map.get_player(&trigger.client_entity)?;
+
+    let source = interaction.get(player_entity)?.interactable;
+    let source = *game_scenes.get(source)?;
+
+    let target = **selection;
+
+    let flag_holder = flag_holders.get(player_entity)?;
+
+    info!("Travel starting...");
+
+    let mut travel_entities = Vec::new();
+
+    if let Some(flag_holder) = flag_holder {
+        units_on_flag
+            .iter()
+            .filter(|(_, assignment, _)| assignment.0 == flag_holder.0)
+            .for_each(|(entity, _, _)| {
+                travel_entities.push(entity);
+                travel_entities.push(**flag_holder);
+            });
+
+        let commander = commanders
+            .iter()
+            .find(|(assignment, _)| assignment.0.eq(&flag_holder.0));
+
+        if let Some((_, slots_assignments)) = commander {
+            units_on_flag
+                .iter()
+                .filter(|(_, assignment, _)| slots_assignments.flags.contains(&Some(assignment.0)))
+                .for_each(|(entity, assignment, _)| {
+                    travel_entities.push(entity);
+                    travel_entities.push(**assignment);
+                });
+        };
+    };
+
+    commands
+        .entity(player_entity)
+        .remove::<ActiveInteraction>()
+        .insert(Traveling::between(source, target))
+        .remove::<GameSceneId>();
+
+    for entity in travel_entities {
+        commands
+            .entity(entity)
+            .insert(Traveling::between(source, target))
+            .remove::<GameSceneId>();
+    }
+
+    Ok(())
+}
+
+fn end_travel(
+    query: Query<(Entity, &Traveling)>,
+    target: Query<(&Transform, &GameSceneId, Option<&TravelDestinationOffset>)>,
+    client_player_map: Res<ClientPlayerMap>,
+    mut commands: Commands,
+) -> Result {
+    for (entity, travel) in query.iter() {
+        if !travel.time_left.finished() {
+            continue;
+        }
+
+        let game_scene = travel.target;
+        let target_entity = game_scene.entry_entity();
+
+        let (target_transform, target_game_scene_id, maybe_offset) = target.get(target_entity)?;
+        let target_position = target_transform.translation;
+
+        info!("Travel finished to target position: {:?}", target_position);
+
+        let travel_destination_offset = match maybe_offset {
+            Some(offset) => **offset,
+            None => 0.,
+        };
+
+        commands.entity(entity).remove::<Traveling>().insert((
+            Transform::from_xyz(
+                target_position.x + travel_destination_offset,
+                target_position.y,
+                Layers::Player.as_f32(),
+            ),
+            *target_game_scene_id,
+        ));
+
+        let Ok(client) = client_player_map.get_network_entity(&entity) else {
+            continue;
+        };
+
+        commands.server_trigger(ToClients {
+            mode: SendMode::Direct(*client),
+            event: RevealMapIcon(travel.target),
+        });
+    }
+    Ok(())
 }
 
 fn init_map(
@@ -208,24 +493,6 @@ fn reveal_map_icons(
     Ok(())
 }
 
-use fastrand::f32 as rand_f32;
-
-#[derive(Component)]
-pub struct DashLine {
-    pub a: Vec2,
-    pub b: Vec2,
-    pub dash_len: f32,
-    pub gap: f32,
-    pub thickness: f32,
-    pub color: Color,
-
-    pub cp1: Vec2,
-    pub cp2: Vec2,
-    pub total_dashes: usize,
-    pub spawned: usize,
-    pub timer: Timer,
-}
-
 impl DashLine {
     pub fn new(
         a: Vec2,
@@ -239,10 +506,10 @@ impl DashLine {
     ) -> Self {
         let dir = (b - a).normalize();
         let perp = Vec2::new(-dir.y, dir.x);
-        let t1 = rand_f32() * 0.5 + 0.1;
-        let t2 = rand_f32() * 0.5 + 0.4;
-        let cp1 = a.lerp(b, t1) + perp * (rand_f32() * 2.0 - 1.0) * wiggle;
-        let cp2 = a.lerp(b, t2) + perp * (rand_f32() * 2.0 - 1.0) * wiggle;
+        let t1 = fastrand::f32() * 0.5 + 0.1;
+        let t2 = fastrand::f32() * 0.5 + 0.4;
+        let cp1 = a.lerp(b, t1) + perp * (fastrand::f32() * 2.0 - 1.0) * wiggle;
+        let cp2 = a.lerp(b, t2) + perp * (fastrand::f32() * 2.0 - 1.0) * wiggle;
 
         let straight_len = a.distance(b);
         let total_dashes = (straight_len / (dash_len + gap)).floor() as usize;
@@ -309,7 +576,9 @@ fn animate_dashes(
                 ))
                 .id();
 
-            commands.entity(map.single()?).add_child(dash);
+            if let Ok(map_entity) = map.get_single() {
+                commands.entity(map_entity).add_child(dash);
+            }
 
             line.spawned += 1;
         }
@@ -373,24 +642,17 @@ fn spawn_travel_dashline(
     Ok(())
 }
 
-#[derive(Component, Default)]
-struct UIElement;
-
 fn sync_ui_to_camera(
     mut query: Query<&mut Transform, With<UIElement>>,
     camera: Query<&Transform, (With<Camera>, Without<UIElement>)>,
 ) -> Result {
-    let camera = camera.single()?;
-
-    for mut transform in &mut query.iter_mut() {
-        transform.translation = camera.translation.with_z(100.);
+    if let Ok(camera) = camera.get_single() {
+        for mut transform in &mut query.iter_mut() {
+            transform.translation = camera.translation.with_z(100.);
+        }
     }
     Ok(())
 }
-
-#[derive(Component)]
-#[require(UIElement)]
-struct Map;
 
 fn toggle_map(
     mut map: Query<&mut Visibility, With<Map>>,

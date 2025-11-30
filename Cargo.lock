@@ -6500,6 +6500,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "travel"
+version = "0.1.0"
+dependencies = [
+ "animations",
+ "bevy",
+ "bevy_replicon",
+ "fastrand",
+ "highlight",
+ "serde",
+ "shared",
+]
+
+[[package]]
 name = "ttf-parser"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

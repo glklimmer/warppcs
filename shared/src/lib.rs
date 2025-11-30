@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use bevy::platform::collections::HashMap;
+use bevy::{
+    ecs::entity::MapEntities, math::bounding::Aabb2d, platform::collections::HashMap,
+    sprite::Anchor,
+};
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
@@ -11,8 +14,6 @@ use bevy_replicon::{
     server::{ServerPlugin, TickPolicy, VisibilityPolicy},
 };
 use enum_map::*;
-
-use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d, sprite::Anchor};
 use map::{
     Layers,
     buildings::{BuildStatus, Building, RecruitBuilding, RespawnZone},
@@ -49,6 +50,7 @@ use server::{
         mount::Mount,
     },
 };
+use travel::TravelPlugin;
 
 use crate::{
     player_port::{PlayerPort, Portal},
@@ -57,14 +59,7 @@ use crate::{
             commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
             health::{Health, PlayerDefeated},
         },
-        game_scenes::{
-            GameSceneId,
-            travel::{
-                AddMysteryMapIcon, OpenTravelDialog, RevealMapIcon, Road, SceneEnd,
-                SelectTravelDestination,
-            },
-            world::InitPlayerMapNode,
-        },
+        game_scenes::GameSceneId,
         physics::army_slot::ArmySlot,
         players::{chest::ChestOpened, flag::FlagDestroyed},
     },
@@ -93,6 +88,7 @@ impl Plugin for SharedPlugin {
             PlayerMovement,
             PlayerAttacks,
             PlayerPort,
+            TravelPlugin,
             InteractPlugin,
         ))
         .init_resource::<ClientPlayerMap>()
@@ -102,7 +98,6 @@ impl Plugin for SharedPlugin {
         .replicate::<Owner>()
         .replicate::<Mounted>()
         .replicate::<ItemAssignment>()
-        .replicate::<Traveling>()
         .replicate::<GameScene>()
         .replicate::<Interactable>()
         .replicate::<AttachedTo>()
@@ -120,8 +115,6 @@ impl Plugin for SharedPlugin {
         .replicate_group::<(ProjectileType, Transform)>()
         .replicate_group::<(Unit, Transform)>()
         .replicate_group::<(Portal, Transform)>()
-        .replicate_group::<(Road, Transform)>()
-        .replicate_group::<(SceneEnd, Transform)>()
         .replicate_group::<(Mount, Transform)>()
         .replicate_group::<(Chest, Transform)>()
         .replicate_group::<(Item, Transform)>()
@@ -133,14 +126,9 @@ impl Plugin for SharedPlugin {
         .add_client_trigger::<StartBuild>(Channel::Ordered)
         .add_client_trigger::<CommanderAssignmentRequest>(Channel::Ordered)
         .add_client_trigger::<CommanderPickFlag>(Channel::Ordered)
-        .add_client_trigger::<SelectTravelDestination>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
-        .add_server_trigger::<InitPlayerMapNode>(Channel::Ordered)
-        .add_server_trigger::<AddMysteryMapIcon>(Channel::Ordered)
-        .add_server_trigger::<RevealMapIcon>(Channel::Ordered)
-        .add_server_trigger::<OpenTravelDialog>(Channel::Ordered)
         .add_mapped_server_trigger::<PlayerDefeated>(Channel::Ordered)
         .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)

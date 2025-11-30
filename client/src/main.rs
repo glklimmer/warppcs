@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use bevy::audio::{AudioPlugin, SpatialScale, Volume};
 use bevy_parallax::ParallaxPlugin;
 use gizmos::GizmosPlugin;
-use map::MapPlugin;
 use networking::join_server::JoinServerPlugin;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
@@ -28,7 +27,6 @@ pub mod defeat;
 pub mod entities;
 pub mod gizmos;
 pub mod input;
-pub mod map;
 pub mod networking;
 pub mod ui;
 pub mod widgets;
@@ -97,7 +95,6 @@ fn main() {
         EntitiesPlugin,
         WidgetsPlugin,
         UiPlugin,
-        MapPlugin,
         BackgroundSoundPlugin,
         GizmosPlugin,
         DefeatPlugin,

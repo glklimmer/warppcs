@@ -10,7 +10,8 @@ members = [
     "console_protocol",
     "sprite_variant_loader",
     "animations",
-    "highlight"
+    "highlight",
+    "travel"
 ]
 
 # Enable a small amount of optimization in the dev profile.
