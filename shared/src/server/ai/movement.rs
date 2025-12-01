@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_behave::prelude::BehaveCtx;
+use bevy_behave::prelude::{BehaveCtx, BehaveTrigger};
 
 use super::{FollowOffset, Target, WalkIntoRange, WalkingInDirection};
 
@@ -8,6 +8,7 @@ use crate::{
     networking::UnitType,
     server::{
         buildings::recruiting::FlagAssignment,
+        console::{ArmyFormationTo, ArmyFormations},
         entities::{MeleeRange, Unit},
         physics::{
             attachment::AttachedTo,
@@ -18,6 +19,9 @@ use crate::{
 
 #[derive(Component, Clone)]
 pub struct FollowFlag;
+
+#[derive(Component, Clone)]
+pub struct IsFriendlyUnit;
 
 #[derive(Component, Clone, Deref, DerefMut)]
 pub struct Roam(Timer);
@@ -36,6 +40,7 @@ impl Plugin for AIMovementPlugin {
             FixedUpdate,
             (follow_flag, roam, walk_into_range, walk_in_direction),
         );
+        app.add_observer(friendly_unit_in_front);
     }
 }
 
@@ -160,6 +165,29 @@ fn walk_into_range(
 
         velocity.0.x = direction * **speed * **rand_velocity_mul;
     }
+    Ok(())
+}
+
+fn friendly_unit_in_front(
+    trigger: Trigger<BehaveTrigger<IsFriendlyUnit>>,
+    mut unit: Query<(&mut Velocity, &Transform, &Speed, &Unit, &ArmyFormationTo)>,
+    commander: Query<&ArmyFormations>,
+    mut other_units: Query<(&Transform, &Unit)>,
+    mut commands: Commands,
+) -> Result {
+    info!("friendly_unit_in_front");
+    let (mut velocity, transform, speed, unit, army_formation) =
+        unit.get_mut(trigger.ctx().target_entity())?;
+
+    let mut formation_units: Vec<(&Transform, &Unit)> = Vec::new();
+
+    let xx = commander.get(**army_formation)?;
+    for i in xx.iter() {
+        let (transform, unit) = other_units.get(i)?;
+        formation_units.push((transform, unit));
+    }
+
+    info!("lenght {}", formation_units.len());
     Ok(())
 }
 

@@ -210,8 +210,9 @@ fn spawn_units(
     let (unit, health, speed, damage, melee_range, projectile_range, sight) =
         unit_stats(unit_type, items, color);
 
-    for _ in 1..=unit_amount {
+    for i in 1..=unit_amount {
         commands.spawn((
+            Name::new(format!("Unit {}", i)),
             position.with_layer(Layers::Unit),
             unit.clone(),
             health,

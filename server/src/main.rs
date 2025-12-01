@@ -1,6 +1,4 @@
-use bevy::prelude::*;
-
-use bevy::app::ScheduleRunnerPlugin;
+use bevy::{app::ScheduleRunnerPlugin, prelude::*};
 use shared::{SharedPlugin, server::networking::ServerNetworkPlugin};
 
 use std::time::Duration;
