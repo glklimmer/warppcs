@@ -29,8 +29,8 @@ pub struct TravelPlugin;
 impl Plugin for TravelPlugin {
     fn build(&self, app: &mut App) {
         app.replicate::<Traveling>()
-            .replicate_group::<(Road, Transform)>()
-            .replicate_group::<(SceneEnd, Transform)>()
+            .replicate_bundle::<(Road, Transform)>()
+            .replicate_bundle::<(SceneEnd, Transform)>()
             .add_client_trigger::<SelectTravelDestination>(Channel::Ordered)
             .add_server_trigger::<AddMysteryMapIcon>(Channel::Ordered)
             .add_server_trigger::<RevealMapIcon>(Channel::Ordered)
