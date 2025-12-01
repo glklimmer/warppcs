@@ -36,13 +36,13 @@ let_and_return = "allow"
 bincode = "2.0.1"
 fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
-aeronet = "0.14.0"
-bevy = { version = "0.16.1", default-features = false }
-bevy_replicon = { version = "0.33" }
+aeronet = "0.17"
+bevy = { version = "0.17", default-features = false }
+bevy_replicon = { version = "0.36" }
 bevy-steamworks = { git = "https://github.com/glklimmer/bevy_steamworks" }
-aeronet_webtransport = { version = "0.14.0" }
-aeronet_replicon = { version = "0.14.0" }
-aeronet_steam = { version = "0.14.0" }
+aeronet_webtransport = { version = "0.17" }
+aeronet_replicon = { version = "0.17" }
+aeronet_steam = { version = "0.17" }
 image = { version = "0.25.6", features = ["png"] }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
 

@@ -29,6 +29,7 @@ bevy = { workspace = true, default-features = false, features = [
     "bevy_ui",
     "bevy_window",
     "bevy_winit",
+    "bevy_camera",
     "custom_cursor",
     "default_font",
     "hdr",
