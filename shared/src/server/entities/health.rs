@@ -292,7 +292,7 @@ fn on_building_destroy(
             if let BuildingType::MainBuilding { level: _ } = building.building_type {
                 commands.server_trigger(ToClients {
                     mode: SendMode::Broadcast,
-                    event: PlayerDefeated(owner.entity()?),
+                    message: PlayerDefeated(owner.entity()?),
                 });
             }
         }

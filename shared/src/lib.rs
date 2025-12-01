@@ -264,7 +264,7 @@ fn spawn_clients(
 
     commands.server_trigger(ToClients {
         mode: SendMode::Direct(player),
-        event: SetLocalPlayer(player),
+        message: SetLocalPlayer(player),
     });
     Ok(())
 }

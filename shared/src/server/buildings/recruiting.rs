@@ -186,7 +186,7 @@ pub fn recruit_units(
 
     commands.server_trigger(ToClients {
         mode: SendMode::Broadcast,
-        event: InteractableSound {
+        message: InteractableSound {
             kind: InteractionType::Recruit,
             spatial_position: player_transform.translation,
         },
@@ -400,7 +400,7 @@ pub fn recruit_commander(
 
     commands.server_trigger(ToClients {
         mode: SendMode::Broadcast,
-        event: InteractableSound {
+        message: InteractableSound {
             kind: InteractionType::Recruit,
             spatial_position: player_transform.translation,
         },

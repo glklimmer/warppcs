@@ -151,7 +151,7 @@ fn commander_interaction(
         let commander = event.interactable;
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*player),
-            event: CommanderInteraction { commander },
+            message: CommanderInteraction { commander },
         });
 
         active.insert(event.player, commander);
@@ -238,7 +238,7 @@ fn commander_assignment_validation(
         if let UnitType::Commander = unit.unit_type {
             commands.server_trigger(ToClients {
                 mode: SendMode::Direct(trigger.client_entity),
-                event: CommanderAssignmentReject,
+                message: CommanderAssignmentReject,
             });
             return Ok(());
         }

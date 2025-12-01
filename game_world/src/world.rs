@@ -208,7 +208,7 @@ fn init_world(
 
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
-            event: InitPlayerMapNode::new(*game_scene),
+            message: InitPlayerMapNode::new(*game_scene),
         });
     }
     Ok(())

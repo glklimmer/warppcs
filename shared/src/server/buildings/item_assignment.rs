@@ -150,7 +150,7 @@ fn check_start_building(
 
     commands.server_trigger(ToClients {
         mode: SendMode::Direct(trigger.client_entity),
-        event: CloseBuildingDialog,
+        message: CloseBuildingDialog,
     });
     Ok(())
 }
@@ -170,7 +170,7 @@ fn start_assignment_dialog(
 
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*player),
-            event: OpenBuildingDialog {
+            message: OpenBuildingDialog {
                 building: event.interactable,
             },
         });

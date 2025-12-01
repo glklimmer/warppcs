@@ -126,7 +126,7 @@ fn on_created(
 
     commands.server_trigger(ToClients {
         mode: SendMode::Broadcast,
-        event: SetLocalPlayer(server_player),
+        message: SetLocalPlayer(server_player),
     });
 }
 

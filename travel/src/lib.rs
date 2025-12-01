@@ -231,7 +231,7 @@ fn init_travel_dialog(
 
             commands.server_trigger(ToClients {
                 mode: SendMode::Direct(*client),
-                event: AddMysteryMapIcon(*game_scene),
+                message: AddMysteryMapIcon(*game_scene),
             });
         }
 
@@ -241,7 +241,7 @@ fn init_travel_dialog(
 
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
-            event: OpenTravelDialog {
+            message: OpenTravelDialog {
                 current_scene: *current_scene,
             },
         });
@@ -352,7 +352,7 @@ fn end_travel(
 
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
-            event: RevealMapIcon(travel.target),
+            message: RevealMapIcon(travel.target),
         });
     }
     Ok(())
