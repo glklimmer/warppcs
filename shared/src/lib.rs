@@ -11,7 +11,7 @@ use bevy_replicon::{
         SendMode, ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, SyncRelatedAppExt,
         ToClients,
     },
-    server::{ServerPlugin, TickPolicy, VisibilityPolicy},
+    server::{ServerPlugin, VisibilityPolicy},
 };
 use core::hash::{Hash, Hasher};
 use enum_map::*;
@@ -80,7 +80,6 @@ impl Plugin for SharedPlugin {
         app.add_plugins((
             RepliconPlugins.set(ServerPlugin {
                 visibility_policy: VisibilityPolicy::Whitelist,
-                tick_policy: TickPolicy::MaxTickRate(30),
                 ..Default::default()
             }),
             PlayerMovement,
