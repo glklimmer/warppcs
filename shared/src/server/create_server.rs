@@ -122,7 +122,7 @@ fn on_created(
         ))
         .id();
 
-    client_player_map.insert(SERVER, server_player);
+    client_player_map.insert(ClientId::Server, server_player);
 
     commands.server_trigger(ToClients {
         mode: SendMode::Broadcast,
