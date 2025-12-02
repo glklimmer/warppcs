@@ -20,7 +20,7 @@ impl Default for GoldFarmTimer {
     }
 }
 
-pub fn enable_goldfarm(mut commands: Commands, mut events: EventReader<BuildingChangeEnd>) {
+pub fn enable_goldfarm(mut commands: Commands, mut events: MessageReader<BuildingChangeEnd>) {
     for event in events.read() {
         let BuildingType::GoldFarm = event.building.building_type else {
             continue;

@@ -47,7 +47,7 @@ fn army_slot_follow(
 }
 
 fn init_army_direction_timer(
-    trigger: Trigger<OnInsert, ArmySlots>,
+    trigger: On<Insert, ArmySlots>,
     mut query: Query<&mut ArmySlots>,
 ) -> Result {
     let mut army = query.get_mut(trigger.target())?;

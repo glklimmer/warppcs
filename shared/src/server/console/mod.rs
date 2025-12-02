@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use bevy::{
     app::Plugin,
     ecs::{entity::Entity, system::In, world::World},
-    reflect::Map,
     remote::{BrpError, BrpResult, RemotePlugin, http::RemoteHttpPlugin},
 };
 use console_protocol::*;

@@ -85,7 +85,7 @@ fn process_attacks(
         &Damage,
         &GameSceneId,
     )>,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
 ) {
     for (ctx, attacking_range) in query.iter() {
@@ -173,7 +173,7 @@ fn process_attacks(
 
         animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity,
                 change: AnimationChange::Attack,
             },

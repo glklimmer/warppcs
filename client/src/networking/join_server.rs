@@ -25,7 +25,7 @@ impl Plugin for JoinServerPlugin {
         {
             app.add_systems(
                 Update,
-                join_steam_server.run_if(on_event::<SteamworksEvent>),
+                join_steam_server.run_if(on_message::<SteamworksEvent>),
             );
         }
     }
@@ -77,7 +77,7 @@ fn web_transport_config(cert_hash: Option<String>) -> WebTransportClientConfig {
 use bevy_steamworks::SteamworksEvent;
 
 #[cfg(feature = "steam")]
-fn join_steam_server(mut join_lobby: EventReader<SteamworksEvent>, mut commands: Commands) {
+fn join_steam_server(mut join_lobby: MessageReader<SteamworksEvent>, mut commands: Commands) {
     use aeronet_steam::SessionConfig;
     use aeronet_steam::client::SteamNetClient;
     use bevy_steamworks::{ClientManager, GameLobbyJoinRequested};
@@ -96,7 +96,7 @@ fn join_steam_server(mut join_lobby: EventReader<SteamworksEvent>, mut commands:
     }
 }
 
-fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>, mut commands: Commands) {
+fn on_connecting(trigger: On<Add, SessionEndpoint>, mut commands: Commands) {
     let entity = trigger.target();
 
     info!("Joining server...");
@@ -104,7 +104,7 @@ fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>, mut commands: Command
     commands.entity(entity).insert(AeronetRepliconClient);
 }
 
-fn on_connected(trigger: Trigger<OnAdd, Session>, mut commands: Commands) {
+fn on_connected(trigger: On<Add, Session>, mut commands: Commands) {
     let entity = trigger.target();
 
     info!("Joined server.");
@@ -114,7 +114,7 @@ fn on_connected(trigger: Trigger<OnAdd, Session>, mut commands: Commands) {
         .insert((TransportConfig { ..default() },));
 }
 
-fn on_disconnected(trigger: Trigger<Disconnected>) {
+fn on_disconnected(trigger: On<Disconnected>) {
     match &*trigger {
         Disconnected::ByUser(reason) => {
             format!("Disconnected by user: {reason}")

@@ -80,7 +80,7 @@ pub fn update_flag_visibility(
 }
 
 pub fn on_flag_destroyed(
-    trigger: Trigger<OnAdd, FlagDestroyed>,
+    trigger: On<Add, FlagDestroyed>,
     mut query: Query<&mut Sprite>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
     mut commands: Commands,

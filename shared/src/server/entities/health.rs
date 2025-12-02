@@ -33,7 +33,7 @@ impl Default for Health {
     }
 }
 
-#[derive(Event, Debug, Clone)]
+#[derive(Message, Debug, Clone)]
 pub struct TakeDamage {
     pub target_entity: Entity,
     pub damage: f32,
@@ -90,7 +90,7 @@ impl Plugin for HealthPlugin {
 
 fn delayed_damage(
     mut query: Query<(Entity, &mut DelayedDamage)>,
-    mut attack_events: EventWriter<TakeDamage>,
+    mut attack_events: MessageWriter<TakeDamage>,
     mut commands: Commands,
     time: Res<Time>,
 ) {
@@ -104,9 +104,9 @@ fn delayed_damage(
 }
 
 fn apply_damage(
-    mut attack_events: EventReader<TakeDamage>,
+    mut attack_events: MessageReader<TakeDamage>,
     mut query: Query<(Entity, &mut Health)>,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
 ) {
     for event in attack_events.read() {
         if let Ok((entity, mut health)) = query.get_mut(event.target_entity) {
@@ -114,7 +114,7 @@ fn apply_damage(
 
             animation.write(ToClients {
                 mode: SendMode::Broadcast,
-                event: AnimationChangeEvent {
+                message: AnimationChangeEvent {
                     entity,
                     change: AnimationChange::Hit(event.by),
                 },
@@ -146,8 +146,8 @@ fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), 
 }
 
 fn on_unit_death(
-    mut damage_events: EventReader<TakeDamage>,
-    mut unit_animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut damage_events: MessageReader<TakeDamage>,
+    mut unit_animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     units: Query<
         (
             Entity,
@@ -183,7 +183,7 @@ fn on_unit_death(
 
         unit_animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity,
                 change: AnimationChange::Death,
             },

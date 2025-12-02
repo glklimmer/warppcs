@@ -169,7 +169,7 @@ impl<T> MenuNode<T> {
 pub struct NodePayload<T>(T);
 
 fn open_menu<T: Clone + Send + Sync + 'static>(
-    trigger: Trigger<OnAdd, Menu<T>>,
+    trigger: On<Add, Menu<T>>,
     mut active: ResMut<ActiveMenus>,
     query: Query<&Menu<T>>,
     mut commands: Commands,
@@ -208,7 +208,7 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
     Ok(())
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct NodeSelected<T>(PhantomData<T>);
 
 fn cycle_commands(
@@ -251,11 +251,11 @@ fn cycle_commands(
     Ok(())
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct CloseEvent;
 
 fn close_menu(
-    mut close_events: EventReader<CloseEvent>,
+    mut close_events: MessageReader<CloseEvent>,
     input: Res<ButtonInput<KeyCode>>,
     mut active_menus: ResMut<ActiveMenus>,
     children_query: Query<&Children>,
@@ -282,7 +282,7 @@ fn close_menu(
     Ok(())
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct ClosedMenu<T>(PhantomData<T>);
 
 impl<T> Default for ClosedMenu<T> {
@@ -292,7 +292,7 @@ impl<T> Default for ClosedMenu<T> {
 }
 
 fn close_menu_trigger<T: Clone + Send + Sync + 'static>(
-    mut close_events: EventReader<ClosedMenu<T>>,
+    mut close_events: MessageReader<ClosedMenu<T>>,
     input: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
 ) {
@@ -308,7 +308,7 @@ fn close_menu_trigger<T: Clone + Send + Sync + 'static>(
 #[derive(Resource, Deref, DerefMut, Default)]
 struct ActiveMenus(Vec<Entity>);
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct SelectionEvent<T> {
     pub selection: T,
     pub menu: Entity,

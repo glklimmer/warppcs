@@ -35,7 +35,7 @@ pub struct InteractableSound {
     pub spatial_position: Vec3,
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct InteractionTriggeredEvent {
     pub player: Entity,
     pub interactable: Entity,
@@ -51,9 +51,9 @@ pub struct InteractPlugin;
 
 impl Plugin for InteractPlugin {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<Interact>(Channel::Ordered)
+        app.add_client_event::<Interact>(Channel::Ordered)
             .add_observer(interact)
-            .add_event::<InteractionTriggeredEvent>()
+            .add_message::<InteractionTriggeredEvent>()
             .add_systems(
                 PostUpdate,
                 send_interact
@@ -73,8 +73,8 @@ fn send_interact(mut commands: Commands, keyboard_input: Res<ButtonInput<KeyCode
 }
 
 fn interact(
-    trigger: Trigger<FromClient<Interact>>,
-    mut triggered_events: EventWriter<InteractionTriggeredEvent>,
+    trigger: On<FromClient<Interact>>,
+    mut triggered_events: MessageWriter<InteractionTriggeredEvent>,
     players: Query<(&Transform, &BoxCollider)>,
     interactables: Query<(Entity, &Transform, &BoxCollider, &Interactable)>,
     client_player_map: Res<ClientPlayerMap>,

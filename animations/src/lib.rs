@@ -172,7 +172,7 @@ impl Default for SpriteSheetAnimation {
 }
 
 /// Gets only triggered if new animation
-#[derive(Debug, Event)]
+#[derive(Debug, Message)]
 pub struct AnimationTrigger<E> {
     pub entity: Entity,
     pub state: E,

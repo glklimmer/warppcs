@@ -44,7 +44,7 @@ impl Default for PushBack {
     }
 }
 fn apply_force_on_hit(
-    mut hit: EventReader<TakeDamage>,
+    mut hit: MessageReader<TakeDamage>,
     mut query: Query<(&mut Velocity, &mut PushBack)>,
 ) {
     for event in hit.read() {

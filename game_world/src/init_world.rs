@@ -40,7 +40,7 @@ impl Plugin for StartGamePlugin {
 }
 
 fn init_world(
-    init_world: Trigger<InitWorld>,
+    init_world: On<InitWorld>,
     mut players: Query<(&mut Transform, &Player)>,
     mut commands: Commands,
 ) -> Result {

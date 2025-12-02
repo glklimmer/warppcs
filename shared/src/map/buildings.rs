@@ -68,7 +68,7 @@ impl Default for RespawnZone {
 
 impl RespawnZone {
     pub fn respawn_timer_finished(&self) -> bool {
-        self.respawn_timer.finished()
+        self.respawn_timer.is_finished()
     }
 
     pub fn respawn_timer_reset(&mut self) {

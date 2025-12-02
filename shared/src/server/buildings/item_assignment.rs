@@ -25,7 +25,7 @@ impl Plugin for ItemAssignmentPlugins {
             .init_resource::<ActiveBuilding>()
             .add_systems(
                 Update,
-                start_assignment_dialog.run_if(on_event::<InteractionTriggeredEvent>),
+                start_assignment_dialog.run_if(on_message::<InteractionTriggeredEvent>),
             );
     }
 }
@@ -71,7 +71,7 @@ impl MapEntities for OpenBuildingDialog {
 #[derive(Event, Deserialize, Serialize)]
 pub struct CloseBuildingDialog;
 
-#[derive(Event, Deserialize, Serialize, Deref)]
+#[derive(Message, Deserialize, Serialize, Deref)]
 pub struct AssignItem(Item);
 
 impl AssignItem {
@@ -80,7 +80,7 @@ impl AssignItem {
     }
 }
 
-#[derive(Event, Deserialize, Serialize)]
+#[derive(Message, Deserialize, Serialize)]
 pub struct StartBuild;
 
 #[derive(Resource, Default, Deref, DerefMut)]
@@ -98,8 +98,8 @@ impl ActiveBuildingExt for ActiveBuilding {
 }
 
 fn check_start_building(
-    trigger: Trigger<FromClient<StartBuild>>,
-    mut interactions: EventWriter<InteractionTriggeredEvent>,
+    trigger: On<FromClient<StartBuild>>,
+    mut interactions: MessageWriter<InteractionTriggeredEvent>,
     assignment: Query<&ItemAssignment>,
     active: Res<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
@@ -156,7 +156,7 @@ fn check_start_building(
 }
 
 fn start_assignment_dialog(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut active: ResMut<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
@@ -181,7 +181,7 @@ fn start_assignment_dialog(
 }
 
 fn assign_item(
-    trigger: Trigger<FromClient<AssignItem>>,
+    trigger: On<FromClient<AssignItem>>,
     active: Res<ActiveBuilding>,
     mut assignment: Query<&mut ItemAssignment>,
     mut inventory: Query<&mut Inventory>,

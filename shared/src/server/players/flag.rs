@@ -11,13 +11,13 @@ use super::{
     interaction::{InteractionTriggeredEvent, InteractionType},
 };
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct DropFlagEvent {
     player: Entity,
     flag: Entity,
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct PickFlagEvent {
     player: Entity,
     flag: Entity,
@@ -27,9 +27,9 @@ pub struct PickFlagEvent {
 pub struct FlagDestroyed;
 
 pub fn flag_interact(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut drop_flag: EventWriter<DropFlagEvent>,
-    mut pick_flag: EventWriter<PickFlagEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
+    mut drop_flag: MessageWriter<DropFlagEvent>,
+    mut pick_flag: MessageWriter<PickFlagEvent>,
     flag_holder: Query<Option<&FlagHolder>>,
 ) -> Result {
     for event in interactions.read() {
@@ -59,7 +59,7 @@ pub fn flag_interact(
 }
 
 pub fn pick_flag(
-    mut pick_flag: EventReader<PickFlagEvent>,
+    mut pick_flag: MessageReader<PickFlagEvent>,
     mut flag_query: Query<&mut Transform>,
     units: Query<&FlagUnits>,
     army: Query<Option<&ArmyFlagAssignments>>,
@@ -94,7 +94,7 @@ pub fn pick_flag(
 }
 
 pub fn drop_flag(
-    mut drop_flag: EventReader<DropFlagEvent>,
+    mut drop_flag: MessageReader<DropFlagEvent>,
     mut flag_query: Query<&mut Transform>,
     units: Query<&FlagUnits>,
     army: Query<Option<&ArmyFlagAssignments>>,

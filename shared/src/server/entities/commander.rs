@@ -34,7 +34,7 @@ impl ActiveCommanderExt for ActiveCommander {
     }
 }
 
-#[derive(Event, Serialize, Deserialize)]
+#[derive(Message, Serialize, Deserialize)]
 pub struct CommanderInteraction {
     pub commander: Entity,
 }
@@ -61,20 +61,20 @@ enum SlotCommand {
     Swap,
 }
 
-#[derive(Event, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq, Debug)]
+#[derive(Message, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq, Debug)]
 pub enum ArmyPosition {
     Front,
     Middle,
     Back,
 }
 
-#[derive(Event, Serialize, Deserialize)]
+#[derive(Message, Serialize, Deserialize)]
 pub struct CommanderCampInteraction;
 
-#[derive(Event, Serialize, Deserialize)]
+#[derive(Message, Serialize, Deserialize)]
 pub struct CommanderPickFlag;
 
-#[derive(Event, Serialize, Deserialize)]
+#[derive(Message, Serialize, Deserialize)]
 pub struct CommanderAssignmentRequest;
 
 #[derive(Event, Serialize, Deserialize)]
@@ -118,9 +118,7 @@ pub struct CommanderPlugin;
 impl Plugin for CommanderPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveCommander>()
-            .add_event::<SlotInteraction>()
-            .add_event::<CommanderCampInteraction>()
-            .add_event::<Assignment>()
+            .add_message::<CommanderCampInteraction>()
             .add_observer(commander_assignment_validation)
             .add_observer(handle_slot_selection)
             .add_observer(handle_camp_interaction)
@@ -130,13 +128,13 @@ impl Plugin for CommanderPlugin {
             .add_observer(handle_pick_flag)
             .add_systems(
                 FixedUpdate,
-                commander_interaction.run_if(on_event::<InteractionTriggeredEvent>),
+                commander_interaction.run_if(on_message::<InteractionTriggeredEvent>),
             );
     }
 }
 
 fn commander_interaction(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut commands: Commands,
     client_player_map: Res<ClientPlayerMap>,
     mut active: ResMut<ActiveCommander>,
@@ -160,7 +158,7 @@ fn commander_interaction(
 }
 
 fn handle_pick_flag(
-    trigger: Trigger<FromClient<CommanderPickFlag>>,
+    trigger: On<FromClient<CommanderPickFlag>>,
     active: Res<ActiveCommander>,
     client_player_map: ResMut<ClientPlayerMap>,
     formations: Query<&ArmyFlagAssignments>,
@@ -203,7 +201,7 @@ fn handle_pick_flag(
 }
 
 fn handle_camp_interaction(
-    trigger: Trigger<FromClient<CommanderCampInteraction>>,
+    trigger: On<FromClient<CommanderCampInteraction>>,
     active: Res<ActiveCommander>,
     client_player_map: ResMut<ClientPlayerMap>,
     query: Query<(&Transform, &GameSceneId)>,
@@ -224,7 +222,7 @@ fn handle_camp_interaction(
 }
 
 fn commander_assignment_validation(
-    trigger: Trigger<FromClient<ArmyPosition>>,
+    trigger: On<FromClient<ArmyPosition>>,
     client_player_map: ResMut<ClientPlayerMap>,
     flag_holder: Query<&FlagHolder>,
     flag: Query<&Flag>,
@@ -246,13 +244,13 @@ fn commander_assignment_validation(
 
     commands.trigger(Assignment {
         player: *player,
-        slot: trigger.event,
+        slot: trigger.message,
     });
     Ok(())
 }
 
 fn handle_slot_selection(
-    trigger: Trigger<Assignment>,
+    trigger: On<Assignment>,
     active: Res<ActiveCommander>,
     formations: Query<&ArmyFlagAssignments>,
     mut commands: Commands,
@@ -301,7 +299,7 @@ fn handle_slot_selection(
 }
 
 fn assign_flag_to_formation(
-    trigger: Trigger<SlotInteraction>,
+    trigger: On<SlotInteraction>,
     mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation)>,
     mut commands: Commands,
 ) -> Result {
@@ -327,7 +325,7 @@ fn assign_flag_to_formation(
 }
 
 fn remove_flag_from_formation(
-    trigger: Trigger<SlotInteraction>,
+    trigger: On<SlotInteraction>,
     mut commanders: Query<&mut ArmyFlagAssignments>,
     mut commands: Commands,
 ) -> Result {
@@ -355,7 +353,7 @@ fn remove_flag_from_formation(
 }
 
 fn swap_flag_from_formation(
-    trigger: Trigger<SlotInteraction>,
+    trigger: On<SlotInteraction>,
     mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation)>,
     mut commands: Commands,
 ) -> Result {

@@ -19,7 +19,7 @@ pub const GRASS_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/grass_fo
 // pub const WATER_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/water_footsteps";
 // pub const HORSE_SOUND_PATH: &str = "animation_sound/horse";
 
-#[derive(Event)]
+#[derive(Message)]
 struct PlayAnimationSoundEvent {
     entity: Entity,
     sound_handles: Vec<Handle<AudioSource>>,
@@ -56,8 +56,8 @@ impl Plugin for AnimationSoundPlugin {
         app.add_systems(
             Update,
             (
-                handle_single_animation_sound.run_if(on_event::<PlayAnimationSoundEvent>),
-                handle_multiple_animation_sound.run_if(on_event::<PlayAnimationSoundEvent>),
+                handle_single_animation_sound.run_if(on_message::<PlayAnimationSoundEvent>),
+                handle_multiple_animation_sound.run_if(on_message::<PlayAnimationSoundEvent>),
                 play_sound_on_entity_change,
                 play_animation_on_frame_timer,
                 play_animation_on_enter,
@@ -67,7 +67,7 @@ impl Plugin for AnimationSoundPlugin {
 }
 
 fn stop_animation_sound_on_remove(
-    trigger: Trigger<OnRemove, AnimationSound>,
+    trigger: On<Remove, AnimationSound>,
     query: Query<Option<&SpatialAudioSink>>,
     mut commands: Commands,
 ) -> Result {
@@ -81,7 +81,7 @@ fn stop_animation_sound_on_remove(
 }
 
 fn handle_multiple_animation_sound(
-    mut sound_events: EventReader<PlayAnimationSoundEvent>,
+    mut sound_events: MessageReader<PlayAnimationSoundEvent>,
     mut commands: Commands,
 ) -> Result {
     for event in sound_events.read() {
@@ -105,7 +105,7 @@ fn handle_multiple_animation_sound(
 }
 
 fn handle_single_animation_sound(
-    mut sound_events: EventReader<PlayAnimationSoundEvent>,
+    mut sound_events: MessageReader<PlayAnimationSoundEvent>,
     mut commands: Commands,
 ) -> Result {
     for event in sound_events.read() {
@@ -129,8 +129,8 @@ fn handle_single_animation_sound(
 }
 
 fn play_sound_on_entity_change(
-    mut sound_events: EventWriter<PlayAnimationSoundEvent>,
-    mut entity_change_events: EventReader<AnimationChangeEvent>,
+    mut sound_events: MessageWriter<PlayAnimationSoundEvent>,
+    mut entity_change_events: MessageReader<AnimationChangeEvent>,
     asset_server: Res<AssetServer>,
 ) {
     for event in entity_change_events.read() {
@@ -157,9 +157,9 @@ fn play_sound_on_entity_change(
 }
 
 fn play_animation_on_projectile_spawn(
-    trigger: Trigger<OnAdd, ProjectileType>,
+    trigger: On<Add, ProjectileType>,
     mut projectile: Query<&ProjectileType>,
-    mut sound_events: EventWriter<PlayAnimationSoundEvent>,
+    mut sound_events: MessageWriter<PlayAnimationSoundEvent>,
     asset_server: Res<AssetServer>,
 ) -> Result {
     let projectile_type = projectile.get_mut(trigger.target())?;
@@ -178,7 +178,7 @@ fn play_animation_on_projectile_spawn(
 }
 
 fn play_on_interactable(
-    trigger: Trigger<InteractableSound>,
+    trigger: On<InteractableSound>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
 ) {
@@ -211,7 +211,7 @@ fn play_on_interactable(
 }
 
 fn play_animation_on_frame_timer(
-    mut sound_events: EventWriter<PlayAnimationSoundEvent>,
+    mut sound_events: MessageWriter<PlayAnimationSoundEvent>,
     query: Query<(
         Entity,
         &SpriteSheetAnimation,
@@ -242,7 +242,7 @@ fn play_animation_on_frame_timer(
 }
 
 fn play_animation_on_enter(
-    mut sound_events: EventWriter<PlayAnimationSoundEvent>,
+    mut sound_events: MessageWriter<PlayAnimationSoundEvent>,
     mut query: Query<(Entity, Option<&AnimationSound>)>,
     mut commands: Commands,
 ) {

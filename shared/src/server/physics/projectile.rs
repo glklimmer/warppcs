@@ -44,7 +44,7 @@ fn projectile_collision(
         With<ProjectileType>,
     >,
     targets: Query<TargetComponents, (With<Health>, Without<ProjectileType>)>,
-    mut attack_events: EventWriter<TakeDamage>,
+    mut attack_events: MessageWriter<TakeDamage>,
 ) {
     for (entity, transform, mut velocity, collider, owner, damage) in &mut projectiles {
         if transform.translation.y - collider.dimension.y <= 0.0 {

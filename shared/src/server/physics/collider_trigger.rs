@@ -22,7 +22,7 @@ fn check_collider_trigger(
     players: Query<Entity, (With<Player>, Without<ActiveInteraction>)>,
     triggers: Query<(Entity, &ColliderTrigger, &Transform, &BoxCollider)>,
     player_query: Query<(&Transform, &BoxCollider)>,
-    mut interaction: EventWriter<InteractionTriggeredEvent>,
+    mut interaction: MessageWriter<InteractionTriggeredEvent>,
     mut commands: Commands,
 ) -> Result {
     for player in players.iter() {

@@ -115,12 +115,12 @@ impl Plugin for SharedPlugin {
         .replicate_bundle::<(Item, Transform)>()
         .replicate_bundle::<(ArmySlot, Transform)>()
         .sync_related_entities::<FlagAssignment>()
-        .add_client_trigger::<ArmyPosition>(Channel::Ordered)
-        .add_client_trigger::<CommanderCampInteraction>(Channel::Ordered)
-        .add_client_trigger::<AssignItem>(Channel::Ordered)
-        .add_client_trigger::<StartBuild>(Channel::Ordered)
-        .add_client_trigger::<CommanderAssignmentRequest>(Channel::Ordered)
-        .add_client_trigger::<CommanderPickFlag>(Channel::Ordered)
+        .add_client_message::<ArmyPosition>(Channel::Ordered)
+        .add_client_message::<CommanderCampInteraction>(Channel::Ordered)
+        .add_client_message::<AssignItem>(Channel::Ordered)
+        .add_client_message::<StartBuild>(Channel::Ordered)
+        .add_client_message::<CommanderAssignmentRequest>(Channel::Ordered)
+        .add_client_message::<CommanderPickFlag>(Channel::Ordered)
         .add_server_trigger::<InteractableSound>(Channel::Ordered)
         .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
@@ -174,7 +174,7 @@ pub enum AnimationChange {
     Unmount,
 }
 
-#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Message, Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct AnimationChangeEvent {
     pub entity: Entity,
     pub change: AnimationChange,
@@ -238,7 +238,7 @@ impl Hash for GameScene {
 }
 
 fn spawn_clients(
-    trigger: Trigger<OnAdd, ConnectedClient>,
+    trigger: On<Add, ConnectedClient>,
     mut visibility: Query<&mut ClientVisibility>,
     mut client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
@@ -269,7 +269,7 @@ fn spawn_clients(
 }
 
 fn update_visibility(
-    trigger: Trigger<OnInsert, GameSceneId>,
+    trigger: On<Insert, GameSceneId>,
     mut players: Query<(Entity, &mut ClientVisibility, &GameSceneId), With<Player>>,
     others: Query<(Entity, &GameSceneId)>,
     player_check: Query<(), With<Player>>,
@@ -307,7 +307,7 @@ fn update_visibility(
 }
 
 fn hide_on_remove(
-    trigger: Trigger<OnRemove, GameSceneId>,
+    trigger: On<Remove, GameSceneId>,
     mut players: Query<(Entity, &mut ClientVisibility), With<Player>>,
 ) -> Result {
     let entity = trigger.target();

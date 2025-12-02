@@ -31,7 +31,7 @@ impl Plugin for TravelPlugin {
         app.replicate::<Traveling>()
             .replicate_bundle::<(Road, Transform)>()
             .replicate_bundle::<(SceneEnd, Transform)>()
-            .add_client_trigger::<SelectTravelDestination>(Channel::Ordered)
+            .add_client_message::<SelectTravelDestination>(Channel::Ordered)
             .add_server_trigger::<AddMysteryMapIcon>(Channel::Ordered)
             .add_server_trigger::<RevealMapIcon>(Channel::Ordered)
             .add_server_trigger::<OpenTravelDialog>(Channel::Ordered)
@@ -68,7 +68,7 @@ impl Plugin for TravelPlugin {
     }
 }
 
-#[derive(Event, Deref, Serialize, Deserialize)]
+#[derive(Message, Deref, Serialize, Deserialize)]
 pub struct InitPlayerMapNode(GameScene);
 
 impl InitPlayerMapNode {
@@ -77,18 +77,18 @@ impl InitPlayerMapNode {
     }
 }
 
-#[derive(Event, Deserialize, Serialize)]
+#[derive(Message, Deserialize, Serialize)]
 pub struct OpenTravelDialog {
     pub current_scene: GameScene,
 }
 
-#[derive(Event, Deserialize, Serialize, Deref)]
+#[derive(Message, Deserialize, Serialize, Deref)]
 pub struct SelectTravelDestination(pub GameScene);
 
-#[derive(Event, Deref, Serialize, Deserialize)]
+#[derive(Message, Deref, Serialize, Deserialize)]
 pub struct AddMysteryMapIcon(GameScene);
 
-#[derive(Event, Deref, Serialize, Deserialize)]
+#[derive(Message, Deref, Serialize, Deserialize)]
 pub struct RevealMapIcon(GameScene);
 
 #[derive(Component, Serialize, Deserialize)]
@@ -207,7 +207,7 @@ fn travel_timer(mut query: Query<&mut Traveling>, time: Res<Time>) {
 }
 
 fn init_travel_dialog(
-    mut traveling: EventReader<InteractionTriggeredEvent>,
+    mut traveling: MessageReader<InteractionTriggeredEvent>,
     mut commands: Commands,
     destinations: Query<&TravelDestinations>,
     game_scene: Query<&GameScene>,
@@ -252,7 +252,7 @@ fn init_travel_dialog(
 }
 
 fn start_travel(
-    trigger: Trigger<FromClient<SelectTravelDestination>>,
+    trigger: On<FromClient<SelectTravelDestination>>,
     flag_holders: Query<Option<&FlagHolder>>,
     commanders: Query<(&FlagAssignment, &ArmyFlagAssignments)>,
     units_on_flag: Query<(Entity, &FlagAssignment, &Unit)>,
@@ -361,7 +361,7 @@ fn end_travel(
 }
 
 fn init_map(
-    trigger: Trigger<InitPlayerMapNode>,
+    trigger: On<InitPlayerMapNode>,
     assets: Res<AssetServer>,
     map_icons: Res<MapIconSpriteSheet>,
     mut next_game_state: ResMut<NextState<GameState>>,
@@ -400,7 +400,7 @@ fn init_map(
 }
 
 fn open_travel_dialog(
-    trigger: Trigger<OpenTravelDialog>,
+    trigger: On<OpenTravelDialog>,
     mut map: Query<&mut Visibility, With<Map>>,
     mut next_player_state: ResMut<NextState<PlayerState>>,
     mut next_map_state: ResMut<NextState<MapState>>,
@@ -418,7 +418,7 @@ fn open_travel_dialog(
 }
 
 fn destination_selected(
-    trigger: Trigger<Pointer<Released>>,
+    trigger: On<Pointer<Released>>,
     mut commands: Commands,
     map_state: ResMut<State<MapState>>,
     mut next_map_state: ResMut<NextState<MapState>>,
@@ -442,7 +442,7 @@ fn destination_selected(
 }
 
 fn add_map_icons(
-    trigger: Trigger<AddMysteryMapIcon>,
+    trigger: On<AddMysteryMapIcon>,
     map: Query<Entity, With<Map>>,
     map_icons: Res<MapIconSpriteSheet>,
     query: Query<(Entity, &MapNode)>,
@@ -479,7 +479,7 @@ fn add_map_icons(
 }
 
 fn reveal_map_icons(
-    trigger: Trigger<RevealMapIcon>,
+    trigger: On<RevealMapIcon>,
     query: Query<(Entity, &MapNode)>,
     map_icons: Res<MapIconSpriteSheet>,
     mut commands: Commands,
@@ -605,7 +605,7 @@ fn animate_dashes(
 }
 
 fn enter_travel_state(
-    trigger: Trigger<OnAdd, Traveling>,
+    trigger: On<Add, Traveling>,
     query: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
@@ -619,7 +619,7 @@ fn enter_travel_state(
 }
 
 fn leave_travel_state(
-    trigger: Trigger<OnRemove, Traveling>,
+    trigger: On<Remove, Traveling>,
     query: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {

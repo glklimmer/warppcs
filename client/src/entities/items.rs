@@ -77,7 +77,7 @@ impl ItemSprite for Item {
 }
 
 fn init_item_sprite(
-    trigger: Trigger<OnAdd, Item>,
+    trigger: On<Add, Item>,
     mut item: Query<&Item>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
     chests_sprite_sheet: Res<ChestsSpriteSheet>,
@@ -105,7 +105,7 @@ fn init_item_sprite(
 }
 
 fn init_item_info(
-    trigger: Trigger<OnAdd, ItemInfo>,
+    trigger: On<Add, ItemInfo>,
     mut item: Query<&ItemInfo>,
     info: Res<ItemInfoSpriteSheet>,
     weapons_sprite_sheet: Res<WeaponsSpriteSheet>,
@@ -241,7 +241,7 @@ fn init_item_info(
 }
 
 fn show_item_info(
-    trigger: Trigger<OnAdd, Highlighted>,
+    trigger: On<Add, Highlighted>,
     items: Query<&ItemInfo>,
     mut commands: Commands,
 ) -> Result {
@@ -253,7 +253,7 @@ fn show_item_info(
 }
 
 fn hide_item_info(
-    trigger: Trigger<OnRemove, Highlighted>,
+    trigger: On<Remove, Highlighted>,
     items: Query<&ItemInfo>,
     mut commands: Commands,
 ) -> Result {

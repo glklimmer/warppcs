@@ -107,7 +107,7 @@ pub fn create_steam_server(mut commands: Commands, client: Res<aeronet_steam::St
 }
 
 fn on_created(
-    _: Trigger<OnAdd, Server>,
+    _: On<Add, Server>,
     mut client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
 ) {
@@ -131,7 +131,7 @@ fn on_created(
 }
 
 #[cfg(feature = "steam")]
-fn on_session_request_steam(mut request: Trigger<aeronet_steam::server::SessionRequest>) {
+fn on_session_request_steam(mut request: On<aeronet_steam::server::SessionRequest>) {
     use aeronet_steam::server::SessionResponse;
 
     let client = request.steam_id;
@@ -141,7 +141,7 @@ fn on_session_request_steam(mut request: Trigger<aeronet_steam::server::SessionR
 }
 
 #[cfg(feature = "netcode")]
-fn on_session_request_web(mut request: Trigger<aeronet_webtransport::server::SessionRequest>) {
+fn on_session_request_web(mut request: On<aeronet_webtransport::server::SessionRequest>) {
     use aeronet_webtransport::server::SessionResponse;
 
     let client = request.target();
@@ -149,17 +149,17 @@ fn on_session_request_web(mut request: Trigger<aeronet_webtransport::server::Ses
     request.respond(SessionResponse::Accepted);
 }
 
-fn on_connecting(trigger: Trigger<OnAdd, SessionEndpoint>) {
+fn on_connecting(trigger: On<Add, SessionEndpoint>) {
     let client = trigger.target();
     info!("Client {client} connecting...");
 }
 
-fn on_connected(trigger: Trigger<OnAdd, Session>) {
+fn on_connected(trigger: On<Add, Session>) {
     let client = trigger.target();
     info!("Client {client} connected.");
 }
 
-fn on_disconnected(trigger: Trigger<Disconnected>) {
+fn on_disconnected(trigger: On<Disconnected>) {
     let client = trigger.target();
 
     match &*trigger {

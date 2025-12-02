@@ -26,9 +26,9 @@ impl Plugin for PlayerPlugin {
                 FixedUpdate,
                 (
                     (flag_interact, open_chest, pickup_item)
-                        .run_if(on_event::<InteractionTriggeredEvent>),
-                    drop_flag.run_if(on_event::<DropFlagEvent>),
-                    pick_flag.run_if(on_event::<PickFlagEvent>),
+                        .run_if(on_message::<InteractionTriggeredEvent>),
+                    drop_flag.run_if(on_message::<DropFlagEvent>),
+                    pick_flag.run_if(on_message::<PickFlagEvent>),
                 ),
             );
     }

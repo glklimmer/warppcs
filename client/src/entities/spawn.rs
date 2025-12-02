@@ -51,7 +51,7 @@ impl Plugin for SpawnPlugin {
 }
 
 fn init_local_player(
-    trigger: Trigger<SetLocalPlayer>,
+    trigger: On<SetLocalPlayer>,
     camera: Query<Entity, With<Camera>>,
     mut commands: Commands,
 ) -> Result {
@@ -74,7 +74,7 @@ fn init_local_player(
 }
 
 fn init_player_sprite(
-    trigger: Trigger<OnAdd, Player>,
+    trigger: On<Add, Player>,
     mut players: Query<(&mut Sprite, &Player)>,
     king_sprite_sheet: Res<KingSpriteSheet>,
     variants: Res<Assets<SpriteVariants>>,
@@ -101,7 +101,7 @@ fn init_player_sprite(
 }
 
 fn init_recruit_building_sprite(
-    trigger: Trigger<OnAdd, RecruitBuilding>,
+    trigger: On<Add, RecruitBuilding>,
     mut slots: Query<&mut Sprite>,
     asset_server: Res<AssetServer>,
 ) -> Result {
@@ -111,7 +111,7 @@ fn init_recruit_building_sprite(
 }
 
 fn init_camp_sprite(
-    trigger: Trigger<OnAdd, SiegeCamp>,
+    trigger: On<Add, SiegeCamp>,
     mut camp: Query<&mut Sprite>,
     asset_server: Res<AssetServer>,
 ) -> Result {
@@ -121,7 +121,7 @@ fn init_camp_sprite(
 }
 
 fn init_unit_sprite(
-    trigger: Trigger<OnAdd, Unit>,
+    trigger: On<Add, Unit>,
     mut units: Query<(&mut Sprite, &Unit, Option<&Health>)>,
     sprite_sheets: Res<UnitSpriteSheets>,
     variants: Res<Assets<SpriteVariants>>,
@@ -150,7 +150,7 @@ fn init_unit_sprite(
 }
 
 fn init_flag_sprite(
-    trigger: Trigger<OnAdd, Flag>,
+    trigger: On<Add, Flag>,
     mut flag: Query<(&mut Sprite, &Flag)>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
     variants: Res<Assets<SpriteVariants>>,
@@ -175,7 +175,7 @@ fn init_flag_sprite(
 }
 
 fn init_scene_end_sprite(
-    trigger: Trigger<OnAdd, SceneEnd>,
+    trigger: On<Add, SceneEnd>,
     mut scene_end: Query<&mut Sprite>,
     tree_sprite_sheet: Res<PineTreeSpriteSheet>,
     mut commands: Commands,
@@ -274,7 +274,7 @@ fn init_scene_end_sprite(
 }
 
 fn init_portal_sprite(
-    trigger: Trigger<OnAdd, Portal>,
+    trigger: On<Add, Portal>,
     mut portal: Query<&mut Sprite>,
     portal_sprite_sheet: Res<PortalSpriteSheet>,
     mut commands: Commands,
@@ -296,7 +296,7 @@ fn init_portal_sprite(
 }
 
 fn init_road_sprite(
-    trigger: Trigger<OnAdd, Road>,
+    trigger: On<Add, Road>,
     mut road: Query<&mut Sprite>,
     road_sprite_sheet: Res<RoadSpriteSheet>,
     mut commands: Commands,
@@ -318,7 +318,7 @@ fn init_road_sprite(
 }
 
 fn init_horse_sprite(
-    trigger: Trigger<OnAdd, Mount>,
+    trigger: On<Add, Mount>,
     mut portal: Query<&mut Sprite>,
     horse_sprite_sheet: Res<HorseSpriteSheet>,
     mut commands: Commands,
@@ -340,7 +340,7 @@ fn init_horse_sprite(
 }
 
 fn init_projectile_sprite(
-    trigger: Trigger<OnAdd, ProjectileType>,
+    trigger: On<Add, ProjectileType>,
     mut projectile: Query<(&mut Sprite, &ProjectileType)>,
     projectiles: Res<ProjectileSpriteSheet>,
 ) -> Result {
@@ -355,7 +355,7 @@ fn init_projectile_sprite(
 }
 
 fn init_chest_sprite(
-    trigger: Trigger<OnAdd, Chest>,
+    trigger: On<Add, Chest>,
     mut chests: Query<&mut Sprite>,
     sprite_sheets: Res<ChestSpriteSheet>,
 ) -> Result {

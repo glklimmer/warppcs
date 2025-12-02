@@ -152,7 +152,7 @@ pub fn update_building_sprite(
 }
 
 pub fn remove_animation_after_play_once(
-    trigger: Trigger<OnRemove, PlayOnce>,
+    trigger: On<Remove, PlayOnce>,
     building: Query<&BuildStatus>,
     mut commands: Commands,
 ) -> Result {

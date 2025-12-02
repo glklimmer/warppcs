@@ -52,7 +52,7 @@ pub enum Chest {
 pub struct ChestOpened;
 
 pub fn open_chest(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     query: Query<(&Transform, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {

@@ -12,7 +12,7 @@ pub struct PlayerMovement;
 
 impl Plugin for PlayerMovement {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<MovePlayer>(Channel::Ordered)
+        app.add_client_message::<MovePlayer>(Channel::Ordered)
             .add_observer(apply_movement)
             .add_systems(
                 Update,
@@ -41,7 +41,7 @@ fn movement_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) {
 }
 
 fn apply_movement(
-    trigger: Trigger<FromClient<MovePlayer>>,
+    trigger: On<FromClient<MovePlayer>>,
     mut players: Query<(&mut Velocity, &Speed)>,
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {

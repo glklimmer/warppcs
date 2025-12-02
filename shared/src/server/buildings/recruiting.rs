@@ -64,7 +64,7 @@ pub struct FlagAssignment(#[entities] pub Entity);
 pub struct FlagUnits(#[entities] Vec<Entity>);
 
 pub fn assign_offset(
-    trigger: Trigger<OnAdd, FlagAssignment>,
+    trigger: On<Add, FlagAssignment>,
     mut units: Query<&mut FollowOffset>,
     flag_units_query: Query<&FlagUnits>,
     flag_assignment_query: Query<&FlagAssignment>,
@@ -125,7 +125,7 @@ impl RecruitEvent {
 }
 
 pub fn recruit_units(
-    trigger: Trigger<RecruitEvent>,
+    trigger: On<RecruitEvent>,
     mut player_query: Query<(&Transform, &mut Inventory, &Player, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
@@ -288,7 +288,7 @@ pub fn unit_stats(
 }
 
 pub fn recruit_commander(
-    trigger: Trigger<RecruitEvent>,
+    trigger: On<RecruitEvent>,
     mut player_query: Query<(&Transform, &mut Inventory, &Player, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
@@ -410,7 +410,7 @@ pub fn recruit_commander(
 }
 
 pub fn check_recruit(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     player: Query<&Inventory>,
     building: Query<(&Building, Option<&ItemAssignment>), With<RecruitBuilding>>,
     mut commands: Commands,

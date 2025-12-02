@@ -7,7 +7,7 @@ use bevy_replicon::{
 };
 use petgraph::{Graph, Undirected};
 use shared::{
-    ClientPlayerMap, GameScene, GameSceneId, GameState, Player, SceneType, networking::LobbyEvent,
+    ClientPlayerMap, GameScene, GameSceneId, GameState, Player, SceneType, networking::LobbyMessage,
 };
 use travel::InitPlayerMapNode;
 
@@ -25,7 +25,7 @@ impl Plugin for WorldPlugin {
     }
 }
 
-#[derive(Event, Deref)]
+#[derive(Message, Deref)]
 pub struct InitWorld(WorldGraph);
 
 #[derive(Clone, Default, Deref, DerefMut)]
@@ -174,7 +174,7 @@ impl WorldGraph {
 }
 
 fn init_world(
-    mut lobby_events: EventReader<FromClient<LobbyEvent>>,
+    mut lobby_events: MessageReader<FromClient<LobbyMessage>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     players: Query<Entity, With<Player>>,
     client_player_map: Res<ClientPlayerMap>,
@@ -185,7 +185,7 @@ fn init_world(
     };
 
     #[allow(irrefutable_let_patterns)]
-    let LobbyEvent::StartGame = event else {
+    let LobbyMessage::StartGame = event else {
         return Ok(());
     };
 

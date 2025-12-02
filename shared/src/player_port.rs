@@ -23,7 +23,7 @@ pub struct PlayerPort;
 
 impl Plugin for PlayerPort {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<ChannelPort>(Channel::Ordered)
+        app.add_client_message::<ChannelPort>(Channel::Ordered)
             .add_observer(add_port_cooldown)
             .add_observer(check_port_cooldown)
             .add_observer(spawn_player_portal)
@@ -38,7 +38,7 @@ impl Plugin for PlayerPort {
             )
             .add_systems(
                 FixedUpdate,
-                port.run_if(on_event::<InteractionTriggeredEvent>),
+                port.run_if(on_message::<InteractionTriggeredEvent>),
             );
     }
 }
@@ -91,7 +91,7 @@ fn portal_collider() -> BoxCollider {
 #[derive(Component, Deref)]
 struct PortalDestination(Entity);
 
-fn add_port_cooldown(trigger: Trigger<OnAdd, Player>, mut commands: Commands) -> Result {
+fn add_port_cooldown(trigger: On<Add, Player>, mut commands: Commands) -> Result {
     commands
         .entity(trigger.target())
         .insert(PortCooldown::default());
@@ -106,7 +106,7 @@ fn channel_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) -> Re
 }
 
 fn check_port_cooldown(
-    trigger: Trigger<FromClient<ChannelPort>>,
+    trigger: On<FromClient<ChannelPort>>,
     mut players: Query<&mut PortCooldown>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
@@ -129,7 +129,7 @@ fn progress_cooldown(mut players: Query<&mut PortCooldown>, time: Res<Time>) {
 }
 
 fn spawn_player_portal(
-    trigger: Trigger<SpawnPortal>,
+    trigger: On<SpawnPortal>,
     players: Query<(&Transform, &GameSceneId)>,
     main_buildings: Query<(&Building, &Owner, &Transform, &GameSceneId)>,
     mut commands: Commands,
@@ -170,7 +170,7 @@ fn spawn_player_portal(
 }
 
 fn port(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut players: Query<(Option<&FlagHolder>, &mut PortCooldown)>,
     portal: Query<&PortalDestination>,
     destination: Query<(&Transform, &GameSceneId)>,

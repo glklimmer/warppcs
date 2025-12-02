@@ -29,7 +29,7 @@ pub struct BuildingEventInfo {
     pub building: Building,
 }
 
-#[derive(Event, Deref)]
+#[derive(Message, Deref)]
 struct BuildingChangeStart(pub BuildingEventInfo);
 
 #[derive(Component)]
@@ -38,7 +38,7 @@ struct BuildingConstructing {
     change: BuildingEventInfo,
 }
 
-#[derive(Event, Deref)]
+#[derive(Message, Deref)]
 pub struct BuildingChangeEnd(pub BuildingEventInfo);
 
 pub struct BuildingsPlugins;
@@ -46,9 +46,8 @@ pub struct BuildingsPlugins;
 impl Plugin for BuildingsPlugins {
     fn build(&self, app: &mut App) {
         app.add_plugins(ItemAssignmentPlugins)
-            .add_event::<RecruitEvent>()
-            .add_event::<BuildingChangeStart>()
-            .add_event::<BuildingChangeEnd>();
+            .add_message::<BuildingChangeStart>()
+            .add_message::<BuildingChangeEnd>();
 
         app.add_observer(recruit_units);
         app.add_observer(recruit_commander);
@@ -62,10 +61,10 @@ impl Plugin for BuildingsPlugins {
                 progess_construction,
                 (
                     (check_recruit, check_building_interaction)
-                        .run_if(on_event::<InteractionTriggeredEvent>),
+                        .run_if(on_message::<InteractionTriggeredEvent>),
                     (
-                        (start_construction).run_if(on_event::<BuildingChangeStart>),
-                        (end_construction, enable_goldfarm).run_if(on_event::<BuildingChangeEnd>),
+                        (start_construction).run_if(on_message::<BuildingChangeStart>),
+                        (end_construction, enable_goldfarm).run_if(on_message::<BuildingChangeEnd>),
                     ),
                 )
                     .chain(),
@@ -75,8 +74,8 @@ impl Plugin for BuildingsPlugins {
 }
 
 fn check_building_interaction(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
-    mut writer: EventWriter<BuildingChangeStart>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
+    mut writer: MessageWriter<BuildingChangeStart>,
     player: Query<&Inventory>,
     building: Query<(Entity, &Building, &BuildStatus)>,
 ) -> Result {
@@ -135,7 +134,7 @@ fn check_building_interaction(
 }
 
 fn start_construction(
-    mut events: EventReader<BuildingChangeStart>,
+    mut events: MessageReader<BuildingChangeStart>,
     mut inventory: Query<&mut Inventory>,
     mut building_query: Query<&mut Building>,
     mut commands: Commands,
@@ -168,13 +167,13 @@ fn start_construction(
 fn progess_construction(
     mut query: Query<(Entity, &mut BuildingConstructing)>,
     time: Res<Time>,
-    mut writer: EventWriter<BuildingChangeEnd>,
+    mut writer: MessageWriter<BuildingChangeEnd>,
     mut commands: Commands,
 ) {
     for (entity, mut building) in &mut query {
         building.timer.tick(time.delta());
 
-        if building.timer.finished() {
+        if building.timer.is_finished() {
             writer.write(BuildingChangeEnd(building.change.clone()));
             commands.entity(entity).remove::<BuildingConstructing>();
         }
@@ -182,7 +181,7 @@ fn progess_construction(
 }
 
 fn end_construction(
-    mut events: EventReader<BuildingChangeEnd>,
+    mut events: MessageReader<BuildingChangeEnd>,
     owner_query: Query<&Owner>,
     mut commands: Commands,
 ) -> Result {

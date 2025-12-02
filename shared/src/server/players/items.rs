@@ -445,7 +445,7 @@ impl WeaponType {
 }
 
 pub fn pickup_item(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut commands: Commands,
     mut player: Query<&mut Inventory>,
     item: Query<&Item>,

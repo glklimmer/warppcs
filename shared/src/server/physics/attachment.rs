@@ -55,7 +55,7 @@ fn attachment_follow(
 }
 
 fn on_attachment_removed(
-    trigger: Trigger<OnRemove, AttachedTo>,
+    trigger: On<Remove, AttachedTo>,
     mut query: Query<&mut Transform>,
     mut commands: Commands,
 ) -> Result {

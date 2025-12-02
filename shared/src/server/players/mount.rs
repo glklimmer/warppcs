@@ -23,7 +23,7 @@ impl Plugin for MountPlugin {
             FixedUpdate,
             (
                 spawn_mount_on_unmount,
-                (mount, unmount).run_if(on_event::<InteractionTriggeredEvent>),
+                (mount, unmount).run_if(on_message::<InteractionTriggeredEvent>),
             ),
         );
     }
@@ -62,9 +62,9 @@ impl From<MountType> for Speed {
 }
 
 fn mount(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut commands: Commands,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     mount_query: Query<&Mount>,
 ) -> Result {
     for event in interactions.read() {
@@ -91,7 +91,7 @@ fn mount(
 
         animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity: player,
                 change: AnimationChange::Mount,
             },
@@ -101,9 +101,9 @@ fn mount(
 }
 
 fn unmount(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut player_query: Query<(&Mounted, &Transform, &GameSceneId)>,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     mut commands: Commands,
 ) -> Result {
     for event in interactions.read() {
@@ -135,7 +135,7 @@ fn unmount(
 
         animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity: player,
                 change: AnimationChange::Unmount,
             },

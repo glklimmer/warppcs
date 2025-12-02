@@ -11,7 +11,7 @@ impl Plugin for DefeatPlugin {
 }
 
 fn set_defeated(
-    trigger: Trigger<PlayerDefeated>,
+    trigger: On<PlayerDefeated>,
     player: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) {

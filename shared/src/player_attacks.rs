@@ -22,7 +22,7 @@ pub struct PlayerAttacks;
 
 impl Plugin for PlayerAttacks {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<Attack>(Channel::Ordered)
+        app.add_client_message::<Attack>(Channel::Ordered)
             .add_observer(attack)
             .add_systems(Update, attack_input.before(ClientSet::Send));
     }
@@ -39,8 +39,8 @@ fn attack_input(keyboard_input: Res<ButtonInput<KeyCode>>, mut commands: Command
 }
 
 fn attack(
-    trigger: Trigger<FromClient<Attack>>,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    trigger: On<FromClient<Attack>>,
+    mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     flag_holder: Query<(Option<&FlagHolder>, &Transform)>,
     units: Query<&FlagUnits>,
     army: Query<&ArmyFlagAssignments>,
@@ -54,7 +54,7 @@ fn attack(
     let Some(flag_holder) = maybe_flag_holder else {
         animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity: *player,
                 change: AnimationChange::Attack,
             },

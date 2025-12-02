@@ -119,7 +119,7 @@ fn check_highlight(
 }
 
 fn init_highlightable(
-    trigger: Trigger<OnAdd, Interactable>,
+    trigger: On<Add, Interactable>,
     controlled_player: Query<Entity, With<ControlledPlayer>>,
     interactable: Query<&Interactable, Without<Player>>,
     mut commands: Commands,
@@ -141,10 +141,7 @@ fn init_highlightable(
     Ok(())
 }
 
-fn remove_highlightable(
-    trigger: Trigger<OnRemove, Interactable>,
-    mut commands: Commands,
-) -> Result {
+fn remove_highlightable(trigger: On<Remove, Interactable>, mut commands: Commands) -> Result {
     commands
         .entity(trigger.target())
         .try_remove::<Highlightable>()
@@ -153,7 +150,7 @@ fn remove_highlightable(
 }
 
 fn restore_original_sprite(
-    trigger: Trigger<OnRemove, Highlighted>,
+    trigger: On<Remove, Highlighted>,
     mut query: Query<(&mut Sprite, &OriginalSprite)>,
     mut commands: Commands,
 ) -> Result {
@@ -166,7 +163,7 @@ fn restore_original_sprite(
 }
 
 fn outline_sprite(
-    trigger: Trigger<OnAdd, Highlighted>,
+    trigger: On<Add, Highlighted>,
     mut query: Query<(&mut Sprite, &Highlightable)>,
     mut images: ResMut<Assets<Image>>,
     mut commands: Commands,

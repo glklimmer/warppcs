@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_replicon::client::ClientSet;
-use shared::networking::LobbyEvent;
+use shared::networking::LobbyMessage;
 
 use crate::gizmos::GizmosSettings;
 
@@ -19,10 +19,10 @@ impl Plugin for InputPlugin {
 
 fn lobby_input(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut lobby_events: EventWriter<LobbyEvent>,
+    mut lobby_events: MessageWriter<LobbyMessage>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Enter) {
-        lobby_events.write(LobbyEvent::StartGame);
+        lobby_events.write(LobbyMessage::StartGame);
     }
 }
 
