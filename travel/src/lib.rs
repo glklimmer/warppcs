@@ -135,7 +135,8 @@ impl TravelDestinationOffset {
     Replicated,
     Transform,
     BoxCollider = scene_end_collider(),
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
 )]
 pub struct SceneEnd;
 
@@ -151,7 +152,8 @@ fn scene_end_collider() -> BoxCollider {
     Replicated,
     Transform,
     BoxCollider = road_collider(),
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Interactable{
         kind: InteractionType::Travel,
         restricted_to: None,

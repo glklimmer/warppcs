@@ -38,7 +38,8 @@ use super::item_assignment::ItemAssignment;
 #[derive(Component, Deserialize, Serialize, Debug)]
 #[require(
     Replicated,
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     BoxCollider = flag_collider(),
     Transform = Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()), ..default()}
 )]

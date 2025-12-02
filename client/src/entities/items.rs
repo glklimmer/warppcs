@@ -143,7 +143,6 @@ fn init_item_info(
                         x: 100.,
                         y: 12. + item.base.len() as f32 * 11. + item.modifiers.len() as f32 * 11.,
                     }),
-                    anchor: Anchor::TopCenter,
                     image: info.sprite_sheet.texture.clone(),
                     texture_atlas: Some(info.sprite_sheet.texture_atlas(ItemInfoParts::Text)),
                     image_mode: SpriteImageMode::Sliced(TextureSlicer {
@@ -157,6 +156,7 @@ fn init_item_info(
                     }),
                     ..Default::default()
                 },
+                Anchor::TOP_CENTER,
                 Transform::from_xyz(0., -58. / 2., 0.),
             ));
 
@@ -171,7 +171,6 @@ fn init_item_info(
                     TextLayout::new_with_justify(JustifyText::Left).with_no_wrap(),
                     TextColor(text_color),
                     TextBounds::new_horizontal(200.),
-                    Anchor::TopCenter,
                     Transform {
                         translation: Vec3::new(0.5, -58. / 2. - 5., 1.0),
                         scale: Vec3 {
@@ -181,6 +180,7 @@ fn init_item_info(
                         },
                         ..Default::default()
                     },
+                    Anchor::TOP_CENTER,
                 ))
                 .with_children(|text_parent| {
                     for BaseEffect { effect, amount } in &item.base {

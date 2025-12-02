@@ -13,7 +13,8 @@ use crate::{
     Transform,
     RespawnZone,
     BuildStatus = BuildStatus::Built{indicator: HealthIndicator::Healthy},
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Health
 )]
 pub struct SiegeCamp {

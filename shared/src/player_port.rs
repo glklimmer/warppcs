@@ -72,7 +72,8 @@ impl Default for PortCooldown {
     Replicated,
     Transform,
     BoxCollider = portal_collider(),
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Interactable{
         kind: InteractionType::Portal,
         restricted_to: None,

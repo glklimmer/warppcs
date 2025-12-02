@@ -35,7 +35,8 @@ impl Plugin for MountPlugin {
     Transform,
     BoxCollider = unit_collider(),
     Velocity,
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Interactable{
         kind: InteractionType::Mount,
         restricted_to: None,

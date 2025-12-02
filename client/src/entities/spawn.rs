@@ -206,9 +206,9 @@ fn init_scene_end_sprite(
         Sprite {
             image: bright_texture.clone(),
             texture_atlas: texture_atlas.clone(),
-            anchor: Anchor::BottomCenter,
             ..default()
         },
+        Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
         ChildOf(trigger.target()),
@@ -216,9 +216,9 @@ fn init_scene_end_sprite(
         Sprite {
             image: dim_texture.clone(),
             texture_atlas: texture_atlas.clone(),
-            anchor: Anchor::BottomCenter,
             ..default()
         },
+        Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
         ChildOf(trigger.target()),
@@ -226,9 +226,9 @@ fn init_scene_end_sprite(
         Sprite {
             image: dim_texture.clone(),
             texture_atlas: texture_atlas.clone(),
-            anchor: Anchor::BottomCenter,
             ..default()
         },
+        Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
         ChildOf(trigger.target()),
@@ -236,9 +236,9 @@ fn init_scene_end_sprite(
         Sprite {
             image: dark_texture.clone(),
             texture_atlas: texture_atlas.clone(),
-            anchor: Anchor::BottomCenter,
             ..default()
         },
+        Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
         ChildOf(trigger.target()),
@@ -246,9 +246,9 @@ fn init_scene_end_sprite(
         Sprite {
             image: dim_texture.clone(),
             texture_atlas: texture_atlas.clone(),
-            anchor: Anchor::BottomCenter,
             ..default()
         },
+        Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
         ChildOf(trigger.target()),
@@ -256,9 +256,9 @@ fn init_scene_end_sprite(
         Sprite {
             image: dark_texture.clone(),
             texture_atlas: texture_atlas.clone(),
-            anchor: Anchor::BottomCenter,
             ..default()
         },
+        Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
         ChildOf(trigger.target()),
@@ -266,9 +266,9 @@ fn init_scene_end_sprite(
         Sprite {
             image: bright_texture.clone(),
             texture_atlas: texture_atlas.clone(),
-            anchor: Anchor::BottomCenter,
             ..default()
         },
+        Anchor::BOTTOM_CENTER,
     ));
     Ok(())
 }

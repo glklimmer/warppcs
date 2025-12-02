@@ -333,7 +333,8 @@ impl MapEntities for SetLocalPlayer {
     BoxCollider = player_collider(),
     Speed,
     Velocity,
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Inventory,
 )]
 pub struct Player {

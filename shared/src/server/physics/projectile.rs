@@ -14,7 +14,7 @@ use crate::{
 use super::movement::Velocity;
 
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
-#[require(Replicated, Velocity, Transform, BoxCollider = projectile_collider(), Sprite{anchor: Anchor::BottomCenter, ..default()})]
+#[require(Replicated, Velocity, Transform, BoxCollider = projectile_collider(), Sprite, Anchor::BOTTOM_CENTER)]
 pub enum ProjectileType {
     Arrow,
 }
