@@ -49,7 +49,7 @@ fn apply_movement(
 
     let (mut velocity, speed) = players.get_mut(*player)?;
 
-    let direction = Vec2::new(trigger.event.x, 0.).normalize_or_zero();
+    let direction = Vec2::new(trigger.message.x, 0.).normalize_or_zero();
     velocity.0 = direction * speed.0;
     Ok(())
 }

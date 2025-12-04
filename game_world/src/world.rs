@@ -180,7 +180,7 @@ fn init_world(
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let Some(FromClient { event, .. }) = lobby_events.read().next() else {
+    let Some(FromClient { message, .. }) = lobby_events.read().next() else {
         return Ok(());
     };
 
