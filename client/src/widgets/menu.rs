@@ -24,6 +24,10 @@ impl<T: Clone + Send + Sync + 'static> Plugin for MenuPlugin<T> {
     fn build(&self, app: &mut App) {
         if app.world().get_resource::<MenuSingleton>().is_none() {
             app.add_observer(close_menu);
+            app.add_systems(
+                Update,
+                send_close_menu.run_if(in_state(PlayerState::Interaction)),
+            );
         }
 
         app.init_resource::<ActiveMenus>()
@@ -249,19 +253,22 @@ fn cycle_commands(
 #[derive(Event)]
 pub struct CloseEvent;
 
+fn send_close_menu(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) -> Result {
+    let key_pressed = input.any_just_pressed([KeyCode::Escape, KeyCode::KeyS]);
+    if !(key_pressed) {
+        return Ok(());
+    }
+    commands.trigger(CloseEvent);
+    Ok(())
+}
+
 fn close_menu(
     _: On<CloseEvent>,
-    input: Res<ButtonInput<KeyCode>>,
     mut active_menus: ResMut<ActiveMenus>,
     children_query: Query<&Children>,
     mut next_state: ResMut<NextState<PlayerState>>,
     mut commands: Commands,
 ) -> Result {
-    let key_pressed = input.any_just_pressed([KeyCode::Escape, KeyCode::KeyS]);
-    if !(key_pressed) {
-        return Ok(());
-    }
-
     let menu_entity = active_menus.pop().ok_or("No active menu")?;
 
     if let Ok(children) = children_query.get(menu_entity) {
