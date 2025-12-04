@@ -54,13 +54,12 @@ fn main() {
         use aeronet_steam::SteamworksClient;
         use bevy_steamworks::SteamworksPlugin;
 
-        let (steam, steam_single) = aeronet_steam::steamworks::Client::init_app(1513980)
+        let steam = aeronet_steam::steamworks::Client::init_app(1513980)
             .expect("failed to initialize steam");
         steam.networking_utils().init_relay_network_access();
 
         client
             .insert_resource(SteamworksClient(steam.clone()))
-            .insert_non_send_resource(steam_single)
             .add_plugins(SteamworksPlugin::with(steam).unwrap());
     }
 

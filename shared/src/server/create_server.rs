@@ -1,7 +1,11 @@
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
-use aeronet::io::{Session, SessionEndpoint, connection::Disconnected, server::Server};
+use aeronet::io::{
+    Session, SessionEndpoint,
+    connection::{DisconnectReason, Disconnected},
+    server::Server,
+};
 use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
 
 use crate::{ClientPlayerMap, GameSceneId, Player, PlayerColor, SetLocalPlayer, enum_map::*};
@@ -76,7 +80,6 @@ pub fn create_steam_server(mut commands: Commands, client: Res<aeronet_steam::St
     use aeronet_steam::{
         SessionConfig,
         server::{ListenTarget, SteamNetServer},
-        steamworks::ClientManager,
     };
 
     let target = ListenTarget::Peer { virtual_port: 0 };
@@ -98,10 +101,7 @@ pub fn create_steam_server(mut commands: Commands, client: Res<aeronet_steam::St
             Visibility::default(),
             AeronetRepliconServer,
         ))
-        .queue(SteamNetServer::<ClientManager>::open(
-            SessionConfig::default(),
-            target,
-        ));
+        .queue(SteamNetServer::open(SessionConfig::default(), target));
 
     info!("Creating server...")
 }
@@ -144,32 +144,32 @@ fn on_session_request_steam(mut request: On<aeronet_steam::server::SessionReques
 fn on_session_request_web(mut request: On<aeronet_webtransport::server::SessionRequest>) {
     use aeronet_webtransport::server::SessionResponse;
 
-    let client = request.target();
+    let client = request.event().entity;
     info!("Client {client} requesting connection...");
     request.respond(SessionResponse::Accepted);
 }
 
 fn on_connecting(trigger: On<Add, SessionEndpoint>) {
-    let client = trigger.target();
+    let client = trigger.event().entity;
     info!("Client {client} connecting...");
 }
 
 fn on_connected(trigger: On<Add, Session>) {
-    let client = trigger.target();
+    let client = trigger.event().entity;
     info!("Client {client} connected.");
 }
 
 fn on_disconnected(trigger: On<Disconnected>) {
-    let client = trigger.target();
+    let client = trigger.event().entity;
 
-    match &*trigger {
-        Disconnected::ByUser(reason) => {
+    match &trigger.reason {
+        DisconnectReason::ByUser(reason) => {
             info!("Client {client} disconnected from server by user: {reason}");
         }
-        Disconnected::ByPeer(reason) => {
+        DisconnectReason::ByPeer(reason) => {
             info!("Client {client} disconnected from server by peer: {reason}");
         }
-        Disconnected::ByError(err) => {
+        DisconnectReason::ByError(err) => {
             warn!("Client {client} disconnected from server due to error: {err:?}");
         }
     }
