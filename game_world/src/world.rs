@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::platform::collections::HashMap;
 use bevy_replicon::{
     prelude::{ClientState, FromClient, SendMode, ServerTriggerExt, ToClients},
-    server::ServerSet,
+    server::ServerSystems,
 };
 use petgraph::{Graph, Undirected};
 use shared::{
@@ -18,7 +18,7 @@ impl Plugin for WorldPlugin {
         app.add_systems(
             PreUpdate,
             init_world
-                .after(ServerSet::Receive)
+                .after(ServerSystems::Receive)
                 .run_if(in_state(ClientState::Disconnected))
                 .run_if(in_state(GameState::MainMenu)),
         );
