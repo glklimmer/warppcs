@@ -168,7 +168,7 @@ fn init_item_info(
                         font_size: 124.0,
                         ..default()
                     },
-                    TextLayout::new_with_justify(JustifyText::Left).with_no_wrap(),
+                    TextLayout::new_with_justify(Justify::Left).with_no_wrap(),
                     TextColor(text_color),
                     TextBounds::new_horizontal(200.),
                     Transform {
