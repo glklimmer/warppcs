@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
-use bevy_replicon::client::ClientSet;
+use bevy_replicon::client::ClientSystems;
 use buildings::{BuildingSpriteSheets, remove_animation_after_play_once, update_building_sprite};
 use king::{
     KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
@@ -216,7 +216,7 @@ impl Plugin for AnimationPlugin {
 
         app.add_systems(
             PreUpdate,
-            (trigger_king_animation, trigger_unit_animation).after(ClientSet::Receive),
+            (trigger_king_animation, trigger_unit_animation).after(ClientSystems::Receive),
         )
         .add_observer(on_flag_destroyed)
         .add_observer(on_chest_opened)

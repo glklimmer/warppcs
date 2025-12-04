@@ -57,7 +57,7 @@ impl Plugin for InteractPlugin {
             .add_systems(
                 PostUpdate,
                 send_interact
-                    .before(ClientSet::Send)
+                    .before(ClientSystems::Send)
                     .run_if(in_state(PlayerState::World)),
             );
     }

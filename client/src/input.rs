@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_replicon::client::ClientSet;
+use bevy_replicon::client::ClientSystems;
 use shared::networking::LobbyMessage;
 
 use crate::gizmos::GizmosSettings;
@@ -9,7 +9,7 @@ pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, lobby_input.before(ClientSet::Send))
+        app.add_systems(PostUpdate, lobby_input.before(ClientSystems::Send))
             .add_systems(
                 Update,
                 gizmos_settings.run_if(resource_changed::<ButtonInput<KeyCode>>),

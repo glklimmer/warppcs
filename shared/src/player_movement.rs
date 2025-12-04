@@ -17,7 +17,7 @@ impl Plugin for PlayerMovement {
             .add_systems(
                 Update,
                 movement_input
-                    .before(ClientSet::Send)
+                    .before(ClientSystems::Send)
                     .run_if(in_state(PlayerState::World)),
             );
     }

@@ -31,7 +31,7 @@ impl Plugin for PlayerPort {
                 Update,
                 (
                     channel_input
-                        .before(ClientSet::Send)
+                        .before(ClientSystems::Send)
                         .run_if(in_state(PlayerState::World)),
                     progress_cooldown.run_if(in_state(ClientState::Disconnected)),
                 ),
