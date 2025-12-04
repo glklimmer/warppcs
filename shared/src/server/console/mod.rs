@@ -24,7 +24,7 @@ use crate::{
         physics::army_slot::ArmySlot,
     },
 };
-use crate::{ClientPlayerMapExt, GameSceneId};
+use crate::GameSceneId;
 
 use super::{
     ai::{FollowOffset, UnitBehaviour},

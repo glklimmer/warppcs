@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use item_assignment::ItemAssignmentPlugins;
-use recruiting::{RecruitEvent, assign_offset, check_recruit, recruit_commander, recruit_units};
+use recruiting::{assign_offset, check_recruit, recruit_commander, recruit_units};
 use respawn::respawn_units;
 use siege_camp::siege_camp_lifetime;
 
