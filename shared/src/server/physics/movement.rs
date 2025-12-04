@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
+use bevy_replicon::prelude::ClientState;
 use serde::{Deserialize, Serialize};
 
 use crate::{

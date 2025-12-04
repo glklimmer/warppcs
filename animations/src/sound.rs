@@ -48,7 +48,7 @@ pub struct AnimationSoundPlugin;
 
 impl Plugin for AnimationSoundPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PlayAnimationSoundEvent>();
+        app.add_message::<PlayAnimationSoundEvent>();
         app.add_observer(play_animation_on_projectile_spawn);
         app.add_observer(play_on_interactable);
         app.add_observer(stop_animation_sound_on_remove);
@@ -71,12 +71,12 @@ fn stop_animation_sound_on_remove(
     query: Query<Option<&SpatialAudioSink>>,
     mut commands: Commands,
 ) -> Result {
-    let maybe_sink = query.get(trigger.target())?;
+    let maybe_sink = query.get(trigger.entity)?;
     if let Some(sink) = maybe_sink {
         sink.stop();
         sink.pause();
     };
-    commands.entity(trigger.target()).remove::<AudioPlayer>();
+    commands.entity(trigger.entity).remove::<AudioPlayer>();
     Ok(())
 }
 
@@ -90,7 +90,7 @@ fn handle_multiple_animation_sound(
         };
         if let Ok(mut entity_command) = commands.get_entity(event.entity) {
             entity_command.insert((
-                AudioPlayer::<AudioSource>(random_sound.clone_weak()),
+                AudioPlayer::<AudioSource>(random_sound.clone()),
                 PlaybackSettings {
                     mode: PlaybackMode::Remove,
                     speed: event.speed,
@@ -115,7 +115,7 @@ fn handle_single_animation_sound(
 
         let mut entity_command = commands.get_entity(event.entity)?;
         entity_command.insert((
-            AudioPlayer::<AudioSource>(event.sound_handles[0].clone_weak()),
+            AudioPlayer::<AudioSource>(event.sound_handles[0].clone()),
             PlaybackSettings {
                 mode: PlaybackMode::Remove,
                 speed: event.speed,
@@ -162,14 +162,14 @@ fn play_animation_on_projectile_spawn(
     mut sound_events: MessageWriter<PlayAnimationSoundEvent>,
     asset_server: Res<AssetServer>,
 ) -> Result {
-    let projectile_type = projectile.get_mut(trigger.target())?;
+    let projectile_type = projectile.get_mut(trigger.entity)?;
 
     let sound_handles = match projectile_type {
         ProjectileType::Arrow => vec![asset_server.load("animation_sound/arrow/arrow_flying.ogg")],
     };
 
     sound_events.write(PlayAnimationSoundEvent {
-        entity: trigger.target(),
+        entity: trigger.entity,
         sound_handles,
         speed: 1.5,
         volume: Volume::Linear(ANIMATION_VOLUME),

@@ -67,7 +67,7 @@ fn item_selected(trigger: On<SelectionEvent<Item>>, mut commands: Commands) -> R
     let item = &trigger.selection;
 
     commands.client_trigger(AssignItem::new(item.clone()));
-    commands.send_event(CloseEvent);
+    commands.trigger(CloseEvent);
     Ok(())
 }
 
@@ -174,7 +174,7 @@ fn start_build(trigger: On<SelectionEvent<BuildingDialog>>, mut commands: Comman
 }
 
 fn close_assignment_dialog(_: On<CloseBuildingDialog>, mut commands: Commands) {
-    commands.send_event(CloseEvent);
+    commands.trigger(CloseEvent);
 }
 
 fn show_item_info(
@@ -182,7 +182,7 @@ fn show_item_info(
     items: Query<&ItemInfo>,
     mut commands: Commands,
 ) -> Result {
-    if let Ok(info) = items.get(trigger.target()) {
+    if let Ok(info) = items.get(trigger.entity) {
         let mut entity = commands.get_entity(info.tooltip)?;
         entity.try_insert(Visibility::Visible);
     };
@@ -194,7 +194,7 @@ fn hide_item_info(
     items: Query<&ItemInfo>,
     mut commands: Commands,
 ) -> Result {
-    if let Ok(info) = items.get(trigger.target()) {
+    if let Ok(info) = items.get(trigger.entity) {
         let mut entity = commands.get_entity(info.tooltip)?;
         entity.try_insert(Visibility::Hidden);
     };

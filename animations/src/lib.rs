@@ -188,10 +188,10 @@ impl Plugin for AnimationPlugin {
         app.add_plugins(UIAnimationsPlugin);
 
         app.init_resource::<UnitSpriteSheets>();
-        app.add_event::<AnimationTrigger<UnitAnimation>>();
+        app.add_message::<AnimationTrigger<UnitAnimation>>();
 
         app.init_resource::<KingSpriteSheet>();
-        app.add_event::<AnimationTrigger<KingAnimation>>();
+        app.add_message::<AnimationTrigger<KingAnimation>>();
 
         app.init_resource::<FlagSpriteSheet>();
         app.init_resource::<ChestSpriteSheet>();
@@ -206,7 +206,7 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<CommanderMenuSpriteSheet>();
 
         app.init_resource::<HorseSpriteSheet>();
-        app.add_event::<AnimationTrigger<HorseAnimation>>();
+        app.add_message::<AnimationTrigger<HorseAnimation>>();
 
         app.init_resource::<ItemInfoSpriteSheet>();
         app.init_resource::<MapIconSpriteSheet>();

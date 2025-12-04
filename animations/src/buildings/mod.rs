@@ -156,7 +156,7 @@ pub fn remove_animation_after_play_once(
     building: Query<&BuildStatus>,
     mut commands: Commands,
 ) -> Result {
-    if let Ok(status) = building.get(trigger.target()) {
+    if let Ok(status) = building.get(trigger.entity) {
         let should_remove = match status {
             BuildStatus::Built { indicator } => {
                 matches!(indicator, HealthIndicator::Light | HealthIndicator::Medium)
@@ -165,7 +165,7 @@ pub fn remove_animation_after_play_once(
         };
         if should_remove {
             commands
-                .entity(trigger.target())
+                .entity(trigger.entity)
                 .remove::<SpriteSheetAnimation>();
         }
     }

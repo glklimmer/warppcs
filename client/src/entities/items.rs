@@ -85,7 +85,7 @@ fn init_item_sprite(
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let item = item.get_mut(trigger.target())?;
+    let item = item.get_mut(trigger.entity)?;
 
     let sprite = item.sprite(
         &weapons_sprite_sheet,
@@ -94,11 +94,11 @@ fn init_item_sprite(
         &heads_sprite_sheet,
     );
 
-    commands.entity(trigger.target()).insert((
+    commands.entity(trigger.entity).insert((
         sprite.clone(),
         ItemInfo {
             item: item.clone(),
-            tooltip: trigger.target(),
+            tooltip: trigger.entity,
         },
     ));
     Ok(())
@@ -114,7 +114,7 @@ fn init_item_info(
     heads_sprite_sheet: Res<HeadsSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let ItemInfo { item, tooltip: _ } = item.get_mut(trigger.target())?;
+    let ItemInfo { item, tooltip: _ } = item.get_mut(trigger.entity)?;
 
     let text_color = Color::srgb_u8(143, 86, 59);
 
@@ -212,7 +212,7 @@ fn init_item_info(
         })
         .id();
 
-    let mut item_entity = commands.entity(trigger.target());
+    let mut item_entity = commands.entity(trigger.entity);
     item_entity.add_child(info);
     item_entity.insert(ItemInfo {
         item: item.clone(),
@@ -245,7 +245,7 @@ fn show_item_info(
     items: Query<&ItemInfo>,
     mut commands: Commands,
 ) -> Result {
-    if let Ok(info) = items.get(trigger.target()) {
+    if let Ok(info) = items.get(trigger.entity) {
         let mut entity = commands.get_entity(info.tooltip)?;
         entity.try_insert(Visibility::Visible);
     };
@@ -257,7 +257,7 @@ fn hide_item_info(
     items: Query<&ItemInfo>,
     mut commands: Commands,
 ) -> Result {
-    if let Ok(info) = items.get(trigger.target()) {
+    if let Ok(info) = items.get(trigger.entity) {
         let mut entity = commands.get_entity(info.tooltip)?;
         entity.try_insert(Visibility::Hidden);
     };

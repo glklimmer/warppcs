@@ -69,7 +69,7 @@ fn on_insert_unit_behaviour(
     query: Query<(&UnitBehaviour, &Unit)>,
     mut commands: Commands,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let (behaviour, unit) = query.get(entity)?;
 
     let mut attack_chain: Vec<Tree<Behave>> = Vec::new();
@@ -172,7 +172,7 @@ fn on_insert_bandit_behaviour(
     query: Query<&BanditBehaviour>,
     mut commands: Commands,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let behaviour = query.get(entity)?;
 
     let stance = match behaviour {
@@ -278,7 +278,7 @@ fn push_back_check(
 
     match maybe_pushback {
         Some(push_back) => {
-            if push_back.timer.finished() {
+            if push_back.timer.is_finished() {
                 commands.trigger(ctx.failure());
             } else {
                 commands.trigger(ctx.success());

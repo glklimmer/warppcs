@@ -34,7 +34,7 @@ impl ActiveCommanderExt for ActiveCommander {
     }
 }
 
-#[derive(Message, Serialize, Deserialize)]
+#[derive(Event, Serialize, Deserialize)]
 pub struct CommanderInteraction {
     pub commander: Entity,
 }
@@ -61,20 +61,20 @@ enum SlotCommand {
     Swap,
 }
 
-#[derive(Message, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq, Debug)]
+#[derive(Event, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq, Debug)]
 pub enum ArmyPosition {
     Front,
     Middle,
     Back,
 }
 
-#[derive(Message, Serialize, Deserialize)]
+#[derive(Event, Serialize, Deserialize)]
 pub struct CommanderCampInteraction;
 
-#[derive(Message, Serialize, Deserialize)]
+#[derive(Event, Serialize, Deserialize)]
 pub struct CommanderPickFlag;
 
-#[derive(Message, Serialize, Deserialize)]
+#[derive(Event, Serialize, Deserialize)]
 pub struct CommanderAssignmentRequest;
 
 #[derive(Event, Serialize, Deserialize)]
@@ -118,7 +118,6 @@ pub struct CommanderPlugin;
 impl Plugin for CommanderPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveCommander>()
-            .add_message::<CommanderCampInteraction>()
             .add_observer(commander_assignment_validation)
             .add_observer(handle_slot_selection)
             .add_observer(handle_camp_interaction)
@@ -167,7 +166,7 @@ fn handle_pick_flag(
     flag: Query<(Entity, &Flag)>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let commander = active.get_entity(player)?;
     let commander_flag = commander_flag_assignment.get(*commander)?;
     let army_flag_assignments = formations.get(*commander)?;
@@ -207,7 +206,7 @@ fn handle_camp_interaction(
     query: Query<(&Transform, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let commander = active.get_entity(player)?;
     let (commander_transform, game_scene_id) = query.get(*commander)?;
     let commander_pos = commander_transform.translation;
@@ -228,14 +227,14 @@ fn commander_assignment_validation(
     flag: Query<&Flag>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let player_flag = flag_holder.get(*player);
 
     if let Ok(unit_flag) = player_flag {
         let unit = flag.get(**unit_flag)?;
         if let UnitType::Commander = unit.unit_type {
             commands.server_trigger(ToClients {
-                mode: SendMode::Direct(trigger.client_entity),
+                mode: SendMode::Direct(trigger.client_id),
                 message: CommanderAssignmentReject,
             });
             return Ok(());

@@ -37,7 +37,7 @@ enum MainMenuEntries {
     Flag,
 }
 
-#[derive(Message, Deref)]
+#[derive(Event, Deref)]
 struct DrawHoverFlag(Entity);
 
 #[derive(Component)]
@@ -52,7 +52,6 @@ struct ActiveCommander(Option<Entity>);
 impl Plugin for CommanderInteractionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveCommander>()
-            .add_event::<DrawHoverFlag>()
             .add_observer(assignment_reject)
             .add_observer(open_commander_dialog)
             .add_observer(highligh_formation)
@@ -153,17 +152,13 @@ fn select_create_camp(trigger: On<SelectionEvent<MainMenuEntries>>, mut commands
     commands.client_trigger(CommanderCampInteraction);
 }
 
-fn select_commander_flag(
-    trigger: On<SelectionEvent<MainMenuEntries>>,
-    mut close_menu: MessageWriter<CloseEvent>,
-    mut commands: Commands,
-) {
+fn select_commander_flag(trigger: On<SelectionEvent<MainMenuEntries>>, mut commands: Commands) {
     let MainMenuEntries::Flag = trigger.selection else {
         return;
     };
 
     commands.client_trigger(CommanderPickFlag);
-    close_menu.write(CloseEvent);
+    commands.trigger(CloseEvent);
 }
 
 fn open_slots_dialog(
@@ -289,7 +284,7 @@ fn assigment_warning(
                     .id();
 
                 commands
-                    .entity(trigger.target())
+                    .entity(trigger.entity)
                     .add_child(disabled_sprite_entity);
             }
         }

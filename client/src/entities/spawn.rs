@@ -80,7 +80,7 @@ fn init_player_sprite(
     variants: Res<Assets<SpriteVariants>>,
     mut commands: Commands,
 ) -> Result {
-    let (mut sprite, player) = players.get_mut(trigger.target())?;
+    let (mut sprite, player) = players.get_mut(trigger.entity)?;
 
     let handle = &king_sprite_sheet.sprite_sheet.texture;
     let sprite_variants = variants.get_variant(handle)?;
@@ -95,7 +95,7 @@ fn init_player_sprite(
         index: animation.first_sprite_index,
     });
 
-    let mut commands = commands.entity(trigger.target());
+    let mut commands = commands.entity(trigger.entity);
     commands.insert((animation.clone(), KingAnimation::default()));
     Ok(())
 }
@@ -105,7 +105,7 @@ fn init_recruit_building_sprite(
     mut slots: Query<&mut Sprite>,
     asset_server: Res<AssetServer>,
 ) -> Result {
-    let mut sprite = slots.get_mut(trigger.target())?;
+    let mut sprite = slots.get_mut(trigger.entity)?;
     sprite.image = asset_server.load::<Image>(Building::marker_texture());
     Ok(())
 }
@@ -115,7 +115,7 @@ fn init_camp_sprite(
     mut camp: Query<&mut Sprite>,
     asset_server: Res<AssetServer>,
 ) -> Result {
-    let mut sprite = camp.get_mut(trigger.target())?;
+    let mut sprite = camp.get_mut(trigger.entity)?;
     sprite.image = asset_server.load::<Image>("sprites/buildings/siege_camp.png");
     Ok(())
 }
@@ -127,7 +127,7 @@ fn init_unit_sprite(
     variants: Res<Assets<SpriteVariants>>,
     mut commands: Commands,
 ) -> Result {
-    let (mut sprite, unit, maybe_health) = units.get_mut(trigger.target())?;
+    let (mut sprite, unit, maybe_health) = units.get_mut(trigger.entity)?;
 
     let sprite_sheet = &sprite_sheets.sprite_sheets.get(unit.unit_type);
     let handle = &sprite_sheet.texture;
@@ -144,7 +144,7 @@ fn init_unit_sprite(
         index: sprite_sheet_animation.first_sprite_index,
     });
 
-    let mut commands = commands.entity(trigger.target());
+    let mut commands = commands.entity(trigger.entity);
     commands.insert((sprite_sheet_animation.clone(), animation));
     Ok(())
 }
@@ -156,7 +156,7 @@ fn init_flag_sprite(
     variants: Res<Assets<SpriteVariants>>,
     mut commands: Commands,
 ) -> Result {
-    let (mut sprite, flag) = flag.get_mut(trigger.target())?;
+    let (mut sprite, flag) = flag.get_mut(trigger.entity)?;
 
     let sprite_sheet = &flag_sprite_sheet.sprite_sheet;
     let handle = &sprite_sheet.texture;
@@ -169,7 +169,7 @@ fn init_flag_sprite(
         index: animation.first_sprite_index,
     });
 
-    let mut commands = commands.entity(trigger.target());
+    let mut commands = commands.entity(trigger.entity);
     commands.insert((animation.clone(), FlagAnimation::default()));
     Ok(())
 }
@@ -180,7 +180,7 @@ fn init_scene_end_sprite(
     tree_sprite_sheet: Res<PineTreeSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let mut sprite = scene_end.get_mut(trigger.target())?;
+    let mut sprite = scene_end.get_mut(trigger.entity)?;
 
     let bright_sprite_sheet = &tree_sprite_sheet.bright_sprite_sheet;
 
@@ -197,11 +197,11 @@ fn init_scene_end_sprite(
     sprite.image = bright_texture.clone();
     sprite.texture_atlas = texture_atlas.clone();
 
-    let mut entity_commands = commands.entity(trigger.target());
+    let mut entity_commands = commands.entity(trigger.entity);
     entity_commands.insert((animation.clone(), TreeAnimation::default()));
 
     commands.spawn((
-        ChildOf(trigger.target()),
+        ChildOf(trigger.entity),
         Transform::from_xyz(-39., 0., 8.),
         Sprite {
             image: bright_texture.clone(),
@@ -211,7 +211,7 @@ fn init_scene_end_sprite(
         Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
-        ChildOf(trigger.target()),
+        ChildOf(trigger.entity),
         Transform::from_xyz(-22., 1., 5.),
         Sprite {
             image: dim_texture.clone(),
@@ -221,7 +221,7 @@ fn init_scene_end_sprite(
         Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
-        ChildOf(trigger.target()),
+        ChildOf(trigger.entity),
         Transform::from_xyz(-14., 0., 3.),
         Sprite {
             image: dim_texture.clone(),
@@ -231,7 +231,7 @@ fn init_scene_end_sprite(
         Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
-        ChildOf(trigger.target()),
+        ChildOf(trigger.entity),
         Transform::from_xyz(-8., 0., 7.),
         Sprite {
             image: dark_texture.clone(),
@@ -241,7 +241,7 @@ fn init_scene_end_sprite(
         Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
-        ChildOf(trigger.target()),
+        ChildOf(trigger.entity),
         Transform::from_xyz(8., 2., 6.),
         Sprite {
             image: dim_texture.clone(),
@@ -251,7 +251,7 @@ fn init_scene_end_sprite(
         Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
-        ChildOf(trigger.target()),
+        ChildOf(trigger.entity),
         Transform::from_xyz(17., 1., 4.),
         Sprite {
             image: dark_texture.clone(),
@@ -261,7 +261,7 @@ fn init_scene_end_sprite(
         Anchor::BOTTOM_CENTER,
     ));
     commands.spawn((
-        ChildOf(trigger.target()),
+        ChildOf(trigger.entity),
         Transform::from_xyz(25., 2., 1.),
         Sprite {
             image: bright_texture.clone(),
@@ -279,7 +279,7 @@ fn init_portal_sprite(
     portal_sprite_sheet: Res<PortalSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let mut sprite = portal.get_mut(trigger.target())?;
+    let mut sprite = portal.get_mut(trigger.entity)?;
 
     let sprite_sheet = &portal_sprite_sheet.sprite_sheet;
     let animation = sprite_sheet.animations.get(PortalAnimation::default());
@@ -290,7 +290,7 @@ fn init_portal_sprite(
         index: animation.first_sprite_index,
     });
 
-    let mut commands = commands.entity(trigger.target());
+    let mut commands = commands.entity(trigger.entity);
     commands.insert((animation.clone(), PortalAnimation::default()));
     Ok(())
 }
@@ -301,7 +301,7 @@ fn init_road_sprite(
     road_sprite_sheet: Res<RoadSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let mut sprite = road.get_mut(trigger.target())?;
+    let mut sprite = road.get_mut(trigger.entity)?;
 
     let sprite_sheet = &road_sprite_sheet.sprite_sheet;
     let animation = sprite_sheet.animations.get(RoadAnimation::default());
@@ -312,7 +312,7 @@ fn init_road_sprite(
         index: animation.first_sprite_index,
     });
 
-    let mut commands = commands.entity(trigger.target());
+    let mut commands = commands.entity(trigger.entity);
     commands.insert((animation.clone(), RoadAnimation::default()));
     Ok(())
 }
@@ -323,7 +323,7 @@ fn init_horse_sprite(
     horse_sprite_sheet: Res<HorseSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let mut sprite = portal.get_mut(trigger.target())?;
+    let mut sprite = portal.get_mut(trigger.entity)?;
 
     let sprite_sheet = &horse_sprite_sheet.sprite_sheet;
     let animation = sprite_sheet.animations.get(HorseAnimation::default());
@@ -334,7 +334,7 @@ fn init_horse_sprite(
         index: animation.first_sprite_index,
     });
 
-    let mut commands = commands.entity(trigger.target());
+    let mut commands = commands.entity(trigger.entity);
     commands.insert((animation.clone(), HorseAnimation::default()));
     Ok(())
 }
@@ -344,7 +344,7 @@ fn init_projectile_sprite(
     mut projectile: Query<(&mut Sprite, &ProjectileType)>,
     projectiles: Res<ProjectileSpriteSheet>,
 ) -> Result {
-    let (mut sprite, projectile_type) = projectile.get_mut(trigger.target())?;
+    let (mut sprite, projectile_type) = projectile.get_mut(trigger.entity)?;
 
     let texture = match projectile_type {
         ProjectileType::Arrow => projectiles.sprite_sheet.texture_atlas(Projectiles::Arrow),
@@ -359,7 +359,7 @@ fn init_chest_sprite(
     mut chests: Query<&mut Sprite>,
     sprite_sheets: Res<ChestSpriteSheet>,
 ) -> Result {
-    let mut sprite = chests.get_mut(trigger.target())?;
+    let mut sprite = chests.get_mut(trigger.entity)?;
 
     let sprite_sheet = &sprite_sheets.sprite_sheet;
     let animation = sprite_sheet.animations.get(ChestAnimation::Open);

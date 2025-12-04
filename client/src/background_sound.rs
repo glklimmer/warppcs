@@ -93,7 +93,7 @@ pub struct BackgroundSoundPlugin;
 impl Plugin for BackgroundSoundPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MusicState>();
-        app.add_event::<MusicTransitionEvent>();
+        app.add_message::<MusicTransitionEvent>();
 
         app.add_systems(Startup, setup_music);
         app.add_systems(

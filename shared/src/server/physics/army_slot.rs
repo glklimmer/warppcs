@@ -50,7 +50,7 @@ fn init_army_direction_timer(
     trigger: On<Insert, ArmySlots>,
     mut query: Query<&mut ArmySlots>,
 ) -> Result {
-    let mut army = query.get_mut(trigger.target())?;
+    let mut army = query.get_mut(trigger.entity)?;
 
     army.opposite_direction_timer = Timer::from_seconds(2., TimerMode::Once);
     Ok(())

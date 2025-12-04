@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
 use aeronet::{
-    io::{Session, SessionEndpoint, connection::Disconnected},
+    io::{
+        Session, SessionEndpoint,
+        connection::{DisconnectReason, Disconnected},
+    },
     transport::TransportConfig,
 };
 use aeronet_replicon::client::{AeronetRepliconClient, AeronetRepliconClientPlugin};
@@ -97,7 +100,7 @@ fn join_steam_server(mut join_lobby: MessageReader<SteamworksEvent>, mut command
 }
 
 fn on_connecting(trigger: On<Add, SessionEndpoint>, mut commands: Commands) {
-    let entity = trigger.target();
+    let entity = trigger.entity;
 
     info!("Joining server...");
 
@@ -105,7 +108,7 @@ fn on_connecting(trigger: On<Add, SessionEndpoint>, mut commands: Commands) {
 }
 
 fn on_connected(trigger: On<Add, Session>, mut commands: Commands) {
-    let entity = trigger.target();
+    let entity = trigger.entity;
 
     info!("Joined server.");
 
@@ -115,14 +118,14 @@ fn on_connected(trigger: On<Add, Session>, mut commands: Commands) {
 }
 
 fn on_disconnected(trigger: On<Disconnected>) {
-    match &*trigger {
-        Disconnected::ByUser(reason) => {
+    match &trigger.reason {
+        DisconnectReason::ByUser(reason) => {
             format!("Disconnected by user: {reason}")
         }
-        Disconnected::ByPeer(reason) => {
+        DisconnectReason::ByPeer(reason) => {
             format!("Disconnected by peer: {reason}")
         }
-        Disconnected::ByError(err) => {
+        DisconnectReason::ByError(err) => {
             format!("Disconnected due to error: {err:?}")
         }
     };

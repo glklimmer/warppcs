@@ -22,7 +22,7 @@ pub struct PlayerAttacks;
 
 impl Plugin for PlayerAttacks {
     fn build(&self, app: &mut App) {
-        app.add_client_message::<Attack>(Channel::Ordered)
+        app.add_client_event::<Attack>(Channel::Ordered)
             .add_observer(attack)
             .add_systems(Update, attack_input.before(ClientSystems::Send));
     }
@@ -48,7 +48,7 @@ fn attack(
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let (maybe_flag_holder, transform) = flag_holder.get(*player)?;
 
     let Some(flag_holder) = maybe_flag_holder else {

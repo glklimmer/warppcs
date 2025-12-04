@@ -79,7 +79,7 @@ fn interact(
     interactables: Query<(Entity, &Transform, &BoxCollider, &Interactable)>,
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {
-    let player = *client_player_map.get_player(&trigger.client_entity)?;
+    let player = *client_player_map.get_player(&trigger.client_id)?;
     let (player_transform, player_collider) = players.get(player)?;
 
     let player_bounds = player_collider.at(player_transform);

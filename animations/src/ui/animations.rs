@@ -33,7 +33,7 @@ fn apply_shake_effect(
     for (entity, mut transform, mut shaking) in query.iter_mut() {
         shaking.timer.tick(time.delta());
 
-        if shaking.timer.finished() {
+        if shaking.timer.is_finished() {
             transform.translation = shaking.original_translation;
             commands.entity(entity).remove::<SpriteShaking>();
         } else {

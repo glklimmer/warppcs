@@ -20,8 +20,8 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((MountPlugin, KnockoutPlugin))
-            .add_event::<DropFlagEvent>()
-            .add_event::<PickFlagEvent>()
+            .add_message::<DropFlagEvent>()
+            .add_message::<PickFlagEvent>()
             .add_systems(
                 FixedUpdate,
                 (

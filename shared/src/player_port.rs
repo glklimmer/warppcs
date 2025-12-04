@@ -23,7 +23,7 @@ pub struct PlayerPort;
 
 impl Plugin for PlayerPort {
     fn build(&self, app: &mut App) {
-        app.add_client_message::<ChannelPort>(Channel::Ordered)
+        app.add_client_event::<ChannelPort>(Channel::Ordered)
             .add_observer(add_port_cooldown)
             .add_observer(check_port_cooldown)
             .add_observer(spawn_player_portal)
@@ -46,8 +46,8 @@ impl Plugin for PlayerPort {
 #[derive(Event, Deserialize, Serialize)]
 struct ChannelPort;
 
-#[derive(Event)]
-struct SpawnPortal;
+#[derive(EntityEvent)]
+struct SpawnPortal(Entity);
 
 #[derive(Component)]
 struct PortCooldown {
@@ -93,7 +93,7 @@ struct PortalDestination(Entity);
 
 fn add_port_cooldown(trigger: On<Add, Player>, mut commands: Commands) -> Result {
     commands
-        .entity(trigger.target())
+        .entity(trigger.entity)
         .insert(PortCooldown::default());
     Ok(())
 }
@@ -111,10 +111,10 @@ fn check_port_cooldown(
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let mut cooldown = players.get_mut(*player)?;
 
-    if cooldown.summon.finished() {
+    if cooldown.summon.is_finished() {
         commands.entity(*player).trigger(SpawnPortal);
         cooldown.summon.reset();
     }
@@ -134,7 +134,7 @@ fn spawn_player_portal(
     main_buildings: Query<(&Building, &Owner, &Transform, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
-    let player = trigger.target();
+    let player = trigger.event_target();
     let (player_transform, player_game_scene_id) = players.get(player)?;
 
     let maybe_base = main_buildings.iter().find(|(building, owner, ..)| {
@@ -190,7 +190,7 @@ fn port(
 
         let (maybe_flag_holder, mut cooldown) = players.get_mut(player_entity)?;
 
-        if !cooldown.usage.finished() {
+        if !cooldown.usage.is_finished() {
             info!("Portal usage cooldown");
             return Ok(());
         }

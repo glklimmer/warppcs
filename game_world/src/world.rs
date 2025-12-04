@@ -25,7 +25,7 @@ impl Plugin for WorldPlugin {
     }
 }
 
-#[derive(Message, Deref)]
+#[derive(Event, Deref)]
 pub struct InitWorld(WorldGraph);
 
 #[derive(Clone, Default, Deref, DerefMut)]
@@ -185,7 +185,7 @@ fn init_world(
     };
 
     #[allow(irrefutable_let_patterns)]
-    let LobbyMessage::StartGame = event else {
+    let LobbyMessage::StartGame = message else {
         return Ok(());
     };
 

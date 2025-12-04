@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
 use bevy::{input::common_conditions::input_just_pressed, sprite::Anchor};
 use bevy_replicon::prelude::{
-    AppRuleExt, Channel, ClientState, ClientTriggerAppExt, ClientTriggerExt, FromClient,
-    Replicated, SendMode, ServerTriggerAppExt, ServerTriggerExt, ToClients,
+    AppRuleExt, Channel, ClientEventAppExt, ClientMessageAppExt, ClientState, ClientTriggerExt,
+    FromClient, Replicated, SendMode, ServerEventAppExt, ServerTriggerExt, ToClients,
 };
 use highlight::{
     Highlightable,
@@ -31,11 +31,11 @@ impl Plugin for TravelPlugin {
         app.replicate::<Traveling>()
             .replicate_bundle::<(Road, Transform)>()
             .replicate_bundle::<(SceneEnd, Transform)>()
-            .add_client_message::<SelectTravelDestination>(Channel::Ordered)
-            .add_server_trigger::<AddMysteryMapIcon>(Channel::Ordered)
-            .add_server_trigger::<RevealMapIcon>(Channel::Ordered)
-            .add_server_trigger::<OpenTravelDialog>(Channel::Ordered)
-            .add_server_trigger::<InitPlayerMapNode>(Channel::Ordered)
+            .add_client_event::<SelectTravelDestination>(Channel::Ordered)
+            .add_server_event::<AddMysteryMapIcon>(Channel::Ordered)
+            .add_server_event::<RevealMapIcon>(Channel::Ordered)
+            .add_server_event::<OpenTravelDialog>(Channel::Ordered)
+            .add_server_event::<InitPlayerMapNode>(Channel::Ordered)
             .insert_state(MapState::View)
             .add_observer(init_map)
             .add_observer(enter_travel_state)
@@ -71,7 +71,7 @@ impl Plugin for TravelPlugin {
     }
 }
 
-#[derive(Message, Deref, Serialize, Deserialize)]
+#[derive(Event, Deref, Serialize, Deserialize)]
 pub struct InitPlayerMapNode(GameScene);
 
 impl InitPlayerMapNode {
@@ -80,18 +80,18 @@ impl InitPlayerMapNode {
     }
 }
 
-#[derive(Message, Deserialize, Serialize)]
+#[derive(Event, Deserialize, Serialize)]
 pub struct OpenTravelDialog {
     pub current_scene: GameScene,
 }
 
-#[derive(Message, Deserialize, Serialize, Deref)]
+#[derive(Event, Deserialize, Serialize, Deref)]
 pub struct SelectTravelDestination(pub GameScene);
 
-#[derive(Message, Deref, Serialize, Deserialize)]
+#[derive(Event, Deref, Serialize, Deserialize)]
 pub struct AddMysteryMapIcon(GameScene);
 
-#[derive(Message, Deref, Serialize, Deserialize)]
+#[derive(Event, Deref, Serialize, Deserialize)]
 pub struct RevealMapIcon(GameScene);
 
 #[derive(Component, Serialize, Deserialize)]
@@ -265,7 +265,7 @@ fn start_travel(
     mut commands: Commands,
 ) -> Result {
     let selection = &**trigger.event();
-    let player_entity = *client_player_map.get_player(&trigger.client_entity)?;
+    let player_entity = *client_player_map.get_player(&trigger.client_id)?;
 
     let source = interaction.get(player_entity)?.interactable;
     let source = *game_scenes.get(source)?;
@@ -325,7 +325,7 @@ fn end_travel(
     mut commands: Commands,
 ) -> Result {
     for (entity, travel) in query.iter() {
-        if !travel.time_left.finished() {
+        if !travel.time_left.is_finished() {
             continue;
         }
 
@@ -421,7 +421,7 @@ fn open_travel_dialog(
 }
 
 fn destination_selected(
-    trigger: On<Pointer<Released>>,
+    trigger: On<Pointer<Release>>,
     mut commands: Commands,
     map_state: ResMut<State<MapState>>,
     mut next_map_state: ResMut<NextState<MapState>>,
@@ -431,7 +431,7 @@ fn destination_selected(
         return Ok(());
     };
 
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let game_scene = **map_node.get(entity)?;
 
     if game_scene.eq(current_scene) {
@@ -572,7 +572,7 @@ fn animate_dashes(
     for (entity, mut line) in query.iter_mut() {
         line.timer.tick(time.delta());
 
-        if line.timer.finished() && line.spawned < line.total_dashes {
+        if line.timer.is_finished() && line.spawned < line.total_dashes {
             let t = (line.spawned as f32 + 0.5) / line.total_dashes as f32;
             let pos = bezier(line.a, line.cp1, line.cp2, line.b, t);
             let tan = bezier_tangent(line.a, line.cp1, line.cp2, line.b, t);
@@ -613,7 +613,7 @@ fn enter_travel_state(
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
     info!("start enter travel state");
-    let Ok(_) = query.get(trigger.target()) else {
+    let Ok(_) = query.get(trigger.entity) else {
         return Ok(());
     };
     info!("is controlled player, setting travel state");
@@ -627,7 +627,7 @@ fn leave_travel_state(
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
     info!("start leave travel state");
-    let Ok(_) = query.get(trigger.target()) else {
+    let Ok(_) = query.get(trigger.entity) else {
         return Ok(());
     };
     info!("is controlled player, setting world state");

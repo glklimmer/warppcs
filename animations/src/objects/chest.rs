@@ -65,7 +65,7 @@ pub fn on_chest_opened(
     chest_sprite_sheet: Res<ChestSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let mut sprite = query.get_mut(entity)?;
 
     let sprite_sheet_animation = chest_sprite_sheet
@@ -89,9 +89,9 @@ pub fn set_chest_after_play_once(
     chest: Query<Option<&Chest>>,
     mut commands: Commands,
 ) -> Result {
-    if chest.get(trigger.target())?.is_some() {
+    if chest.get(trigger.entity)?.is_some() {
         commands
-            .entity(trigger.target())
+            .entity(trigger.entity)
             .remove::<SpriteSheetAnimation>();
     }
     Ok(())

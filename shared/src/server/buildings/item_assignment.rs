@@ -71,7 +71,7 @@ impl MapEntities for OpenBuildingDialog {
 #[derive(Event, Deserialize, Serialize)]
 pub struct CloseBuildingDialog;
 
-#[derive(Message, Deserialize, Serialize, Deref)]
+#[derive(Event, Deserialize, Serialize, Deref)]
 pub struct AssignItem(Item);
 
 impl AssignItem {
@@ -80,7 +80,7 @@ impl AssignItem {
     }
 }
 
-#[derive(Message, Deserialize, Serialize)]
+#[derive(Event, Deserialize, Serialize)]
 pub struct StartBuild;
 
 #[derive(Resource, Default, Deref, DerefMut)]
@@ -106,7 +106,7 @@ fn check_start_building(
     players: Query<&Player>,
     mut commands: Commands,
 ) -> Result {
-    let player_entity = *client_player_map.get_player(&trigger.client_entity)?;
+    let player_entity = *client_player_map.get_player(&trigger.client_id)?;
     let player = players.get(player_entity)?;
     let active_building = *active.get_entity(&player_entity)?;
 
@@ -149,7 +149,7 @@ fn check_start_building(
     });
 
     commands.server_trigger(ToClients {
-        mode: SendMode::Direct(trigger.client_entity),
+        mode: SendMode::Direct(trigger.client_id),
         message: CloseBuildingDialog,
     });
     Ok(())
@@ -187,7 +187,7 @@ fn assign_item(
     mut inventory: Query<&mut Inventory>,
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let active_building = *active.get_entity(player)?;
     let mut inventory = inventory.get_mut(*player)?;
 

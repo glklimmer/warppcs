@@ -4,12 +4,12 @@ use bevy::{
     ecs::entity::MapEntities, math::bounding::Aabb2d, platform::collections::HashMap,
     sprite::Anchor,
 };
+use bevy_replicon::prelude::{ClientEventAppExt, ClientId, ServerMessageAppExt};
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
-        AppRuleExt, Channel, ClientTriggerAppExt, ClientVisibility, ConnectedClient, Replicated,
-        SendMode, ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, SyncRelatedAppExt,
-        ToClients,
+        AppRuleExt, Channel, ClientMessageAppExt, ClientVisibility, ConnectedClient, Replicated,
+        SendMode, ServerEventAppExt, ServerTriggerExt, SyncRelatedAppExt, ToClients,
     },
     server::{ServerPlugin, VisibilityPolicy},
 };
@@ -115,20 +115,20 @@ impl Plugin for SharedPlugin {
         .replicate_bundle::<(Item, Transform)>()
         .replicate_bundle::<(ArmySlot, Transform)>()
         .sync_related_entities::<FlagAssignment>()
-        .add_client_message::<ArmyPosition>(Channel::Ordered)
-        .add_client_message::<CommanderCampInteraction>(Channel::Ordered)
-        .add_client_message::<AssignItem>(Channel::Ordered)
-        .add_client_message::<StartBuild>(Channel::Ordered)
-        .add_client_message::<CommanderAssignmentRequest>(Channel::Ordered)
-        .add_client_message::<CommanderPickFlag>(Channel::Ordered)
-        .add_server_trigger::<InteractableSound>(Channel::Ordered)
-        .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
-        .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
-        .add_mapped_server_trigger::<PlayerDefeated>(Channel::Ordered)
-        .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
-        .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
-        .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)
-        .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
+        .add_client_event::<ArmyPosition>(Channel::Ordered)
+        .add_client_event::<CommanderCampInteraction>(Channel::Ordered)
+        .add_client_event::<AssignItem>(Channel::Ordered)
+        .add_client_event::<StartBuild>(Channel::Ordered)
+        .add_client_event::<CommanderAssignmentRequest>(Channel::Ordered)
+        .add_client_event::<CommanderPickFlag>(Channel::Ordered)
+        .add_server_event::<InteractableSound>(Channel::Ordered)
+        .add_server_event::<CommanderAssignmentReject>(Channel::Ordered)
+        .add_server_event::<CloseBuildingDialog>(Channel::Ordered)
+        .add_mapped_server_event::<PlayerDefeated>(Channel::Ordered)
+        .add_mapped_server_event::<CommanderInteraction>(Channel::Ordered)
+        .add_mapped_server_event::<OpenBuildingDialog>(Channel::Ordered)
+        .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
+        .add_mapped_server_message::<AnimationChangeEvent>(Channel::Ordered)
         .add_observer(spawn_clients)
         .add_observer(update_visibility)
         .add_observer(hide_on_remove);
@@ -143,10 +143,10 @@ pub enum Hitby {
 /// Key is NetworkEntity
 /// Value is PlayerEntity
 #[derive(Resource, DerefMut, Deref, Default, Reflect)]
-pub struct ClientPlayerMap(HashMap<Entity, Entity>);
+pub struct ClientPlayerMap(HashMap<ClientId, Entity>);
 
 impl ClientPlayerMap {
-    pub fn get_network_entity(&self, value: &Entity) -> Result<&Entity> {
+    pub fn get_network_entity(&self, value: &Entity) -> Result<&ClientId> {
         self.iter()
             .find_map(|(key, val)| if val == value { Some(key) } else { None })
             .ok_or("Network entity not found for player entity".into())
@@ -154,11 +154,11 @@ impl ClientPlayerMap {
 }
 
 pub trait ClientPlayerMapExt {
-    fn get_player(&self, entity: &Entity) -> Result<&Entity>;
+    fn get_player(&self, entity: &ClientId) -> Result<&Entity>;
 }
 
 impl ClientPlayerMapExt for ClientPlayerMap {
-    fn get_player(&self, entity: &Entity) -> Result<&Entity> {
+    fn get_player(&self, entity: &ClientId) -> Result<&Entity> {
         self.get(entity).ok_or("Player not found".into())
     }
 }
@@ -245,24 +245,24 @@ fn spawn_clients(
 ) -> Result {
     let color = fastrand::choice(PlayerColor::all_variants()).ok_or("No PlayerColor available")?;
     let player = commands
-        .entity(trigger.target())
+        .entity(trigger.entity)
         .insert((
             Player { color: *color },
             Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
             GameSceneId::lobby(),
-            Owner::Player(trigger.target()),
+            Owner::Player(trigger.entity),
             Health { hitpoints: 200. },
         ))
         .id();
 
-    client_player_map.insert(player, player);
+    client_player_map.insert(ClientId::Client(trigger.entity), player);
 
     for mut client_visibility in visibility.iter_mut() {
         client_visibility.set_visibility(player, true);
     }
 
     commands.server_trigger(ToClients {
-        mode: SendMode::Direct(player),
+        mode: SendMode::Direct(ClientId::Client(trigger.entity)),
         message: SetLocalPlayer(player),
     });
     Ok(())
@@ -274,7 +274,7 @@ fn update_visibility(
     others: Query<(Entity, &GameSceneId)>,
     player_check: Query<(), With<Player>>,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let (_, new_entity_scene_id) = others.get(entity)?;
 
     if player_check.get(entity).is_ok() {
@@ -310,7 +310,7 @@ fn hide_on_remove(
     trigger: On<Remove, GameSceneId>,
     mut players: Query<(Entity, &mut ClientVisibility), With<Player>>,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     for (player_entity, mut visibility) in &mut players {
         visibility.set_visibility(entity, player_entity == entity);
     }

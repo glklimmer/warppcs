@@ -69,7 +69,7 @@ pub fn assign_offset(
     flag_units_query: Query<&FlagUnits>,
     flag_assignment_query: Query<&FlagAssignment>,
 ) -> Result {
-    let flag_assignment = flag_assignment_query.get(trigger.target())?;
+    let flag_assignment = flag_assignment_query.get(trigger.entity)?;
     let flag_entity = **flag_assignment;
 
     let Ok(flag_units) = flag_units_query.get(flag_entity) else {
@@ -77,7 +77,7 @@ pub fn assign_offset(
     };
 
     let mut unit_entities = (**flag_units).to_vec();
-    unit_entities.push(trigger.target());
+    unit_entities.push(trigger.entity);
 
     fastrand::shuffle(&mut unit_entities);
 

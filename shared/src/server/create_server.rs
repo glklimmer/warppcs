@@ -81,12 +81,13 @@ pub fn create_steam_server(mut commands: Commands, client: Res<aeronet_steam::St
         SessionConfig,
         server::{ListenTarget, SteamNetServer},
     };
+    use bevy_steamworks::LobbyType;
 
     let target = ListenTarget::Peer { virtual_port: 0 };
 
     client
         .matchmaking()
-        .create_lobby(bevy_steamworks::LobbyType::FriendsOnly, 8, |result| {
+        .create_lobby(LobbyType::FriendsOnly, 8, |result| {
             let Ok(lobby_id) = result else {
                 error!("Could not create steam lobby.");
                 return;
@@ -150,17 +151,17 @@ fn on_session_request_web(mut request: On<aeronet_webtransport::server::SessionR
 }
 
 fn on_connecting(trigger: On<Add, SessionEndpoint>) {
-    let client = trigger.event().entity;
+    let client = trigger.entity;
     info!("Client {client} connecting...");
 }
 
 fn on_connected(trigger: On<Add, Session>) {
-    let client = trigger.event().entity;
+    let client = trigger.entity;
     info!("Client {client} connected.");
 }
 
 fn on_disconnected(trigger: On<Disconnected>) {
-    let client = trigger.event().entity;
+    let client = trigger.entity;
 
     match &trigger.reason {
         DisconnectReason::ByUser(reason) => {

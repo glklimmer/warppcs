@@ -96,7 +96,7 @@ fn process_attacks(
             continue;
         };
 
-        if !unit.swing_timer.finished() {
+        if !unit.swing_timer.is_finished() {
             continue;
         }
 

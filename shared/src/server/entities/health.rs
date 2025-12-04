@@ -70,7 +70,7 @@ pub struct HealthPlugin;
 
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<TakeDamage>();
+        app.add_message::<TakeDamage>();
 
         app.add_systems(
             FixedUpdate,
@@ -96,7 +96,7 @@ fn delayed_damage(
 ) {
     for (entity, mut delay) in query.iter_mut() {
         delay.timer.tick(time.delta());
-        if delay.timer.finished() {
+        if delay.timer.is_finished() {
             attack_events.write(delay.damage.clone());
             commands.entity(entity).despawn();
         }

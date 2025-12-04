@@ -77,9 +77,9 @@ pub fn set_unit_walking(
     is_unit: Query<Entity, With<Unit>>,
     mut animation_trigger: MessageWriter<AnimationTrigger<UnitAnimation>>,
 ) {
-    if is_unit.get(trigger.target()).is_ok() {
+    if is_unit.get(trigger.entity).is_ok() {
         animation_trigger.write(AnimationTrigger {
-            entity: trigger.target(),
+            entity: trigger.entity,
             state: UnitAnimation::Walk,
         });
     }
@@ -91,8 +91,8 @@ pub fn set_unit_after_play_once(
     unit_animation: Query<&UnitAnimation>,
     mut commands: Commands,
 ) {
-    if let Ok(animation) = unit_animation.get(trigger.target()) {
-        let mut entity = commands.entity(trigger.target());
+    if let Ok(animation) = unit_animation.get(trigger.entity) {
+        let mut entity = commands.entity(trigger.entity);
         if let UnitAnimation::Death = animation {
             entity.remove::<SpriteSheetAnimation>();
             return;
@@ -104,7 +104,7 @@ pub fn set_unit_after_play_once(
         };
 
         animation_trigger.write(AnimationTrigger {
-            entity: trigger.target(),
+            entity: trigger.entity,
             state: new_animation,
         });
     }
@@ -115,9 +115,9 @@ pub fn set_unit_idle(
     is_unit: Query<Entity, With<Unit>>,
     mut animation_trigger: MessageWriter<AnimationTrigger<UnitAnimation>>,
 ) {
-    if is_unit.get(trigger.target()).is_ok() {
+    if is_unit.get(trigger.entity).is_ok() {
         animation_trigger.write(AnimationTrigger {
-            entity: trigger.target(),
+            entity: trigger.entity,
             state: UnitAnimation::Idle,
         });
     }

@@ -8,7 +8,6 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
-use crate::GameSceneId;
 use crate::{
     ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
@@ -25,6 +24,7 @@ use crate::{
         physics::army_slot::ArmySlot,
     },
 };
+use crate::{ClientPlayerMapExt, GameSceneId};
 
 use super::{
     ai::{FollowOffset, UnitBehaviour},
@@ -72,11 +72,11 @@ trait PlayerCommand {
             .get_resource::<ClientPlayerMap>()
             .ok_or_else(|| BrpError::internal("Missing ClientPlayerMap resource"))?;
         let (_, player) = client_player_map
-            .get_at(self.player() as usize)
+            .iter()
+            .nth(self.player() as usize)
             .ok_or_else(|| BrpError::internal("Player index out of bounds"))?;
-        let entity = player
-            .try_downcast_ref::<Entity>()
-            .ok_or_else(|| BrpError::internal("Value in ClientPlayerMap wasn’t an Entity"))?;
+        let entity = player;
+
         Ok(*entity)
     }
 }

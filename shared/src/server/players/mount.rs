@@ -152,7 +152,7 @@ fn spawn_mount_on_unmount(
     for (entity, mut delayed_spawn, game_scene_id) in delayed_spawns.iter_mut() {
         delayed_spawn.timer.tick(time.delta());
 
-        if delayed_spawn.timer.finished() {
+        if delayed_spawn.timer.is_finished() {
             commands.spawn((
                 Mount {
                     mount_type: delayed_spawn.mount_type,

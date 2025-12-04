@@ -85,7 +85,7 @@ pub fn on_flag_destroyed(
     flag_sprite_sheet: Res<FlagSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let mut sprite = query.get_mut(entity)?;
 
     let animation = flag_sprite_sheet

@@ -124,7 +124,7 @@ fn init_highlightable(
     interactable: Query<&Interactable, Without<Player>>,
     mut commands: Commands,
 ) -> Result {
-    let Ok(interactable) = interactable.get(trigger.target()) else {
+    let Ok(interactable) = interactable.get(trigger.entity) else {
         return Ok(());
     };
 
@@ -136,14 +136,14 @@ fn init_highlightable(
         return Ok(());
     }
     commands
-        .entity(trigger.target())
+        .entity(trigger.entity)
         .try_insert(Highlightable::default());
     Ok(())
 }
 
 fn remove_highlightable(trigger: On<Remove, Interactable>, mut commands: Commands) -> Result {
     commands
-        .entity(trigger.target())
+        .entity(trigger.entity)
         .try_remove::<Highlightable>()
         .try_remove::<Highlighted>();
     Ok(())
@@ -154,10 +154,10 @@ fn restore_original_sprite(
     mut query: Query<(&mut Sprite, &OriginalSprite)>,
     mut commands: Commands,
 ) -> Result {
-    let (mut sprite, original_sprite) = query.get_mut(trigger.target())?;
+    let (mut sprite, original_sprite) = query.get_mut(trigger.entity)?;
     sprite.image = (**original_sprite).clone();
     commands
-        .entity(trigger.target())
+        .entity(trigger.entity)
         .try_remove::<OriginalSprite>();
     Ok(())
 }
@@ -168,11 +168,11 @@ fn outline_sprite(
     mut images: ResMut<Assets<Image>>,
     mut commands: Commands,
 ) -> Result {
-    let (mut sprite, highlightable) = query.get_mut(trigger.target())?;
+    let (mut sprite, highlightable) = query.get_mut(trigger.entity)?;
     let outline_color = highlightable.outline_color;
 
     commands
-        .entity(trigger.target())
+        .entity(trigger.entity)
         .insert(OriginalSprite(sprite.image.clone()));
 
     let maybe_image = images.get(sprite.image.id());
