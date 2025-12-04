@@ -33,7 +33,7 @@ impl Plugin for PlayerPort {
                     channel_input
                         .before(ClientSet::Send)
                         .run_if(in_state(PlayerState::World)),
-                    progress_cooldown.run_if(server_or_singleplayer),
+                    progress_cooldown.run_if(in_state(ClientState::Disconnected)),
                 ),
             )
             .add_systems(

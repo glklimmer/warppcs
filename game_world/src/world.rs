@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy::platform::collections::HashMap;
 use bevy_replicon::{
-    prelude::{FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer},
+    prelude::{ClientState, FromClient, SendMode, ServerTriggerExt, ToClients},
     server::ServerSet,
 };
 use petgraph::{Graph, Undirected};
@@ -19,7 +19,7 @@ impl Plugin for WorldPlugin {
             PreUpdate,
             init_world
                 .after(ServerSet::Receive)
-                .run_if(server_or_singleplayer)
+                .run_if(in_state(ClientState::Disconnected))
                 .run_if(in_state(GameState::MainMenu)),
         );
     }

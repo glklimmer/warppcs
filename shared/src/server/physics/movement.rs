@@ -67,13 +67,13 @@ impl Plugin for MovementPlugin {
                 (wall_collision, no_walk_zone_collision),
             )
                 .chain()
-                .run_if(server_or_singleplayer),
+                .run_if(in_state(ClientState::Disconnected)),
         );
         app.add_systems(
             FixedPostUpdate,
             (apply_gravity, (apply_velocity, apply_direction))
                 .chain()
-                .run_if(server_or_singleplayer),
+                .run_if(in_state(ClientState::Disconnected)),
         );
     }
 }

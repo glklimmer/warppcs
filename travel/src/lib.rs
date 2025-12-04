@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
 use bevy::{input::common_conditions::input_just_pressed, sprite::Anchor};
 use bevy_replicon::prelude::{
-    AppRuleExt, Channel, ClientTriggerAppExt, ClientTriggerExt, FromClient, Replicated, SendMode,
-    ServerTriggerAppExt, ServerTriggerExt, ToClients, server_or_singleplayer,
+    AppRuleExt, Channel, ClientState, ClientTriggerAppExt, ClientTriggerExt, FromClient,
+    Replicated, SendMode, ServerTriggerAppExt, ServerTriggerExt, ToClients,
 };
 use highlight::{
     Highlightable,
@@ -60,10 +60,13 @@ impl Plugin for TravelPlugin {
                     animate_dashes,
                 ),
             )
-            .add_systems(Update, travel_timer.run_if(server_or_singleplayer))
+            .add_systems(
+                Update,
+                travel_timer.run_if(in_state(ClientState::Disconnected)),
+            )
             .add_systems(
                 FixedUpdate,
-                (init_travel_dialog, end_travel).run_if(server_or_singleplayer),
+                (init_travel_dialog, end_travel).run_if(in_state(ClientState::Disconnected)),
             );
     }
 }
