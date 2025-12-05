@@ -673,7 +673,7 @@ dependencies = [
 [[package]]
 name = "bevy-parallax"
 version = "0.11.0"
-source = "git+https://github.com/GianlucaFrongia/bevy-parallax#1604977c8f1035403838a3aff4946f9b4f3b0440"
+source = "git+https://github.com/GianlucaFrongia/bevy-parallax#d6c7876effcd61b01213343f42be73acf131c9c6"
 dependencies = [
  "bevy",
  "serde",
@@ -3368,9 +3368,9 @@ checksum = "b7ac824320a75a52197e8f2d787f6a38b6718bb6897a35142d749af3c0e8f4fe"
 
 [[package]]
 name = "flate2"
-version = "1.1.5"
+version = "1.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfe33edd8e85a12a67454e37f8c75e730830d83e313556ab9ebf9ee7fbeb3bfb"
+checksum = "a2152dbcb980c05735e2a651d96011320a949eb31a0c8b38b72645ce97dec676"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
@@ -4929,9 +4929,9 @@ dependencies = [
 
 [[package]]
 name = "octets"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4df8e8352f73465f015867c7ab24d2c46511bb8148e7177fe823e88f4f1f9765"
+checksum = "2ba5d98c13e549f6f26f7d70808688ab85c6b42eb350ba2524d96c24ebde27e9"
 
 [[package]]
 name = "octs"
