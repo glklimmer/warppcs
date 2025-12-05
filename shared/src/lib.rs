@@ -8,8 +8,8 @@ use bevy_replicon::prelude::{ClientEventAppExt, ClientId, ServerMessageAppExt};
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
-        AppRuleExt, Channel, ClientVisibility, ConnectedClient, Replicated,
-        SendMode, ServerEventAppExt, ServerTriggerExt, SyncRelatedAppExt, ToClients,
+        AppRuleExt, Channel, ClientVisibility, ConnectedClient, Replicated, SendMode,
+        ServerEventAppExt, ServerTriggerExt, SyncRelatedAppExt, ToClients,
     },
     server::{ServerPlugin, VisibilityPolicy},
 };
