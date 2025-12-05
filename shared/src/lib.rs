@@ -5,11 +5,12 @@ use bevy::{
     sprite::Anchor,
 };
 use bevy_replicon::prelude::{ClientEventAppExt, ClientId, ServerMessageAppExt};
+use bevy_replicon::server::AuthorizedClient;
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
-        AppRuleExt, Channel, ClientVisibility, ConnectedClient, Replicated, SendMode,
-        ServerEventAppExt, ServerTriggerExt, SyncRelatedAppExt, ToClients,
+        AppRuleExt, Channel, ClientVisibility, Replicated, SendMode, ServerEventAppExt,
+        ServerTriggerExt, SyncRelatedAppExt, ToClients,
     },
     server::{ServerPlugin, VisibilityPolicy},
 };
@@ -238,7 +239,7 @@ impl Hash for GameScene {
 }
 
 fn spawn_clients(
-    trigger: On<Add, ConnectedClient>,
+    trigger: On<Add, AuthorizedClient>,
     mut visibility: Query<&mut ClientVisibility>,
     mut client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
