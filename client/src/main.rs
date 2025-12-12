@@ -2,21 +2,22 @@ use bevy::prelude::*;
 
 use bevy::audio::{AudioPlugin, SpatialScale, Volume};
 use bevy_parallax::ParallaxPlugin;
+use game_world::GameWorldPlugin;
 use gizmos::GizmosPlugin;
-use map::MapPlugin;
 use networking::join_server::JoinServerPlugin;
+use shared::PlayerState;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
 };
 use sprite_variant_loader::SpriteVariantLoaderPlugin;
 use std::env;
 use ui::UiPlugin;
-use widgets::WidgetsPlugin;
 
 use animations::AnimationPlugin;
 use camera::CameraPlugin;
 use entities::EntitiesPlugin;
 use input::InputPlugin;
+use travel::TravelPlugin;
 
 use crate::{
     background::BackgroundPlugin, background_sound::BackgroundSoundPlugin, defeat::DefeatPlugin,
@@ -28,7 +29,6 @@ pub mod defeat;
 pub mod entities;
 pub mod gizmos;
 pub mod input;
-pub mod map;
 pub mod networking;
 pub mod ui;
 pub mod widgets;
@@ -54,19 +54,18 @@ fn main() {
         use aeronet_steam::SteamworksClient;
         use bevy_steamworks::SteamworksPlugin;
 
-        let (steam, steam_single) = aeronet_steam::steamworks::Client::init_app(1513980)
+        let steam = aeronet_steam::steamworks::Client::init_app(1513980)
             .expect("failed to initialize steam");
         steam.networking_utils().init_relay_network_access();
 
         client
             .insert_resource(SteamworksClient(steam.clone()))
-            .insert_non_send_resource(steam_single)
             .add_plugins(SteamworksPlugin::with(steam).unwrap());
     }
 
     let primary_window = Window {
         title: format!("WARPPC {user}"),
-        resolution: (1280.0, 720.0).into(),
+        resolution: (1280, 720).into(),
         resizable: false,
         ..default()
     };
@@ -86,22 +85,24 @@ fn main() {
 
     client.add_plugins(SharedPlugin);
 
-    client.insert_state(GameState::Loading).add_plugins((
-        SpriteVariantLoaderPlugin,
-        ParallaxPlugin,
-        CameraPlugin,
-        InputPlugin,
-        AnimationPlugin,
-        BackgroundPlugin,
-        // MenuPlugin,
-        EntitiesPlugin,
-        WidgetsPlugin,
-        UiPlugin,
-        MapPlugin,
-        BackgroundSoundPlugin,
-        GizmosPlugin,
-        DefeatPlugin,
-    ));
+    client
+        .insert_state(GameState::Loading)
+        .insert_state(PlayerState::World)
+        .add_plugins((
+            SpriteVariantLoaderPlugin,
+            ParallaxPlugin,
+            CameraPlugin,
+            InputPlugin,
+            AnimationPlugin,
+            BackgroundPlugin,
+            EntitiesPlugin,
+            UiPlugin,
+            BackgroundSoundPlugin,
+            GizmosPlugin,
+            DefeatPlugin,
+            GameWorldPlugin,
+            TravelPlugin,
+        ));
 
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);
 

@@ -70,7 +70,7 @@ impl VolumeDiff for Volume {
     }
 }
 
-#[derive(Event)]
+#[derive(Message)]
 struct MusicTransitionEvent {
     track: MusicTrack,
     fade_time: Seconds,
@@ -93,13 +93,13 @@ pub struct BackgroundSoundPlugin;
 impl Plugin for BackgroundSoundPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MusicState>();
-        app.add_event::<MusicTransitionEvent>();
+        app.add_message::<MusicTransitionEvent>();
 
         app.add_systems(Startup, setup_music);
         app.add_systems(
             Update,
             (
-                handle_music_transitions.run_if(on_event::<MusicTransitionEvent>),
+                handle_music_transitions.run_if(on_message::<MusicTransitionEvent>),
                 update_music_volume,
             ),
         );
@@ -142,7 +142,7 @@ fn setup_music(asset_server: Res<AssetServer>, mut commands: Commands) {
 fn handle_music_transitions(
     mut music_state: ResMut<MusicState>,
     mut music_players: Query<(&mut MusicPlayer, &AudioSink)>,
-    mut transition_events: EventReader<MusicTransitionEvent>,
+    mut transition_events: MessageReader<MusicTransitionEvent>,
 ) {
     for event in transition_events.read() {
         music_state.is_transitioning = true;
@@ -209,7 +209,7 @@ fn update_music_volume(
 
 fn play_fight_music(
     mut music_state: ResMut<MusicState>,
-    mut music_events: EventWriter<MusicTransitionEvent>,
+    mut music_events: MessageWriter<MusicTransitionEvent>,
     player_query: Query<(&Transform, &Owner), With<ControlledPlayer>>,
     unit_query: Query<(&Transform, &Owner, &UnitAnimation), Without<ControlledPlayer>>,
 ) -> Result {

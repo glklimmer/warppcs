@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use bevy::{
     app::Plugin,
     ecs::{entity::Entity, system::In, world::World},
-    reflect::Map,
     remote::{BrpError, BrpResult, RemotePlugin, http::RemoteHttpPlugin},
 };
 use console_protocol::*;
@@ -22,10 +21,10 @@ use crate::{
     server::{
         ai::BanditBehaviour,
         entities::{Sight, commander::ArmyFormation},
-        game_scenes::GameSceneId,
         physics::army_slot::ArmySlot,
     },
 };
+use crate::GameSceneId;
 
 use super::{
     ai::{FollowOffset, UnitBehaviour},
@@ -73,11 +72,11 @@ trait PlayerCommand {
             .get_resource::<ClientPlayerMap>()
             .ok_or_else(|| BrpError::internal("Missing ClientPlayerMap resource"))?;
         let (_, player) = client_player_map
-            .get_at(self.player() as usize)
+            .iter()
+            .nth(self.player() as usize)
             .ok_or_else(|| BrpError::internal("Player index out of bounds"))?;
-        let entity = player
-            .try_downcast_ref::<Entity>()
-            .ok_or_else(|| BrpError::internal("Value in ClientPlayerMap wasn’t an Entity"))?;
+        let entity = player;
+
         Ok(*entity)
     }
 }

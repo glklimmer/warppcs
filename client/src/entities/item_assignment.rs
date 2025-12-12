@@ -63,16 +63,16 @@ enum BuildingDialog {
 #[derive(Resource, Default, Deref, DerefMut)]
 struct CurrentBuilding(Option<Entity>);
 
-fn item_selected(trigger: Trigger<SelectionEvent<Item>>, mut commands: Commands) -> Result {
+fn item_selected(trigger: On<SelectionEvent<Item>>, mut commands: Commands) -> Result {
     let item = &trigger.selection;
 
     commands.client_trigger(AssignItem::new(item.clone()));
-    commands.send_event(CloseEvent);
+    commands.trigger(CloseEvent);
     Ok(())
 }
 
 fn slot_selected(
-    trigger: Trigger<SelectionEvent<ItemSlot>>,
+    trigger: On<SelectionEvent<ItemSlot>>,
     inventory: Query<&Inventory, With<ControlledPlayer>>,
     transform: Query<&GlobalTransform>,
     weapons_ss: Res<WeaponsSpriteSheet>,
@@ -129,7 +129,7 @@ fn build_node(item: &Item, sheets: &SpriteSheets) -> MenuNode<Item> {
 }
 
 fn open_building_dialog(
-    trigger: Trigger<OpenBuildingDialog>,
+    trigger: On<OpenBuildingDialog>,
     mut current_building: ResMut<CurrentBuilding>,
     building: Query<&Transform>,
     asset_server: Res<AssetServer>,
@@ -165,24 +165,24 @@ fn open_building_dialog(
     Ok(())
 }
 
-fn start_build(trigger: Trigger<SelectionEvent<BuildingDialog>>, mut commands: Commands) {
+fn start_build(trigger: On<SelectionEvent<BuildingDialog>>, mut commands: Commands) {
     let BuildingDialog::Build = trigger.selection else {
         return;
     };
 
-    commands.client_trigger(StartBuild);
+    commands.client_trigger(StartBuild(0));
 }
 
-fn close_assignment_dialog(_: Trigger<CloseBuildingDialog>, mut commands: Commands) {
-    commands.send_event(CloseEvent);
+fn close_assignment_dialog(_: On<CloseBuildingDialog>, mut commands: Commands) {
+    commands.trigger(CloseEvent);
 }
 
 fn show_item_info(
-    trigger: Trigger<OnAdd, Selected>,
+    trigger: On<Add, Selected>,
     items: Query<&ItemInfo>,
     mut commands: Commands,
 ) -> Result {
-    if let Ok(info) = items.get(trigger.target()) {
+    if let Ok(info) = items.get(trigger.entity) {
         let mut entity = commands.get_entity(info.tooltip)?;
         entity.try_insert(Visibility::Visible);
     };
@@ -190,11 +190,11 @@ fn show_item_info(
 }
 
 fn hide_item_info(
-    trigger: Trigger<OnRemove, Selected>,
+    trigger: On<Remove, Selected>,
     items: Query<&ItemInfo>,
     mut commands: Commands,
 ) -> Result {
-    if let Ok(info) = items.get(trigger.target()) {
+    if let Ok(info) = items.get(trigger.entity) {
         let mut entity = commands.get_entity(info.tooltip)?;
         entity.try_insert(Visibility::Hidden);
     };
@@ -254,7 +254,7 @@ fn update_assignment(
 }
 
 fn open_assignment_dialog(
-    trigger: Trigger<SelectionEvent<BuildingDialog>>,
+    trigger: On<SelectionEvent<BuildingDialog>>,
     current_building: Res<CurrentBuilding>,
     assignment: Query<&ItemAssignment>,
     transform: Query<&GlobalTransform>,

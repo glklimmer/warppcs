@@ -12,12 +12,12 @@ pub struct PlayerMovement;
 
 impl Plugin for PlayerMovement {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<MovePlayer>(Channel::Ordered)
+        app.add_client_event::<MovePlayer>(Channel::Ordered)
             .add_observer(apply_movement)
             .add_systems(
                 Update,
                 movement_input
-                    .before(ClientSet::Send)
+                    .before(ClientSystems::Send)
                     .run_if(in_state(PlayerState::World)),
             );
     }
@@ -41,15 +41,15 @@ fn movement_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) {
 }
 
 fn apply_movement(
-    trigger: Trigger<FromClient<MovePlayer>>,
+    trigger: On<FromClient<MovePlayer>>,
     mut players: Query<(&mut Velocity, &Speed)>,
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
 
     let (mut velocity, speed) = players.get_mut(*player)?;
 
-    let direction = Vec2::new(trigger.event.x, 0.).normalize_or_zero();
+    let direction = Vec2::new(trigger.x, 0.).normalize_or_zero();
     velocity.0 = direction * speed.0;
     Ok(())
 }

@@ -1,5 +1,5 @@
 [package]
-name = "highlight"
+name = "game_world"
 version = "0.1.0"
 edition = "2024"
 
@@ -37,4 +37,8 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
-image = { workspace = true }
+travel = { path = "../travel" }
+bevy_replicon = { workspace = true }
+fastrand = { workspace = true }
+serde = { workspace = true }
+petgraph = { workspace = true }

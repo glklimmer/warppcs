@@ -20,15 +20,15 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((MountPlugin, KnockoutPlugin))
-            .add_event::<DropFlagEvent>()
-            .add_event::<PickFlagEvent>()
+            .add_message::<DropFlagEvent>()
+            .add_message::<PickFlagEvent>()
             .add_systems(
                 FixedUpdate,
                 (
                     (flag_interact, open_chest, pickup_item)
-                        .run_if(on_event::<InteractionTriggeredEvent>),
-                    drop_flag.run_if(on_event::<DropFlagEvent>),
-                    pick_flag.run_if(on_event::<PickFlagEvent>),
+                        .run_if(on_message::<InteractionTriggeredEvent>),
+                    drop_flag.run_if(on_message::<DropFlagEvent>),
+                    pick_flag.run_if(on_message::<PickFlagEvent>),
                 ),
             );
     }

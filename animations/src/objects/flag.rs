@@ -80,12 +80,12 @@ pub fn update_flag_visibility(
 }
 
 pub fn on_flag_destroyed(
-    trigger: Trigger<OnAdd, FlagDestroyed>,
+    trigger: On<Add, FlagDestroyed>,
     mut query: Query<&mut Sprite>,
     flag_sprite_sheet: Res<FlagSpriteSheet>,
     mut commands: Commands,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let mut sprite = query.get_mut(entity)?;
 
     let animation = flag_sprite_sheet

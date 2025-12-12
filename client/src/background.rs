@@ -1,9 +1,8 @@
 use bevy::prelude::*;
+
 use bevy_parallax::{CreateParallaxEvent, LayerData, LayerRepeat, LayerSpeed, RepeatStrategy};
-use shared::{
-    ControlledPlayer, PlayerState,
-    server::game_scenes::{travel::Traveling, world::SceneType},
-};
+use shared::{ControlledPlayer, PlayerState, SceneType};
+use travel::Traveling;
 
 pub struct BackgroundPlugin;
 
@@ -16,7 +15,7 @@ impl Plugin for BackgroundPlugin {
 
 fn setup_background(
     camera: Query<Entity, With<Camera2d>>,
-    mut create_parallax: EventWriter<CreateParallaxEvent>,
+    mut create_parallax: MessageWriter<CreateParallaxEvent>,
 ) -> Result {
     let camera = camera.single()?;
     let event = player_background(camera);
@@ -29,7 +28,7 @@ fn setup_background(
 fn change_background(
     query: Query<&Traveling, With<ControlledPlayer>>,
     camera: Query<Entity, With<Camera2d>>,
-    mut create_parallax: EventWriter<CreateParallaxEvent>,
+    mut create_parallax: MessageWriter<CreateParallaxEvent>,
 ) -> Result {
     let travel = query.single()?;
     let camera = camera.single()?;

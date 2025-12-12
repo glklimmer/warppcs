@@ -3,6 +3,9 @@ name = "shared"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [features]
 default = ["netcode", "bevy/dynamic_linking"]
 steam = ["bevy-steamworks", "aeronet_steam"]
@@ -55,16 +58,12 @@ aeronet_steam = { workspace = true, features = [
     "client",
     "server",
 ], optional = true }
+petgraph = { workspace = true }
 
 enum_as_f32_macro = { path = "../enum_as_f32_macro" }
 enum_mappable = { path = "../enum_mappable" }
 console_protocol = { version = "0.1.0", path = "../console_protocol" }
 
 bevy_behave = { git = "https://github.com/glklimmer/bevy_behave" }
-petgraph = { version = "0.8.1", features = ["serde-1"] }
 serde_json = "1.0.140"
 
-[lints.clippy]
-type_complexity = "allow"
-too_many_arguments = "allow"
-let_and_return = "allow"

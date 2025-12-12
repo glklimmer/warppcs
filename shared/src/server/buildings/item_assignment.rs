@@ -25,7 +25,7 @@ impl Plugin for ItemAssignmentPlugins {
             .init_resource::<ActiveBuilding>()
             .add_systems(
                 Update,
-                start_assignment_dialog.run_if(on_event::<InteractionTriggeredEvent>),
+                start_assignment_dialog.run_if(on_message::<InteractionTriggeredEvent>),
             );
     }
 }
@@ -69,7 +69,7 @@ impl MapEntities for OpenBuildingDialog {
 }
 
 #[derive(Event, Deserialize, Serialize)]
-pub struct CloseBuildingDialog;
+pub struct CloseBuildingDialog(usize);
 
 #[derive(Event, Deserialize, Serialize, Deref)]
 pub struct AssignItem(Item);
@@ -81,7 +81,7 @@ impl AssignItem {
 }
 
 #[derive(Event, Deserialize, Serialize)]
-pub struct StartBuild;
+pub struct StartBuild(pub usize);
 
 #[derive(Resource, Default, Deref, DerefMut)]
 struct ActiveBuilding(HashMap<Entity, Entity>);
@@ -98,15 +98,15 @@ impl ActiveBuildingExt for ActiveBuilding {
 }
 
 fn check_start_building(
-    trigger: Trigger<FromClient<StartBuild>>,
-    mut interactions: EventWriter<InteractionTriggeredEvent>,
+    trigger: On<FromClient<StartBuild>>,
+    mut interactions: MessageWriter<InteractionTriggeredEvent>,
     assignment: Query<&ItemAssignment>,
     active: Res<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
     players: Query<&Player>,
     mut commands: Commands,
 ) -> Result {
-    let player_entity = *client_player_map.get_player(&trigger.client_entity)?;
+    let player_entity = *client_player_map.get_player(&trigger.client_id)?;
     let player = players.get(player_entity)?;
     let active_building = *active.get_entity(&player_entity)?;
 
@@ -149,14 +149,14 @@ fn check_start_building(
     });
 
     commands.server_trigger(ToClients {
-        mode: SendMode::Direct(trigger.client_entity),
-        event: CloseBuildingDialog,
+        mode: SendMode::Direct(trigger.client_id),
+        message: CloseBuildingDialog(0),
     });
     Ok(())
 }
 
 fn start_assignment_dialog(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut active: ResMut<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
@@ -170,7 +170,7 @@ fn start_assignment_dialog(
 
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*player),
-            event: OpenBuildingDialog {
+            message: OpenBuildingDialog {
                 building: event.interactable,
             },
         });
@@ -181,13 +181,13 @@ fn start_assignment_dialog(
 }
 
 fn assign_item(
-    trigger: Trigger<FromClient<AssignItem>>,
+    trigger: On<FromClient<AssignItem>>,
     active: Res<ActiveBuilding>,
     mut assignment: Query<&mut ItemAssignment>,
     mut inventory: Query<&mut Inventory>,
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let active_building = *active.get_entity(player)?;
     let mut inventory = inventory.get_mut(*player)?;
 

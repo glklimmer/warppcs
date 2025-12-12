@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use shared::{enum_map::*, AnimationChange, AnimationChangeEvent};
+use shared::{AnimationChange, AnimationChangeEvent, enum_map::*};
 
-use crate::{anim, AnimationSound, AnimationSpriteSheet, AnimationTrigger, SpriteSheetAnimation};
+use crate::{AnimationSound, AnimationSpriteSheet, AnimationTrigger, SpriteSheetAnimation, anim};
 
 const ATLAS_COLUMNS: usize = 8;
 
@@ -55,8 +55,8 @@ impl FromWorld for HorseSpriteSheet {
 }
 
 pub fn next_horse_animation(
-    mut network_events: EventReader<AnimationChangeEvent>,
-    mut animation_trigger: EventWriter<AnimationTrigger<HorseAnimation>>,
+    mut network_events: MessageReader<AnimationChangeEvent>,
+    mut animation_trigger: MessageWriter<AnimationTrigger<HorseAnimation>>,
 ) {
     for event in network_events.read() {
         let new_animation = match &event.change {
@@ -84,7 +84,7 @@ pub fn set_horse_sprite_animation(
         &mut Sprite,
         &mut HorseAnimation,
     )>,
-    mut animation_changed: EventReader<AnimationTrigger<HorseAnimation>>,
+    mut animation_changed: MessageReader<AnimationTrigger<HorseAnimation>>,
     horse_sprite_sheet: Res<HorseSpriteSheet>,
 ) {
     for new_animation in animation_changed.read() {

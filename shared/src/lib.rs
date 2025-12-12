@@ -1,18 +1,21 @@
 use bevy::prelude::*;
 
-use bevy::platform::collections::HashMap;
+use bevy::{
+    ecs::entity::MapEntities, math::bounding::Aabb2d, platform::collections::HashMap,
+    sprite::Anchor,
+};
+use bevy_replicon::prelude::{ClientEventAppExt, ClientId, ServerMessageAppExt};
+use bevy_replicon::server::AuthorizedClient;
 use bevy_replicon::{
     RepliconPlugins,
     prelude::{
-        AppRuleExt, Channel, ClientTriggerAppExt, ClientVisibility, ConnectedClient, Replicated,
-        SendMode, ServerEventAppExt, ServerTriggerAppExt, ServerTriggerExt, SyncRelatedAppExt,
-        ToClients,
+        AppRuleExt, Channel, ClientVisibility, Replicated, SendMode, ServerEventAppExt,
+        ServerTriggerExt, SyncRelatedAppExt, ToClients,
     },
-    server::{ServerPlugin, TickPolicy, VisibilityPolicy},
+    server::{ServerPlugin, VisibilityPolicy},
 };
+use core::hash::{Hash, Hasher};
 use enum_map::*;
-
-use bevy::{ecs::entity::MapEntities, math::bounding::Aabb2d, sprite::Anchor};
 use map::{
     Layers,
     buildings::{BuildStatus, Building, RecruitBuilding, RespawnZone},
@@ -36,7 +39,6 @@ use server::{
             CommanderCampInteraction, CommanderInteraction,
         },
     },
-    game_scenes::{travel::Traveling, world::GameScene},
     physics::{
         attachment::AttachedTo,
         movement::{Grounded, Moving, Speed, Velocity},
@@ -56,14 +58,6 @@ use crate::{
         entities::{
             commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
             health::{Health, PlayerDefeated},
-        },
-        game_scenes::{
-            GameSceneId,
-            travel::{
-                AddMysteryMapIcon, OpenTravelDialog, RevealMapIcon, Road, SceneEnd,
-                SelectTravelDestination,
-            },
-            world::InitPlayerMapNode,
         },
         physics::army_slot::ArmySlot,
         players::{chest::ChestOpened, flag::FlagDestroyed},
@@ -87,7 +81,6 @@ impl Plugin for SharedPlugin {
         app.add_plugins((
             RepliconPlugins.set(ServerPlugin {
                 visibility_policy: VisibilityPolicy::Whitelist,
-                tick_policy: TickPolicy::MaxTickRate(30),
                 ..Default::default()
             }),
             PlayerMovement,
@@ -102,8 +95,6 @@ impl Plugin for SharedPlugin {
         .replicate::<Owner>()
         .replicate::<Mounted>()
         .replicate::<ItemAssignment>()
-        .replicate::<Traveling>()
-        .replicate::<GameScene>()
         .replicate::<Interactable>()
         .replicate::<AttachedTo>()
         .replicate::<ArmyFlagAssignments>()
@@ -111,41 +102,34 @@ impl Plugin for SharedPlugin {
         .replicate::<FlagHolder>()
         .replicate::<FlagDestroyed>()
         .replicate::<ChestOpened>()
-        .replicate_group::<(Player, Transform, Inventory)>()
-        .replicate_group::<(RecruitBuilding, Transform)>()
-        .replicate_group::<(Building, BuildStatus, Transform)>()
-        .replicate_group::<(RespawnZone, Transform)>()
-        .replicate_group::<(SiegeCamp, Transform)>()
-        .replicate_group::<(Flag, Transform)>()
-        .replicate_group::<(ProjectileType, Transform)>()
-        .replicate_group::<(Unit, Transform)>()
-        .replicate_group::<(Portal, Transform)>()
-        .replicate_group::<(Road, Transform)>()
-        .replicate_group::<(SceneEnd, Transform)>()
-        .replicate_group::<(Mount, Transform)>()
-        .replicate_group::<(Chest, Transform)>()
-        .replicate_group::<(Item, Transform)>()
-        .replicate_group::<(ArmySlot, Transform)>()
+        .replicate_bundle::<(Player, Transform, Inventory)>()
+        .replicate_bundle::<(RecruitBuilding, Transform)>()
+        .replicate_bundle::<(Building, BuildStatus, Transform)>()
+        .replicate_bundle::<(RespawnZone, Transform)>()
+        .replicate_bundle::<(SiegeCamp, Transform)>()
+        .replicate_bundle::<(Flag, Transform)>()
+        .replicate_bundle::<(ProjectileType, Transform)>()
+        .replicate_bundle::<(Unit, Transform)>()
+        .replicate_bundle::<(Portal, Transform)>()
+        .replicate_bundle::<(Mount, Transform)>()
+        .replicate_bundle::<(Chest, Transform)>()
+        .replicate_bundle::<(Item, Transform)>()
+        .replicate_bundle::<(ArmySlot, Transform)>()
         .sync_related_entities::<FlagAssignment>()
-        .add_client_trigger::<ArmyPosition>(Channel::Ordered)
-        .add_client_trigger::<CommanderCampInteraction>(Channel::Ordered)
-        .add_client_trigger::<AssignItem>(Channel::Ordered)
-        .add_client_trigger::<StartBuild>(Channel::Ordered)
-        .add_client_trigger::<CommanderAssignmentRequest>(Channel::Ordered)
-        .add_client_trigger::<CommanderPickFlag>(Channel::Ordered)
-        .add_client_trigger::<SelectTravelDestination>(Channel::Ordered)
-        .add_server_trigger::<InteractableSound>(Channel::Ordered)
-        .add_server_trigger::<CommanderAssignmentReject>(Channel::Ordered)
-        .add_server_trigger::<CloseBuildingDialog>(Channel::Ordered)
-        .add_server_trigger::<InitPlayerMapNode>(Channel::Ordered)
-        .add_server_trigger::<AddMysteryMapIcon>(Channel::Ordered)
-        .add_server_trigger::<RevealMapIcon>(Channel::Ordered)
-        .add_server_trigger::<OpenTravelDialog>(Channel::Ordered)
-        .add_mapped_server_trigger::<PlayerDefeated>(Channel::Ordered)
-        .add_mapped_server_trigger::<CommanderInteraction>(Channel::Ordered)
-        .add_mapped_server_trigger::<OpenBuildingDialog>(Channel::Ordered)
-        .add_mapped_server_trigger::<SetLocalPlayer>(Channel::Ordered)
-        .add_mapped_server_event::<AnimationChangeEvent>(Channel::Ordered)
+        .add_client_event::<ArmyPosition>(Channel::Ordered)
+        .add_client_event::<CommanderCampInteraction>(Channel::Ordered)
+        .add_client_event::<AssignItem>(Channel::Ordered)
+        .add_client_event::<StartBuild>(Channel::Ordered)
+        .add_client_event::<CommanderAssignmentRequest>(Channel::Ordered)
+        .add_client_event::<CommanderPickFlag>(Channel::Ordered)
+        .add_server_event::<InteractableSound>(Channel::Ordered)
+        .add_server_event::<CommanderAssignmentReject>(Channel::Ordered)
+        .add_server_event::<CloseBuildingDialog>(Channel::Ordered)
+        .add_mapped_server_event::<PlayerDefeated>(Channel::Ordered)
+        .add_mapped_server_event::<CommanderInteraction>(Channel::Ordered)
+        .add_mapped_server_event::<OpenBuildingDialog>(Channel::Ordered)
+        .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
+        .add_mapped_server_message::<AnimationChangeEvent>(Channel::Ordered)
         .add_observer(spawn_clients)
         .add_observer(update_visibility)
         .add_observer(hide_on_remove);
@@ -160,10 +144,10 @@ pub enum Hitby {
 /// Key is NetworkEntity
 /// Value is PlayerEntity
 #[derive(Resource, DerefMut, Deref, Default, Reflect)]
-pub struct ClientPlayerMap(HashMap<Entity, Entity>);
+pub struct ClientPlayerMap(HashMap<ClientId, Entity>);
 
 impl ClientPlayerMap {
-    pub fn get_network_entity(&self, value: &Entity) -> Result<&Entity> {
+    pub fn get_network_entity(&self, value: &Entity) -> Result<&ClientId> {
         self.iter()
             .find_map(|(key, val)| if val == value { Some(key) } else { None })
             .ok_or("Network entity not found for player entity".into())
@@ -171,11 +155,11 @@ impl ClientPlayerMap {
 }
 
 pub trait ClientPlayerMapExt {
-    fn get_player(&self, entity: &Entity) -> Result<&Entity>;
+    fn get_player(&self, entity: &ClientId) -> Result<&Entity>;
 }
 
 impl ClientPlayerMapExt for ClientPlayerMap {
-    fn get_player(&self, entity: &Entity) -> Result<&Entity> {
+    fn get_player(&self, entity: &ClientId) -> Result<&Entity> {
         self.get(entity).ok_or("Player not found".into())
     }
 }
@@ -191,7 +175,7 @@ pub enum AnimationChange {
     Unmount,
 }
 
-#[derive(Event, Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Message, Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct AnimationChangeEvent {
     pub entity: Entity,
     pub change: AnimationChange,
@@ -203,44 +187,95 @@ impl MapEntities for AnimationChangeEvent {
     }
 }
 
+#[derive(Component, PartialEq, Eq, Hash, Copy, Clone, Debug, Serialize, Deserialize)]
+pub struct GameSceneId(usize);
+
+impl GameSceneId {
+    pub fn custom(id: usize) -> Self {
+        Self(id)
+    }
+
+    pub(crate) fn lobby() -> Self {
+        Self(0)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum SceneType {
+    Player { player: Entity, exit: Entity },
+    Camp { left: Entity, right: Entity },
+    Meadow { left: Entity, right: Entity },
+}
+
+#[derive(Component, Debug, Clone, Serialize, Deserialize, Copy)]
+pub struct GameScene {
+    pub id: GameSceneId,
+    pub scene: SceneType,
+    pub position: Vec2,
+}
+
+impl GameScene {
+    pub fn entry_entity(&self) -> Entity {
+        match self.scene {
+            SceneType::Player { exit, .. } => exit,
+            SceneType::Camp { left, .. } => left,
+            SceneType::Meadow { left, .. } => left,
+        }
+    }
+}
+
+impl PartialEq for GameScene {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for GameScene {}
+
+impl Hash for GameScene {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
 fn spawn_clients(
-    trigger: Trigger<OnAdd, ConnectedClient>,
+    trigger: On<Add, AuthorizedClient>,
     mut visibility: Query<&mut ClientVisibility>,
     mut client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
     let color = fastrand::choice(PlayerColor::all_variants()).ok_or("No PlayerColor available")?;
     let player = commands
-        .entity(trigger.target())
+        .entity(trigger.entity)
         .insert((
             Player { color: *color },
             Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
             GameSceneId::lobby(),
-            Owner::Player(trigger.target()),
+            Owner::Player(trigger.entity),
             Health { hitpoints: 200. },
         ))
         .id();
 
-    client_player_map.insert(player, player);
+    client_player_map.insert(ClientId::Client(trigger.entity), player);
 
     for mut client_visibility in visibility.iter_mut() {
         client_visibility.set_visibility(player, true);
     }
 
     commands.server_trigger(ToClients {
-        mode: SendMode::Direct(player),
-        event: SetLocalPlayer(player),
+        mode: SendMode::Direct(ClientId::Client(trigger.entity)),
+        message: SetLocalPlayer(player),
     });
     Ok(())
 }
 
 fn update_visibility(
-    trigger: Trigger<OnInsert, GameSceneId>,
+    trigger: On<Insert, GameSceneId>,
     mut players: Query<(Entity, &mut ClientVisibility, &GameSceneId), With<Player>>,
     others: Query<(Entity, &GameSceneId)>,
     player_check: Query<(), With<Player>>,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let (_, new_entity_scene_id) = others.get(entity)?;
 
     if player_check.get(entity).is_ok() {
@@ -273,10 +308,10 @@ fn update_visibility(
 }
 
 fn hide_on_remove(
-    trigger: Trigger<OnRemove, GameSceneId>,
+    trigger: On<Remove, GameSceneId>,
     mut players: Query<(Entity, &mut ClientVisibility), With<Player>>,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     for (player_entity, mut visibility) in &mut players {
         visibility.set_visibility(entity, player_entity == entity);
     }
@@ -299,7 +334,8 @@ impl MapEntities for SetLocalPlayer {
     BoxCollider = player_collider(),
     Speed,
     Velocity,
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Inventory,
 )]
 pub struct Player {

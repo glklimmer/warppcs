@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::{SendMode, ToClients};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, Owner, Player, PlayerState,
+    AnimationChange, AnimationChangeEvent, GameSceneId, Owner, Player, PlayerState,
     map::{
         Layers,
         buildings::{Building, BuildingType},
@@ -14,7 +14,6 @@ use crate::{
             Unit,
             health::{Health, TakeDamage},
         },
-        game_scenes::GameSceneId,
         physics::{attachment::AttachedTo, movement::Velocity},
     },
 };
@@ -45,7 +44,7 @@ impl Plugin for KnockoutPlugin {
 }
 
 fn kill_player(
-    mut damage_events: EventReader<TakeDamage>,
+    mut damage_events: MessageReader<TakeDamage>,
     mut player: Query<
         (
             Entity,
@@ -62,7 +61,7 @@ fn kill_player(
         (With<Health>, Without<Unit>),
     >,
     mut next_state: ResMut<NextState<PlayerState>>,
-    mut king_animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut king_animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     transform: Query<&Transform, (With<Flag>, Without<Player>)>,
     mut commands: Commands,
 ) -> Result {
@@ -91,7 +90,7 @@ fn kill_player(
 
         king_animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity: player_entity,
                 change: AnimationChange::KnockOut,
             },
@@ -133,7 +132,7 @@ fn respawm_player(
     mut respawn_query: Query<(Entity, &mut RespawnTimer)>,
     time: Res<Time>,
     mut next_state: ResMut<NextState<PlayerState>>,
-    mut king_animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut king_animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     mut commands: Commands,
 ) {
     for (player_entity, mut timer) in respawn_query.iter_mut() {
@@ -148,7 +147,7 @@ fn respawm_player(
 
             king_animation.write(ToClients {
                 mode: SendMode::Broadcast,
-                event: AnimationChangeEvent {
+                message: AnimationChangeEvent {
                     entity: player_entity,
                     change: AnimationChange::Idle,
                 },

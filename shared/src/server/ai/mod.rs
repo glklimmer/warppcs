@@ -65,11 +65,11 @@ struct WalkIntoRange;
 struct WalkingInDirection(WorldDirection);
 
 fn on_insert_unit_behaviour(
-    trigger: Trigger<OnInsert, UnitBehaviour>,
+    trigger: On<Insert, UnitBehaviour>,
     query: Query<(&UnitBehaviour, &Unit)>,
     mut commands: Commands,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let (behaviour, unit) = query.get(entity)?;
 
     let mut attack_chain: Vec<Tree<Behave>> = Vec::new();
@@ -168,11 +168,11 @@ fn on_insert_unit_behaviour(
 }
 
 fn on_insert_bandit_behaviour(
-    trigger: Trigger<OnInsert, BanditBehaviour>,
+    trigger: On<Insert, BanditBehaviour>,
     query: Query<&BanditBehaviour>,
     mut commands: Commands,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let behaviour = query.get(entity)?;
 
     let stance = match behaviour {
@@ -245,16 +245,16 @@ pub struct BehaveTarget(Entity);
 #[relationship_target(relationship = BehaveTarget)]
 pub struct BehaveSources(Vec<Entity>);
 
-#[derive(Clone)]
+#[derive(Event, Clone)]
 struct BeingPushed;
 
-#[derive(Clone)]
+#[derive(Event, Clone)]
 struct DetermineTarget;
 
-#[derive(Clone)]
+#[derive(Event, Clone)]
 struct TargetInMeleeRange;
 
-#[derive(Clone)]
+#[derive(Event, Clone)]
 struct TargetInProjectileRange;
 
 #[derive(Component, Clone, Deref)]
@@ -269,7 +269,7 @@ pub struct Target(Entity);
 pub struct TargetedBy(Vec<Entity>);
 
 fn push_back_check(
-    trigger: Trigger<BehaveTrigger<BeingPushed>>,
+    trigger: On<BehaveTrigger<BeingPushed>>,
     query: Query<Option<&PushBack>>,
     mut commands: Commands,
 ) -> Result {
@@ -278,7 +278,7 @@ fn push_back_check(
 
     match maybe_pushback {
         Some(push_back) => {
-            if push_back.timer.finished() {
+            if push_back.timer.is_finished() {
                 commands.trigger(ctx.failure());
             } else {
                 commands.trigger(ctx.success());
@@ -290,7 +290,7 @@ fn push_back_check(
 }
 
 fn determine_target(
-    trigger: Trigger<BehaveTrigger<DetermineTarget>>,
+    trigger: On<BehaveTrigger<DetermineTarget>>,
     query: Query<(&Transform, &Owner, &Sight, Option<&Target>)>,
     others: Query<(Entity, &Transform, &Owner), With<Health>>,
     mut commands: Commands,
@@ -330,7 +330,7 @@ fn determine_target(
 }
 
 fn check_target_in_melee_range(
-    trigger: Trigger<BehaveTrigger<TargetInMeleeRange>>,
+    trigger: On<BehaveTrigger<TargetInMeleeRange>>,
     query: Query<(&Transform, &MeleeRange, &Target)>,
     transform_query: Query<&Transform>,
     mut commands: Commands,
@@ -356,12 +356,13 @@ fn check_target_in_melee_range(
 }
 
 fn check_target_in_projectile_range(
-    trigger: Trigger<BehaveTrigger<TargetInProjectileRange>>,
+    trigger: On<BehaveTrigger<TargetInProjectileRange>>,
     query: Query<(&Transform, &ProjectileRange, &Target)>,
     transform_query: Query<&Transform>,
     mut commands: Commands,
 ) -> Result {
-    let ctx = trigger.ctx();
+    let ev = trigger.event();
+    let ctx = ev.ctx();
     let Ok((transform, range, target)) = query.get(ctx.target_entity()) else {
         commands.trigger(ctx.failure());
         return Ok(());

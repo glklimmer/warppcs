@@ -4,16 +4,17 @@ use bevy::{ecs::entity::MapEntities, platform::collections::HashMap};
 use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
-use crate::ClientPlayerMapExt;
-use crate::networking::UnitType;
-use crate::server::buildings::recruiting::{Flag, FlagAssignment};
-use crate::server::game_scenes::GameSceneId;
+use crate::GameSceneId;
 use crate::{
-    ClientPlayerMap, Owner, Vec3LayerExt,
+    ClientPlayerMap, ClientPlayerMapExt, Owner, Vec3LayerExt,
     enum_map::*,
     map::Layers,
+    networking::UnitType,
     server::{
-        buildings::{recruiting::FlagHolder, siege_camp::SiegeCamp},
+        buildings::{
+            recruiting::{Flag, FlagAssignment, FlagHolder},
+            siege_camp::SiegeCamp,
+        },
         physics::attachment::AttachedTo,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
@@ -68,16 +69,16 @@ pub enum ArmyPosition {
 }
 
 #[derive(Event, Serialize, Deserialize)]
-pub struct CommanderCampInteraction;
+pub struct CommanderCampInteraction(pub usize);
 
 #[derive(Event, Serialize, Deserialize)]
-pub struct CommanderPickFlag;
+pub struct CommanderPickFlag(pub usize);
 
 #[derive(Event, Serialize, Deserialize)]
-pub struct CommanderAssignmentRequest;
+pub struct CommanderAssignmentRequest(pub usize);
 
 #[derive(Event, Serialize, Deserialize)]
-pub struct CommanderAssignmentReject;
+pub struct CommanderAssignmentReject(pub usize);
 
 #[derive(Event, Serialize, Deserialize)]
 pub struct Assignment {
@@ -117,9 +118,6 @@ pub struct CommanderPlugin;
 impl Plugin for CommanderPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveCommander>()
-            .add_event::<SlotInteraction>()
-            .add_event::<CommanderCampInteraction>()
-            .add_event::<Assignment>()
             .add_observer(commander_assignment_validation)
             .add_observer(handle_slot_selection)
             .add_observer(handle_camp_interaction)
@@ -129,13 +127,13 @@ impl Plugin for CommanderPlugin {
             .add_observer(handle_pick_flag)
             .add_systems(
                 FixedUpdate,
-                commander_interaction.run_if(on_event::<InteractionTriggeredEvent>),
+                commander_interaction.run_if(on_message::<InteractionTriggeredEvent>),
             );
     }
 }
 
 fn commander_interaction(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut commands: Commands,
     client_player_map: Res<ClientPlayerMap>,
     mut active: ResMut<ActiveCommander>,
@@ -150,7 +148,7 @@ fn commander_interaction(
         let commander = event.interactable;
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*player),
-            event: CommanderInteraction { commander },
+            message: CommanderInteraction { commander },
         });
 
         active.insert(event.player, commander);
@@ -159,7 +157,7 @@ fn commander_interaction(
 }
 
 fn handle_pick_flag(
-    trigger: Trigger<FromClient<CommanderPickFlag>>,
+    trigger: On<FromClient<CommanderPickFlag>>,
     active: Res<ActiveCommander>,
     client_player_map: ResMut<ClientPlayerMap>,
     formations: Query<&ArmyFlagAssignments>,
@@ -168,7 +166,7 @@ fn handle_pick_flag(
     flag: Query<(Entity, &Flag)>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let commander = active.get_entity(player)?;
     let commander_flag = commander_flag_assignment.get(*commander)?;
     let army_flag_assignments = formations.get(*commander)?;
@@ -202,13 +200,13 @@ fn handle_pick_flag(
 }
 
 fn handle_camp_interaction(
-    trigger: Trigger<FromClient<CommanderCampInteraction>>,
+    trigger: On<FromClient<CommanderCampInteraction>>,
     active: Res<ActiveCommander>,
     client_player_map: ResMut<ClientPlayerMap>,
     query: Query<(&Transform, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let commander = active.get_entity(player)?;
     let (commander_transform, game_scene_id) = query.get(*commander)?;
     let commander_pos = commander_transform.translation;
@@ -223,21 +221,21 @@ fn handle_camp_interaction(
 }
 
 fn commander_assignment_validation(
-    trigger: Trigger<FromClient<ArmyPosition>>,
+    trigger: On<FromClient<ArmyPosition>>,
     client_player_map: ResMut<ClientPlayerMap>,
     flag_holder: Query<&FlagHolder>,
     flag: Query<&Flag>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let player_flag = flag_holder.get(*player);
 
     if let Ok(unit_flag) = player_flag {
         let unit = flag.get(**unit_flag)?;
         if let UnitType::Commander = unit.unit_type {
             commands.server_trigger(ToClients {
-                mode: SendMode::Direct(trigger.client_entity),
-                event: CommanderAssignmentReject,
+                mode: SendMode::Direct(trigger.client_id),
+                message: CommanderAssignmentReject(0),
             });
             return Ok(());
         }
@@ -245,13 +243,13 @@ fn commander_assignment_validation(
 
     commands.trigger(Assignment {
         player: *player,
-        slot: trigger.event,
+        slot: trigger.message,
     });
     Ok(())
 }
 
 fn handle_slot_selection(
-    trigger: Trigger<Assignment>,
+    trigger: On<Assignment>,
     active: Res<ActiveCommander>,
     formations: Query<&ArmyFlagAssignments>,
     mut commands: Commands,
@@ -300,7 +298,7 @@ fn handle_slot_selection(
 }
 
 fn assign_flag_to_formation(
-    trigger: Trigger<SlotInteraction>,
+    trigger: On<SlotInteraction>,
     mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation)>,
     mut commands: Commands,
 ) -> Result {
@@ -326,7 +324,7 @@ fn assign_flag_to_formation(
 }
 
 fn remove_flag_from_formation(
-    trigger: Trigger<SlotInteraction>,
+    trigger: On<SlotInteraction>,
     mut commanders: Query<&mut ArmyFlagAssignments>,
     mut commands: Commands,
 ) -> Result {
@@ -354,7 +352,7 @@ fn remove_flag_from_formation(
 }
 
 fn swap_flag_from_formation(
-    trigger: Trigger<SlotInteraction>,
+    trigger: On<SlotInteraction>,
     mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation)>,
     mut commands: Commands,
 ) -> Result {

@@ -113,8 +113,8 @@ impl FromWorld for KingSpriteSheet {
 }
 
 pub fn trigger_king_animation(
-    mut animation_changes: EventReader<AnimationChangeEvent>,
-    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    mut animation_changes: MessageReader<AnimationChangeEvent>,
+    mut animation_trigger: MessageWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<Option<&Mounted>, With<Player>>,
     mut commands: Commands,
 ) {
@@ -151,26 +151,26 @@ pub fn trigger_king_animation(
 }
 
 pub fn set_king_walking(
-    trigger: Trigger<OnAdd, Moving>,
-    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    trigger: On<Add, Moving>,
+    mut animation_trigger: MessageWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<Option<&Mounted>, With<Player>>,
 ) {
-    if let Ok(maybe_mounted) = mounted.get(trigger.target()) {
+    if let Ok(maybe_mounted) = mounted.get(trigger.entity) {
         let new_animation = match maybe_mounted {
             Some(_) => KingAnimation::HorseWalk,
             None => KingAnimation::Walk,
         };
 
         animation_trigger.write(AnimationTrigger {
-            entity: trigger.target(),
+            entity: trigger.entity,
             state: new_animation,
         });
     }
 }
 
 pub fn set_king_defeat(
-    trigger: Trigger<PlayerDefeated>,
-    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    trigger: On<PlayerDefeated>,
+    mut animation_trigger: MessageWriter<AnimationTrigger<KingAnimation>>,
     mut commands: Commands,
 ) {
     commands.entity(**trigger).insert(PlayOnce);
@@ -181,23 +181,23 @@ pub fn set_king_defeat(
 }
 
 pub fn remove_animation(
-    trigger: Trigger<OnRemove, PlayOnce>,
+    trigger: On<Remove, PlayOnce>,
     current_animation: Query<&KingAnimation>,
     mut commands: Commands,
 ) {
-    if let Ok(KingAnimation::Death) = current_animation.get(trigger.target()) {
+    if let Ok(KingAnimation::Death) = current_animation.get(trigger.entity) {
         commands
-            .entity(trigger.target())
+            .entity(trigger.entity)
             .remove::<SpriteSheetAnimation>();
     };
 }
 
 pub fn set_king_after_play_once(
-    trigger: Trigger<OnRemove, PlayOnce>,
-    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    trigger: On<Remove, PlayOnce>,
+    mut animation_trigger: MessageWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<(&KingAnimation, Option<&Mounted>)>,
 ) {
-    if let Ok((animation, maybe_mounted)) = mounted.get(trigger.target()) {
+    if let Ok((animation, maybe_mounted)) = mounted.get(trigger.entity) {
         let new_animation = match animation {
             KingAnimation::Attack | KingAnimation::Mount | KingAnimation::Unmount => {
                 match maybe_mounted {
@@ -209,25 +209,25 @@ pub fn set_king_after_play_once(
         };
 
         animation_trigger.write(AnimationTrigger {
-            entity: trigger.target(),
+            entity: trigger.entity,
             state: new_animation,
         });
     }
 }
 
 pub fn set_king_idle(
-    trigger: Trigger<OnRemove, Moving>,
-    mut animation_trigger: EventWriter<AnimationTrigger<KingAnimation>>,
+    trigger: On<Remove, Moving>,
+    mut animation_trigger: MessageWriter<AnimationTrigger<KingAnimation>>,
     mounted: Query<Option<&Mounted>, With<Player>>,
 ) {
-    if let Ok(maybe_mounted) = mounted.get(trigger.target()) {
+    if let Ok(maybe_mounted) = mounted.get(trigger.entity) {
         let new_animation = match maybe_mounted {
             Some(_) => KingAnimation::HorseIdle,
             None => KingAnimation::Idle,
         };
 
         animation_trigger.write(AnimationTrigger {
-            entity: trigger.target(),
+            entity: trigger.entity,
             state: new_animation,
         });
     }
@@ -240,7 +240,7 @@ pub fn set_king_sprite_animation(
         &mut Sprite,
         &mut KingAnimation,
     )>,
-    mut animation_changed: EventReader<AnimationTrigger<KingAnimation>>,
+    mut animation_changed: MessageReader<AnimationTrigger<KingAnimation>>,
     king_sprite_sheet: Res<KingSpriteSheet>,
     mut command: Commands,
 ) -> Result {

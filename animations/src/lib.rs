@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use animals::horse::{
     HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
 };
-use bevy_replicon::client::ClientSet;
+use bevy_replicon::client::ClientSystems;
 use buildings::{BuildingSpriteSheets, remove_animation_after_play_once, update_building_sprite};
 use king::{
     KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
@@ -172,7 +172,7 @@ impl Default for SpriteSheetAnimation {
 }
 
 /// Gets only triggered if new animation
-#[derive(Debug, Event)]
+#[derive(Debug, Message)]
 pub struct AnimationTrigger<E> {
     pub entity: Entity,
     pub state: E,
@@ -188,10 +188,10 @@ impl Plugin for AnimationPlugin {
         app.add_plugins(UIAnimationsPlugin);
 
         app.init_resource::<UnitSpriteSheets>();
-        app.add_event::<AnimationTrigger<UnitAnimation>>();
+        app.add_message::<AnimationTrigger<UnitAnimation>>();
 
         app.init_resource::<KingSpriteSheet>();
-        app.add_event::<AnimationTrigger<KingAnimation>>();
+        app.add_message::<AnimationTrigger<KingAnimation>>();
 
         app.init_resource::<FlagSpriteSheet>();
         app.init_resource::<ChestSpriteSheet>();
@@ -206,7 +206,7 @@ impl Plugin for AnimationPlugin {
         app.init_resource::<CommanderMenuSpriteSheet>();
 
         app.init_resource::<HorseSpriteSheet>();
-        app.add_event::<AnimationTrigger<HorseAnimation>>();
+        app.add_message::<AnimationTrigger<HorseAnimation>>();
 
         app.init_resource::<ItemInfoSpriteSheet>();
         app.init_resource::<MapIconSpriteSheet>();
@@ -216,7 +216,7 @@ impl Plugin for AnimationPlugin {
 
         app.add_systems(
             PreUpdate,
-            (trigger_king_animation, trigger_unit_animation).after(ClientSet::Receive),
+            (trigger_king_animation, trigger_unit_animation).after(ClientSystems::Receive),
         )
         .add_observer(on_flag_destroyed)
         .add_observer(on_chest_opened)

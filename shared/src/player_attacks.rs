@@ -22,25 +22,25 @@ pub struct PlayerAttacks;
 
 impl Plugin for PlayerAttacks {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<Attack>(Channel::Ordered)
+        app.add_client_event::<Attack>(Channel::Ordered)
             .add_observer(attack)
-            .add_systems(Update, attack_input.before(ClientSet::Send));
+            .add_systems(Update, attack_input.before(ClientSystems::Send));
     }
 }
 
 #[derive(Deserialize, Serialize, Event)]
-struct Attack;
+struct Attack(usize);
 
 fn attack_input(keyboard_input: Res<ButtonInput<KeyCode>>, mut commands: Commands) -> Result {
     if keyboard_input.just_pressed(KeyCode::KeyE) {
-        commands.client_trigger(Attack);
+        commands.client_trigger(Attack(0));
     }
     Ok(())
 }
 
 fn attack(
-    trigger: Trigger<FromClient<Attack>>,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    trigger: On<FromClient<Attack>>,
+    mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     flag_holder: Query<(Option<&FlagHolder>, &Transform)>,
     units: Query<&FlagUnits>,
     army: Query<&ArmyFlagAssignments>,
@@ -48,13 +48,13 @@ fn attack(
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let (maybe_flag_holder, transform) = flag_holder.get(*player)?;
 
     let Some(flag_holder) = maybe_flag_holder else {
         animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity: *player,
                 change: AnimationChange::Attack,
             },

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::math::bounding::IntersectsVolume;
 
 use crate::{
-    BoxCollider, Owner, Vec3LayerExt,
+    BoxCollider, GameSceneId, Owner, Vec3LayerExt,
     map::{
         Layers,
         buildings::{Building, RespawnZone},
@@ -12,7 +12,6 @@ use crate::{
     server::{
         ai::UnitBehaviour,
         entities::commander::ArmyFlagAssignments,
-        game_scenes::GameSceneId,
         players::items::{CalculatedStats, Effect, Item},
     },
 };

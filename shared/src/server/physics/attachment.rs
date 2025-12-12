@@ -55,11 +55,11 @@ fn attachment_follow(
 }
 
 fn on_attachment_removed(
-    trigger: Trigger<OnRemove, AttachedTo>,
+    trigger: On<Remove, AttachedTo>,
     mut query: Query<&mut Transform>,
     mut commands: Commands,
 ) -> Result {
-    let entity = trigger.target();
+    let entity = trigger.entity;
     let mut transform = query.get_mut(entity)?;
     transform.rotation = Quat::IDENTITY;
     commands.entity(entity).remove::<AttackIndicator>();

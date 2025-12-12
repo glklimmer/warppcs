@@ -35,7 +35,7 @@ pub struct InteractableSound {
     pub spatial_position: Vec3,
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct InteractionTriggeredEvent {
     pub player: Entity,
     pub interactable: Entity,
@@ -51,35 +51,35 @@ pub struct InteractPlugin;
 
 impl Plugin for InteractPlugin {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<Interact>(Channel::Ordered)
+        app.add_client_event::<Interact>(Channel::Ordered)
             .add_observer(interact)
-            .add_event::<InteractionTriggeredEvent>()
+            .add_message::<InteractionTriggeredEvent>()
             .add_systems(
                 PostUpdate,
                 send_interact
-                    .before(ClientSet::Send)
+                    .before(ClientSystems::Send)
                     .run_if(in_state(PlayerState::World)),
             );
     }
 }
 
 #[derive(Event, Serialize, Deserialize, Debug)]
-struct Interact;
+struct Interact(usize);
 
 fn send_interact(mut commands: Commands, keyboard_input: Res<ButtonInput<KeyCode>>) {
     if keyboard_input.just_pressed(KeyCode::KeyF) {
-        commands.client_trigger(Interact);
+        commands.client_trigger(Interact(0));
     }
 }
 
 fn interact(
-    trigger: Trigger<FromClient<Interact>>,
-    mut triggered_events: EventWriter<InteractionTriggeredEvent>,
+    trigger: On<FromClient<Interact>>,
+    mut triggered_events: MessageWriter<InteractionTriggeredEvent>,
     players: Query<(&Transform, &BoxCollider)>,
     interactables: Query<(Entity, &Transform, &BoxCollider, &Interactable)>,
     client_player_map: Res<ClientPlayerMap>,
 ) -> Result {
-    let player = *client_player_map.get_player(&trigger.client_entity)?;
+    let player = *client_player_map.get_player(&trigger.client_id)?;
     let (player_transform, player_collider) = players.get(player)?;
 
     let player_bounds = player_collider.at(player_transform);

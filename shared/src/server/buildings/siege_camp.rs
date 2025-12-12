@@ -13,7 +13,8 @@ use crate::{
     Transform,
     RespawnZone,
     BuildStatus = BuildStatus::Built{indicator: HealthIndicator::Healthy},
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Health
 )]
 pub struct SiegeCamp {
@@ -36,7 +37,7 @@ pub fn siege_camp_lifetime(
     for (entity, mut siege_camp) in query.iter_mut() {
         siege_camp.life.tick(time.delta());
 
-        if siege_camp.life.finished() {
+        if siege_camp.life.is_finished() {
             commannds.entity(entity).despawn();
         }
     }

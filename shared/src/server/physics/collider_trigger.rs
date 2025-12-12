@@ -2,10 +2,7 @@ use bevy::{math::bounding::IntersectsVolume, prelude::*};
 
 use crate::{
     BoxCollider, Player,
-    server::{
-        game_scenes::travel::Traveling,
-        players::interaction::{ActiveInteraction, InteractionTriggeredEvent, InteractionType},
-    },
+    server::players::interaction::{ActiveInteraction, InteractionTriggeredEvent, InteractionType},
 };
 
 #[derive(Component)]
@@ -22,10 +19,10 @@ impl Plugin for ColliderTriggerPlugin {
 }
 
 fn check_collider_trigger(
-    players: Query<Entity, (With<Player>, Without<Traveling>, Without<ActiveInteraction>)>,
+    players: Query<Entity, (With<Player>, Without<ActiveInteraction>)>,
     triggers: Query<(Entity, &ColliderTrigger, &Transform, &BoxCollider)>,
     player_query: Query<(&Transform, &BoxCollider)>,
-    mut interaction: EventWriter<InteractionTriggeredEvent>,
+    mut interaction: MessageWriter<InteractionTriggeredEvent>,
     mut commands: Commands,
 ) -> Result {
     for player in players.iter() {

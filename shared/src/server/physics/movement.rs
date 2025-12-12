@@ -1,17 +1,14 @@
 use bevy::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
-use bevy_replicon::prelude::server_or_singleplayer;
+use bevy_replicon::prelude::ClientState;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, GRAVITY_G, Owner, Player,
+    BoxCollider, GRAVITY_G, GameSceneId, Owner, Player,
     map::buildings::{BuildStatus, Building, BuildingType},
     networking::WorldDirection,
-    server::{
-        entities::health::Health, game_scenes::GameSceneId, physics::army_slot::ArmySlot,
-        players::items::Item,
-    },
+    server::{entities::health::Health, physics::army_slot::ArmySlot, players::items::Item},
 };
 
 use super::projectile::ProjectileType;
@@ -71,13 +68,13 @@ impl Plugin for MovementPlugin {
                 (wall_collision, no_walk_zone_collision),
             )
                 .chain()
-                .run_if(server_or_singleplayer),
+                .run_if(in_state(ClientState::Disconnected)),
         );
         app.add_systems(
             FixedPostUpdate,
             (apply_gravity, (apply_velocity, apply_direction))
                 .chain()
-                .run_if(server_or_singleplayer),
+                .run_if(in_state(ClientState::Disconnected)),
         );
     }
 }

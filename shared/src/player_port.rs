@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use crate::{
-    BoxCollider, ClientPlayerMap, ClientPlayerMapExt, DelayedDespawn, Owner, Player, PlayerState,
-    Vec3LayerExt,
+    BoxCollider, ClientPlayerMap, ClientPlayerMapExt, DelayedDespawn, GameSceneId, Owner, Player,
+    PlayerState, Vec3LayerExt,
     map::{
         Layers,
         buildings::{Building, BuildingType},
@@ -15,7 +15,6 @@ use crate::{
     server::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         entities::{Unit, commander::ArmyFlagAssignments},
-        game_scenes::GameSceneId,
         players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
     },
 };
@@ -24,7 +23,7 @@ pub struct PlayerPort;
 
 impl Plugin for PlayerPort {
     fn build(&self, app: &mut App) {
-        app.add_client_trigger::<ChannelPort>(Channel::Ordered)
+        app.add_client_event::<ChannelPort>(Channel::Ordered)
             .add_observer(add_port_cooldown)
             .add_observer(check_port_cooldown)
             .add_observer(spawn_player_portal)
@@ -32,23 +31,23 @@ impl Plugin for PlayerPort {
                 Update,
                 (
                     channel_input
-                        .before(ClientSet::Send)
+                        .before(ClientSystems::Send)
                         .run_if(in_state(PlayerState::World)),
-                    progress_cooldown.run_if(server_or_singleplayer),
+                    progress_cooldown.run_if(in_state(ClientState::Disconnected)),
                 ),
             )
             .add_systems(
                 FixedUpdate,
-                port.run_if(on_event::<InteractionTriggeredEvent>),
+                port.run_if(on_message::<InteractionTriggeredEvent>),
             );
     }
 }
 
 #[derive(Event, Deserialize, Serialize)]
-struct ChannelPort;
+struct ChannelPort(usize);
 
-#[derive(Event)]
-struct SpawnPortal;
+#[derive(EntityEvent)]
+struct SpawnPortal(Entity);
 
 #[derive(Component)]
 struct PortCooldown {
@@ -73,7 +72,8 @@ impl Default for PortCooldown {
     Replicated,
     Transform,
     BoxCollider = portal_collider(),
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Interactable{
         kind: InteractionType::Portal,
         restricted_to: None,
@@ -91,30 +91,30 @@ fn portal_collider() -> BoxCollider {
 #[derive(Component, Deref)]
 struct PortalDestination(Entity);
 
-fn add_port_cooldown(trigger: Trigger<OnAdd, Player>, mut commands: Commands) -> Result {
+fn add_port_cooldown(trigger: On<Add, Player>, mut commands: Commands) -> Result {
     commands
-        .entity(trigger.target())
+        .entity(trigger.entity)
         .insert(PortCooldown::default());
     Ok(())
 }
 
 fn channel_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) -> Result {
     if input.pressed(KeyCode::KeyT) {
-        commands.client_trigger(ChannelPort);
+        commands.client_trigger(ChannelPort(0));
     }
     Ok(())
 }
 
 fn check_port_cooldown(
-    trigger: Trigger<FromClient<ChannelPort>>,
+    trigger: On<FromClient<ChannelPort>>,
     mut players: Query<&mut PortCooldown>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let player = client_player_map.get_player(&trigger.client_entity)?;
+    let player = client_player_map.get_player(&trigger.client_id)?;
     let mut cooldown = players.get_mut(*player)?;
 
-    if cooldown.summon.finished() {
+    if cooldown.summon.is_finished() {
         commands.entity(*player).trigger(SpawnPortal);
         cooldown.summon.reset();
     }
@@ -129,12 +129,12 @@ fn progress_cooldown(mut players: Query<&mut PortCooldown>, time: Res<Time>) {
 }
 
 fn spawn_player_portal(
-    trigger: Trigger<SpawnPortal>,
+    trigger: On<SpawnPortal>,
     players: Query<(&Transform, &GameSceneId)>,
     main_buildings: Query<(&Building, &Owner, &Transform, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
-    let player = trigger.target();
+    let player = trigger.event_target();
     let (player_transform, player_game_scene_id) = players.get(player)?;
 
     let maybe_base = main_buildings.iter().find(|(building, owner, ..)| {
@@ -170,7 +170,7 @@ fn spawn_player_portal(
 }
 
 fn port(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut players: Query<(Option<&FlagHolder>, &mut PortCooldown)>,
     portal: Query<&PortalDestination>,
     destination: Query<(&Transform, &GameSceneId)>,
@@ -190,7 +190,7 @@ fn port(
 
         let (maybe_flag_holder, mut cooldown) = players.get_mut(player_entity)?;
 
-        if !cooldown.usage.finished() {
+        if !cooldown.usage.is_finished() {
             info!("Portal usage cooldown");
             return Ok(());
         }

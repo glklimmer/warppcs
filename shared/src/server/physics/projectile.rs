@@ -14,7 +14,7 @@ use crate::{
 use super::movement::Velocity;
 
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
-#[require(Replicated, Velocity, Transform, BoxCollider = projectile_collider(), Sprite{anchor: Anchor::BottomCenter, ..default()})]
+#[require(Replicated, Velocity, Transform, BoxCollider = projectile_collider(), Sprite, Anchor::BOTTOM_CENTER)]
 pub enum ProjectileType {
     Arrow,
 }
@@ -44,7 +44,7 @@ fn projectile_collision(
         With<ProjectileType>,
     >,
     targets: Query<TargetComponents, (With<Health>, Without<ProjectileType>)>,
-    mut attack_events: EventWriter<TakeDamage>,
+    mut attack_events: MessageWriter<TakeDamage>,
 ) {
     for (entity, transform, mut velocity, collider, owner, damage) in &mut projectiles {
         if transform.translation.y - collider.dimension.y <= 0.0 {

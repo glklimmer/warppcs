@@ -39,7 +39,8 @@ pub struct Cost {
     Replicated,
     Transform,
     BoxCollider = marker_collider(),
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     BuildStatus = BuildStatus::Marker,
 )]
 pub struct RecruitBuilding;
@@ -67,7 +68,7 @@ impl Default for RespawnZone {
 
 impl RespawnZone {
     pub fn respawn_timer_finished(&self) -> bool {
-        self.respawn_timer.finished()
+        self.respawn_timer.is_finished()
     }
 
     pub fn respawn_timer_reset(&mut self) {
@@ -85,7 +86,8 @@ pub fn respawn_timer(mut recruit_buildings: Query<&mut RespawnZone>, time: Res<T
 #[require(
     Replicated,
     BoxCollider = marker_collider(),
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     BuildStatus = BuildStatus::Marker,
 )]
 pub struct Building {

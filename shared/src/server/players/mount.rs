@@ -6,13 +6,10 @@ use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AnimationChange, AnimationChangeEvent, BoxCollider,
+    AnimationChange, AnimationChangeEvent, BoxCollider, GameSceneId,
     map::Layers,
     networking::{MountType, Mounted},
-    server::{
-        game_scenes::GameSceneId,
-        physics::movement::{Speed, Velocity},
-    },
+    server::physics::movement::{Speed, Velocity},
     unit_collider,
 };
 
@@ -26,7 +23,7 @@ impl Plugin for MountPlugin {
             FixedUpdate,
             (
                 spawn_mount_on_unmount,
-                (mount, unmount).run_if(on_event::<InteractionTriggeredEvent>),
+                (mount, unmount).run_if(on_message::<InteractionTriggeredEvent>),
             ),
         );
     }
@@ -38,7 +35,8 @@ impl Plugin for MountPlugin {
     Transform,
     BoxCollider = unit_collider(),
     Velocity,
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Interactable{
         kind: InteractionType::Mount,
         restricted_to: None,
@@ -64,9 +62,9 @@ impl From<MountType> for Speed {
 }
 
 fn mount(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut commands: Commands,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     mount_query: Query<&Mount>,
 ) -> Result {
     for event in interactions.read() {
@@ -93,7 +91,7 @@ fn mount(
 
         animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity: player,
                 change: AnimationChange::Mount,
             },
@@ -103,9 +101,9 @@ fn mount(
 }
 
 fn unmount(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut player_query: Query<(&Mounted, &Transform, &GameSceneId)>,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     mut commands: Commands,
 ) -> Result {
     for event in interactions.read() {
@@ -137,7 +135,7 @@ fn unmount(
 
         animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity: player,
                 change: AnimationChange::Unmount,
             },
@@ -154,7 +152,7 @@ fn spawn_mount_on_unmount(
     for (entity, mut delayed_spawn, game_scene_id) in delayed_spawns.iter_mut() {
         delayed_spawn.timer.tick(time.delta());
 
-        if delayed_spawn.timer.finished() {
+        if delayed_spawn.timer.is_finished() {
             commands.spawn((
                 Mount {
                     mount_type: delayed_spawn.mount_type,

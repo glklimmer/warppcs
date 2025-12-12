@@ -52,7 +52,6 @@ struct ActiveCommander(Option<Entity>);
 impl Plugin for CommanderInteractionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveCommander>()
-            .add_event::<DrawHoverFlag>()
             .add_observer(assignment_reject)
             .add_observer(open_commander_dialog)
             .add_observer(highligh_formation)
@@ -76,7 +75,7 @@ impl Plugin for CommanderInteractionPlugin {
 }
 
 fn open_commander_dialog(
-    trigger: Trigger<CommanderInteraction>,
+    trigger: On<CommanderInteraction>,
     transform: Query<&Transform>,
     mut next_state: ResMut<NextState<PlayerState>>,
     mut active: ResMut<ActiveCommander>,
@@ -145,29 +144,25 @@ fn open_commander_dialog(
     Ok(())
 }
 
-fn select_create_camp(trigger: Trigger<SelectionEvent<MainMenuEntries>>, mut commands: Commands) {
+fn select_create_camp(trigger: On<SelectionEvent<MainMenuEntries>>, mut commands: Commands) {
     let MainMenuEntries::Camp = trigger.selection else {
         return;
     };
 
-    commands.client_trigger(CommanderCampInteraction);
+    commands.client_trigger(CommanderCampInteraction(0));
 }
 
-fn select_commander_flag(
-    trigger: Trigger<SelectionEvent<MainMenuEntries>>,
-    mut close_menu: EventWriter<CloseEvent>,
-    mut commands: Commands,
-) {
+fn select_commander_flag(trigger: On<SelectionEvent<MainMenuEntries>>, mut commands: Commands) {
     let MainMenuEntries::Flag = trigger.selection else {
         return;
     };
 
-    commands.client_trigger(CommanderPickFlag);
-    close_menu.write(CloseEvent);
+    commands.client_trigger(CommanderPickFlag(0));
+    commands.trigger(CloseEvent);
 }
 
 fn open_slots_dialog(
-    trigger: Trigger<SelectionEvent<MainMenuEntries>>,
+    trigger: On<SelectionEvent<MainMenuEntries>>,
     army_flag_assignments: Query<&ArmyFlagAssignments>,
     transform: Query<&GlobalTransform>,
     flag: Query<&Flag>,
@@ -241,7 +236,7 @@ fn open_slots_dialog(
     Ok(())
 }
 
-fn send_selected(trigger: Trigger<SelectionEvent<ArmyPosition>>, mut commands: Commands) {
+fn send_selected(trigger: On<SelectionEvent<ArmyPosition>>, mut commands: Commands) {
     let SelectionEvent {
         selection: slot,
         menu: _,
@@ -252,7 +247,7 @@ fn send_selected(trigger: Trigger<SelectionEvent<ArmyPosition>>, mut commands: C
 }
 
 fn assignment_reject(
-    _: Trigger<CommanderAssignmentReject>,
+    _: On<CommanderAssignmentReject>,
     mut current_hover: Query<(Entity, &Transform), With<HoverWeapon>>,
     mut commands: Commands,
 ) -> Result {
@@ -266,7 +261,7 @@ fn assignment_reject(
 }
 
 fn assigment_warning(
-    trigger: Trigger<OnAdd, HoverWeapon>,
+    trigger: On<Add, HoverWeapon>,
     unit_type: Query<&HoverWeapon>,
     hover_disabled_assignment: Query<Entity, With<HoverDisabledWeapon>>,
     asset_server: Res<AssetServer>,
@@ -289,7 +284,7 @@ fn assigment_warning(
                     .id();
 
                 commands
-                    .entity(trigger.target())
+                    .entity(trigger.entity)
                     .add_child(disabled_sprite_entity);
             }
         }
@@ -298,7 +293,7 @@ fn assigment_warning(
 }
 
 fn cleanup_menu_extras(
-    _: Trigger<ClosedMenu<ArmyPosition>>,
+    _: On<ClosedMenu<ArmyPosition>>,
     current_hover: Query<Entity, With<HoverWeapon>>,
     mesh_highlights: Query<Entity, (With<Mesh2d>, With<MeshMaterial2d<ColorMaterial>>)>,
     mut commands: Commands,
@@ -315,7 +310,7 @@ fn cleanup_menu_extras(
 }
 
 fn highligh_formation(
-    trigger: Trigger<DrawHoverFlag>,
+    trigger: On<DrawHoverFlag>,
     menu_entries_add: Query<&NodePayload<ArmyPosition>>,
     army_formation: Query<&ArmyFormation>,
     active_commander: Res<ActiveCommander>,
@@ -346,7 +341,7 @@ fn highligh_formation(
 }
 
 fn draw_hovering_flag(
-    trigger: Trigger<DrawHoverFlag>,
+    trigger: On<DrawHoverFlag>,
     menu_entries_add: Query<&GlobalTransform>,
     mut current_hover: Query<&mut Transform, With<HoverWeapon>>,
     player: Query<Option<&FlagHolder>, With<ControlledPlayer>>,
@@ -393,7 +388,7 @@ fn formation_selected(
         return Ok(());
     };
 
-    commands.client_trigger(CommanderAssignmentRequest);
+    commands.client_trigger(CommanderAssignmentRequest(0));
     commands.trigger(DrawHoverFlag(entry));
     Ok(())
 }

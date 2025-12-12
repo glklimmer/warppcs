@@ -6,7 +6,7 @@ use std::f32::consts::FRAC_PI_4;
 
 use super::{Attack, Target};
 use crate::{
-    AnimationChange, AnimationChangeEvent, GRAVITY_G, Hitby, Owner,
+    AnimationChange, AnimationChangeEvent, GRAVITY_G, GameSceneId, Hitby, Owner,
     map::Layers,
     networking::{UnitType, WorldDirection},
     server::{
@@ -17,7 +17,6 @@ use crate::{
             commander::ArmyFlagAssignments,
             health::{DelayedDamage, Health, TakeDamage},
         },
-        game_scenes::GameSceneId,
         physics::{movement::Velocity, projectile::ProjectileType},
     },
 };
@@ -86,7 +85,7 @@ fn process_attacks(
         &Damage,
         &GameSceneId,
     )>,
-    mut animation: EventWriter<ToClients<AnimationChangeEvent>>,
+    mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
     position: Query<&Transform>,
 ) {
     for (ctx, attacking_range) in query.iter() {
@@ -97,7 +96,7 @@ fn process_attacks(
             continue;
         };
 
-        if !unit.swing_timer.finished() {
+        if !unit.swing_timer.is_finished() {
             continue;
         }
 
@@ -174,7 +173,7 @@ fn process_attacks(
 
         animation.write(ToClients {
             mode: SendMode::Broadcast,
-            event: AnimationChangeEvent {
+            message: AnimationChangeEvent {
                 entity,
                 change: AnimationChange::Attack,
             },

@@ -5,7 +5,7 @@ use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, Owner, Player, PlayerColor, Vec3LayerExt,
+    BoxCollider, GameSceneId, Owner, Player, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
     flag_collider,
     map::{
@@ -23,7 +23,6 @@ use crate::{
             },
             health::Health,
         },
-        game_scenes::GameSceneId,
         physics::{army_slot::ArmySlot, attachment::AttachedTo, movement::Speed},
         players::{
             interaction::{
@@ -39,7 +38,8 @@ use super::item_assignment::ItemAssignment;
 #[derive(Component, Deserialize, Serialize, Debug)]
 #[require(
     Replicated,
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     BoxCollider = flag_collider(),
     Transform = Transform {translation: Vec3::new(0., 0., Layers::Flag.as_f32()), ..default()}
 )]
@@ -64,12 +64,12 @@ pub struct FlagAssignment(#[entities] pub Entity);
 pub struct FlagUnits(#[entities] Vec<Entity>);
 
 pub fn assign_offset(
-    trigger: Trigger<OnAdd, FlagAssignment>,
+    trigger: On<Add, FlagAssignment>,
     mut units: Query<&mut FollowOffset>,
     flag_units_query: Query<&FlagUnits>,
     flag_assignment_query: Query<&FlagAssignment>,
 ) -> Result {
-    let flag_assignment = flag_assignment_query.get(trigger.target())?;
+    let flag_assignment = flag_assignment_query.get(trigger.entity)?;
     let flag_entity = **flag_assignment;
 
     let Ok(flag_units) = flag_units_query.get(flag_entity) else {
@@ -77,7 +77,7 @@ pub fn assign_offset(
     };
 
     let mut unit_entities = (**flag_units).to_vec();
-    unit_entities.push(trigger.target());
+    unit_entities.push(trigger.entity);
 
     fastrand::shuffle(&mut unit_entities);
 
@@ -125,7 +125,7 @@ impl RecruitEvent {
 }
 
 pub fn recruit_units(
-    trigger: Trigger<RecruitEvent>,
+    trigger: On<RecruitEvent>,
     mut player_query: Query<(&Transform, &mut Inventory, &Player, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
@@ -187,7 +187,7 @@ pub fn recruit_units(
 
     commands.server_trigger(ToClients {
         mode: SendMode::Broadcast,
-        event: InteractableSound {
+        message: InteractableSound {
             kind: InteractionType::Recruit,
             spatial_position: player_transform.translation,
         },
@@ -288,7 +288,7 @@ pub fn unit_stats(
 }
 
 pub fn recruit_commander(
-    trigger: Trigger<RecruitEvent>,
+    trigger: On<RecruitEvent>,
     mut player_query: Query<(&Transform, &mut Inventory, &Player, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
@@ -401,7 +401,7 @@ pub fn recruit_commander(
 
     commands.server_trigger(ToClients {
         mode: SendMode::Broadcast,
-        event: InteractableSound {
+        message: InteractableSound {
             kind: InteractionType::Recruit,
             spatial_position: player_transform.translation,
         },
@@ -410,7 +410,7 @@ pub fn recruit_commander(
 }
 
 pub fn check_recruit(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     player: Query<&Inventory>,
     building: Query<(&Building, Option<&ItemAssignment>), With<RecruitBuilding>>,
     mut commands: Commands,

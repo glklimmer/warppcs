@@ -1,19 +1,15 @@
 use bevy::prelude::*;
 
+use bevy::platform::collections::HashMap;
 use bevy_replicon::{
-    prelude::{FromClient, SendMode, ServerTriggerExt, ToClients, server_or_singleplayer},
-    server::ServerSet,
+    prelude::{ClientState, FromClient, SendMode, ServerTriggerExt, ToClients},
+    server::ServerSystems,
 };
 use petgraph::{Graph, Undirected};
-use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    hash::{Hash, Hasher},
+use shared::{
+    ClientPlayerMap, GameScene, GameSceneId, GameState, Player, SceneType, networking::LobbyMessage,
 };
-
-use crate::{
-    ClientPlayerMap, GameState, Player, networking::LobbyEvent, server::game_scenes::GameSceneId,
-};
+use travel::InitPlayerMapNode;
 
 pub struct WorldPlugin;
 
@@ -22,8 +18,8 @@ impl Plugin for WorldPlugin {
         app.add_systems(
             PreUpdate,
             init_world
-                .after(ServerSet::Receive)
-                .run_if(server_or_singleplayer)
+                .after(ServerSystems::Receive)
+                .run_if(in_state(ClientState::Disconnected))
                 .run_if(in_state(GameState::MainMenu)),
         );
     }
@@ -32,49 +28,8 @@ impl Plugin for WorldPlugin {
 #[derive(Event, Deref)]
 pub struct InitWorld(WorldGraph);
 
-#[derive(Event, Deref, Serialize, Deserialize)]
-pub struct InitPlayerMapNode(GameScene);
-
 #[derive(Clone, Default, Deref, DerefMut)]
 pub struct WorldGraph(Graph<GameScene, (), Undirected>);
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum SceneType {
-    Player { player: Entity, exit: Entity },
-    Camp { left: Entity, right: Entity },
-    Meadow { left: Entity, right: Entity },
-}
-
-#[derive(Component, Debug, Clone, Serialize, Deserialize, Copy)]
-pub struct GameScene {
-    pub id: GameSceneId,
-    pub scene: SceneType,
-    pub position: Vec2,
-}
-
-impl GameScene {
-    pub fn entry_entity(&self) -> Entity {
-        match self.scene {
-            SceneType::Player { exit, .. } => exit,
-            SceneType::Camp { left, .. } => left,
-            SceneType::Meadow { left, .. } => left,
-        }
-    }
-}
-
-impl PartialEq for GameScene {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
-impl Eq for GameScene {}
-
-impl Hash for GameScene {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
-    }
-}
 
 #[derive(Default, Clone, Deref)]
 struct PlayerGameScenes(HashMap<Entity, GameScene>);
@@ -106,7 +61,7 @@ impl WorldGraph {
             let angle = frac * std::f32::consts::TAU;
             let pos = Vec2::new(radius * angle.cos(), radius * angle.sin());
             let game_scene = GameScene {
-                id: GameSceneId(i * 6 + 1),
+                id: GameSceneId::custom(i * 6 + 1),
                 scene: SceneType::Player {
                     player: players[i],
                     exit: commands.spawn_empty().id(),
@@ -145,7 +100,7 @@ impl WorldGraph {
             let outer_pos = mid_point - offset_dir * offset_dist + outward_dir * push_out_dist;
 
             let tj_a_idx = graph.add_node(GameScene {
-                id: GameSceneId(i * 6 + 2),
+                id: GameSceneId::custom(i * 6 + 2),
                 scene: SceneType::Camp {
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
@@ -154,7 +109,7 @@ impl WorldGraph {
             });
             tj_a_nodes.push(tj_a_idx);
             let tj_b_idx = graph.add_node(GameScene {
-                id: GameSceneId(i * 6 + 3),
+                id: GameSceneId::custom(i * 6 + 3),
                 scene: SceneType::Camp {
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
@@ -164,7 +119,7 @@ impl WorldGraph {
             tj_b_nodes.push(tj_b_idx);
 
             let outer_idx = graph.add_node(GameScene {
-                id: GameSceneId(i * 6 + 4),
+                id: GameSceneId::custom(i * 6 + 4),
                 scene: SceneType::Meadow {
                     left: commands.spawn_empty().id(),
                     right: commands.spawn_empty().id(),
@@ -178,7 +133,7 @@ impl WorldGraph {
                 right: commands.spawn_empty().id(),
             };
             let inner_idx = graph.add_node(GameScene {
-                id: GameSceneId(i * 6 + 5),
+                id: GameSceneId::custom(i * 6 + 5),
                 scene: inner_scene,
                 position: inner_pos,
             });
@@ -219,18 +174,18 @@ impl WorldGraph {
 }
 
 fn init_world(
-    mut lobby_events: EventReader<FromClient<LobbyEvent>>,
+    mut lobby_events: MessageReader<FromClient<LobbyMessage>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     players: Query<Entity, With<Player>>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
-    let Some(FromClient { event, .. }) = lobby_events.read().next() else {
+    let Some(FromClient { message, .. }) = lobby_events.read().next() else {
         return Ok(());
     };
 
     #[allow(irrefutable_let_patterns)]
-    let LobbyEvent::StartGame = event else {
+    let LobbyMessage::StartGame = message else {
         return Ok(());
     };
 
@@ -253,7 +208,7 @@ fn init_world(
 
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(*client),
-            event: InitPlayerMapNode(*game_scene),
+            message: InitPlayerMapNode::new(*game_scene),
         });
     }
     Ok(())

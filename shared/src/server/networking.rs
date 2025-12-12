@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use super::{
     ai::AIPlugin, buildings::BuildingsPlugins, console::ConsolePlugin,
-    create_server::CreateServerPlugin, entities::EntityPlugin, game_scenes::GameScenesPlugin,
-    physics::PhysicsPlugin, players::PlayerPlugin,
+    create_server::CreateServerPlugin, entities::EntityPlugin, physics::PhysicsPlugin,
+    players::PlayerPlugin,
 };
 use crate::networking::NetworkRegistry;
 
@@ -16,7 +16,6 @@ impl Plugin for ServerNetworkPlugin {
             NetworkRegistry,
             AIPlugin,
             PhysicsPlugin,
-            GameScenesPlugin,
             BuildingsPlugins,
             PlayerPlugin,
             EntityPlugin,

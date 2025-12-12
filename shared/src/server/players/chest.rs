@@ -5,11 +5,8 @@ use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoxCollider, Vec3LayerExt,
-    map::Layers,
-    networking::MountType,
-    server::{game_scenes::GameSceneId, physics::movement::Velocity},
-    unit_collider,
+    BoxCollider, GameSceneId, Vec3LayerExt, map::Layers, networking::MountType,
+    server::physics::movement::Velocity, unit_collider,
 };
 
 use super::{
@@ -23,7 +20,8 @@ use super::{
     Transform,
     BoxCollider = unit_collider(),
     Velocity,
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Interactable {
         kind: InteractionType::Mount,
         restricted_to: None,
@@ -38,7 +36,8 @@ pub struct Mount {
     Replicated,
     Transform,
     BoxCollider = chest_collider(),
-    Sprite{anchor: Anchor::BottomCenter, ..default()},
+    Sprite,
+    Anchor::BOTTOM_CENTER,
     Interactable{
         kind: InteractionType::Chest,
         restricted_to: None,
@@ -53,7 +52,7 @@ pub enum Chest {
 pub struct ChestOpened;
 
 pub fn open_chest(
-    mut interactions: EventReader<InteractionTriggeredEvent>,
+    mut interactions: MessageReader<InteractionTriggeredEvent>,
     query: Query<(&Transform, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {

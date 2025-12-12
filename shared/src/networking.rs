@@ -13,12 +13,12 @@ pub struct NetworkRegistry;
 
 impl Plugin for NetworkRegistry {
     fn build(&self, app: &mut App) {
-        app.add_client_event::<LobbyEvent>(Channel::Ordered);
+        app.add_client_message::<LobbyMessage>(Channel::Ordered);
     }
 }
 
-#[derive(Debug, Deserialize, Event, Serialize)]
-pub enum LobbyEvent {
+#[derive(Debug, Deserialize, Message, Serialize)]
+pub enum LobbyMessage {
     StartGame,
 }
 

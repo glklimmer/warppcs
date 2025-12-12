@@ -1,4 +1,4 @@
-use bevy::ecs::component::HookContext;
+use bevy::ecs::lifecycle::HookContext;
 use bevy::prelude::*;
 
 use bevy::{
@@ -23,23 +23,22 @@ impl<T: Clone + Send + Sync + 'static> Default for MenuPlugin<T> {
 impl<T: Clone + Send + Sync + 'static> Plugin for MenuPlugin<T> {
     fn build(&self, app: &mut App) {
         if app.world().get_resource::<MenuSingleton>().is_none() {
+            app.add_observer(close_menu);
             app.add_systems(
                 Update,
-                close_menu.run_if(in_state(PlayerState::Interaction)),
+                send_close_menu.run_if(in_state(PlayerState::Interaction)),
             );
         }
 
         app.init_resource::<ActiveMenus>()
             .init_resource::<MenuSingleton>()
             .add_observer(open_menu::<T>)
-            .add_event::<CloseEvent>()
-            .add_event::<ClosedMenu<T>>()
+            .add_observer(close_menu_trigger::<T>)
             .add_systems(
                 Update,
                 (
                     selection_callback::<T>.run_if(input_just_pressed(KeyCode::KeyF)),
                     cycle_commands,
-                    close_menu_trigger::<T>,
                 )
                     .run_if(in_state(PlayerState::Interaction)),
             );
@@ -169,12 +168,12 @@ impl<T> MenuNode<T> {
 pub struct NodePayload<T>(T);
 
 fn open_menu<T: Clone + Send + Sync + 'static>(
-    trigger: Trigger<OnAdd, Menu<T>>,
+    trigger: On<Add, Menu<T>>,
     mut active: ResMut<ActiveMenus>,
     query: Query<&Menu<T>>,
     mut commands: Commands,
 ) -> Result {
-    let menu_entity = trigger.target();
+    let menu_entity = trigger.entity;
     let menu = query.get(menu_entity)?;
 
     let len = menu.nodes.len();
@@ -208,7 +207,7 @@ fn open_menu<T: Clone + Send + Sync + 'static>(
     Ok(())
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct NodeSelected<T>(PhantomData<T>);
 
 fn cycle_commands(
@@ -254,20 +253,22 @@ fn cycle_commands(
 #[derive(Event)]
 pub struct CloseEvent;
 
+fn send_close_menu(mut commands: Commands, input: Res<ButtonInput<KeyCode>>) -> Result {
+    let key_pressed = input.any_just_pressed([KeyCode::Escape, KeyCode::KeyS]);
+    if !(key_pressed) {
+        return Ok(());
+    }
+    commands.trigger(CloseEvent);
+    Ok(())
+}
+
 fn close_menu(
-    mut close_events: EventReader<CloseEvent>,
-    input: Res<ButtonInput<KeyCode>>,
+    _: On<CloseEvent>,
     mut active_menus: ResMut<ActiveMenus>,
     children_query: Query<&Children>,
     mut next_state: ResMut<NextState<PlayerState>>,
     mut commands: Commands,
 ) -> Result {
-    let key_pressed = input.any_just_pressed([KeyCode::Escape, KeyCode::KeyS]);
-    let event_fired = close_events.read().next().is_some();
-    if !(key_pressed || event_fired) {
-        return Ok(());
-    }
-
     let menu_entity = active_menus.pop().ok_or("No active menu")?;
 
     if let Ok(children) = children_query.get(menu_entity) {
@@ -292,13 +293,12 @@ impl<T> Default for ClosedMenu<T> {
 }
 
 fn close_menu_trigger<T: Clone + Send + Sync + 'static>(
-    mut close_events: EventReader<ClosedMenu<T>>,
+    _: On<ClosedMenu<T>>,
     input: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
 ) {
     let key_pressed = input.any_just_pressed([KeyCode::Escape, KeyCode::KeyS]);
-    let event_fired = close_events.read().next().is_some();
-    if !(key_pressed || event_fired) {
+    if !(key_pressed) {
         return;
     }
 
