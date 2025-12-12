@@ -69,7 +69,7 @@ impl MapEntities for OpenBuildingDialog {
 }
 
 #[derive(Event, Deserialize, Serialize)]
-pub struct CloseBuildingDialog;
+pub struct CloseBuildingDialog(usize);
 
 #[derive(Event, Deserialize, Serialize, Deref)]
 pub struct AssignItem(Item);
@@ -81,7 +81,7 @@ impl AssignItem {
 }
 
 #[derive(Event, Deserialize, Serialize)]
-pub struct StartBuild;
+pub struct StartBuild(pub usize);
 
 #[derive(Resource, Default, Deref, DerefMut)]
 struct ActiveBuilding(HashMap<Entity, Entity>);
@@ -150,7 +150,7 @@ fn check_start_building(
 
     commands.server_trigger(ToClients {
         mode: SendMode::Direct(trigger.client_id),
-        message: CloseBuildingDialog,
+        message: CloseBuildingDialog(0),
     });
     Ok(())
 }

@@ -44,7 +44,7 @@ impl Plugin for PlayerPort {
 }
 
 #[derive(Event, Deserialize, Serialize)]
-struct ChannelPort;
+struct ChannelPort(usize);
 
 #[derive(EntityEvent)]
 struct SpawnPortal(Entity);
@@ -100,7 +100,7 @@ fn add_port_cooldown(trigger: On<Add, Player>, mut commands: Commands) -> Result
 
 fn channel_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) -> Result {
     if input.pressed(KeyCode::KeyT) {
-        commands.client_trigger(ChannelPort);
+        commands.client_trigger(ChannelPort(0));
     }
     Ok(())
 }

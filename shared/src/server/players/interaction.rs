@@ -64,11 +64,11 @@ impl Plugin for InteractPlugin {
 }
 
 #[derive(Event, Serialize, Deserialize, Debug)]
-struct Interact;
+struct Interact(usize);
 
 fn send_interact(mut commands: Commands, keyboard_input: Res<ButtonInput<KeyCode>>) {
     if keyboard_input.just_pressed(KeyCode::KeyF) {
-        commands.client_trigger(Interact);
+        commands.client_trigger(Interact(0));
     }
 }
 

@@ -69,16 +69,16 @@ pub enum ArmyPosition {
 }
 
 #[derive(Event, Serialize, Deserialize)]
-pub struct CommanderCampInteraction;
+pub struct CommanderCampInteraction(pub usize);
 
 #[derive(Event, Serialize, Deserialize)]
-pub struct CommanderPickFlag;
+pub struct CommanderPickFlag(pub usize);
 
 #[derive(Event, Serialize, Deserialize)]
-pub struct CommanderAssignmentRequest;
+pub struct CommanderAssignmentRequest(pub usize);
 
 #[derive(Event, Serialize, Deserialize)]
-pub struct CommanderAssignmentReject;
+pub struct CommanderAssignmentReject(pub usize);
 
 #[derive(Event, Serialize, Deserialize)]
 pub struct Assignment {
@@ -235,7 +235,7 @@ fn commander_assignment_validation(
         if let UnitType::Commander = unit.unit_type {
             commands.server_trigger(ToClients {
                 mode: SendMode::Direct(trigger.client_id),
-                message: CommanderAssignmentReject,
+                message: CommanderAssignmentReject(0),
             });
             return Ok(());
         }

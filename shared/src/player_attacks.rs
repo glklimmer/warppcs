@@ -29,11 +29,11 @@ impl Plugin for PlayerAttacks {
 }
 
 #[derive(Deserialize, Serialize, Event)]
-struct Attack;
+struct Attack(usize);
 
 fn attack_input(keyboard_input: Res<ButtonInput<KeyCode>>, mut commands: Commands) -> Result {
     if keyboard_input.just_pressed(KeyCode::KeyE) {
-        commands.client_trigger(Attack);
+        commands.client_trigger(Attack(0));
     }
     Ok(())
 }

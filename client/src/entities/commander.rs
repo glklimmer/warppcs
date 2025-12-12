@@ -149,7 +149,7 @@ fn select_create_camp(trigger: On<SelectionEvent<MainMenuEntries>>, mut commands
         return;
     };
 
-    commands.client_trigger(CommanderCampInteraction);
+    commands.client_trigger(CommanderCampInteraction(0));
 }
 
 fn select_commander_flag(trigger: On<SelectionEvent<MainMenuEntries>>, mut commands: Commands) {
@@ -157,7 +157,7 @@ fn select_commander_flag(trigger: On<SelectionEvent<MainMenuEntries>>, mut comma
         return;
     };
 
-    commands.client_trigger(CommanderPickFlag);
+    commands.client_trigger(CommanderPickFlag(0));
     commands.trigger(CloseEvent);
 }
 
@@ -388,7 +388,7 @@ fn formation_selected(
         return Ok(());
     };
 
-    commands.client_trigger(CommanderAssignmentRequest);
+    commands.client_trigger(CommanderAssignmentRequest(0));
     commands.trigger(DrawHoverFlag(entry));
     Ok(())
 }

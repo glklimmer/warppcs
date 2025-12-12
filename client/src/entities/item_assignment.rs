@@ -170,7 +170,7 @@ fn start_build(trigger: On<SelectionEvent<BuildingDialog>>, mut commands: Comman
         return;
     };
 
-    commands.client_trigger(StartBuild);
+    commands.client_trigger(StartBuild(0));
 }
 
 fn close_assignment_dialog(_: On<CloseBuildingDialog>, mut commands: Commands) {
