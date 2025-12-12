@@ -9,7 +9,8 @@ use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugi
 use bevy_replicon::prelude::{ClientId, SendMode, ServerTriggerExt, ToClients};
 
 use crate::{
-    ClientPlayerMap, GameSceneId, PendingPlayers, Player, PlayerColor, SetLocalPlayer, enum_map::*,
+    ClientPlayerMap, GameSceneId, GameState, PendingPlayers, Player, PlayerColor, SetLocalPlayer,
+    enum_map::*,
 };
 
 pub struct CreateServerPlugin;
@@ -175,6 +176,7 @@ fn on_disconnected(
     trigger: On<Disconnected>,
     mut commands: Commands,
     mut client_player_map: ResMut<ClientPlayerMap>,
+    mut game_state: ResMut<NextState<GameState>>,
 ) -> Result {
     let client_id = ClientId::Client(trigger.entity);
 
@@ -182,6 +184,9 @@ fn on_disconnected(
         commands
             .get_entity(player_entity)?
             .insert(crate::Disconnected);
+        info!("Player entity {:?} marked as disconnected.", player_entity);
+        game_state.set(GameState::Paused);
+        info!("Game paused.");
     }
 
     let client = trigger.entity;

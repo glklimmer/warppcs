@@ -240,6 +240,7 @@ fn spawn_clients(
     mut commands: Commands,
     mut pending_players: ResMut<PendingPlayers>,
     disconnected_players: Query<(Entity, &Player), With<Disconnected>>,
+    mut game_state: ResMut<NextState<GameState>>,
 ) {
     let client_id = ClientId::Client(trigger.entity);
     let new_player_id = if let Some(id) = pending_players.remove(&trigger.entity) {
@@ -270,6 +271,13 @@ fn spawn_clients(
             "Player {:?} reconnected with id {}.",
             player_entity, new_player_id
         );
+
+        // After this player is reconnected, there is one less disconnected player.
+        // If there are no more disconnected players, unpause the game.
+        if disconnected_players.iter().count() == 1 {
+            game_state.set(GameState::GameSession);
+            info!("All players reconnected, resuming game.");
+        }
         return;
     }
 
@@ -504,6 +512,7 @@ pub enum GameState {
     Loading,
     MainMenu,
     GameSession,
+    Paused,
 }
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]
