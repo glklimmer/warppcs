@@ -44,10 +44,7 @@ impl Plugin for TravelPlugin {
             .add_observer(reveal_map_icons)
             .add_observer(open_travel_dialog)
             .add_observer(start_travel)
-            .add_systems(
-                OnEnter(PlayerState::Traveling),
-                (show_map, spawn_travel_dashline),
-            )
+            .add_systems(OnEnter(PlayerState::Traveling), spawn_travel_dashline)
             .add_systems(OnExit(PlayerState::Traveling), hide_map)
             .add_systems(
                 Update,
@@ -304,7 +301,6 @@ fn start_travel(
 
     commands
         .entity(player_entity)
-        .remove::<ActiveInteraction>()
         .insert(Traveling::between(source, target))
         .remove::<GameSceneId>();
 
@@ -342,14 +338,18 @@ fn end_travel(
             None => 0.,
         };
 
-        commands.entity(entity).remove::<Traveling>().insert((
-            Transform::from_xyz(
-                target_position.x + travel_destination_offset,
-                target_position.y,
-                Layers::Player.as_f32(),
-            ),
-            *target_game_scene_id,
-        ));
+        commands
+            .entity(entity)
+            .remove::<Traveling>()
+            .remove::<ActiveInteraction>()
+            .insert((
+                Transform::from_xyz(
+                    target_position.x + travel_destination_offset,
+                    target_position.y,
+                    Layers::Player.as_f32(),
+                ),
+                *target_game_scene_id,
+            ));
 
         let Ok(client) = client_player_map.get_network_entity(&entity) else {
             continue;
@@ -612,11 +612,9 @@ fn enter_travel_state(
     query: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
-    info!("start enter travel state");
     let Ok(_) = query.get(trigger.entity) else {
         return Ok(());
     };
-    info!("is controlled player, setting travel state");
     next_state.set(PlayerState::Traveling);
     Ok(())
 }
@@ -626,11 +624,9 @@ fn leave_travel_state(
     query: Query<Entity, With<ControlledPlayer>>,
     mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result {
-    info!("start leave travel state");
     let Ok(_) = query.get(trigger.entity) else {
         return Ok(());
     };
-    info!("is controlled player, setting world state");
     next_state.set(PlayerState::World);
     Ok(())
 }
@@ -692,15 +688,7 @@ fn toggle_map(
     Ok(())
 }
 
-fn show_map(mut map: Query<&mut Visibility, With<Map>>) -> Result {
-    info!("show map");
-    let mut map = map.single_mut()?;
-    *map = Visibility::Visible;
-    Ok(())
-}
-
 fn hide_map(mut map: Query<&mut Visibility, With<Map>>) -> Result {
-    info!("hide map");
     let mut map = map.single_mut()?;
     *map = Visibility::Hidden;
     Ok(())
