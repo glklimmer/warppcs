@@ -8,12 +8,42 @@ use aeronet::{
     transport::TransportConfig,
 };
 use aeronet_replicon::client::{AeronetRepliconClient, AeronetRepliconClientPlugin};
+use bevy::utils::default;
+
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+enum ClientState {
+    #[default]
+    Offline,
+    Connecting,
+    Connected,
+    Disconnected,
+}
+
+#[derive(Resource, Clone)]
+enum LastConnection {
+    #[cfg(feature = "netcode")]
+    Web(String),
+    #[cfg(feature = "steam")]
+    Steam(bevy_steamworks::SteamId),
+}
+
+#[derive(Resource)]
+struct ReconnectTimer(Timer);
 
 pub struct JoinServerPlugin;
 
 impl Plugin for JoinServerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(AeronetRepliconClientPlugin)
+            .insert_state(ClientState::default())
+            .insert_resource(ReconnectTimer(Timer::from_seconds(
+                5.0,
+                TimerMode::Repeating,
+            )))
+            .add_systems(
+                Update,
+                reconnect_system.run_if(in_state(ClientState::Disconnected)),
+            )
             .add_observer(on_connecting)
             .add_observer(on_connected)
             .add_observer(on_disconnected);
@@ -44,7 +74,9 @@ pub fn join_web_transport_server(mut commands: Commands) {
 
     commands
         .spawn_empty()
-        .queue(WebTransportClient::connect(config, default_target));
+        .queue(WebTransportClient::connect(config, default_target.clone()));
+
+    commands.insert_resource(LastConnection::Web(default_target));
 }
 
 #[cfg(feature = "netcode")]
@@ -100,17 +132,61 @@ fn join_steam_server(mut join_lobby: MessageReader<SteamworksEvent>, mut command
         SessionConfig::default(),
         *friend_steam_id,
     ));
+
+    commands.insert_resource(LastConnection::Steam(*friend_steam_id));
 }
 
-fn on_connecting(trigger: On<Add, SessionEndpoint>, mut commands: Commands) {
+fn reconnect_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut timer: ResMut<ReconnectTimer>,
+    last_connection: Option<Res<LastConnection>>,
+    mut client_state: ResMut<NextState<ClientState>>,
+) {
+    if let Some(last_connection) = last_connection {
+        timer.0.tick(time.delta());
+        if timer.0.just_finished() {
+            info!("Attempting to reconnect...");
+            match &*last_connection {
+                #[cfg(feature = "netcode")]
+                LastConnection::Web(addr) => {
+                    use aeronet_webtransport::client::WebTransportClient;
+                    let config = web_transport_config(None);
+                    commands
+                        .spawn_empty()
+                        .queue(WebTransportClient::connect(config, addr.clone()));
+                }
+                #[cfg(feature = "steam")]
+                LastConnection::Steam(id) => {
+                    use aeronet_steam::{SessionConfig, client::SteamNetClient};
+                    commands
+                        .spawn_empty()
+                        .queue(SteamNetClient::connect(SessionConfig::default(), *id));
+                }
+            }
+            client_state.set(ClientState::Connecting);
+        }
+    }
+}
+
+fn on_connecting(
+    trigger: On<Add, SessionEndpoint>,
+    mut commands: Commands,
+    mut client_state: ResMut<NextState<ClientState>>,
+) {
     let entity = trigger.entity;
 
     info!("Joining server...");
 
     commands.entity(entity).insert(AeronetRepliconClient);
+    client_state.set(ClientState::Connecting);
 }
 
-fn on_connected(trigger: On<Add, Session>, mut commands: Commands) {
+fn on_connected(
+    trigger: On<Add, Session>,
+    mut commands: Commands,
+    mut client_state: ResMut<NextState<ClientState>>,
+) {
     let entity = trigger.entity;
 
     info!("Joined server.");
@@ -118,18 +194,20 @@ fn on_connected(trigger: On<Add, Session>, mut commands: Commands) {
     commands
         .entity(entity)
         .insert((TransportConfig { ..default() },));
+    client_state.set(ClientState::Connected);
 }
 
-fn on_disconnected(trigger: On<Disconnected>) {
+fn on_disconnected(trigger: On<Disconnected>, mut client_state: ResMut<NextState<ClientState>>) {
     match &trigger.reason {
         DisconnectReason::ByUser(reason) => {
-            format!("Disconnected by user: {reason}")
+            info!("Disconnected by user: {reason}");
         }
         DisconnectReason::ByPeer(reason) => {
-            format!("Disconnected by peer: {reason}")
+            info!("Disconnected by peer: {reason}");
         }
         DisconnectReason::ByError(err) => {
-            format!("Disconnected due to error: {err:?}")
+            info!("Disconnected due to error: {err:?}");
         }
     };
+    client_state.set(ClientState::Disconnected);
 }

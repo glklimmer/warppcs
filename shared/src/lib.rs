@@ -1,19 +1,11 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::*;
 
 use bevy::{
     ecs::entity::MapEntities, math::bounding::Aabb2d, platform::collections::HashMap,
-    sprite::Anchor,
+    reflect::Reflect, sprite::Anchor,
 };
-use bevy_replicon::prelude::{ClientEventAppExt, ClientId, ServerMessageAppExt};
 use bevy_replicon::server::AuthorizedClient;
-use bevy_replicon::{
-    RepliconPlugins,
-    prelude::{
-        AppRuleExt, Channel, ClientVisibility, Replicated, SendMode, ServerEventAppExt,
-        ServerTriggerExt, SyncRelatedAppExt, ToClients,
-    },
-    server::{ServerPlugin, VisibilityPolicy},
-};
 use core::hash::{Hash, Hasher};
 use enum_map::*;
 use map::{
@@ -136,6 +128,9 @@ impl Plugin for SharedPlugin {
     }
 }
 
+#[derive(Resource, Default, Deref, DerefMut)]
+pub struct PendingPlayers(HashMap<Entity, u64>);
+
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum Hitby {
     Arrow,
@@ -243,12 +238,50 @@ fn spawn_clients(
     mut visibility: Query<&mut ClientVisibility>,
     mut client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
-) -> Result {
-    let color = fastrand::choice(PlayerColor::all_variants()).ok_or("No PlayerColor available")?;
+    mut pending_players: ResMut<PendingPlayers>,
+    disconnected_players: Query<(Entity, &Player), With<Disconnected>>,
+) {
+    let client_id = ClientId::Client(trigger.entity);
+    let new_player_id = if let Some(id) = pending_players.remove(&trigger.entity) {
+        id
+    } else {
+        trigger.entity.to_bits()
+    };
+
+    // Try to find a disconnected player with the same ID
+    if let Some((player_entity, _)) = disconnected_players
+        .iter()
+        .find(|(_, player)| player.id == new_player_id)
+    {
+        // Player found, reconnect them
+        commands.entity(player_entity).remove::<Disconnected>();
+        client_player_map.insert(client_id, player_entity);
+
+        for mut client_visibility in visibility.iter_mut() {
+            client_visibility.set_visibility(player_entity, true);
+        }
+
+        commands.server_trigger(ToClients {
+            mode: SendMode::Direct(client_id),
+            message: SetLocalPlayer(player_entity),
+        });
+
+        info!(
+            "Player {:?} reconnected with id {}.",
+            player_entity, new_player_id
+        );
+        return;
+    }
+
+    // No disconnected player found, spawn a new one
+    let color = fastrand::choice(PlayerColor::all_variants()).unwrap();
     let player = commands
         .entity(trigger.entity)
         .insert((
-            Player { color: *color },
+            Player {
+                id: new_player_id,
+                color: *color,
+            },
             Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
             GameSceneId::lobby(),
             Owner::Player(trigger.entity),
@@ -256,17 +289,17 @@ fn spawn_clients(
         ))
         .id();
 
-    client_player_map.insert(ClientId::Client(trigger.entity), player);
+    client_player_map.insert(client_id, player);
 
     for mut client_visibility in visibility.iter_mut() {
         client_visibility.set_visibility(player, true);
     }
 
     commands.server_trigger(ToClients {
-        mode: SendMode::Direct(ClientId::Client(trigger.entity)),
+        mode: SendMode::Direct(client_id),
         message: SetLocalPlayer(player),
     });
-    Ok(())
+    info!("New player {:?} spawned with id {}.", player, new_player_id);
 }
 
 fn update_visibility(
@@ -310,12 +343,11 @@ fn update_visibility(
 fn hide_on_remove(
     trigger: On<Remove, GameSceneId>,
     mut players: Query<(Entity, &mut ClientVisibility), With<Player>>,
-) -> Result {
+) {
     let entity = trigger.entity;
     for (player_entity, mut visibility) in &mut players {
         visibility.set_visibility(entity, player_entity == entity);
     }
-    Ok(())
 }
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
@@ -339,8 +371,12 @@ impl MapEntities for SetLocalPlayer {
     Inventory,
 )]
 pub struct Player {
+    pub id: u64,
     pub color: PlayerColor,
 }
+
+#[derive(Component)]
+pub struct Disconnected;
 
 #[derive(Component)]
 #[require(BoxCollider = player_collider())]
