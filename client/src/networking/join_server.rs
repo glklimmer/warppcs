@@ -83,20 +83,23 @@ use bevy_steamworks::SteamworksEvent;
 fn join_steam_server(mut join_lobby: MessageReader<SteamworksEvent>, mut commands: Commands) {
     use aeronet_steam::SessionConfig;
     use aeronet_steam::client::SteamNetClient;
-    use bevy_steamworks::{ClientManager, GameLobbyJoinRequested};
+    use bevy_steamworks::{CallbackResult, GameLobbyJoinRequested};
 
-    if let Some(&SteamworksEvent::GameLobbyJoinRequested(GameLobbyJoinRequested {
-        friend_steam_id,
-        ..
-    })) = join_lobby.read().next()
-    {
-        commands
-            .spawn_empty()
-            .queue(SteamNetClient::<ClientManager>::connect(
-                SessionConfig::default(),
-                friend_steam_id,
-            ));
-    }
+    let maybe_event = join_lobby.read().next();
+    let Some(SteamworksEvent::CallbackResult(result)) = maybe_event else {
+        return;
+    };
+    let CallbackResult::GameLobbyJoinRequested(GameLobbyJoinRequested {
+        friend_steam_id, ..
+    }) = result
+    else {
+        return;
+    };
+
+    commands.spawn_empty().queue(SteamNetClient::connect(
+        SessionConfig::default(),
+        *friend_steam_id,
+    ));
 }
 
 fn on_connecting(trigger: On<Add, SessionEndpoint>, mut commands: Commands) {
