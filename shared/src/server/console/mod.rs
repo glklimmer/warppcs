@@ -9,6 +9,7 @@ use bevy::{
 use console_protocol::*;
 use serde_json::{Value, json};
 
+use crate::GameSceneId;
 use crate::{
     ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
@@ -25,7 +26,6 @@ use crate::{
         physics::army_slot::ArmySlot,
     },
 };
-use crate::GameSceneId;
 
 use super::{
     ai::{FollowOffset, UnitBehaviour},
@@ -387,7 +387,7 @@ fn spawn_unit_and_bandits(In(params): In<Option<Value>>, world: &mut World) -> B
                 },
                 BanditBehaviour::default(),
                 Health { hitpoints: 55. },
-                MeleeRange(10.),
+                MeleeRange(20.),
                 Sight::default(),
                 Speed(30.),
                 Damage(10.),
@@ -501,6 +501,7 @@ fn test(
             FlagAssignment(flag_commander),
             game_scene_id,
             FollowOffset(offset),
+            Sight(30.),
             UnitBehaviour::default(),
             Interactable {
                 kind: InteractionType::Commander,
@@ -538,7 +539,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        2,
+        4,
         commander,
     );
     // let middle = spawn_unit(
@@ -551,23 +552,24 @@ fn test(
     //     game_scene_id,
     //     2,
     // );
-    // let back = spawn_unit(
-    //     commands.reborrow(),
-    //     player_entity,
-    //     army_formation[0],
-    //     UnitType::Archer,
-    //     player_translation,
-    //     color,
-    //     game_scene_id,
-    //     4,
-    // );
+    let back = spawn_unit(
+        commands.reborrow(),
+        player_entity,
+        army_formation[0],
+        UnitType::Archer,
+        player_translation,
+        color,
+        game_scene_id,
+        4,
+        commander,
+    );
 
     commands.entity(commander).insert((
         ArmyFlagAssignments {
             flags: EnumMap::new(|c| match c {
                 ArmyPosition::Front => Some(front),
                 ArmyPosition::Middle => None,
-                ArmyPosition::Back => None,
+                ArmyPosition::Back => Some(back),
             }),
         },
         ArmyFormation {

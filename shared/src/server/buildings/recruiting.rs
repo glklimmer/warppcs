@@ -386,7 +386,7 @@ pub fn recruit_commander(
                     offset: formation_offset,
                 },
                 *game_scene_id,
-                Transform::from_translation(Vec3::new(-formation_offset, 0., 0.))
+                Transform::from_translation(Vec3::new(formation_offset, 0., 0.))
                     .with_scale(Vec3::new(BASE_FORMATION_WIDTH, 1., 1.)),
             ))
             .id();

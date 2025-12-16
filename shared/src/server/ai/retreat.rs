@@ -22,7 +22,7 @@ impl Plugin for AIRetreatPlugin {
 pub struct KingInSightRange;
 
 fn king_in_sight_range(
-    trigger: Trigger<BehaveTrigger<KingInSightRange>>,
+    trigger: On<BehaveTrigger<KingInSightRange>>,
     query: Query<(&Transform, &Owner, &Sight)>,
     kings: Query<(&Transform, &Owner), With<Player>>,
     mut commands: Commands,

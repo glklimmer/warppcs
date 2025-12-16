@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
 use bevy::{input::common_conditions::input_just_pressed, sprite::Anchor};
 use bevy_replicon::prelude::{
-    AppRuleExt, Channel, ClientEventAppExt, ClientState, ClientTriggerExt,
-    FromClient, Replicated, SendMode, ServerEventAppExt, ServerTriggerExt, ToClients,
+    AppRuleExt, Channel, ClientEventAppExt, ClientState, ClientTriggerExt, FromClient, Replicated,
+    SendMode, ServerEventAppExt, ServerTriggerExt, ToClients,
 };
 use highlight::{
     Highlightable,
