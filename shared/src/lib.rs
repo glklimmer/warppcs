@@ -310,7 +310,9 @@ fn spawn_clients(
 
 fn update_visibility(
     trigger: On<Insert, GameSceneId>,
-    mut players: Query<(Entity, &mut ClientVisibility, &GameSceneId), With<Player>>,
+    client_player_map: Res<ClientPlayerMap>,
+    mut visibility_query: Query<&mut ClientVisibility>,
+    players_query: Query<(Entity, &GameSceneId), With<Player>>,
     others: Query<(Entity, &GameSceneId)>,
     player_check: Query<(), With<Player>>,
 ) -> Result {
@@ -318,29 +320,42 @@ fn update_visibility(
     let (_, new_entity_scene_id) = others.get(entity)?;
 
     if player_check.get(entity).is_ok() {
-        let player_scenes: HashMap<Entity, GameSceneId> = players
+        let player_scenes: HashMap<Entity, GameSceneId> = players_query
             .iter()
-            .map(|(entity, _, game_scene_id)| (entity, *game_scene_id))
+            .map(|(entity, game_scene_id)| (entity, *game_scene_id))
             .collect();
 
-        for (player_entity, mut visibility, _player_scene_id) in &mut players {
-            if player_entity.eq(&entity) {
-                let player_scene_id = player_scenes
-                    .get(&entity)
-                    .ok_or("GameSceneId for player not found")?;
-                for (other_entity, other_scene_id) in &others {
-                    visibility.set_visibility(other_entity, other_scene_id.eq(player_scene_id));
+        for (player_entity, _player_scene_id) in players_query.iter() {
+            let client_entity = match client_player_map.get_network_entity(&player_entity)? {
+                ClientId::Client(entity) => *entity,
+                _ => continue,
+            };
+
+            if let Ok(mut visibility) = visibility_query.get_mut(client_entity) {
+                if player_entity.eq(&entity) {
+                    let player_scene_id = player_scenes
+                        .get(&entity)
+                        .ok_or("GameSceneId for player not found")?;
+                    for (other_entity, other_scene_id) in &others {
+                        visibility.set_visibility(other_entity, other_scene_id.eq(player_scene_id));
+                    }
+                } else {
+                    let player_scene_id = player_scenes
+                        .get(&player_entity)
+                        .ok_or("GameSceneId for player not found")?;
+                    visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
                 }
-            } else {
-                let player_scene_id = player_scenes
-                    .get(&player_entity)
-                    .ok_or("GameSceneId for player not found")?;
-                visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
             }
         }
     } else {
-        for (_, mut visibility, player_scene_id) in &mut players {
-            visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
+        for (player_entity, player_scene_id) in players_query.iter() {
+            let client_entity = match client_player_map.get_network_entity(&player_entity)? {
+                ClientId::Client(entity) => *entity,
+                _ => continue,
+            };
+            if let Ok(mut visibility) = visibility_query.get_mut(client_entity) {
+                visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
+            }
         }
     }
     Ok(())
@@ -348,11 +363,21 @@ fn update_visibility(
 
 fn hide_on_remove(
     trigger: On<Remove, GameSceneId>,
-    mut players: Query<(Entity, &mut ClientVisibility), With<Player>>,
+    mut visibility_query: Query<&mut ClientVisibility>,
+    players_query: Query<Entity, With<Player>>,
+    client_player_map: Res<ClientPlayerMap>,
 ) {
     let entity = trigger.entity;
-    for (player_entity, mut visibility) in &mut players {
-        visibility.set_visibility(entity, player_entity == entity);
+    for player_entity in players_query.iter() {
+        if let Ok(client_id) = client_player_map.get_network_entity(&player_entity) {
+            let client_entity = match client_id {
+                ClientId::Client(e) => e,
+                _ => continue,
+            };
+            if let Ok(mut visibility) = visibility_query.get_mut(*client_entity) {
+                visibility.set_visibility(entity, player_entity == entity);
+            }
+        }
     }
 }
 
