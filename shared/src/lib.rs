@@ -114,6 +114,7 @@ impl Plugin for SharedPlugin {
         .add_client_event::<StartBuild>(Channel::Ordered)
         .add_client_event::<CommanderAssignmentRequest>(Channel::Ordered)
         .add_client_event::<CommanderPickFlag>(Channel::Ordered)
+        .add_client_event::<ClientReady>(Channel::Ordered)
         .add_server_event::<InteractableSound>(Channel::Ordered)
         .add_server_event::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_event::<CloseBuildingDialog>(Channel::Ordered)
@@ -124,7 +125,8 @@ impl Plugin for SharedPlugin {
         .add_mapped_server_message::<AnimationChangeEvent>(Channel::Ordered)
         .add_observer(spawn_clients)
         .add_observer(update_visibility)
-        .add_observer(hide_on_remove);
+        .add_observer(hide_on_remove)
+        .add_observer(on_client_ready);
     }
 }
 
@@ -169,6 +171,9 @@ pub enum AnimationChange {
     Mount,
     Unmount,
 }
+
+#[derive(Event, Debug, Serialize, Deserialize)]
+pub struct ClientReady(pub usize);
 
 #[derive(Message, Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct AnimationChangeEvent {
@@ -272,6 +277,8 @@ fn spawn_clients(
             player_entity, new_player_id
         );
 
+        // TODO: wait until client has set up ControlledPlayer
+
         // After this player is reconnected, there is one less disconnected player.
         // If there are no more disconnected players, unpause the game.
         if disconnected_players.iter().count() == 1 {
@@ -290,7 +297,6 @@ fn spawn_clients(
             color: *color,
         },
         Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
-        GameSceneId::lobby(),
         Owner::Player(player),
         Health { hitpoints: 200. },
     ));
@@ -306,6 +312,30 @@ fn spawn_clients(
         message: SetLocalPlayer(player),
     });
     info!("New player {:?} spawned with id {}.", player, new_player_id);
+}
+
+fn on_client_ready(
+    ready: On<FromClient<ClientReady>>,
+    mut commands: Commands,
+    client_player_map: Res<ClientPlayerMap>,
+    players_query: Query<&GameSceneId>,
+) {
+    let client_id = &ready.client_id;
+    if let Some(player_entity) = client_player_map.get(client_id) {
+        if let Ok(game_scene_id) = players_query.get(*player_entity) {
+            info!(
+                "Client for reconnected player {:?} is ready. Re-inserting GameSceneId.",
+                player_entity
+            );
+            commands.entity(*player_entity).insert(*game_scene_id);
+        } else {
+            info!(
+                "Client for new player {:?} is ready. Inserting lobby GameSceneId.",
+                player_entity
+            );
+            commands.entity(*player_entity).insert(GameSceneId::lobby());
+        }
+    }
 }
 
 fn update_visibility(
