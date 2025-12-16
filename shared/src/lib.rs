@@ -283,19 +283,17 @@ fn spawn_clients(
 
     // No disconnected player found, spawn a new one
     let color = fastrand::choice(PlayerColor::all_variants()).unwrap();
-    let player = commands
-        .entity(trigger.entity)
-        .insert((
-            Player {
-                id: new_player_id,
-                color: *color,
-            },
-            Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
-            GameSceneId::lobby(),
-            Owner::Player(trigger.entity),
-            Health { hitpoints: 200. },
-        ))
-        .id();
+    let player = commands.spawn_empty().id();
+    commands.entity(player).insert((
+        Player {
+            id: new_player_id,
+            color: *color,
+        },
+        Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
+        GameSceneId::lobby(),
+        Owner::Player(player),
+        Health { hitpoints: 200. },
+    ));
 
     client_player_map.insert(client_id, player);
 
