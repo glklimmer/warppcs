@@ -9,8 +9,7 @@ use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugi
 use bevy_replicon::prelude::{ClientId, SendMode, ServerTriggerExt, ToClients};
 
 use crate::{
-    ClientPlayerMap, GameSceneId, GameState, PendingPlayers, Player, PlayerColor, SetLocalPlayer,
-    enum_map::*,
+    ClientPlayerMap, GameState, PendingPlayers, Player, PlayerColor, SetLocalPlayer, enum_map::*,
 };
 
 pub struct CreateServerPlugin;
@@ -119,14 +118,11 @@ fn on_created(
     info!("Successfully created server");
 
     let server_player = commands
-        .spawn((
-            Player {
-                id: 0,
-                color: *fastrand::choice(PlayerColor::all_variants())
-                    .expect("No PlayerColor available"),
-            },
-            GameSceneId::lobby(),
-        ))
+        .spawn(Player {
+            id: 0,
+            color: *fastrand::choice(PlayerColor::all_variants())
+                .expect("No PlayerColor available"),
+        })
         .id();
 
     client_player_map.insert(ClientId::Server, server_player);

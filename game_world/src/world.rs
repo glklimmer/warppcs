@@ -2,12 +2,13 @@ use bevy::prelude::*;
 
 use bevy::platform::collections::HashMap;
 use bevy_replicon::{
-    prelude::{ClientState, FromClient},
+    prelude::{ClientState, FromClient, SendMode, ServerTriggerExt, ToClients},
     server::ServerSystems,
 };
 use petgraph::{Graph, Undirected};
 use shared::{
-    ClientPlayerMap, GameScene, GameSceneId, GameState, Player, SceneType, networking::LobbyMessage,
+    ClientPlayerMap, GameScene, GameSceneId, GameStarted, GameState, Player, SceneType,
+    networking::LobbyMessage,
 };
 use travel::map::MapDiscovery;
 
@@ -175,7 +176,6 @@ impl WorldGraph {
 
 fn init_world(
     mut lobby_events: MessageReader<FromClient<LobbyMessage>>,
-    mut next_game_state: ResMut<NextState<GameState>>,
     players: Query<Entity, With<Player>>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
@@ -208,9 +208,10 @@ fn init_world(
         commands.entity(*player).insert(discovery);
     }
 
-    // TODO: inform players that game started
-    // on client we should do: next_game_state.set(GameState::GameSession);
-    // after this new event is recieved
+    commands.server_trigger(ToClients {
+        mode: SendMode::Broadcast,
+        message: GameStarted(0),
+    });
 
     Ok(())
 }

@@ -118,6 +118,7 @@ impl Plugin for SharedPlugin {
         .add_server_event::<InteractableSound>(Channel::Ordered)
         .add_server_event::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_event::<CloseBuildingDialog>(Channel::Ordered)
+        .add_server_event::<GameStarted>(Channel::Ordered)
         .add_mapped_server_event::<PlayerDefeated>(Channel::Ordered)
         .add_mapped_server_event::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_event::<OpenBuildingDialog>(Channel::Ordered)
@@ -126,7 +127,8 @@ impl Plugin for SharedPlugin {
         .add_observer(spawn_clients)
         .add_observer(update_visibility)
         .add_observer(hide_on_remove)
-        .add_observer(on_client_ready);
+        .add_observer(on_client_ready)
+        .add_observer(game_started);
     }
 }
 
@@ -312,6 +314,7 @@ fn spawn_clients(
         mode: SendMode::Direct(client_id),
         message: SetLocalPlayer(player),
     });
+    // TODO: not sure wether replicated on MapDiscovery or sending all events here
 }
 
 fn on_client_ready(
@@ -328,6 +331,10 @@ fn on_client_ready(
                 player_entity
             );
             commands.entity(*player_entity).insert(*game_scene_id);
+            commands.server_trigger(ToClients {
+                mode: SendMode::Direct(*client_id),
+                message: GameStarted(0),
+            });
         } else {
             info!(
                 "Client for new player {:?} is ready. Inserting lobby GameSceneId.",
@@ -336,6 +343,10 @@ fn on_client_ready(
             commands.entity(*player_entity).insert(GameSceneId::lobby());
         }
     }
+}
+
+fn game_started(_started: On<GameStarted>, mut next_game_state: ResMut<NextState<GameState>>) {
+    next_game_state.set(GameState::GameSession);
 }
 
 fn update_visibility(
@@ -410,6 +421,9 @@ fn hide_on_remove(
         }
     }
 }
+
+#[derive(Event, Default, Debug, Deserialize, Serialize)]
+pub struct GameStarted(pub usize);
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
 pub struct SetLocalPlayer(Entity);

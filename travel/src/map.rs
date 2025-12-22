@@ -3,8 +3,8 @@ use bevy::{platform::collections::HashMap, prelude::*};
 use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
 use bevy::input::common_conditions::input_just_pressed;
 use bevy_replicon::prelude::{
-    Channel, ClientEventAppExt, ClientId, ClientState, ClientTriggerExt, SendMode,
-    ServerEventAppExt, ServerTriggerExt, ToClients,
+    AppRuleExt, Channel, ClientEventAppExt, ClientId, ClientState, ClientTriggerExt, Replicated,
+    SendMode, ServerEventAppExt, ServerTriggerExt, ToClients,
 };
 use highlight::{
     Highlightable,
@@ -12,8 +12,7 @@ use highlight::{
 };
 use serde::{Deserialize, Serialize};
 use shared::{
-    ClientPlayerMap, ControlledPlayer, GameScene, GameState, PlayerState, SceneType,
-    SetLocalPlayer,
+    ClientPlayerMap, ControlledPlayer, GameScene, GameStarted, GameState, PlayerState, SceneType,
     server::players::interaction::{InteractionTriggeredEvent, InteractionType},
 };
 
@@ -23,12 +22,13 @@ pub(crate) struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_client_event::<SelectTravelDestination>(Channel::Ordered)
+        app.replicate::<MapDiscovery>()
+            .add_client_event::<SelectTravelDestination>(Channel::Ordered)
             .add_server_event::<OpenTravelDialog>(Channel::Ordered)
             .add_server_event::<DiscoveryChange>(Channel::Ordered)
             .insert_state(MapState::View)
             .add_observer(init_map)
-            .add_observer(map_discovery_change)
+            .add_observer(discovery_change)
             .add_observer(open_travel_dialog)
             .add_systems(OnEnter(PlayerState::Traveling), spawn_travel_dashline)
             .add_systems(OnExit(PlayerState::Traveling), hide_map)
@@ -51,6 +51,7 @@ impl Plugin for MapPlugin {
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
+#[require(Replicated)]
 pub struct MapDiscovery {
     game_scenes: HashMap<GameScene, DiscoveryType>,
 }
@@ -93,7 +94,7 @@ impl MapDiscovery {
             mode: SendMode::Direct(client),
             message: DiscoveryChange {
                 game_scene,
-                change_type: DiscoveryType::Revealed,
+                change_type: DiscoveryType::Unrevealed,
             },
         });
     }
@@ -200,14 +201,13 @@ fn init_travel_dialog(
 }
 
 fn init_map(
-    _trigger: On<SetLocalPlayer>,
+    _trigger: On<GameStarted>,
     assets: Res<AssetServer>,
-    mut next_game_state: ResMut<NextState<GameState>>,
+    player: Query<&MapDiscovery, With<ControlledPlayer>>,
     mut commands: Commands,
 ) -> Result {
     let map_texture = assets.load::<Image>("sprites/ui/map.png");
-
-    next_game_state.set(GameState::GameSession);
+    let discovery = player.single()?;
 
     commands.spawn((
         Map,
@@ -215,6 +215,13 @@ fn init_map(
         Sprite::from_image(map_texture),
         Transform::from_scale(Vec3::splat(1.0 / 3.0)),
     ));
+
+    for (game_scene, change_type) in discovery.game_scenes.clone() {
+        commands.trigger(DiscoveryChange {
+            game_scene,
+            change_type,
+        });
+    }
     Ok(())
 }
 
@@ -260,13 +267,14 @@ fn destination_selected(
     Ok(())
 }
 
-fn map_discovery_change(
+fn discovery_change(
     trigger: On<DiscoveryChange>,
     map: Query<Entity, With<Map>>,
     map_icons: Res<MapIconSpriteSheet>,
     query: Query<(Entity, &MapNode)>,
     mut commands: Commands,
 ) -> Result {
+    info!("DiscoveryChange: {:?}", trigger);
     let map = map.single()?;
 
     let change = trigger.event();
@@ -283,12 +291,14 @@ fn map_discovery_change(
 
     match query.iter().find(|(_, node)| node.eq(&game_scene)) {
         Some((entity, _)) => {
+            info!("map node already available, setting icon");
             commands.entity(entity).insert(Sprite::from_atlas_image(
                 map_icons.sprite_sheet.texture.clone(),
                 map_icons.sprite_sheet.texture_atlas(icon),
             ));
         }
         None => {
+            info!("new map node, spawning");
             commands
                 .spawn((
                     ChildOf(map),
