@@ -45,6 +45,7 @@ use server::{
 };
 
 use crate::{
+    networking::MapDiscovery,
     player_port::{PlayerPort, Portal},
     server::{
         entities::{
@@ -430,6 +431,7 @@ impl MapEntities for SetLocalPlayer {
     Sprite,
     Anchor::BOTTOM_CENTER,
     Inventory,
+    MapDiscovery,
 )]
 pub struct Player {
     pub id: u64,

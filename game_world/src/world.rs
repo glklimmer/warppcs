@@ -9,7 +9,7 @@ use petgraph::{Graph, Undirected};
 use shared::{
     ClientPlayerMap, GameScene, GameSceneId, GameState, Player, SceneType, networking::LobbyMessage,
 };
-use travel::InitPlayerMapNode;
+use travel::map::InitPlayerMapNode;
 
 pub struct WorldPlugin;
 
