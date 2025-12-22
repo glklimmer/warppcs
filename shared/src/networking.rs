@@ -5,9 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::enum_map::*;
 
-use crate::{
-    BoxCollider, GameScene, horse_collider, map::buildings::Cost, server::players::items::Item,
-};
+use crate::{BoxCollider, horse_collider, map::buildings::Cost, server::players::items::Item};
 
 pub const PROTOCOL_ID: u64 = 7;
 
@@ -65,12 +63,6 @@ impl Default for Inventory {
             items: Vec::new(),
         }
     }
-}
-
-#[derive(Component, Debug, Serialize, Deserialize, Clone, Default)]
-pub struct MapDiscovery {
-    pub unrevealed: Vec<GameScene>,
-    pub revealed: Vec<GameScene>,
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]

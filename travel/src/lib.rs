@@ -7,7 +7,6 @@ use shared::{
     BoxCollider, ClientPlayerMap, ClientPlayerMapExt, ControlledPlayer, GameScene, GameSceneId,
     PlayerState,
     map::Layers,
-    networking::MapDiscovery,
     server::{
         buildings::recruiting::{FlagAssignment, FlagHolder},
         entities::{Unit, commander::ArmyFlagAssignments},
@@ -15,7 +14,7 @@ use shared::{
     },
 };
 
-use crate::map::SelectTravelDestination;
+use crate::map::{MapDiscovery, SelectTravelDestination};
 
 pub mod map;
 
@@ -189,6 +188,7 @@ fn start_travel(
 fn end_travel(
     query: Query<(Entity, &Traveling)>,
     target: Query<(&Transform, &GameSceneId, Option<&TravelDestinationOffset>)>,
+    client_player_map: Res<ClientPlayerMap>,
     mut discovery: Query<&mut MapDiscovery>,
     mut commands: Commands,
 ) -> Result {
@@ -226,7 +226,8 @@ fn end_travel(
         let Ok(mut discovery) = discovery.get_mut(entity) else {
             continue;
         };
-        discovery.revealed.push(travel.target);
+        let client = client_player_map.get_network_entity(&entity)?;
+        discovery.reveal(commands.reborrow(), *client, travel.target)?;
     }
     Ok(())
 }

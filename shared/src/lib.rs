@@ -45,7 +45,6 @@ use server::{
 };
 
 use crate::{
-    networking::MapDiscovery,
     player_port::{PlayerPort, Portal},
     server::{
         entities::{
@@ -308,11 +307,11 @@ fn spawn_clients(
         client_visibility.set_visibility(player, true);
     }
 
+    info!("New player {:?} spawned with id {}.", player, new_player_id);
     commands.server_trigger(ToClients {
         mode: SendMode::Direct(client_id),
         message: SetLocalPlayer(player),
     });
-    info!("New player {:?} spawned with id {}.", player, new_player_id);
 }
 
 fn on_client_ready(
@@ -431,7 +430,6 @@ impl MapEntities for SetLocalPlayer {
     Sprite,
     Anchor::BOTTOM_CENTER,
     Inventory,
-    MapDiscovery,
 )]
 pub struct Player {
     pub id: u64,

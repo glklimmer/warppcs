@@ -1,10 +1,10 @@
-use bevy::prelude::*;
+use bevy::{platform::collections::HashMap, prelude::*};
 
 use animations::ui::map_icon::{MapIconSpriteSheet, MapIcons};
 use bevy::input::common_conditions::input_just_pressed;
 use bevy_replicon::prelude::{
-    Channel, ClientEventAppExt, ClientState, ClientTriggerExt, SendMode, ServerEventAppExt,
-    ServerTriggerExt, ToClients,
+    Channel, ClientEventAppExt, ClientId, ClientState, ClientTriggerExt, SendMode,
+    ServerEventAppExt, ServerTriggerExt, ToClients,
 };
 use highlight::{
     Highlightable,
@@ -13,7 +13,7 @@ use highlight::{
 use serde::{Deserialize, Serialize};
 use shared::{
     ClientPlayerMap, ControlledPlayer, GameScene, GameState, PlayerState, SceneType,
-    networking::MapDiscovery,
+    SetLocalPlayer,
     server::players::interaction::{InteractionTriggeredEvent, InteractionType},
 };
 
@@ -25,13 +25,9 @@ impl Plugin for TravelPlugin {
     fn build(&self, app: &mut App) {
         app.add_client_event::<SelectTravelDestination>(Channel::Ordered)
             .add_server_event::<OpenTravelDialog>(Channel::Ordered)
-            .add_server_event::<InitPlayerMapNode>(Channel::Ordered)
-            .add_server_event::<AddMysteryMapIcon>(Channel::Ordered)
-            .add_server_event::<RevealMapIcon>(Channel::Ordered)
             .insert_state(MapState::View)
             .add_observer(init_map)
-            .add_observer(add_map_icons)
-            .add_observer(reveal_map_icons)
+            .add_observer(map_discovery_change)
             .add_observer(open_travel_dialog)
             .add_systems(OnEnter(PlayerState::Traveling), spawn_travel_dashline)
             .add_systems(OnExit(PlayerState::Traveling), hide_map)
@@ -53,24 +49,78 @@ impl Plugin for TravelPlugin {
     }
 }
 
-#[derive(Event, Deref, Serialize, Deserialize)]
-pub struct InitPlayerMapNode(GameScene);
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
+pub struct MapDiscovery {
+    game_scenes: HashMap<GameScene, DiscoveryType>,
+}
 
-#[derive(Event, Deref, Serialize, Deserialize)]
-pub struct AddMysteryMapIcon(GameScene);
+#[derive(Debug, Serialize, Deserialize, Clone)]
+enum DiscoveryType {
+    Unrevealed,
+    Revealed,
+}
 
-#[derive(Event, Deref, Serialize, Deserialize)]
-pub struct RevealMapIcon(GameScene);
+#[derive(Event, Debug, Serialize, Deserialize, Clone)]
+struct DiscoveryChange {
+    game_scene: GameScene,
+    change_type: DiscoveryType,
+}
 
-impl InitPlayerMapNode {
-    pub fn new(game_scene: GameScene) -> Self {
-        Self(game_scene)
+impl MapDiscovery {
+    pub fn set_base(&mut self, mut commands: Commands, client: ClientId, base: GameScene) {
+        self.game_scenes.insert(base, DiscoveryType::Revealed);
+        commands.server_trigger(ToClients {
+            mode: SendMode::Direct(client),
+            message: DiscoveryChange {
+                game_scene: base,
+                change_type: DiscoveryType::Revealed,
+            },
+        });
+    }
+    pub fn add_unrevealed(
+        &mut self,
+        mut commands: Commands,
+        client: ClientId,
+        game_scene: GameScene,
+    ) {
+        self.game_scenes
+            .insert(game_scene, DiscoveryType::Unrevealed);
+
+        commands.server_trigger(ToClients {
+            mode: SendMode::Direct(client),
+            message: DiscoveryChange {
+                game_scene,
+                change_type: DiscoveryType::Revealed,
+            },
+        });
+    }
+
+    pub fn reveal(
+        &mut self,
+        mut commands: Commands,
+        client: ClientId,
+        game_scene: GameScene,
+    ) -> Result {
+        let discovery_type = self
+            .game_scenes
+            .get_mut(&game_scene)
+            .ok_or("Trying to reveal unknown GameScene")?;
+        *discovery_type = DiscoveryType::Revealed;
+
+        commands.server_trigger(ToClients {
+            mode: SendMode::Direct(client),
+            message: DiscoveryChange {
+                game_scene,
+                change_type: DiscoveryType::Revealed,
+            },
+        });
+        Ok(())
     }
 }
 
 #[derive(Event, Deserialize, Serialize)]
-pub struct OpenTravelDialog {
-    pub current_scene: GameScene,
+struct OpenTravelDialog {
+    current_scene: GameScene,
 }
 
 #[derive(Event, Deserialize, Serialize, Deref)]
@@ -86,19 +136,18 @@ enum MapState {
 }
 
 #[derive(Component)]
-pub struct DashLine {
-    pub a: Vec2,
-    pub b: Vec2,
-    pub dash_len: f32,
-    pub gap: f32,
-    pub thickness: f32,
-    pub color: Color,
+struct DashLine {
+    a: Vec2,
+    b: Vec2,
+    dash_len: f32,
+    thickness: f32,
+    color: Color,
 
-    pub cp1: Vec2,
-    pub cp2: Vec2,
-    pub total_dashes: usize,
-    pub spawned: usize,
-    pub timer: Timer,
+    cp1: Vec2,
+    cp2: Vec2,
+    total_dashes: usize,
+    spawned: usize,
+    timer: Timer,
 }
 
 #[derive(Component, Default)]
@@ -132,7 +181,7 @@ fn init_travel_dialog(
         let mut discovery = discovery.get_mut(player_entity)?;
         for destination in &**destinations {
             let game_scene = game_scene.get(*destination)?;
-            discovery.unrevealed.push(*game_scene);
+            discovery.add_unrevealed(commands.reborrow(), *client, *game_scene);
         }
 
         let current_scene = game_scene.get(event.interactable)?;
@@ -148,41 +197,21 @@ fn init_travel_dialog(
 }
 
 fn init_map(
-    trigger: On<InitPlayerMapNode>,
+    _trigger: On<SetLocalPlayer>,
     assets: Res<AssetServer>,
-    map_icons: Res<MapIconSpriteSheet>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut commands: Commands,
 ) -> Result {
-    let player_scene = **trigger.event();
     let map_texture = assets.load::<Image>("sprites/ui/map.png");
 
     next_game_state.set(GameState::GameSession);
 
-    commands
-        .spawn((
-            Map,
-            Visibility::Hidden,
-            Sprite::from_image(map_texture),
-            Transform::from_scale(Vec3::splat(1.0 / 3.0)),
-        ))
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    MapNode(player_scene),
-                    Visibility::Inherited,
-                    Sprite::from_atlas_image(
-                        map_icons.sprite_sheet.texture.clone(),
-                        map_icons.sprite_sheet.texture_atlas(MapIcons::Player),
-                    ),
-                    Highlightable::default(),
-                    Pickable::default(),
-                    Transform::from_xyz(player_scene.position.x, player_scene.position.y, 2.0),
-                ))
-                .observe(add_highlight_on::<Pointer<Over>>)
-                .observe(remove_highlight_on::<Pointer<Out>>)
-                .observe(destination_selected);
-        });
+    commands.spawn((
+        Map,
+        Visibility::Hidden,
+        Sprite::from_image(map_texture),
+        Transform::from_scale(Vec3::splat(1.0 / 3.0)),
+    ));
     Ok(())
 }
 
@@ -228,8 +257,8 @@ fn destination_selected(
     Ok(())
 }
 
-fn add_map_icons(
-    trigger: On<AddMysteryMapIcon>,
+fn map_discovery_change(
+    trigger: On<DiscoveryChange>,
     map: Query<Entity, With<Map>>,
     map_icons: Res<MapIconSpriteSheet>,
     query: Query<(Entity, &MapNode)>,
@@ -237,65 +266,50 @@ fn add_map_icons(
 ) -> Result {
     let map = map.single()?;
 
-    let update_map_icon = trigger.event();
-    let game_scene = **update_map_icon;
+    let change = trigger.event();
+    let game_scene = change.game_scene;
 
-    let None = query.iter().find(|(_, node)| node.eq(&game_scene)) else {
-        return Ok(());
+    let icon = match change.change_type {
+        DiscoveryType::Unrevealed => MapIcons::Mystery,
+        DiscoveryType::Revealed => match game_scene.scene {
+            SceneType::Player { .. } => MapIcons::Player,
+            SceneType::Camp { .. } => MapIcons::Bandit,
+            SceneType::Meadow { .. } => MapIcons::Bandit,
+        },
     };
 
-    let icon = MapIcons::Mystery;
-
-    commands
-        .spawn((
-            ChildOf(map),
-            MapNode(game_scene),
-            Visibility::Inherited,
-            Sprite::from_atlas_image(
+    match query.iter().find(|(_, node)| node.eq(&game_scene)) {
+        Some((entity, _)) => {
+            commands.entity(entity).insert(Sprite::from_atlas_image(
                 map_icons.sprite_sheet.texture.clone(),
                 map_icons.sprite_sheet.texture_atlas(icon),
-            ),
-            Highlightable::default(),
-            Pickable::default(),
-            Transform::from_xyz(game_scene.position.x, game_scene.position.y, 2.0),
-        ))
-        .observe(add_highlight_on::<Pointer<Over>>)
-        .observe(remove_highlight_on::<Pointer<Out>>)
-        .observe(destination_selected);
-    Ok(())
-}
+            ));
+        }
+        None => {
+            commands
+                .spawn((
+                    ChildOf(map),
+                    MapNode(game_scene),
+                    Visibility::Inherited,
+                    Sprite::from_atlas_image(
+                        map_icons.sprite_sheet.texture.clone(),
+                        map_icons.sprite_sheet.texture_atlas(icon),
+                    ),
+                    Highlightable::default(),
+                    Pickable::default(),
+                    Transform::from_xyz(game_scene.position.x, game_scene.position.y, 2.0),
+                ))
+                .observe(add_highlight_on::<Pointer<Over>>)
+                .observe(remove_highlight_on::<Pointer<Out>>)
+                .observe(destination_selected);
+        }
+    }
 
-fn reveal_map_icons(
-    trigger: On<RevealMapIcon>,
-    query: Query<(Entity, &MapNode)>,
-    map_icons: Res<MapIconSpriteSheet>,
-    mut commands: Commands,
-) -> Result {
-    let update_map_icon = trigger.event();
-    let game_scene = **update_map_icon;
-
-    info!("revealing: {:?}", game_scene.scene);
-
-    let (entity, _) = query
-        .iter()
-        .find(|(_, node)| node.eq(&game_scene))
-        .ok_or("GameScene not added yet.")?;
-
-    let icon = match game_scene.scene {
-        SceneType::Player { .. } => MapIcons::Player,
-        SceneType::Camp { .. } => MapIcons::Bandit,
-        SceneType::Meadow { .. } => MapIcons::Bandit,
-    };
-
-    commands.entity(entity).insert(Sprite::from_atlas_image(
-        map_icons.sprite_sheet.texture.clone(),
-        map_icons.sprite_sheet.texture_atlas(icon),
-    ));
     Ok(())
 }
 
 impl DashLine {
-    pub fn new(
+    fn new(
         a: Vec2,
         b: Vec2,
         dash_len: f32,
@@ -321,7 +335,6 @@ impl DashLine {
             a,
             b,
             dash_len,
-            gap,
             thickness,
             color,
             cp1,

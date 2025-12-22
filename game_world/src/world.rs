@@ -2,14 +2,14 @@ use bevy::prelude::*;
 
 use bevy::platform::collections::HashMap;
 use bevy_replicon::{
-    prelude::{ClientState, FromClient, SendMode, ServerTriggerExt, ToClients},
+    prelude::{ClientState, FromClient},
     server::ServerSystems,
 };
 use petgraph::{Graph, Undirected};
 use shared::{
     ClientPlayerMap, GameScene, GameSceneId, GameState, Player, SceneType, networking::LobbyMessage,
 };
-use travel::map::InitPlayerMapNode;
+use travel::map::MapDiscovery;
 
 pub struct WorldPlugin;
 
@@ -177,6 +177,7 @@ fn init_world(
     mut lobby_events: MessageReader<FromClient<LobbyMessage>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     players: Query<Entity, With<Player>>,
+    mut discovery: Query<&mut MapDiscovery>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
@@ -206,10 +207,8 @@ fn init_world(
             .get(player)
             .ok_or("GameScene for player not found")?;
 
-        commands.server_trigger(ToClients {
-            mode: SendMode::Direct(*client),
-            message: InitPlayerMapNode::new(*game_scene),
-        });
+        let mut discovery = discovery.get_mut(*player)?;
+        discovery.set_base(commands.reborrow(), *client, *game_scene);
     }
     Ok(())
 }
