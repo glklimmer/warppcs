@@ -19,12 +19,13 @@ use shared::{
 
 use crate::{TravelDestinations, Traveling};
 
-pub struct TravelPlugin;
+pub(crate) struct MapPlugin;
 
-impl Plugin for TravelPlugin {
+impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_client_event::<SelectTravelDestination>(Channel::Ordered)
             .add_server_event::<OpenTravelDialog>(Channel::Ordered)
+            .add_server_event::<DiscoveryChange>(Channel::Ordered)
             .insert_state(MapState::View)
             .add_observer(init_map)
             .add_observer(map_discovery_change)
@@ -67,8 +68,7 @@ struct DiscoveryChange {
 }
 
 impl MapDiscovery {
-    pub fn set_base(&mut self, mut commands: Commands, client: ClientId, base: GameScene) {
-        self.game_scenes.insert(base, DiscoveryType::Revealed);
+    pub fn base(mut commands: Commands, client: ClientId, base: GameScene) -> Self {
         commands.server_trigger(ToClients {
             mode: SendMode::Direct(client),
             message: DiscoveryChange {
@@ -76,6 +76,9 @@ impl MapDiscovery {
                 change_type: DiscoveryType::Revealed,
             },
         });
+        let mut game_scenes = HashMap::new();
+        game_scenes.insert(base, DiscoveryType::Revealed);
+        Self { game_scenes }
     }
     pub fn add_unrevealed(
         &mut self,

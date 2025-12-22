@@ -177,7 +177,6 @@ fn init_world(
     mut lobby_events: MessageReader<FromClient<LobbyMessage>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     players: Query<Entity, With<Player>>,
-    mut discovery: Query<&mut MapDiscovery>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {
@@ -189,8 +188,6 @@ fn init_world(
     let LobbyMessage::StartGame = message else {
         return Ok(());
     };
-
-    next_game_state.set(GameState::GameSession);
 
     let players: Vec<Entity> = players.iter().collect();
     let num_players = players.len();
@@ -207,8 +204,13 @@ fn init_world(
             .get(player)
             .ok_or("GameScene for player not found")?;
 
-        let mut discovery = discovery.get_mut(*player)?;
-        discovery.set_base(commands.reborrow(), *client, *game_scene);
+        let discovery = MapDiscovery::base(commands.reborrow(), *client, *game_scene);
+        commands.entity(*player).insert(discovery);
     }
+
+    // TODO: inform players that game started
+    // on client we should do: next_game_state.set(GameState::GameSession);
+    // after this new event is recieved
+
     Ok(())
 }

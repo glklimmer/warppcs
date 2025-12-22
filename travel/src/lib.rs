@@ -14,7 +14,7 @@ use shared::{
     },
 };
 
-use crate::map::{MapDiscovery, SelectTravelDestination};
+use crate::map::{MapDiscovery, MapPlugin, SelectTravelDestination};
 
 pub mod map;
 
@@ -22,7 +22,8 @@ pub struct TravelPlugin;
 
 impl Plugin for TravelPlugin {
     fn build(&self, app: &mut App) {
-        app.replicate::<Traveling>()
+        app.add_plugins(MapPlugin)
+            .replicate::<Traveling>()
             .replicate_bundle::<(Road, Transform)>()
             .replicate_bundle::<(SceneEnd, Transform)>()
             .add_observer(enter_travel_state)
