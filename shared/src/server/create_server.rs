@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_replicon::prelude::*;
 
 use aeronet::io::{
     Session, SessionEndpoint,
@@ -7,14 +6,18 @@ use aeronet::io::{
     server::Server,
 };
 use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
+use bevy_replicon::prelude::{ClientId, SendMode, ServerTriggerExt, ToClients};
 
-use crate::{ClientPlayerMap, GameSceneId, Player, PlayerColor, SetLocalPlayer, enum_map::*};
+use crate::{
+    ClientPlayerMap, GameState, PendingPlayers, Player, PlayerColor, SetLocalPlayer, enum_map::*,
+};
 
 pub struct CreateServerPlugin;
 
 impl Plugin for CreateServerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(AeronetRepliconServerPlugin)
+            .init_resource::<PendingPlayers>()
             .add_observer(on_created)
             .add_observer(on_connecting)
             .add_observer(on_connected)
@@ -115,12 +118,11 @@ fn on_created(
     info!("Successfully created server");
 
     let server_player = commands
-        .spawn((
-            Player {
-                color: *fastrand::choice(PlayerColor::all_variants()).unwrap(),
-            },
-            GameSceneId::lobby(),
-        ))
+        .spawn(Player {
+            id: 0,
+            color: *fastrand::choice(PlayerColor::all_variants())
+                .expect("No PlayerColor available"),
+        })
         .id();
 
     client_player_map.insert(ClientId::Server, server_player);
@@ -132,11 +134,17 @@ fn on_created(
 }
 
 #[cfg(feature = "steam")]
-fn on_session_request_steam(mut request: On<aeronet_steam::server::SessionRequest>) {
+fn on_session_request_steam(
+    mut request: On<aeronet_steam::server::SessionRequest>,
+    mut pending_players: ResMut<PendingPlayers>,
+) {
     use aeronet_steam::server::SessionResponse;
 
-    let client = request.steam_id;
-    info!("Steamclient {:?} requesting connection...", client);
+    let client_entity = request.event().entity;
+    let steam_id = request.steam_id.raw();
+    info!("Steamclient {steam_id} requesting connection with entity {client_entity:?}...");
+
+    pending_players.insert(client_entity, steam_id);
 
     request.respond(SessionResponse::Accepted);
 }
@@ -160,9 +168,24 @@ fn on_connected(trigger: On<Add, Session>) {
     info!("Client {client} connected.");
 }
 
-fn on_disconnected(trigger: On<Disconnected>) {
-    let client = trigger.entity;
+fn on_disconnected(
+    trigger: On<Disconnected>,
+    mut commands: Commands,
+    mut client_player_map: ResMut<ClientPlayerMap>,
+    mut game_state: ResMut<NextState<GameState>>,
+) -> Result {
+    let client_id = ClientId::Client(trigger.entity);
 
+    if let Some(player_entity) = client_player_map.remove(&client_id) {
+        commands
+            .get_entity(player_entity)?
+            .insert(crate::Disconnected);
+        info!("Player entity {:?} marked as disconnected.", player_entity);
+        game_state.set(GameState::Paused);
+        info!("Game paused.");
+    }
+
+    let client = trigger.entity;
     match &trigger.reason {
         DisconnectReason::ByUser(reason) => {
             info!("Client {client} disconnected from server by user: {reason}");
@@ -173,5 +196,6 @@ fn on_disconnected(trigger: On<Disconnected>) {
         DisconnectReason::ByError(err) => {
             warn!("Client {client} disconnected from server due to error: {err:?}");
         }
-    }
+    };
+    Ok(())
 }

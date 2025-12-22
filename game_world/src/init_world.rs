@@ -52,7 +52,7 @@ fn init_world(
 
         match node.scene {
             SceneType::Player { player, exit } => {
-                let (mut transform, Player { color }) = players.get_mut(player)?;
+                let (mut transform, Player { color, .. }) = players.get_mut(player)?;
                 transform.translation = offset.with_z(Layers::Player.as_f32());
                 commands.entity(player).insert((
                     Owner::Player(player),

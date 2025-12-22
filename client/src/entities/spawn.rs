@@ -17,8 +17,9 @@ use animations::{
     },
 };
 use bevy_parallax::{CameraFollow, LinearAxisStrategy, TranslationStrategy};
+use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
-    ControlledPlayer, Player, SetLocalPlayer,
+    ClientReady, ControlledPlayer, Player, SetLocalPlayer,
     map::buildings::{Building, RecruitBuilding},
     player_port::Portal,
     server::{
@@ -70,6 +71,7 @@ fn init_local_player(
                 y: LinearAxisStrategy::P(0.9),
             }),
     );
+    commands.client_trigger(ClientReady(0));
     Ok(())
 }
 

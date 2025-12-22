@@ -7,7 +7,7 @@ use respawn::respawn_units;
 use siege_camp::siege_camp_lifetime;
 
 use crate::{
-    Owner,
+    GameState, Owner,
     map::buildings::{BuildStatus, Building, HealthIndicator, respawn_timer},
     networking::Inventory,
     server::players::interaction::Interactable,
@@ -55,7 +55,7 @@ impl Plugin for BuildingsPlugins {
         app.add_systems(
             FixedUpdate,
             (
-                gold_farm_output,
+                gold_farm_output.run_if(in_state(GameState::GameSession)),
                 (respawn_timer, respawn_units).chain(),
                 siege_camp_lifetime,
                 progess_construction,

@@ -147,7 +147,7 @@ pub fn recruit_units(
     let player = *player;
     let unit_type = *unit_type;
 
-    let (player_transform, mut inventory, Player { color }, game_scene_id) =
+    let (player_transform, mut inventory, Player { color, .. }, game_scene_id) =
         player_query.get_mut(player)?;
     let player_translation = player_transform.translation;
 
@@ -304,7 +304,7 @@ pub fn recruit_commander(
     };
 
     let player = *player;
-    let (player_transform, mut inventory, Player { color }, game_scene_id) =
+    let (player_transform, mut inventory, Player { color, .. }, game_scene_id) =
         player_query.get_mut(player)?;
     let player_translation = player_transform.translation;
 
