@@ -87,6 +87,10 @@ impl MapDiscovery {
         client: ClientId,
         game_scene: GameScene,
     ) {
+        let None = self.game_scenes.get(&game_scene) else {
+            return;
+        };
+
         self.game_scenes
             .insert(game_scene, DiscoveryType::Unrevealed);
 
