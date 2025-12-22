@@ -48,7 +48,7 @@ fn king_in_sight_range(
         .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
     match is_out_of_sight {
-        Some((nearest_transform, _)) => {
+        Some((_nearest_transform, _)) => {
             commands.trigger(ctx.success());
         }
         None => commands.trigger(ctx.failure()),
@@ -61,6 +61,6 @@ fn retreat_to_base(
     mut unit: Query<&mut Transform, With<Unit>>,
 ) {
     for ctx in query.iter() {
-        let (unit_post) = unit.get_mut(ctx.target_entity());
+        let _unit_post  = unit.get_mut(ctx.target_entity());
     }
 }

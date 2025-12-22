@@ -11,6 +11,7 @@ use crate::{
     server::{
         ai::{
             bandit::AIBanditPlugin,
+            commander::AICommanderPlugin,
             movement::IsFriendlyUnitInFront,
             retreat::{AIRetreatPlugin, KingInSightRange},
         },
@@ -25,6 +26,7 @@ use super::{
 
 mod attack;
 mod bandit;
+mod commander;
 mod movement;
 mod retreat;
 
@@ -56,6 +58,7 @@ impl Plugin for AIPlugin {
             AIMovementPlugin,
             AIRetreatPlugin,
             AIBanditPlugin,
+            AICommanderPlugin,
         ))
         .add_observer(on_insert_unit_behaviour)
         .add_observer(push_back_check)
@@ -83,8 +86,11 @@ struct TargetInSightRange;
 #[derive(Component, Clone)]
 struct RetreatToBase;
 
-#[derive(Component, Clone, Deref)]
-struct WalkingInDirection(WorldDirection);
+#[derive(Component, Clone)]
+struct WalkingInDirection;
+
+#[derive(Event, Clone)]
+struct FormationHasTarget;
 
 #[derive(Component, Clone, Deref)]
 #[relationship(relationship_target = BehaveSources)]
@@ -125,14 +131,19 @@ fn on_insert_unit_behaviour(
     let entity = trigger.entity;
     let unit = units.get(entity)?;
 
+    if unit.unit_type.eq(&UnitType::Commander) {
+        return Ok(());
+    }
+
     let king_within_range = behave!(
         Behave::Sequence =>{
             Behave::trigger(KingInSightRange),
             Behave::spawn_named("Retreat to Base", (RetreatToBase, BehaveTarget(entity)))
         }
     );
+    let mut attack_chain: Vec<Tree<Behave>> = Vec::new();
 
-    let enemy_within_attack_range = behave!(
+    attack_chain.push(behave!(
         Behave::Sequence => {
             Behave::trigger(TargetInMeleeRange),
             Behave::spawn_named(
@@ -144,49 +155,66 @@ fn on_insert_unit_behaviour(
                 ),
             )
         }
+    ));
+
+    if let UnitType::Archer = unit.unit_type {
+        attack_chain.push(behave!(
+        Behave::Sequence => {
+            Behave::trigger(TargetInProjectileRange),
+            Behave::spawn_named(
+                "Attack nearest enemy Range",
+                (
+                    Attack::Projectile,
+                    BehaveInterrupt::by_not(TargetInProjectileRange).or(TargetInMeleeRange),
+                    BehaveTarget(entity),
+                ),
+            )
+        }
+        ));
+    }
+
+    let enemy_within_sight_range = behave!(
+        Behave::Sequence => {
+            Behave::trigger(TargetInSightRange),
+            Behave::Invert => {
+                Behave::trigger(IsFriendlyUnitInFront)
+            },
+            Behave::spawn_named(
+                "Attack nearest enemy Melee",
+                (
+                    WalkIntoRange,
+                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
+                    BehaveTarget(entity),
+                ),
+            ),
+        }
     );
 
-    let enemy_within_sight_range = if unit.unit_type.ne(&UnitType::Commander) {
-        behave!(
-            Behave::Sequence => {
-                Behave::trigger(TargetInSightRange),
-                Behave::Invert => {
-                    Behave::trigger(IsFriendlyUnitInFront)
-                },
-                Behave::spawn_named(
-                    "Attack nearest enemy Melee",
-                    (
-                        WalkIntoRange,
-                        BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
-                        BehaveTarget(entity),
-                    ),
+    let notfiy = behave!(
+        Behave::Sequence => {
+            Behave::trigger(FormationHasTarget),
+            Behave::spawn_named(
+                "Notify Formation",
+                (
+                    WalkingInDirection,
+                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
+                    BehaveTarget(entity),
                 ),
-            }
-        )
-    } else {
-        behave!(
-            Behave::Sequence => {
-                Behave::trigger(TargetInSightRange),
-                Behave::spawn_named(
-                    "Commander",
-                    (
-                        BehaveTarget(entity),
-                    ),
-                )
-            }
-        )
-    };
+            ),
+        }
+    );
 
     let tree = behave!(
         Behave::Forever => {
             Behave::Fallback => {
                         @king_within_range,
-                        @enemy_within_attack_range,
+                        ...attack_chain,
                         @enemy_within_sight_range,
+                        @notfiy,
                         @behave!(
                             Behave::spawn_named(
                                 "Following flag",
-                                    (FollowFlag, BehaveTarget(entity), BehaveInterrupt::by(TargetInSightRange).or(BeingPushed).or(IsFriendlyUnitInFront))
+                                    (FollowFlag, BehaveTarget(entity), BehaveInterrupt::by(TargetInSightRange).or(BeingPushed).or(FormationHasTarget))
                             )
                         )
             }
@@ -397,7 +425,7 @@ fn debug_display_unit_names(
 #[cfg(debug_assertions)]
 fn debug_display_targeted_by(
     mut commands: Commands,
-    query: Query<(Entity, &TargetedBy), (With<Unit>)>,
+    query: Query<(Entity, &TargetedBy), With<Unit>>,
     name_query: Query<&Name>,
 ) -> Result {
     for (entity, targeted_by) in query.iter() {

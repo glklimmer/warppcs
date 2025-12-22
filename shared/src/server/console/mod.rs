@@ -10,6 +10,8 @@ use console_protocol::*;
 use serde_json::{Value, json};
 
 use crate::GameSceneId;
+use crate::server::ai::BanditBehaviour;
+use crate::server::entities::ProjectileRange;
 use crate::{
     ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
@@ -21,7 +23,6 @@ use crate::{
     },
     networking::UnitType,
     server::{
-        ai::BanditBehaviour,
         entities::{Sight, commander::ArmyFormation},
         physics::army_slot::ArmySlot,
     },
@@ -539,23 +540,24 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        4,
+        2,
         commander,
     );
-    // let middle = spawn_unit(
-    //     commands.reborrow(),
-    //     player_entity,
-    //     army_formation[1],
-    //     UnitType::Pikeman,
-    //     player_translation,
-    //     color,
-    //     game_scene_id,
-    //     2,
-    // );
+    let middle = spawn_unit(
+        commands.reborrow(),
+        player_entity,
+        army_formation[1],
+        UnitType::Pikeman,
+        player_translation,
+        color,
+        game_scene_id,
+        1,
+        commander,
+    );
     let back = spawn_unit(
         commands.reborrow(),
         player_entity,
-        army_formation[0],
+        army_formation[2],
         UnitType::Archer,
         player_translation,
         color,
@@ -568,7 +570,7 @@ fn test(
         ArmyFlagAssignments {
             flags: EnumMap::new(|c| match c {
                 ArmyPosition::Front => Some(front),
-                ArmyPosition::Middle => None,
+                ArmyPosition::Middle => Some(middle),
                 ArmyPosition::Back => Some(back),
             }),
         },
@@ -632,23 +634,30 @@ fn spawn_unit(
         UnitType::Bandit => todo!(),
         UnitType::Commander => todo!(),
     };
-    let range = MeleeRange(range);
+    let melee_range_shield = MeleeRange(range);
+    let melee_range_pike = MeleeRange(range * 2.);
+    let projectile_range = ProjectileRange(range * 10.);
 
     for i in 1..=amount {
-        world.spawn((
-            Name::new(format!("{:?} {}", unit_type, i)),
-            player_translation.with_layer(Layers::Flag),
-            unit.clone(),
-            health,
-            speed,
-            damage,
-            range,
-            owner,
-            game_scene_id,
-            FlagAssignment(flag_entity),
-            UnitBehaviour::default(),
-            ArmyFormationTo(commander),
-        ));
+        world
+            .spawn((
+                Name::new(format!("{:?} {}", unit_type, i)),
+                player_translation.with_layer(Layers::Flag),
+                unit.clone(),
+                health,
+                speed,
+                damage,
+                owner,
+                game_scene_id,
+                FlagAssignment(flag_entity),
+                UnitBehaviour::default(),
+                ArmyFormationTo(commander),
+            ))
+            .insert_if(melee_range_shield, || {
+                unit.unit_type.eq(&UnitType::Shieldwarrior)
+            })
+            .insert_if(melee_range_pike, || unit.unit_type.eq(&UnitType::Pikeman))
+            .insert_if(projectile_range, || unit.unit_type.eq(&UnitType::Archer));
     }
     flag_entity
 }

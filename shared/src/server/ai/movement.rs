@@ -8,9 +8,10 @@ use crate::{
     BoxCollider, Player,
     networking::UnitType,
     server::{
+        ai::FormationHasTarget,
         buildings::recruiting::FlagAssignment,
         console::{ArmyFormationTo, ArmyFormations},
-        entities::{MeleeRange, Unit},
+        entities::{MeleeRange, ProjectileRange, Unit},
         physics::{
             attachment::AttachedTo,
             movement::{RandomVelocityMul, Speed, Velocity},
@@ -42,6 +43,7 @@ impl Plugin for AIMovementPlugin {
             (follow_flag, roam, walk_into_range, walk_in_direction),
         );
         app.add_observer(friendly_unit_in_front);
+        app.add_observer(formation_has_target);
     }
 }
 
@@ -78,7 +80,6 @@ fn follow_flag(
         ) = unit.get_mut(ctx.target_entity())?;
 
         if has_taget.is_some() {
-            info!("Unit has a target");
             return Ok(());
         }
 
@@ -150,14 +151,22 @@ fn walk_into_range(
         Option<&Target>,
         &RandomVelocityMul,
         &Speed,
-        &MeleeRange,
+        Option<&ProjectileRange>,
+        Option<&MeleeRange>,
     )>,
     transform_query: Query<&Transform>,
     mut commands: Commands,
 ) -> Result {
     for ctx in query.iter() {
-        let (mut velocity, transform, maybe_target, rand_velocity_mul, speed, range) =
-            unit.get_mut(ctx.target_entity())?;
+        let (
+            mut velocity,
+            transform,
+            maybe_target,
+            rand_velocity_mul,
+            speed,
+            projectile_range,
+            melee_range,
+        ) = unit.get_mut(ctx.target_entity())?;
 
         let Some(target) = maybe_target else {
             commands.trigger(ctx.failure());
@@ -166,9 +175,17 @@ fn walk_into_range(
 
         let target = transform_query.get(**target)?.translation.truncate();
 
+        let range = if let Some(r) = projectile_range {
+            **r
+        } else if let Some(r) = melee_range {
+            **r
+        } else {
+            commands.trigger(ctx.failure());
+            continue;
+        };
+
         let direction = (target.x - transform.translation.x).signum();
-        info!("direction {}", direction);
-        if (transform.translation.x - target.x).abs() <= **range {
+        if (transform.translation.x - target.x).abs() <= range {
             velocity.0.x = 0.;
             commands.trigger(ctx.success());
             continue;
@@ -182,7 +199,7 @@ fn walk_into_range(
 fn friendly_unit_in_front(
     trigger: On<BehaveTrigger<IsFriendlyUnitInFront>>,
     units: Query<(&Unit, Option<&ArmyFormationTo>)>,
-    mut other_units: Query<(Entity, &Transform, &Unit, &BoxCollider)>,
+    other_units: Query<(Entity, &Transform, &Unit, &BoxCollider)>,
     commander: Query<&ArmyFormations>,
     mut commands: Commands,
 ) -> Result {
@@ -190,7 +207,7 @@ fn friendly_unit_in_front(
     let ctx = trigger.event().ctx();
 
     // Get army formation for target
-    let (unit, army_formation) = units.get(target)?;
+    let (_unit, army_formation) = units.get(target)?;
 
     let army_formation = match army_formation {
         Some(formation) => formation,
@@ -238,16 +255,80 @@ fn friendly_unit_in_front(
     Ok(())
 }
 
-fn walk_in_direction(
-    query: Query<(&BehaveCtx, &WalkingInDirection)>,
-    mut unit: Query<(&mut Velocity, &RandomVelocityMul, &Speed)>,
+fn formation_has_target(
+    trigger: On<BehaveTrigger<FormationHasTarget>>,
+    has_target: Query<&Target>,
+    formation_to_query: Query<&ArmyFormationTo>,
+    commander: Query<&ArmyFormations>,
+    mut commands: Commands,
 ) -> Result {
-    for (ctx, walk) in query.iter() {
-        let (mut velocity, rand_velocity_mul, speed) = unit.get_mut(ctx.target_entity())?;
+    let ctx = trigger.event().ctx();
+    let target_entity = ctx.target_entity();
 
-        let direction: f32 = (**walk).into();
+    if has_target.get(target_entity).is_ok() {
+        commands.trigger(ctx.failure());
+        return Ok(());
+    }
 
-        velocity.0.x = direction * **speed * **rand_velocity_mul;
+    let formation_to = formation_to_query.get(target_entity)?;
+
+    let formation = commander.get(**formation_to)?;
+
+    let any_in_formation_has_target = formation
+        .iter()
+        .any(|entity| has_target.get(entity).is_ok());
+
+    if any_in_formation_has_target {
+        commands.trigger(ctx.success());
+    } else {
+        commands.trigger(ctx.failure());
+    }
+    Ok(())
+}
+
+fn walk_in_direction(
+    query: Query<&BehaveCtx, With<WalkingInDirection>>,
+    mut unit: Query<(
+        &mut Velocity,
+        &RandomVelocityMul,
+        &Speed,
+        Option<&ArmyFormationTo>,
+    )>,
+    has_target: Query<Option<&Target>>,
+    commander: Query<&ArmyFormations>,
+    target_location: Query<&Transform>,
+) -> Result {
+    for ctx in query.iter() {
+        let (_, _, _, has_formation) = unit.get_mut(ctx.target_entity())?;
+
+        let army_formation = match has_formation {
+            Some(formation) => formation,
+            None => {
+                return Ok(());
+            }
+        };
+
+        let formation = commander.get(**army_formation)?;
+
+        let any_has_target = formation
+            .iter()
+            .find(|entity| has_target.get(*entity).is_ok());
+
+        let unit_transform = target_location.get(ctx.target_entity())?;
+
+        if let Some(target) = any_has_target {
+            let target_transform = target_location.get(target)?;
+            let direction = (target_transform.translation - unit_transform.translation)
+                .signum()
+                .x;
+
+            if let Ok((mut entity_velocity, rand_velocity_mul, speed, _)) =
+                unit.get_mut(ctx.target_entity())
+            {
+                info!("Walking to target");
+                entity_velocity.0.x = direction * **speed * **rand_velocity_mul;
+            }
+        }
     }
     Ok(())
 }
