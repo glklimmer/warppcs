@@ -1,19 +1,11 @@
 use bevy::prelude::*;
+use bevy_replicon::prelude::*;
 
 use bevy::{
     ecs::entity::MapEntities, math::bounding::Aabb2d, platform::collections::HashMap,
-    sprite::Anchor,
+    reflect::Reflect, sprite::Anchor,
 };
-use bevy_replicon::prelude::{ClientEventAppExt, ClientId, ServerMessageAppExt};
 use bevy_replicon::server::AuthorizedClient;
-use bevy_replicon::{
-    RepliconPlugins,
-    prelude::{
-        AppRuleExt, Channel, ClientVisibility, Replicated, SendMode, ServerEventAppExt,
-        ServerTriggerExt, SyncRelatedAppExt, ToClients,
-    },
-    server::{ServerPlugin, VisibilityPolicy},
-};
 use core::hash::{Hash, Hasher};
 use enum_map::*;
 use map::{
@@ -122,9 +114,11 @@ impl Plugin for SharedPlugin {
         .add_client_event::<StartBuild>(Channel::Ordered)
         .add_client_event::<CommanderAssignmentRequest>(Channel::Ordered)
         .add_client_event::<CommanderPickFlag>(Channel::Ordered)
+        .add_client_event::<ClientReady>(Channel::Ordered)
         .add_server_event::<InteractableSound>(Channel::Ordered)
         .add_server_event::<CommanderAssignmentReject>(Channel::Ordered)
         .add_server_event::<CloseBuildingDialog>(Channel::Ordered)
+        .add_server_event::<GameStarted>(Channel::Ordered)
         .add_mapped_server_event::<PlayerDefeated>(Channel::Ordered)
         .add_mapped_server_event::<CommanderInteraction>(Channel::Ordered)
         .add_mapped_server_event::<OpenBuildingDialog>(Channel::Ordered)
@@ -132,9 +126,14 @@ impl Plugin for SharedPlugin {
         .add_mapped_server_message::<AnimationChangeEvent>(Channel::Ordered)
         .add_observer(spawn_clients)
         .add_observer(update_visibility)
-        .add_observer(hide_on_remove);
+        .add_observer(hide_on_remove)
+        .add_observer(on_client_ready)
+        .add_observer(game_started);
     }
 }
+
+#[derive(Resource, Default, Deref, DerefMut)]
+pub struct PendingPlayers(HashMap<Entity, u64>);
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum Hitby {
@@ -174,6 +173,9 @@ pub enum AnimationChange {
     Mount,
     Unmount,
 }
+
+#[derive(Event, Debug, Serialize, Deserialize)]
+pub struct ClientReady(pub usize);
 
 #[derive(Message, Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct AnimationChangeEvent {
@@ -243,35 +245,115 @@ fn spawn_clients(
     mut visibility: Query<&mut ClientVisibility>,
     mut client_player_map: ResMut<ClientPlayerMap>,
     mut commands: Commands,
-) -> Result {
-    let color = fastrand::choice(PlayerColor::all_variants()).ok_or("No PlayerColor available")?;
-    let player = commands
-        .entity(trigger.entity)
-        .insert((
-            Player { color: *color },
-            Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
-            GameSceneId::lobby(),
-            Owner::Player(trigger.entity),
-            Health { hitpoints: 200. },
-        ))
-        .id();
+    mut pending_players: ResMut<PendingPlayers>,
+    disconnected_players: Query<(Entity, &Player), With<Disconnected>>,
+    mut game_state: ResMut<NextState<GameState>>,
+) {
+    let client_id = ClientId::Client(trigger.entity);
+    let new_player_id = if let Some(id) = pending_players.remove(&trigger.entity) {
+        id
+    } else {
+        trigger.entity.to_bits()
+    };
 
-    client_player_map.insert(ClientId::Client(trigger.entity), player);
+    // Try to find a disconnected player with the same ID
+    if let Some((player_entity, _)) = disconnected_players
+        .iter()
+        .find(|(_, player)| player.id == new_player_id)
+    {
+        // Player found, reconnect them
+        commands.entity(player_entity).remove::<Disconnected>();
+        client_player_map.insert(client_id, player_entity);
+
+        for mut client_visibility in visibility.iter_mut() {
+            client_visibility.set_visibility(player_entity, true);
+        }
+
+        commands.server_trigger(ToClients {
+            mode: SendMode::Direct(client_id),
+            message: SetLocalPlayer(player_entity),
+        });
+
+        info!(
+            "Player {:?} reconnected with id {}.",
+            player_entity, new_player_id
+        );
+
+        // TODO: wait until client has set up ControlledPlayer
+
+        // After this player is reconnected, there is one less disconnected player.
+        // If there are no more disconnected players, unpause the game.
+        if disconnected_players.iter().count() == 1 {
+            game_state.set(GameState::GameSession);
+            info!("All players reconnected, resuming game.");
+        }
+        return;
+    }
+
+    // No disconnected player found, spawn a new one
+    let color = fastrand::choice(PlayerColor::all_variants()).unwrap();
+    let player = commands.spawn_empty().id();
+    commands.entity(player).insert((
+        Player {
+            id: new_player_id,
+            color: *color,
+        },
+        Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
+        Owner::Player(player),
+        Health { hitpoints: 200. },
+    ));
+
+    client_player_map.insert(client_id, player);
 
     for mut client_visibility in visibility.iter_mut() {
         client_visibility.set_visibility(player, true);
     }
 
+    info!("New player {:?} spawned with id {}.", player, new_player_id);
     commands.server_trigger(ToClients {
-        mode: SendMode::Direct(ClientId::Client(trigger.entity)),
+        mode: SendMode::Direct(client_id),
         message: SetLocalPlayer(player),
     });
-    Ok(())
+    // TODO: not sure wether replicated on MapDiscovery or sending all events here
+}
+
+fn on_client_ready(
+    ready: On<FromClient<ClientReady>>,
+    mut commands: Commands,
+    client_player_map: Res<ClientPlayerMap>,
+    players_query: Query<&GameSceneId>,
+) {
+    let client_id = &ready.client_id;
+    if let Some(player_entity) = client_player_map.get(client_id) {
+        if let Ok(game_scene_id) = players_query.get(*player_entity) {
+            info!(
+                "Client for reconnected player {:?} is ready. Re-inserting GameSceneId.",
+                player_entity
+            );
+            commands.entity(*player_entity).insert(*game_scene_id);
+            commands.server_trigger(ToClients {
+                mode: SendMode::Direct(*client_id),
+                message: GameStarted(0),
+            });
+        } else {
+            info!(
+                "Client for new player {:?} is ready. Inserting lobby GameSceneId.",
+                player_entity
+            );
+            commands.entity(*player_entity).insert(GameSceneId::lobby());
+        }
+    }
+}
+
+fn game_started(_started: On<GameStarted>, mut next_game_state: ResMut<NextState<GameState>>) {
+    next_game_state.set(GameState::GameSession);
 }
 
 fn update_visibility(
     trigger: On<Insert, GameSceneId>,
-    mut players: Query<(Entity, &mut ClientVisibility, &GameSceneId), With<Player>>,
+    client_player_map: Res<ClientPlayerMap>,
+    mut visibility_query: Query<&mut ClientVisibility>,
+    players_query: Query<(Entity, &GameSceneId), With<Player>>,
     others: Query<(Entity, &GameSceneId)>,
     player_check: Query<(), With<Player>>,
 ) -> Result {
@@ -279,29 +361,42 @@ fn update_visibility(
     let (_, new_entity_scene_id) = others.get(entity)?;
 
     if player_check.get(entity).is_ok() {
-        let player_scenes: HashMap<Entity, GameSceneId> = players
+        let player_scenes: HashMap<Entity, GameSceneId> = players_query
             .iter()
-            .map(|(entity, _, game_scene_id)| (entity, *game_scene_id))
+            .map(|(entity, game_scene_id)| (entity, *game_scene_id))
             .collect();
 
-        for (player_entity, mut visibility, _player_scene_id) in &mut players {
-            if player_entity.eq(&entity) {
-                let player_scene_id = player_scenes
-                    .get(&entity)
-                    .ok_or("GameSceneId for player not found")?;
-                for (other_entity, other_scene_id) in &others {
-                    visibility.set_visibility(other_entity, other_scene_id.eq(player_scene_id));
+        for (player_entity, _player_scene_id) in players_query.iter() {
+            let client_entity = match client_player_map.get_network_entity(&player_entity)? {
+                ClientId::Client(entity) => *entity,
+                _ => continue,
+            };
+
+            if let Ok(mut visibility) = visibility_query.get_mut(client_entity) {
+                if player_entity.eq(&entity) {
+                    let player_scene_id = player_scenes
+                        .get(&entity)
+                        .ok_or("GameSceneId for player not found")?;
+                    for (other_entity, other_scene_id) in &others {
+                        visibility.set_visibility(other_entity, other_scene_id.eq(player_scene_id));
+                    }
+                } else {
+                    let player_scene_id = player_scenes
+                        .get(&player_entity)
+                        .ok_or("GameSceneId for player not found")?;
+                    visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
                 }
-            } else {
-                let player_scene_id = player_scenes
-                    .get(&player_entity)
-                    .ok_or("GameSceneId for player not found")?;
-                visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
             }
         }
     } else {
-        for (_, mut visibility, player_scene_id) in &mut players {
-            visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
+        for (player_entity, player_scene_id) in players_query.iter() {
+            let client_entity = match client_player_map.get_network_entity(&player_entity)? {
+                ClientId::Client(entity) => *entity,
+                _ => continue,
+            };
+            if let Ok(mut visibility) = visibility_query.get_mut(client_entity) {
+                visibility.set_visibility(entity, player_scene_id.eq(new_entity_scene_id));
+            }
         }
     }
     Ok(())
@@ -309,14 +404,26 @@ fn update_visibility(
 
 fn hide_on_remove(
     trigger: On<Remove, GameSceneId>,
-    mut players: Query<(Entity, &mut ClientVisibility), With<Player>>,
-) -> Result {
+    mut visibility_query: Query<&mut ClientVisibility>,
+    players_query: Query<Entity, With<Player>>,
+    client_player_map: Res<ClientPlayerMap>,
+) {
     let entity = trigger.entity;
-    for (player_entity, mut visibility) in &mut players {
-        visibility.set_visibility(entity, player_entity == entity);
+    for player_entity in players_query.iter() {
+        if let Ok(client_id) = client_player_map.get_network_entity(&player_entity) {
+            let client_entity = match client_id {
+                ClientId::Client(e) => e,
+                _ => continue,
+            };
+            if let Ok(mut visibility) = visibility_query.get_mut(*client_entity) {
+                visibility.set_visibility(entity, player_entity == entity);
+            }
+        }
     }
-    Ok(())
 }
+
+#[derive(Event, Default, Debug, Deserialize, Serialize)]
+pub struct GameStarted(pub usize);
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
 pub struct SetLocalPlayer(Entity);
@@ -339,8 +446,12 @@ impl MapEntities for SetLocalPlayer {
     Inventory,
 )]
 pub struct Player {
+    pub id: u64,
     pub color: PlayerColor,
 }
+
+#[derive(Component)]
+pub struct Disconnected;
 
 #[derive(Component)]
 #[require(BoxCollider = player_collider())]
@@ -468,6 +579,7 @@ pub enum GameState {
     Loading,
     MainMenu,
     GameSession,
+    Paused,
 }
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash)]

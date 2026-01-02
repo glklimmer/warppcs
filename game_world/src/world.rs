@@ -7,9 +7,10 @@ use bevy_replicon::{
 };
 use petgraph::{Graph, Undirected};
 use shared::{
-    ClientPlayerMap, GameScene, GameSceneId, GameState, Player, SceneType, networking::LobbyMessage,
+    ClientPlayerMap, GameScene, GameSceneId, GameStarted, GameState, Player, SceneType,
+    networking::LobbyMessage,
 };
-use travel::InitPlayerMapNode;
+use travel::map::MapDiscovery;
 
 pub struct WorldPlugin;
 
@@ -175,7 +176,6 @@ impl WorldGraph {
 
 fn init_world(
     mut lobby_events: MessageReader<FromClient<LobbyMessage>>,
-    mut next_game_state: ResMut<NextState<GameState>>,
     players: Query<Entity, With<Player>>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
@@ -188,8 +188,6 @@ fn init_world(
     let LobbyMessage::StartGame = message else {
         return Ok(());
     };
-
-    next_game_state.set(GameState::GameSession);
 
     let players: Vec<Entity> = players.iter().collect();
     let num_players = players.len();
@@ -206,10 +204,14 @@ fn init_world(
             .get(player)
             .ok_or("GameScene for player not found")?;
 
-        commands.server_trigger(ToClients {
-            mode: SendMode::Direct(*client),
-            message: InitPlayerMapNode::new(*game_scene),
-        });
+        let discovery = MapDiscovery::base(commands.reborrow(), *client, *game_scene);
+        commands.entity(*player).insert(discovery);
     }
+
+    commands.server_trigger(ToClients {
+        mode: SendMode::Broadcast,
+        message: GameStarted(0),
+    });
+
     Ok(())
 }
