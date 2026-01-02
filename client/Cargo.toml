@@ -7,7 +7,7 @@ edition = "2024"
 workspace = true
 
 [features]
-default = ["steam", "bevy/dynamic_linking"]
+default = ["netcode", "bevy/dynamic_linking"]
 steam = ["shared/steam", "bevy-steamworks", "aeronet_steam"]
 netcode = ["shared/netcode", "aeronet_webtransport"]
 
