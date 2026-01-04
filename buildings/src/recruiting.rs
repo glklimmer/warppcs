@@ -38,7 +38,8 @@ pub(crate) struct RecruitingPlugins;
 
 impl Plugin for RecruitingPlugins {
     fn build(&self, app: &mut App) {
-        app.add_observer(recruit_units)
+        app.replicate_bundle::<(RecruitBuilding, Transform)>()
+            .add_observer(recruit_units)
             .add_observer(recruit_commander)
             .add_observer(assign_offset)
             .add_systems(

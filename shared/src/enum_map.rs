@@ -1,7 +1,9 @@
 use std::mem::replace;
 
 use bevy::ecs::entity::{EntityMapper, MapEntities};
+
 pub use enum_mappable::Mappable;
+
 use serde::{Deserialize, Serialize};
 
 /// A generic EnumMap for any enum that implements `EnumIter`.

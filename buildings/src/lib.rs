@@ -45,17 +45,19 @@ pub struct BuildingsPlugins;
 
 impl Plugin for BuildingsPlugins {
     fn build(&self, app: &mut App) {
-        app.add_plugins((ItemAssignmentPlugins, ConstructionPlugins, HealthPlugin));
-
-        app.add_systems(
-            FixedUpdate,
-            (
-                gold_farm_output.run_if(in_state(GameState::GameSession)),
-                (respawn_timer, respawn_units).chain(),
-                siege_camp_lifetime,
-                enable_goldfarm.run_if(on_message::<BuildingChangeEnd>),
-            ),
-        );
+        app.add_plugins((ItemAssignmentPlugins, ConstructionPlugins, HealthPlugin))
+            .replicate_bundle::<(Building, BuildStatus, Transform)>()
+            .replicate_bundle::<(RespawnZone, Transform)>()
+            .replicate_bundle::<(SiegeCamp, Transform)>()
+            .add_systems(
+                FixedUpdate,
+                (
+                    gold_farm_output.run_if(in_state(GameState::GameSession)),
+                    (respawn_timer, respawn_units).chain(),
+                    siege_camp_lifetime,
+                    enable_goldfarm.run_if(on_message::<BuildingChangeEnd>),
+                ),
+            );
     }
 }
 

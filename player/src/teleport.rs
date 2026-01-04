@@ -22,7 +22,8 @@ pub(crate) struct Teleport;
 
 impl Plugin for Teleport {
     fn build(&self, app: &mut App) {
-        app.add_client_event::<ChannelPort>(Channel::Ordered)
+        app.replicate_bundle::<(Portal, Transform)>()
+            .add_client_event::<ChannelPort>(Channel::Ordered)
             .add_observer(add_port_cooldown)
             .add_observer(check_port_cooldown)
             .add_observer(spawn_player_portal)

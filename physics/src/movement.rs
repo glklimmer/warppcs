@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
+use bevy::math::bounding::Aabb2d;
 use bevy::math::bounding::IntersectsVolume;
 use bevy_replicon::prelude::ClientState;
+use serde::{Deserialize, Serialize};
 use serde::{Deserialize, Serialize};
 
 use shared::{
@@ -12,6 +14,29 @@ use shared::{
 };
 
 use super::projectile::ProjectileType;
+
+#[derive(Component, Copy, Clone, Default, Deserialize, Serialize)]
+pub struct BoxCollider {
+    pub dimension: Vec2,
+    pub offset: Option<Vec2>,
+}
+
+impl BoxCollider {
+    pub fn half_size(&self) -> Vec2 {
+        Vec2::new(self.dimension.x / 2., self.dimension.y / 2.)
+    }
+
+    pub fn at(&self, transform: &Transform) -> Aabb2d {
+        Aabb2d::new(
+            transform.translation.truncate() + self.offset.unwrap_or_default(),
+            self.half_size(),
+        )
+    }
+
+    pub fn at_pos(&self, position: Vec2) -> Aabb2d {
+        Aabb2d::new(position + self.offset.unwrap_or_default(), self.half_size())
+    }
+}
 
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Velocity(pub Vec2);
@@ -54,22 +79,24 @@ pub(crate) struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            (
+        app.replicate::<Moving>()
+            .replicate::<Grounded>()
+            .add_systems(
+                FixedUpdate,
                 (
-                    set_grounded,
-                    set_walking,
-                    set_king_walking,
-                    apply_friction,
-                    apply_drag,
-                    set_projectile_rotation,
-                ),
-                (wall_collision, no_walk_zone_collision),
-            )
-                .chain()
-                .run_if(in_state(ClientState::Disconnected)),
-        );
+                    (
+                        set_grounded,
+                        set_walking,
+                        set_king_walking,
+                        apply_friction,
+                        apply_drag,
+                        set_projectile_rotation,
+                    ),
+                    (wall_collision, no_walk_zone_collision),
+                )
+                    .chain()
+                    .run_if(in_state(ClientState::Disconnected)),
+            );
         app.add_systems(
             FixedPostUpdate,
             (apply_gravity, (apply_velocity, apply_direction))

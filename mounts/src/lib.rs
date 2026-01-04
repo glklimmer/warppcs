@@ -3,6 +3,15 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use shared::BoxCollider;
 
+pub struct MountPlugins;
+
+impl Plugin for MountPlugins {
+    fn build(&self, app: &mut App) {
+        app.replicate::<Mounted>()
+            .replicate_bundle::<(Mount, Transform)>();
+    }
+}
+
 #[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
 #[require(BoxCollider = horse_collider())]
 pub enum MountType {

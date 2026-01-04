@@ -9,32 +9,7 @@ use bevy_replicon::server::AuthorizedClient;
 use core::hash::{Hash, Hasher};
 use enum_map::*;
 use map::Layers;
-use networking::{Inventory, Mounted};
 use serde::{Deserialize, Serialize};
-use server::{
-    entities::{
-        Unit,
-        commander::{
-            ArmyFlagAssignments, ArmyPosition, CommanderAssignmentRequest,
-            CommanderCampInteraction, CommanderInteraction,
-        },
-    },
-    physics::{
-        attachment::AttachedTo,
-        movement::{Grounded, Moving, Speed, Velocity},
-        projectile::ProjectileType,
-    },
-    players::{chest::Chest, items::Item, mount::Mount},
-};
-
-use crate::server::{
-    entities::{
-        commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
-        health::{Health, PlayerDefeated},
-    },
-    physics::army_slot::ArmySlot,
-    players::{chest::ChestOpened, flag::FlagDestroyed},
-};
 
 pub mod enum_map;
 pub mod map;
@@ -47,50 +22,21 @@ pub struct SharedPlugin;
 
 impl Plugin for SharedPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((RepliconPlugins.set(ServerPlugin {
+        app.add_plugins(RepliconPlugins.set(ServerPlugin {
             visibility_policy: VisibilityPolicy::Whitelist,
             ..Default::default()
-        }),))
-            .init_resource::<ClientPlayerMap>()
-            .replicate::<Moving>()
-            .replicate::<Grounded>()
-            .replicate::<BoxCollider>()
-            .replicate::<Owner>()
-            .replicate::<Mounted>()
-            .replicate::<Interactable>()
-            .replicate::<AttachedTo>()
-            .replicate::<ChestOpened>()
-            .replicate_bundle::<(Player, Transform, Inventory)>()
-            .replicate_bundle::<(RecruitBuilding, Transform)>()
-            .replicate_bundle::<(Building, BuildStatus, Transform)>()
-            .replicate_bundle::<(RespawnZone, Transform)>()
-            .replicate_bundle::<(SiegeCamp, Transform)>()
-            .replicate_bundle::<(ProjectileType, Transform)>()
-            .replicate_bundle::<(Unit, Transform)>()
-            .replicate_bundle::<(Portal, Transform)>()
-            .replicate_bundle::<(Mount, Transform)>()
-            .replicate_bundle::<(Chest, Transform)>()
-            .replicate_bundle::<(Item, Transform)>()
-            .add_client_event::<CommanderCampInteraction>(Channel::Ordered)
-            .add_client_event::<AssignItem>(Channel::Ordered)
-            .add_client_event::<StartBuild>(Channel::Ordered)
-            .add_client_event::<CommanderAssignmentRequest>(Channel::Ordered)
-            .add_client_event::<CommanderPickFlag>(Channel::Ordered)
-            .add_client_event::<ClientReady>(Channel::Ordered)
-            .add_server_event::<InteractableSound>(Channel::Ordered)
-            .add_server_event::<CommanderAssignmentReject>(Channel::Ordered)
-            .add_server_event::<CloseBuildingDialog>(Channel::Ordered)
-            .add_server_event::<GameStarted>(Channel::Ordered)
-            .add_mapped_server_event::<PlayerDefeated>(Channel::Ordered)
-            .add_mapped_server_event::<CommanderInteraction>(Channel::Ordered)
-            .add_mapped_server_event::<OpenBuildingDialog>(Channel::Ordered)
-            .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
-            .add_mapped_server_message::<AnimationChangeEvent>(Channel::Ordered)
-            .add_observer(spawn_clients)
-            .add_observer(update_visibility)
-            .add_observer(hide_on_remove)
-            .add_observer(on_client_ready)
-            .add_observer(game_started);
+        }))
+        .init_resource::<ClientPlayerMap>()
+        .replicate::<Owner>()
+        .add_client_event::<ClientReady>(Channel::Ordered)
+        .add_server_event::<GameStarted>(Channel::Ordered)
+        .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
+        .add_mapped_server_message::<AnimationChangeEvent>(Channel::Ordered)
+        .add_observer(spawn_clients)
+        .add_observer(update_visibility)
+        .add_observer(hide_on_remove)
+        .add_observer(on_client_ready)
+        .add_observer(game_started);
     }
 }
 
@@ -263,7 +209,6 @@ fn spawn_clients(
         },
         Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
         Owner::Player(player),
-        Health { hitpoints: 200. },
     ));
 
     client_player_map.insert(client_id, player);

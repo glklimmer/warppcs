@@ -8,7 +8,6 @@ use collider_trigger::ColliderTriggerPlugin;
 use movement::{MovementPlugin, Velocity};
 
 pub mod attachment;
-pub mod collider;
 pub mod collider_trigger;
 pub mod movement;
 
@@ -16,6 +15,10 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((MovementPlugin, AttachmentPlugin, ColliderTriggerPlugin))
+        app.replicate::<BoxCollider>().add_plugins((
+            MovementPlugin,
+            AttachmentPlugin,
+            ColliderTriggerPlugin,
+        ))
     }
 }

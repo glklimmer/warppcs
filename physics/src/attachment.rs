@@ -13,7 +13,8 @@ pub struct AttachmentPlugin;
 
 impl Plugin for AttachmentPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, attachment_follow)
+        app.replicate::<AttachedTo>()
+            .add_systems(FixedUpdate, attachment_follow)
             .add_observer(on_attachment_removed);
     }
 }

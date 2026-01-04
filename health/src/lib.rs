@@ -52,12 +52,12 @@ pub struct HealthPlugin;
 
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<TakeDamage>();
-
-        app.add_systems(
-            FixedUpdate,
-            ((delayed_damage, apply_damage).chain(), delayed_despawn),
-        );
+        app.add_message::<TakeDamage>()
+            .add_mapped_server_event::<PlayerDefeated>(Channel::Ordered)
+            .add_systems(
+                FixedUpdate,
+                ((delayed_damage, apply_damage).chain(), delayed_despawn),
+            );
     }
 }
 
@@ -77,6 +77,7 @@ fn delayed_damage(
 }
 
 fn apply_damage(
+    mut commands: Commands,
     mut attack_events: MessageReader<TakeDamage>,
     mut query: Query<(Entity, &mut Health)>,
     mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
@@ -84,6 +85,8 @@ fn apply_damage(
     for event in attack_events.read() {
         if let Ok((entity, mut health)) = query.get_mut(event.target_entity) {
             health.hitpoints -= event.damage;
+
+            commands.entity(entity).remove::<Health>();
 
             animation.write(ToClients {
                 mode: SendMode::Broadcast,

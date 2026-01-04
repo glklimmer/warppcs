@@ -18,7 +18,8 @@ pub struct UnitsPlugins;
 
 impl Plugin for UnitsPlugins {
     fn build(&self, app: &mut App) {
-        app.add_plugins(PushbackPlugins)
+        app.replicate_bundle::<(Unit, Transform)>()
+            .add_plugins(PushbackPlugins)
             .add_systems(FixedUpdate, unit_swing_timer);
     }
 }

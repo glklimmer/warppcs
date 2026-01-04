@@ -85,6 +85,11 @@ pub(crate) struct CommanderPlugin;
 impl Plugin for CommanderPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveCommander>()
+            .add_client_event::<CommanderCampInteraction>(Channel::Ordered)
+            .add_client_event::<CommanderAssignmentRequest>(Channel::Ordered)
+            .add_client_event::<CommanderPickFlag>(Channel::Ordered)
+            .add_server_event::<CommanderAssignmentReject>(Channel::Ordered)
+            .add_mapped_server_event::<CommanderInteraction>(Channel::Ordered)
             .add_observer(commander_assignment_validation)
             .add_observer(handle_slot_selection)
             .add_observer(handle_camp_interaction)

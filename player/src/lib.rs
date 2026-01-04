@@ -12,8 +12,13 @@ use interaction::InteractionTriggeredEvent;
 use shared::PlayerColor;
 
 use crate::{
-    attack::Attack, chest::open_chest, items::pickup_item, knockout::KnockoutPlugin,
-    mount::MountPlugin, movement::Movement, teleport::Teleport,
+    attack::Attack,
+    chest::{Chest, ChestOpened, open_chest},
+    items::{Item, pickup_item},
+    knockout::KnockoutPlugin,
+    mount::MountPlugin,
+    movement::Movement,
+    teleport::Teleport,
 };
 
 pub mod chest;
@@ -31,6 +36,10 @@ impl Plugin for PlayerPlugins {
     fn build(&self, app: &mut App) {
         app.add_plugins((Attack, Movement, Teleport))
             .add_plugins((MountPlugin, KnockoutPlugin))
+            .replicate::<ChestOpened>()
+            .replicate_bundle::<(Player, Transform, Inventory)>()
+            .replicate_bundle::<(Chest, Transform)>()
+            .replicate_bundle::<(Item, Transform)>()
             .add_systems(
                 FixedUpdate,
                 (open_chest, pickup_item).run_if(on_message::<InteractionTriggeredEvent>),
@@ -48,6 +57,7 @@ impl Plugin for PlayerPlugins {
     Sprite,
     Anchor::BOTTOM_CENTER,
     Inventory,
+    Health = Health { hitpoints: 200. }
 )]
 pub struct Player {
     pub id: u64,

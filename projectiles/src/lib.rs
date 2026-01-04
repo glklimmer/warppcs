@@ -18,7 +18,8 @@ pub struct ProjectilePlugin;
 
 impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, projectile_collision);
+        app.replicate_bundle::<(ProjectileType, Transform)>()
+            .add_systems(FixedUpdate, projectile_collision);
     }
 }
 

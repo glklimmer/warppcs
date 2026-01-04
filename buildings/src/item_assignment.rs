@@ -21,6 +21,10 @@ pub struct ItemAssignmentPlugins;
 impl Plugin for ItemAssignmentPlugins {
     fn build(&self, app: &mut App) {
         app.replicate::<ItemAssignment>()
+            .add_client_event::<AssignItem>(Channel::Ordered)
+            .add_client_event::<StartBuild>(Channel::Ordered)
+            .add_server_event::<CloseBuildingDialog>(Channel::Ordered)
+            .add_mapped_server_event::<OpenBuildingDialog>(Channel::Ordered)
             .add_observer(assign_item)
             .add_observer(check_start_building)
             .init_resource::<ActiveBuilding>()

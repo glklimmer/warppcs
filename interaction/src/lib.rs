@@ -51,7 +51,9 @@ pub struct InteractPlugin;
 
 impl Plugin for InteractPlugin {
     fn build(&self, app: &mut App) {
-        app.add_client_event::<Interact>(Channel::Ordered)
+        app.replicate::<Interactable>()
+            .add_server_event::<InteractableSound>(Channel::Ordered)
+            .add_client_event::<Interact>(Channel::Ordered)
             .add_observer(interact)
             .add_message::<InteractionTriggeredEvent>()
             .add_systems(
