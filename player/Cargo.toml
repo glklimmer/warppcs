@@ -1,5 +1,5 @@
 [package]
-name = "game_world"
+name = "player"
 version = "0.1.0"
 edition = "2024"
 
@@ -39,7 +39,10 @@ bevy = { workspace = true, default-features = false, features = [
 shared = { path = "../shared", default-features = false }
 travel = { path = "../travel" }
 buildings = { path = "../buildings" }
+army = { path = "../army" }
+interaction = { path = "../interaction" }
+physics = { path = "../physics" }
+inventory = { path = "../inventory" }
+serde = { workspace = true }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }
-serde = { workspace = true }
-petgraph = { workspace = true }

@@ -8,22 +8,10 @@ use bevy::{
 use bevy_replicon::server::AuthorizedClient;
 use core::hash::{Hash, Hasher};
 use enum_map::*;
-use map::{
-    Layers,
-    buildings::{BuildStatus, Building, RecruitBuilding, RespawnZone},
-};
+use map::Layers;
 use networking::{Inventory, Mounted};
-use player_attacks::PlayerAttacks;
-use player_movement::PlayerMovement;
 use serde::{Deserialize, Serialize};
 use server::{
-    buildings::{
-        item_assignment::{
-            AssignItem, CloseBuildingDialog, ItemAssignment, OpenBuildingDialog, StartBuild,
-        },
-        recruiting::{Flag, FlagAssignment, FlagHolder},
-        siege_camp::SiegeCamp,
-    },
     entities::{
         Unit,
         commander::{
@@ -36,32 +24,21 @@ use server::{
         movement::{Grounded, Moving, Speed, Velocity},
         projectile::ProjectileType,
     },
-    players::{
-        chest::Chest,
-        interaction::{InteractPlugin, Interactable, InteractableSound},
-        items::Item,
-        mount::Mount,
-    },
+    players::{chest::Chest, items::Item, mount::Mount},
 };
 
-use crate::{
-    player_port::{PlayerPort, Portal},
-    server::{
-        entities::{
-            commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
-            health::{Health, PlayerDefeated},
-        },
-        physics::army_slot::ArmySlot,
-        players::{chest::ChestOpened, flag::FlagDestroyed},
+use crate::server::{
+    entities::{
+        commander::{ArmyFormation, CommanderAssignmentReject, CommanderPickFlag},
+        health::{Health, PlayerDefeated},
     },
+    physics::army_slot::ArmySlot,
+    players::{chest::ChestOpened, flag::FlagDestroyed},
 };
 
 pub mod enum_map;
 pub mod map;
 pub mod networking;
-pub mod player_attacks;
-pub mod player_movement;
-pub mod player_port;
 pub mod server;
 
 pub const GRAVITY_G: f32 = 9.81 * 33.;
@@ -70,65 +47,50 @@ pub struct SharedPlugin;
 
 impl Plugin for SharedPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            RepliconPlugins.set(ServerPlugin {
-                visibility_policy: VisibilityPolicy::Whitelist,
-                ..Default::default()
-            }),
-            PlayerMovement,
-            PlayerAttacks,
-            PlayerPort,
-            InteractPlugin,
-        ))
-        .init_resource::<ClientPlayerMap>()
-        .replicate::<Moving>()
-        .replicate::<Grounded>()
-        .replicate::<BoxCollider>()
-        .replicate::<Owner>()
-        .replicate::<Mounted>()
-        .replicate::<ItemAssignment>()
-        .replicate::<Interactable>()
-        .replicate::<AttachedTo>()
-        .replicate::<ArmyFlagAssignments>()
-        .replicate::<ArmyFormation>()
-        .replicate::<FlagHolder>()
-        .replicate::<FlagDestroyed>()
-        .replicate::<ChestOpened>()
-        .replicate_bundle::<(Player, Transform, Inventory)>()
-        .replicate_bundle::<(RecruitBuilding, Transform)>()
-        .replicate_bundle::<(Building, BuildStatus, Transform)>()
-        .replicate_bundle::<(RespawnZone, Transform)>()
-        .replicate_bundle::<(SiegeCamp, Transform)>()
-        .replicate_bundle::<(Flag, Transform)>()
-        .replicate_bundle::<(ProjectileType, Transform)>()
-        .replicate_bundle::<(Unit, Transform)>()
-        .replicate_bundle::<(Portal, Transform)>()
-        .replicate_bundle::<(Mount, Transform)>()
-        .replicate_bundle::<(Chest, Transform)>()
-        .replicate_bundle::<(Item, Transform)>()
-        .replicate_bundle::<(ArmySlot, Transform)>()
-        .sync_related_entities::<FlagAssignment>()
-        .add_client_event::<ArmyPosition>(Channel::Ordered)
-        .add_client_event::<CommanderCampInteraction>(Channel::Ordered)
-        .add_client_event::<AssignItem>(Channel::Ordered)
-        .add_client_event::<StartBuild>(Channel::Ordered)
-        .add_client_event::<CommanderAssignmentRequest>(Channel::Ordered)
-        .add_client_event::<CommanderPickFlag>(Channel::Ordered)
-        .add_client_event::<ClientReady>(Channel::Ordered)
-        .add_server_event::<InteractableSound>(Channel::Ordered)
-        .add_server_event::<CommanderAssignmentReject>(Channel::Ordered)
-        .add_server_event::<CloseBuildingDialog>(Channel::Ordered)
-        .add_server_event::<GameStarted>(Channel::Ordered)
-        .add_mapped_server_event::<PlayerDefeated>(Channel::Ordered)
-        .add_mapped_server_event::<CommanderInteraction>(Channel::Ordered)
-        .add_mapped_server_event::<OpenBuildingDialog>(Channel::Ordered)
-        .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
-        .add_mapped_server_message::<AnimationChangeEvent>(Channel::Ordered)
-        .add_observer(spawn_clients)
-        .add_observer(update_visibility)
-        .add_observer(hide_on_remove)
-        .add_observer(on_client_ready)
-        .add_observer(game_started);
+        app.add_plugins((RepliconPlugins.set(ServerPlugin {
+            visibility_policy: VisibilityPolicy::Whitelist,
+            ..Default::default()
+        }),))
+            .init_resource::<ClientPlayerMap>()
+            .replicate::<Moving>()
+            .replicate::<Grounded>()
+            .replicate::<BoxCollider>()
+            .replicate::<Owner>()
+            .replicate::<Mounted>()
+            .replicate::<Interactable>()
+            .replicate::<AttachedTo>()
+            .replicate::<ChestOpened>()
+            .replicate_bundle::<(Player, Transform, Inventory)>()
+            .replicate_bundle::<(RecruitBuilding, Transform)>()
+            .replicate_bundle::<(Building, BuildStatus, Transform)>()
+            .replicate_bundle::<(RespawnZone, Transform)>()
+            .replicate_bundle::<(SiegeCamp, Transform)>()
+            .replicate_bundle::<(ProjectileType, Transform)>()
+            .replicate_bundle::<(Unit, Transform)>()
+            .replicate_bundle::<(Portal, Transform)>()
+            .replicate_bundle::<(Mount, Transform)>()
+            .replicate_bundle::<(Chest, Transform)>()
+            .replicate_bundle::<(Item, Transform)>()
+            .add_client_event::<CommanderCampInteraction>(Channel::Ordered)
+            .add_client_event::<AssignItem>(Channel::Ordered)
+            .add_client_event::<StartBuild>(Channel::Ordered)
+            .add_client_event::<CommanderAssignmentRequest>(Channel::Ordered)
+            .add_client_event::<CommanderPickFlag>(Channel::Ordered)
+            .add_client_event::<ClientReady>(Channel::Ordered)
+            .add_server_event::<InteractableSound>(Channel::Ordered)
+            .add_server_event::<CommanderAssignmentReject>(Channel::Ordered)
+            .add_server_event::<CloseBuildingDialog>(Channel::Ordered)
+            .add_server_event::<GameStarted>(Channel::Ordered)
+            .add_mapped_server_event::<PlayerDefeated>(Channel::Ordered)
+            .add_mapped_server_event::<CommanderInteraction>(Channel::Ordered)
+            .add_mapped_server_event::<OpenBuildingDialog>(Channel::Ordered)
+            .add_mapped_server_event::<SetLocalPlayer>(Channel::Ordered)
+            .add_mapped_server_message::<AnimationChangeEvent>(Channel::Ordered)
+            .add_observer(spawn_clients)
+            .add_observer(update_visibility)
+            .add_observer(hide_on_remove)
+            .add_observer(on_client_ready)
+            .add_observer(game_started);
     }
 }
 
@@ -140,6 +102,7 @@ pub enum Hitby {
     Arrow,
     Melee,
 }
+
 /// Key is NetworkEntity
 /// Value is PlayerEntity
 #[derive(Resource, DerefMut, Deref, Default, Reflect)]
@@ -434,27 +397,10 @@ impl MapEntities for SetLocalPlayer {
     }
 }
 
-#[derive(Component, Deserialize, Serialize)]
-#[require(
-    Replicated,
-    Transform = Transform::from_xyz(0., 0., Layers::Player.as_f32()),
-    BoxCollider = player_collider(),
-    Speed,
-    Velocity,
-    Sprite,
-    Anchor::BOTTOM_CENTER,
-    Inventory,
-)]
-pub struct Player {
-    pub id: u64,
-    pub color: PlayerColor,
-}
-
 #[derive(Component)]
 pub struct Disconnected;
 
 #[derive(Component)]
-#[require(BoxCollider = player_collider())]
 pub struct ControlledPlayer;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Mappable, Serialize, Deserialize)]
@@ -474,61 +420,10 @@ pub enum PlayerColor {
     Gray,
 }
 
-#[derive(Component, Copy, Clone, Default, Deserialize, Serialize)]
-pub struct BoxCollider {
-    pub dimension: Vec2,
-    pub offset: Option<Vec2>,
-}
-
-impl BoxCollider {
-    pub fn half_size(&self) -> Vec2 {
-        Vec2::new(self.dimension.x / 2., self.dimension.y / 2.)
-    }
-
-    pub fn at(&self, transform: &Transform) -> Aabb2d {
-        Aabb2d::new(
-            transform.translation.truncate() + self.offset.unwrap_or_default(),
-            self.half_size(),
-        )
-    }
-
-    pub fn at_pos(&self, position: Vec2) -> Aabb2d {
-        Aabb2d::new(position + self.offset.unwrap_or_default(), self.half_size())
-    }
-}
-
-pub fn player_collider() -> BoxCollider {
-    BoxCollider {
-        dimension: Vec2::new(16., 16.),
-        offset: Some(Vec2::new(0., 8.)),
-    }
-}
-
-pub fn unit_collider() -> BoxCollider {
-    BoxCollider {
-        dimension: Vec2::new(16., 16.),
-        offset: Some(Vec2::new(0., 8.)),
-    }
-}
-
-pub fn horse_collider() -> BoxCollider {
-    BoxCollider {
-        dimension: Vec2::new(16., 16.),
-        offset: Some(Vec2::new(0., 8.)),
-    }
-}
-
 pub fn projectile_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(14., 3.),
         offset: Some(Vec2::new(1.0, 0.)),
-    }
-}
-
-pub fn flag_collider() -> BoxCollider {
-    BoxCollider {
-        dimension: Vec2::new(15., 20.),
-        offset: Some(Vec2::new(0., 10.)),
     }
 }
 

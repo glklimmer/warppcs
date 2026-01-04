@@ -1,5 +1,5 @@
 [package]
-name = "game_world"
+name = "ai"
 version = "0.1.0"
 edition = "2024"
 
@@ -37,9 +37,10 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
-travel = { path = "../travel" }
-buildings = { path = "../buildings" }
+bevy_behave = { workspace = true }
+units = { path = "../units" }
+physics = { path = "../physics" }
+health = { path = "../health" }
+army = { path = "../army" }
 bevy_replicon = { workspace = true }
-fastrand = { workspace = true }
-serde = { workspace = true }
-petgraph = { workspace = true }
+

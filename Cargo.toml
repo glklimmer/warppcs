@@ -11,7 +11,18 @@ members = [
     "sprite_variant_loader",
     "animations",
     "highlight",
-    "travel"
+    "travel",
+    "buildings",
+    "player",
+    "army",
+    "interaction",
+    "units",
+    "mounts",
+    "inventory",
+    "physics",
+    "ai",
+    "health",
+    "projectiles"
 ]
 
 # Enable a small amount of optimization in the dev profile.
@@ -45,4 +56,4 @@ aeronet_replicon = { version = "0.17" }
 aeronet_steam = { version = "0.17" }
 image = { version = "0.25.6", features = ["png"] }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
-
+bevy_behave = { git = "https://github.com/glklimmer/bevy_behave" }

@@ -45,6 +45,17 @@ animations = { path = "../animations" }
 highlight = { path = "../highlight" }
 travel = { path = "../travel" }
 game_world = { path = "../game_world" }
+buildings = { path = "../buildings" }
+player = { path = "../player" }
+army = { path = "../army" }
+interaction = { path = "../interaction" }
+units = { path = "../units" }
+mounts = { path = "../mounts" }
+inventory = { path = "../inventory" }
+physics = { path = "../physics" }
+ai = { path = "../ai" }
+health = { path = "../health" }
+projectiles = { path = "../projectiles" }
 bevy-steamworks = { workspace = true, optional = true }
 bevy_replicon = { workspace = true, features = ["client"] }
 bincode = { workspace = true }

@@ -225,6 +225,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ai"
+version = "0.1.0"
+dependencies = [
+ "army",
+ "bevy",
+ "bevy_behave",
+ "bevy_replicon",
+ "health",
+ "physics",
+ "shared",
+ "units",
+]
+
+[[package]]
 name = "aligned"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -405,6 +419,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "army"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "buildings",
+ "serde",
+ "shared",
 ]
 
 [[package]]
@@ -1609,7 +1634,7 @@ dependencies = [
  "erased-serde",
  "foldhash 0.2.0",
  "glam 0.30.9",
- "inventory",
+ "inventory 0.3.21",
  "petgraph 0.8.3",
  "serde",
  "smallvec",
@@ -2297,6 +2322,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "buildings"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "fastrand",
+ "health",
+ "interaction",
+ "serde",
+ "shared",
+ "units",
+]
+
+[[package]]
 name = "built"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2473,20 +2512,31 @@ dependencies = [
  "aeronet_replicon",
  "aeronet_steam",
  "aeronet_webtransport",
+ "ai",
  "animations",
+ "army",
  "bevy",
  "bevy-parallax",
  "bevy-steamworks",
  "bevy_replicon",
  "bincode",
+ "buildings",
  "fastrand",
  "game_world",
+ "health",
  "highlight",
  "image",
+ "interaction",
+ "inventory 0.1.0",
+ "mounts",
+ "physics",
+ "player",
+ "projectiles",
  "serde",
  "shared",
  "sprite_variant_loader",
  "travel",
+ "units",
 ]
 
 [[package]]
@@ -3564,6 +3614,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_replicon",
+ "buildings",
  "fastrand",
  "petgraph 0.8.3",
  "serde",
@@ -3822,6 +3873,16 @@ dependencies = [
  "equivalent",
  "serde",
  "serde_core",
+]
+
+[[package]]
+name = "health"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "serde",
+ "shared",
 ]
 
 [[package]]
@@ -4106,6 +4167,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a257582fdcde896fd96463bf2d40eefea0580021c0712a0e2b028b60b47a837a"
 
 [[package]]
+name = "interaction"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "serde",
+ "shared",
+]
+
+[[package]]
 name = "interpolate_name"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4114,6 +4185,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "inventory"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "serde",
+ "shared",
 ]
 
 [[package]]
@@ -4409,6 +4490,16 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "mounts"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "serde",
+ "shared",
 ]
 
 [[package]]
@@ -5117,6 +5208,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "physics"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "serde",
+ "shared",
+]
+
+[[package]]
 name = "pin-project"
 version = "1.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5164,6 +5265,23 @@ name = "pkg-config"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
+
+[[package]]
+name = "player"
+version = "0.1.0"
+dependencies = [
+ "army",
+ "bevy",
+ "bevy_replicon",
+ "buildings",
+ "fastrand",
+ "interaction",
+ "inventory 0.1.0",
+ "physics",
+ "serde",
+ "shared",
+ "travel",
+]
 
 [[package]]
 name = "png"
@@ -5317,6 +5435,19 @@ checksum = "52717f9a02b6965224f95ca2a81e2e0c5c43baacd28ca057577988930b6c3d5b"
 dependencies = [
  "quote",
  "syn",
+]
+
+[[package]]
+name = "projectiles"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "health",
+ "physics",
+ "serde",
+ "shared",
+ "units",
 ]
 
 [[package]]
@@ -6052,7 +6183,6 @@ dependencies = [
  "aeronet_webtransport",
  "bevy",
  "bevy-steamworks",
- "bevy_behave",
  "bevy_replicon",
  "bincode",
  "console_protocol",
@@ -6877,6 +7007,19 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "units"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "health",
+ "inventory 0.1.0",
+ "physics",
+ "serde",
+ "shared",
+]
 
 [[package]]
 name = "untrusted"

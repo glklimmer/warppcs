@@ -1,10 +1,18 @@
 use bevy::prelude::*;
 
+use ai::AIPlugin;
+use army::ArmyPlugins;
 use bevy::audio::{AudioPlugin, SpatialScale, Volume};
 use bevy_parallax::ParallaxPlugin;
+use buildings::BuildingsPlugins;
 use game_world::GameWorldPlugin;
 use gizmos::GizmosPlugin;
+use health::HealthPlugin;
+use interaction::InteractPlugin;
 use networking::join_server::JoinServerPlugin;
+use physics::PhysicsPlugin;
+use player::PlayerPlugins;
+use projectiles::ProjectilePlugin;
 use shared::PlayerState;
 use shared::{
     GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
@@ -12,6 +20,7 @@ use shared::{
 use sprite_variant_loader::SpriteVariantLoaderPlugin;
 use std::env;
 use ui::UiPlugin;
+use units::UnitsPlugins;
 
 use animations::AnimationPlugin;
 use camera::CameraPlugin;
@@ -102,6 +111,15 @@ fn main() {
             DefeatPlugin,
             GameWorldPlugin,
             TravelPlugin,
+            PlayerPlugins,
+            BuildingsPlugins,
+            ArmyPlugins,
+            InteractPlugin,
+            PhysicsPlugin,
+            UnitsPlugins,
+            HealthPlugin,
+            AIPlugin,
+            ProjectilePlugin,
         ));
 
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);
