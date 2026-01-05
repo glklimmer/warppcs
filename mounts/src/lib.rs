@@ -1,7 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 
+use bevy_replicon::prelude::{AppRuleExt, Replicated};
+use interaction::{Interactable, InteractionType};
+use physics::movement::{BoxCollider, Velocity};
 use serde::{Deserialize, Serialize};
-use shared::BoxCollider;
 
 pub struct MountPlugins;
 
@@ -12,8 +14,24 @@ impl Plugin for MountPlugins {
     }
 }
 
+#[derive(Component, Clone, Serialize, Deserialize)]
+#[require(
+    Replicated,
+    Transform,
+    BoxCollider = horse_collider(),
+    Velocity,
+    Sprite,
+    Anchor::BOTTOM_CENTER,
+    Interactable{
+        kind: InteractionType::Mount,
+        restricted_to: None,
+    },
+)]
+pub struct Mount {
+    pub mount_type: MountType,
+}
+
 #[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
-#[require(BoxCollider = horse_collider())]
 pub enum MountType {
     Horse,
 }

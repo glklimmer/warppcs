@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use bevy::app::ScheduleRunnerPlugin;
-use shared::{SharedPlugin, server::networking::ServerNetworkPlugin};
+use shared::SharedPlugin;
 
 use std::time::Duration;
 
@@ -15,8 +15,6 @@ fn main() {
         ))),
         SharedPlugin,
     ));
-
-    app.add_plugins(ServerNetworkPlugin);
 
     // app.add_systems(Startup, create_steam_server);
 

@@ -1,57 +1,45 @@
 use bevy::prelude::*;
 
+use ai::{BanditBehaviour, FollowOffset, UnitBehaviour};
+use army::{
+    ArmyFlagAssignments, ArmyFormation, ArmyPosition,
+    commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH},
+    flag::{Flag, FlagAssignment, FlagHolder},
+    slot::ArmySlot,
+};
 use bevy::{
     app::Plugin,
     ecs::{entity::Entity, system::In, world::World},
     remote::{BrpError, BrpResult, RemotePlugin, http::RemoteHttpPlugin},
 };
+use buildings::{
+    BuildStatus, Building, BuildingType, HealthIndicator,
+    item_assignment::{ItemAssignment, ItemSlot},
+    recruiting::{RecruitBuilding, RecruitEvent},
+    respawn::RespawnZone,
+};
 use console_protocol::*;
+use health::Health;
+use interaction::{Interactable, InteractionType};
+use physics::{
+    attachment::AttachedTo,
+    movement::{Speed, Velocity},
+};
+use player::{
+    Player,
+    items::{Item, ItemType, MeleeWeapon, ProjectileWeapon, Rarity, WeaponType},
+};
 use serde_json::{Value, json};
-
-use crate::{
-    ClientPlayerMap, Owner, Player, PlayerColor, Vec3LayerExt,
+use shared::{
+    ClientPlayerMap, GameSceneId, Owner, PlayerColor, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
-    map::{
-        Layers,
-        buildings::{
-            BuildStatus, Building, BuildingType, HealthIndicator, RecruitBuilding, RespawnZone,
-        },
-    },
-    networking::UnitType,
-    server::{
-        ai::BanditBehaviour,
-        entities::{Sight, commander::ArmyFormation},
-        physics::army_slot::ArmySlot,
-    },
+    map::Layers,
 };
-use crate::GameSceneId;
+use units::{Damage, MeleeRange, Sight, Unit, UnitType};
 
-use super::{
-    ai::{FollowOffset, UnitBehaviour},
-    buildings::{
-        item_assignment::{ItemAssignment, ItemSlot},
-        recruiting::{Flag, FlagAssignment, FlagHolder, RecruitEvent},
-    },
-    entities::{
-        Damage, MeleeRange, Unit,
-        commander::{
-            ArmyFlagAssignments, ArmyPosition, BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH,
-        },
-        health::Health,
-    },
-    physics::{
-        attachment::AttachedTo,
-        movement::{Speed, Velocity},
-    },
-    players::{
-        interaction::{Interactable, InteractionType},
-        items::{Item, ItemType, MeleeWeapon, ProjectileWeapon, Rarity, WeaponType},
-    },
-};
+pub struct RemotePlugin;
 
-pub struct ConsolePlugin;
-
-impl Plugin for ConsolePlugin {
+impl Plugin for RemotePlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.add_plugins((
             RemotePlugin::default()

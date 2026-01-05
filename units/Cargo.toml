@@ -40,6 +40,7 @@ shared = { path = "../shared", default-features = false }
 inventory = { path = "../inventory" }
 physics = { path = "../physics" }
 health = { path = "../health" }
-army = { path = "../army" }
+lobby = { path = "../lobby" }
+items = { path = "../items" }
 bevy_replicon = { workspace = true }
 serde = { workspace = true }

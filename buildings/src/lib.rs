@@ -1,37 +1,35 @@
 use bevy::prelude::*;
 
+use bevy::sprite::Anchor;
+use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use gold_farm::{enable_goldfarm, gold_farm_output};
+use health::Health;
+use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
 use inventory::Inventory;
 use item_assignment::ItemAssignmentPlugins;
+use physics::movement::BoxCollider;
 use respawn::respawn_units;
-use siege_camp::siege_camp_lifetime;
-
-use shared::{
-    GameState, Owner,
-    server::players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
-};
-
-use bevy::sprite::Anchor;
-
-use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
+use shared::{GameState, Owner};
+use siege_camp::siege_camp_lifetime;
 use units::UnitType;
 
-use shared::{BoxCollider, PlayerColor, enum_map::*, server::entities::health::Health};
+use shared::{PlayerColor, enum_map::*};
 
 use crate::{
     construction::{
         BuildingChangeEnd, BuildingChangeStart, ConstructionPlugins, check_building_interaction,
         end_construction, progess_construction, start_construction,
     },
-    health::HealthPlugin,
+    health::DestructionPlugin,
     main_building::MainBuildingLevels,
-    respawn::respawn_timer,
-    wall::WallLevels,
+    respawn::{RespawnZone, respawn_timer},
+    siege_camp::SiegeCamp,
+    wall::{WallLevels, WallPlugin},
 };
 
 mod construction;
-mod health;
+mod destruction;
 mod respawn;
 
 pub mod gold_farm;
@@ -45,19 +43,24 @@ pub struct BuildingsPlugins;
 
 impl Plugin for BuildingsPlugins {
     fn build(&self, app: &mut App) {
-        app.add_plugins((ItemAssignmentPlugins, ConstructionPlugins, HealthPlugin))
-            .replicate_bundle::<(Building, BuildStatus, Transform)>()
-            .replicate_bundle::<(RespawnZone, Transform)>()
-            .replicate_bundle::<(SiegeCamp, Transform)>()
-            .add_systems(
-                FixedUpdate,
-                (
-                    gold_farm_output.run_if(in_state(GameState::GameSession)),
-                    (respawn_timer, respawn_units).chain(),
-                    siege_camp_lifetime,
-                    enable_goldfarm.run_if(on_message::<BuildingChangeEnd>),
-                ),
-            );
+        app.add_plugins((
+            ItemAssignmentPlugins,
+            ConstructionPlugins,
+            DestructionPlugin,
+            WallPlugin,
+        ))
+        .replicate_bundle::<(Building, BuildStatus, Transform)>()
+        .replicate_bundle::<(RespawnZone, Transform)>()
+        .replicate_bundle::<(SiegeCamp, Transform)>()
+        .add_systems(
+            FixedUpdate,
+            (
+                gold_farm_output.run_if(in_state(GameState::GameSession)),
+                (respawn_timer, respawn_units).chain(),
+                siege_camp_lifetime,
+                enable_goldfarm.run_if(on_message::<BuildingChangeEnd>),
+            ),
+        );
     }
 }
 

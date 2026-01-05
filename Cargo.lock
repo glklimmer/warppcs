@@ -332,11 +332,13 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_replicon",
+ "buildings",
  "fastrand",
  "highlight",
  "serde",
  "shared",
  "sprite_variant_loader",
+ "units",
 ]
 
 [[package]]
@@ -428,8 +430,13 @@ dependencies = [
  "bevy",
  "bevy_replicon",
  "buildings",
+ "fastrand",
+ "health",
+ "interaction",
+ "physics",
  "serde",
  "shared",
+ "units",
 ]
 
 [[package]]
@@ -2330,6 +2337,10 @@ dependencies = [
  "fastrand",
  "health",
  "interaction",
+ "inventory 0.1.0",
+ "items",
+ "lobby",
+ "physics",
  "serde",
  "shared",
  "units",
@@ -2528,10 +2539,13 @@ dependencies = [
  "image",
  "interaction",
  "inventory 0.1.0",
+ "items",
+ "lobby",
  "mounts",
  "physics",
  "player",
  "projectiles",
+ "remote",
  "serde",
  "shared",
  "sprite_variant_loader",
@@ -3881,6 +3895,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_replicon",
+ "physics",
  "serde",
  "shared",
 ]
@@ -3931,6 +3946,9 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "image",
+ "interaction",
+ "lobby",
+ "physics",
  "shared",
 ]
 
@@ -4172,6 +4190,8 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_replicon",
+ "lobby",
+ "physics",
  "serde",
  "shared",
 ]
@@ -4193,6 +4213,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_replicon",
+ "items",
  "serde",
  "shared",
 ]
@@ -4211,6 +4232,19 @@ name = "is_terminal_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
+
+[[package]]
+name = "items"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "fastrand",
+ "interaction",
+ "physics",
+ "serde",
+ "shared",
+]
 
 [[package]]
 name = "itertools"
@@ -4369,6 +4403,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 
 [[package]]
+name = "lobby"
+version = "0.1.0"
+dependencies = [
+ "aeronet",
+ "aeronet_replicon",
+ "aeronet_steam",
+ "aeronet_webtransport",
+ "bevy",
+ "bevy-steamworks",
+ "bevy_replicon",
+ "serde",
+ "shared",
+]
+
+[[package]]
 name = "lock_api"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4498,6 +4547,8 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_replicon",
+ "interaction",
+ "physics",
  "serde",
  "shared",
 ]
@@ -5213,6 +5264,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_replicon",
+ "fastrand",
  "serde",
  "shared",
 ]
@@ -5270,13 +5322,20 @@ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 name = "player"
 version = "0.1.0"
 dependencies = [
+ "ai",
+ "animations",
  "army",
  "bevy",
+ "bevy-parallax",
  "bevy_replicon",
  "buildings",
  "fastrand",
+ "health",
  "interaction",
  "inventory 0.1.0",
+ "items",
+ "lobby",
+ "mounts",
  "physics",
  "serde",
  "shared",
@@ -5783,6 +5842,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
 
 [[package]]
+name = "remote"
+version = "0.1.0"
+dependencies = [
+ "ai",
+ "army",
+ "bevy",
+ "bevy_replicon",
+ "buildings",
+ "console_protocol",
+ "health",
+ "interaction",
+ "physics",
+ "player",
+ "serde",
+ "serde_json",
+ "shared",
+ "units",
+]
+
+[[package]]
 name = "renderdoc-sys"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6185,13 +6264,11 @@ dependencies = [
  "bevy-steamworks",
  "bevy_replicon",
  "bincode",
- "console_protocol",
  "enum_as_f32_macro",
  "enum_mappable",
  "fastrand",
  "petgraph 0.8.3",
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -6366,6 +6443,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "image",
+ "lobby",
  "serde",
  "shared",
  "thiserror 2.0.17",
@@ -7016,6 +7094,8 @@ dependencies = [
  "bevy_replicon",
  "health",
  "inventory 0.1.0",
+ "items",
+ "lobby",
  "physics",
  "serde",
  "shared",

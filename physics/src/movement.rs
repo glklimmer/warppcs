@@ -1,19 +1,13 @@
 use bevy::prelude::*;
 
 use bevy::math::bounding::Aabb2d;
-use bevy::math::bounding::IntersectsVolume;
-use bevy_replicon::prelude::ClientState;
+use bevy_replicon::prelude::{AppRuleExt, ClientState};
 use serde::{Deserialize, Serialize};
-use serde::{Deserialize, Serialize};
+use shared::GameSceneId;
 
-use shared::{
-    BoxCollider, GRAVITY_G, GameSceneId, Owner, Player,
-    map::buildings::{BuildStatus, Building, BuildingType},
-    networking::WorldDirection,
-    server::{entities::health::Health, physics::army_slot::ArmySlot, players::items::Item},
-};
+use crate::WorldDirection;
 
-use super::projectile::ProjectileType;
+pub const GRAVITY_G: f32 = 9.81 * 33.;
 
 #[derive(Component, Copy, Clone, Default, Deserialize, Serialize)]
 pub struct BoxCollider {
@@ -87,12 +81,11 @@ impl Plugin for MovementPlugin {
                     (
                         set_grounded,
                         set_walking,
-                        set_king_walking,
                         apply_friction,
                         apply_drag,
                         set_projectile_rotation,
                     ),
-                    (wall_collision, no_walk_zone_collision),
+                    no_walk_zone_collision,
                 )
                     .chain()
                     .run_if(in_state(ClientState::Disconnected)),
@@ -129,11 +122,11 @@ fn apply_velocity(
     }
 }
 
+#[derive(Component, Default)]
+pub struct Directionless;
+
 fn apply_direction(
-    mut query: Query<
-        (&Velocity, &mut Transform),
-        (Changed<Velocity>, Without<Item>, Without<ArmySlot>),
-    >,
+    mut query: Query<(&Velocity, &mut Transform), (Changed<Velocity>, Without<Directionless>)>,
 ) {
     for (velocity, mut transform) in query.iter_mut() {
         if velocity.0.x != 0. {
@@ -153,7 +146,10 @@ fn apply_friction(mut query: Query<&mut Velocity, With<Grounded>>, time: Res<Tim
     }
 }
 
-fn apply_drag(mut query: Query<&mut Velocity, Without<ProjectileType>>, time: Res<Time>) {
+#[derive(Component, Default)]
+pub struct Dragless;
+
+fn apply_drag(mut query: Query<&mut Velocity, Without<Dragless>>, time: Res<Time>) {
     let drag_coeff = 3.0;
     for mut vel in query.iter_mut() {
         let old = vel.0;
@@ -180,25 +176,11 @@ fn set_grounded(
     Ok(())
 }
 
-#[allow(clippy::type_complexity)]
+#[derive(Component)]
+pub struct Unmovable;
+
 fn set_walking(
-    entities: Query<(Entity, &Velocity, Option<&Grounded>, Option<&Health>), Without<Player>>,
-    mut commands: Commands,
-) -> Result {
-    for (entity, velocity, maybe_grounded, maybe_health) in &entities {
-        let mut entity = commands.get_entity(entity)?;
-
-        if maybe_health.is_some() && maybe_grounded.is_some() && velocity.0.x.abs() > 0. {
-            entity.try_insert(Moving);
-        } else {
-            entity.try_remove::<Moving>();
-        }
-    }
-    Ok(())
-}
-
-fn set_king_walking(
-    players: Query<(Entity, &Velocity, Option<&Grounded>), With<Player>>,
+    players: Query<(Entity, &Velocity, Option<&Grounded>), Without<Unmovable>>,
     mut commands: Commands,
 ) -> Result {
     for (entity, velocity, maybe_grounded) in &players {
@@ -213,44 +195,15 @@ fn set_king_walking(
     Ok(())
 }
 
+#[derive(Component)]
+pub struct FreeDirectional;
+
 fn set_projectile_rotation(
-    mut projectiles: Query<(&mut Transform, &Velocity), With<ProjectileType>>,
+    mut projectiles: Query<(&mut Transform, &Velocity), With<FreeDirectional>>,
 ) {
     for (mut transform, velocity) in projectiles.iter_mut() {
         let angle = velocity.0.to_angle();
         transform.rotation = Quat::from_rotation_z(angle);
-    }
-}
-
-fn wall_collision(
-    mut query: Query<(&mut Velocity, &Transform, &BoxCollider, &Owner)>,
-    buildings: Query<(&Transform, &BoxCollider, &Owner, &Building, &BuildStatus), With<Health>>,
-    time: Res<Time>,
-) {
-    for (mut velocity, transform, collider, owner) in query.iter_mut() {
-        let future_position = transform.translation.truncate() + velocity.0 * time.delta_secs();
-        let future_bounds = collider.at_pos(future_position);
-
-        for (building_transform, building_collider, building_owner, building, building_status) in
-            buildings.iter()
-        {
-            if building_owner.is_same_faction(owner) {
-                continue;
-            }
-
-            let BuildStatus::Built { indicator: _ } = *building_status else {
-                continue;
-            };
-
-            if let BuildingType::Wall { level: _ } = building.building_type {
-                let building_bounds = building_collider.at(building_transform);
-
-                if building_bounds.intersects(&future_bounds) {
-                    velocity.0.x = 0.;
-                    break;
-                }
-            }
-        }
     }
 }
 

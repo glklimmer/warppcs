@@ -43,6 +43,13 @@ army = { path = "../army" }
 interaction = { path = "../interaction" }
 physics = { path = "../physics" }
 inventory = { path = "../inventory" }
+health = { path = "../health" }
+lobby = { path = "../lobby" }
+animations = { path = "../animations" }
+mounts = { path = "../mounts" }
+ai = { path = "../ai" }
+items = { path = "../items" }
 serde = { workspace = true }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }
+bevy-parallax = { workspace = true }

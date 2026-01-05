@@ -10,6 +10,7 @@ use physics::PushBack;
 use shared::{Owner, networking::WorldDirection};
 
 mod attack;
+mod death;
 mod movement;
 
 #[derive(Debug, Deref, DerefMut, Component, Default)]

@@ -1,27 +1,8 @@
 use bevy::prelude::*;
 
-use bevy::ecs::entity::MapEntities;
-use bevy_replicon::prelude::{SendMode, ServerTriggerExt, ToClients};
-use serde::{Deserialize, Serialize};
-
-use shared::{
-    AnimationChange, AnimationChangeEvent, DelayedDespawn, Hitby, Owner,
-    networking::WorldDirection,
-    server::{
-        ai::{BanditBehaviour, BehaveSources, Target, TargetedBy, UnitBehaviour},
-        buildings::recruiting::{FlagAssignment, FlagHolder, FlagUnits},
-        entities::Unit,
-        physics::{attachment::AttachedTo, movement::Velocity},
-        players::{
-            flag::FlagDestroyed,
-            interaction::{Interactable, InteractionType},
-        },
-    },
-};
-
-use super::commander::ArmyFlagAssignments;
-
-// TODO: We need an event to register when something (unit/building/etc) dies.
+use bevy_replicon::prelude::{SendMode, ToClients};
+use physics::{WorldDirection, movement::Unmovable};
+use shared::{AnimationChange, AnimationChangeEvent, Hitby};
 
 #[derive(Component, Clone, Copy)]
 pub struct Health {
@@ -52,14 +33,15 @@ pub struct HealthPlugin;
 
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<TakeDamage>()
-            .add_mapped_server_event::<PlayerDefeated>(Channel::Ordered)
-            .add_systems(
-                FixedUpdate,
-                ((delayed_damage, apply_damage).chain(), delayed_despawn),
-            );
+        app.add_message::<TakeDamage>().add_systems(
+            FixedUpdate,
+            ((delayed_damage, apply_damage).chain(), delayed_despawn),
+        );
     }
 }
+
+#[derive(Component)]
+pub struct DelayedDespawn(pub Timer);
 
 fn delayed_damage(
     mut query: Query<(Entity, &mut DelayedDamage)>,
@@ -86,7 +68,7 @@ fn apply_damage(
         if let Ok((entity, mut health)) = query.get_mut(event.target_entity) {
             health.hitpoints -= event.damage;
 
-            commands.entity(entity).remove::<Health>();
+            commands.entity(entity).remove::<Health>().insert(Unmovable);
 
             animation.write(ToClients {
                 mode: SendMode::Broadcast,
@@ -96,15 +78,6 @@ fn apply_damage(
                 },
             });
         }
-    }
-}
-
-#[derive(Event, Clone, Copy, Deserialize, Serialize, Deref)]
-pub struct PlayerDefeated(Entity);
-
-impl MapEntities for PlayerDefeated {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.0 = entity_mapper.get_mapped(self.0);
     }
 }
 

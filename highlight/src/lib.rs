@@ -2,10 +2,11 @@ use bevy::prelude::*;
 
 use bevy::{asset::RenderAssetUsages, math::bounding::IntersectsVolume};
 use image::{GenericImage, GenericImageView, Rgba};
-use shared::{
-    BoxCollider, ControlledPlayer, GameState, Player,
-    server::{physics::attachment::AttachedTo, players::interaction::Interactable},
-};
+use interaction::Interactable;
+use lobby::ControlledPlayer;
+use physics::attachment::AttachedTo;
+use physics::movement::BoxCollider;
+use shared::GameState;
 use std::cmp::Ordering;
 
 pub mod utils;
@@ -121,7 +122,7 @@ fn check_highlight(
 fn init_highlightable(
     trigger: On<Add, Interactable>,
     controlled_player: Query<Entity, With<ControlledPlayer>>,
-    interactable: Query<&Interactable, Without<Player>>,
+    interactable: Query<&Interactable>,
     mut commands: Commands,
 ) -> Result {
     let Ok(interactable) = interactable.get(trigger.entity) else {

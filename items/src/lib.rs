@@ -1,18 +1,11 @@
 use bevy::prelude::*;
 
 use bevy_replicon::prelude::Replicated;
+use interaction::{Interactable, InteractionType};
+use physics::movement::{BoxCollider, Directionless, Velocity};
 use serde::{Deserialize, Serialize};
+use shared::enum_map::*;
 use std::{cmp::Ordering, fmt, ops::MulAssign};
-
-use buildings::item_assignment::ItemSlot;
-use shared::{
-    BoxCollider,
-    enum_map::*,
-    networking::{Inventory, UnitType},
-    server::physics::movement::Velocity,
-};
-
-use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
 
 #[derive(Component, Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[require(
@@ -25,6 +18,7 @@ use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
         kind: InteractionType::Item,
         restricted_to: None,
     },
+    Directionless
 )]
 pub struct Item {
     pub item_type: ItemType,
@@ -129,15 +123,6 @@ impl Item {
                 dimension: Vec2::new(13., 12.),
                 offset: None,
             },
-        }
-    }
-
-    pub fn slot(&self) -> ItemSlot {
-        match self.item_type {
-            ItemType::Weapon(_) => ItemSlot::Weapon,
-            ItemType::Chest => ItemSlot::Chest,
-            ItemType::Feet => ItemSlot::Feet,
-            ItemType::Head => ItemSlot::Head,
         }
     }
 }
@@ -429,40 +414,6 @@ pub enum MeleeWeapon {
 #[derive(Clone, Serialize, Deserialize, Copy, Mappable, Debug, Eq, PartialEq)]
 pub enum ProjectileWeapon {
     Bow,
-}
-
-impl WeaponType {
-    pub fn unit_type(&self) -> UnitType {
-        match self {
-            WeaponType::Melee(use_weapon) => match use_weapon {
-                MeleeWeapon::SwordAndShield => UnitType::Shieldwarrior,
-                MeleeWeapon::Pike => UnitType::Pikeman,
-            },
-            WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
-                ProjectileWeapon::Bow => UnitType::Archer,
-            },
-        }
-    }
-}
-
-pub(crate) fn pickup_item(
-    mut interactions: MessageReader<InteractionTriggeredEvent>,
-    mut commands: Commands,
-    mut player: Query<&mut Inventory>,
-    item: Query<&Item>,
-) -> Result {
-    for event in interactions.read() {
-        let InteractionType::Item = &event.interaction else {
-            continue;
-        };
-
-        let item = item.get(event.interactable)?;
-        let mut inventory = player.get_mut(event.player)?;
-        inventory.items.push(item.clone());
-
-        commands.entity(event.interactable).despawn();
-    }
-    Ok(())
 }
 
 pub trait EffectSelector {

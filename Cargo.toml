@@ -22,7 +22,10 @@ members = [
     "physics",
     "ai",
     "health",
-    "projectiles"
+    "projectiles",
+    "remote",
+    "lobby",
+    "items"
 ]
 
 # Enable a small amount of optimization in the dev profile.
@@ -47,6 +50,7 @@ let_and_return = "allow"
 bincode = "2.0.1"
 fastrand = "2.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 aeronet = "0.17"
 bevy = { version = "0.17", default-features = false }
 bevy_replicon = { version = "0.36" }
@@ -57,3 +61,4 @@ aeronet_steam = { version = "0.17" }
 image = { version = "0.25.6", features = ["png"] }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
 bevy_behave = { git = "https://github.com/glklimmer/bevy_behave" }
+bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax"  }

@@ -62,7 +62,5 @@ petgraph = { workspace = true }
 
 enum_as_f32_macro = { path = "../enum_as_f32_macro" }
 enum_mappable = { path = "../enum_mappable" }
-console_protocol = { version = "0.1.0", path = "../console_protocol" }
 
-serde_json = "1.0.140"
 

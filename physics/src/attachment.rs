@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 
+use bevy_replicon::prelude::AppRuleExt;
 use serde::{Deserialize, Serialize};
 
-use super::movement::{Moving, Velocity};
+use crate::WorldDirection;
 
-use crate::player_attacks::AttackIndicator;
+use super::movement::{Moving, Velocity};
 
 #[derive(Component, Serialize, Deserialize, Deref)]
 pub struct AttachedTo(#[entities] pub Entity);
@@ -19,11 +20,16 @@ impl Plugin for AttachmentPlugin {
     }
 }
 
+#[derive(Component)]
+pub struct AttachmentTilting {
+    pub direction: WorldDirection,
+}
+
 const X_OFFSET: f32 = 2.0;
 const Y_OFFSET: f32 = 5.0;
 
 fn attachment_follow(
-    mut query: Query<(&AttachedTo, &mut Transform, Option<&AttackIndicator>)>,
+    mut query: Query<(&AttachedTo, &mut Transform, Option<&AttachmentTilting>)>,
     target: Query<(&GlobalTransform, &Velocity, Option<&Moving>), Without<AttachedTo>>,
     time: Res<Time>,
 ) -> Result {
@@ -63,6 +69,6 @@ fn on_attachment_removed(
     let entity = trigger.entity;
     let mut transform = query.get_mut(entity)?;
     transform.rotation = Quat::IDENTITY;
-    commands.entity(entity).remove::<AttackIndicator>();
+    commands.entity(entity).remove::<AttachmentTilting>();
     Ok(())
 }

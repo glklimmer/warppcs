@@ -1,5 +1,5 @@
 [package]
-name = "health"
+name = "remote"
 version = "0.1.0"
 edition = "2024"
 
@@ -37,6 +37,15 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
+console_protocol = { path = "../console_protocol" }
+player = { path = "../player" }
+buildings = { path = "../buildings" }
+units = { path = "../units" }
+ai = { path = "../ai" }
+army = { path = "../army" }
 physics = { path = "../physics" }
+health = { path = "../health" }
+interaction = { path = "../interaction" }
 bevy_replicon = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }

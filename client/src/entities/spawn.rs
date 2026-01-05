@@ -16,7 +16,6 @@ use animations::{
         trees::pine::PineTreeSpriteSheet,
     },
 };
-use bevy_parallax::{CameraFollow, LinearAxisStrategy, TranslationStrategy};
 use bevy_replicon::prelude::ClientTriggerExt;
 use shared::{
     ClientReady, ControlledPlayer, Player, SetLocalPlayer,
@@ -46,33 +45,8 @@ impl Plugin for SpawnPlugin {
             .add_observer(init_road_sprite)
             .add_observer(init_horse_sprite)
             .add_observer(init_projectile_sprite)
-            .add_observer(init_chest_sprite)
-            .add_observer(init_local_player);
+            .add_observer(init_chest_sprite);
     }
-}
-
-fn init_local_player(
-    trigger: On<SetLocalPlayer>,
-    camera: Query<Entity, With<Camera>>,
-    mut commands: Commands,
-) -> Result {
-    let player = trigger.entity();
-    let mut player_commands = commands.entity(player);
-    player_commands.insert((
-        ControlledPlayer,
-        KingAnimation::default(),
-        SpatialListener::new(50.0),
-    ));
-    commands.entity(camera.single()?).insert(
-        CameraFollow::fixed(player)
-            .with_offset(Vec2 { x: 50., y: 50. })
-            .with_translation(TranslationStrategy {
-                x: LinearAxisStrategy::P(0.03),
-                y: LinearAxisStrategy::P(0.9),
-            }),
-    );
-    commands.client_trigger(ClientReady(0));
-    Ok(())
 }
 
 fn init_player_sprite(

@@ -1,15 +1,24 @@
 use bevy::prelude::*;
 
 use bevy::{math::bounding::IntersectsVolume, sprite::Anchor};
-use bevy_replicon::prelude::Replicated;
-use health::{Health, TakeDamage};
-use physics::{collider::BoxCollider, movement::Velocity};
+use bevy_replicon::prelude::{AppRuleExt, Replicated};
+use health::{DelayedDespawn, Health, TakeDamage};
+use physics::movement::{BoxCollider, Dragless, FreeDirectional, Velocity};
 use serde::{Deserialize, Serialize};
-use shared::{DelayedDespawn, Hitby, Owner, projectile_collider};
+use shared::{Hitby, Owner};
 use units::Damage;
 
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
-#[require(Replicated, Velocity, Transform, BoxCollider = projectile_collider(), Sprite, Anchor::BOTTOM_CENTER)]
+#[require(
+    Replicated,
+    Velocity,
+    Transform,
+    BoxCollider = projectile_collider(),
+    Sprite,
+    Anchor::BOTTOM_CENTER,
+    Dragless,
+    FreeDirectional
+)]
 pub enum ProjectileType {
     Arrow,
 }
@@ -72,5 +81,12 @@ fn projectile_collision(
                 commands.entity(entity).despawn();
             }
         }
+    }
+}
+
+fn projectile_collider() -> BoxCollider {
+    BoxCollider {
+        dimension: Vec2::new(14., 3.),
+        offset: Some(Vec2::new(1.0, 0.)),
     }
 }

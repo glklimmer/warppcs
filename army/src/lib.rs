@@ -3,7 +3,11 @@ use bevy_replicon::prelude::{AppRuleExt, Channel, ClientEventAppExt, Replicated}
 use serde::{Deserialize, Serialize};
 use shared::{BoxCollider, PlayerColor, enum_map::*, map::Layers, networking::UnitType};
 
-use crate::{commander::CommanderPlugin, flag::FlagPlugins, slot::ArmySlotPlugin};
+use crate::{
+    commander::CommanderPlugin, death::DeathPlugin, flag::FlagPlugins, slot::ArmySlotPlugin,
+};
+
+mod death;
 
 pub mod commander;
 pub mod flag;
@@ -13,7 +17,7 @@ pub struct ArmyPlugins;
 
 impl Plugin for ArmyPlugins {
     fn build(&self, app: &mut App) {
-        app.add_plugins((FlagPlugins, ArmySlotPlugin, CommanderPlugin))
+        app.add_plugins((FlagPlugins, ArmySlotPlugin, CommanderPlugin, DeathPlugin))
             .replicate::<ArmyFlagAssignments>()
             .replicate::<ArmyFormation>()
             .add_client_event::<ArmyPosition>(Channel::Ordered);
@@ -28,7 +32,7 @@ enum ArmyPosition {
 }
 
 #[derive(Component, Serialize, Deserialize, Clone)]
-struct ArmyFlagAssignments {
+pub struct ArmyFlagAssignments {
     #[entities]
     pub flags: EnumMap<ArmyPosition, Option<Entity>>,
 }

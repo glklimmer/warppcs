@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_replicon::prelude::Replicated;
+use items::Item;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]

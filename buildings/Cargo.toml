@@ -37,9 +37,13 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
+lobby = { path = "../lobby" }
 interaction = { path = "../interaction" }
 units = { path = "../units" }
 health = { path = "../health" }
+inventory = { path = "../inventory" }
+physics = { path = "../physics" }
+items = { path = "../items" }
 serde = { workspace = true }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }

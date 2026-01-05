@@ -5,6 +5,9 @@ use bevy_replicon::prelude::{
     AppRuleExt, FromClient, Replicated, SendMode, ServerTriggerExt, ToClients,
 };
 use interaction::{InteractionTriggeredEvent, InteractionType};
+use inventory::Inventory;
+use items::{Item, ItemType};
+use lobby::{ClientPlayerMap, ClientPlayerMapExt};
 use serde::{Deserialize, Serialize};
 
 use shared::{
@@ -41,6 +44,17 @@ pub enum ItemSlot {
     Chest,
     Head,
     Feet,
+}
+
+impl From<Item> for ItemSlot {
+    fn from(value: Item) -> Self {
+        match value.item_type {
+            ItemType::Weapon(_) => ItemSlot::Weapon,
+            ItemType::Chest => ItemSlot::Chest,
+            ItemType::Feet => ItemSlot::Feet,
+            ItemType::Head => ItemSlot::Head,
+        }
+    }
 }
 
 #[derive(Component, Serialize, Deserialize, Clone)]
@@ -131,7 +145,7 @@ fn check_start_building(
 
     if let Some(weapon) = items.into_iter().find_map(|item| {
         if let ItemType::Weapon(weapon) = item.item_type {
-            Some(weapon.unit_type())
+            Some(weapon.into())
         } else {
             None
         }
@@ -203,7 +217,7 @@ fn assign_item(
     inventory.items.remove(index);
 
     let mut assignment = assignment.get_mut(active_building)?;
-    let maybe_item = assignment.items.set(item.slot(), Some(item.clone()));
+    let maybe_item = assignment.items.set(item.into(), Some(item.clone()));
     if let Some(item) = maybe_item {
         inventory.items.push(item);
     }

@@ -37,6 +37,7 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
+lobby = { path = "../lobby" }
 serde = { workspace = true }
 image = { workspace = true }
 thiserror = "2.0.12"

@@ -1,14 +1,18 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use ::health::{DelayedDamage, TakeDamage};
-use bevy_replicon::prelude::Replicated;
-use health::Health;
+use bevy_replicon::prelude::{AppRuleExt, Replicated};
+use health::{DelayedDamage, Health, TakeDamage};
 use inventory::Cost;
-use physics::movement::{RandomVelocityMul, Speed, Velocity};
+use items::{MeleeWeapon, ProjectileWeapon, WeaponType};
+use lobby::PlayerColor;
+use physics::movement::{BoxCollider, RandomVelocityMul, Speed, Velocity};
 use serde::{Deserialize, Serialize};
-use shared::{BoxCollider, PlayerColor, enum_map::*, server::entities::UnitAnimation};
+use shared::{enum_map::*, server::entities::UnitAnimation};
 
-use crate::pushback::{PushBack, PushbackPlugins};
+use crate::{
+    death::DeathPlugin,
+    pushback::{PushBack, PushbackPlugins},
+};
 
 mod death;
 
@@ -18,7 +22,8 @@ pub struct UnitsPlugins;
 
 impl Plugin for UnitsPlugins {
     fn build(&self, app: &mut App) {
-        app.replicate_bundle::<(Unit, Transform)>()
+        app.add_plugins(DeathPlugin)
+            .replicate_bundle::<(Unit, Transform)>()
             .add_plugins(PushbackPlugins)
             .add_systems(FixedUpdate, unit_swing_timer);
     }
@@ -31,6 +36,20 @@ pub enum UnitType {
     Archer,
     Bandit,
     Commander,
+}
+
+impl From<WeaponType> for UnitType {
+    fn from(value: WeaponType) -> Self {
+        match value {
+            WeaponType::Melee(use_weapon) => match use_weapon {
+                MeleeWeapon::SwordAndShield => UnitType::Shieldwarrior,
+                MeleeWeapon::Pike => UnitType::Pikeman,
+            },
+            WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
+                ProjectileWeapon::Bow => UnitType::Archer,
+            },
+        }
+    }
 }
 
 impl UnitType {

@@ -5,13 +5,9 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
 use serde::{Deserialize, Serialize};
 
-use shared::{
-    AnimationChange, AnimationChangeEvent, BoxCollider, GameSceneId,
-    map::Layers,
-    networking::{MountType, Mounted},
-    server::physics::movement::{Speed, Velocity},
-    unit_collider,
-};
+use mounts::{Mount, MountType, Mounted};
+use physics::movement::{Speed, Velocity};
+use shared::{AnimationChange, AnimationChangeEvent, GameSceneId, map::Layers};
 
 use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
 
@@ -27,23 +23,6 @@ impl Plugin for MountPlugin {
             ),
         );
     }
-}
-
-#[derive(Component, Clone, Serialize, Deserialize)]
-#[require(
-    Replicated,
-    Transform,
-    BoxCollider = unit_collider(),
-    Velocity,
-    Sprite,
-    Anchor::BOTTOM_CENTER,
-    Interactable{
-        kind: InteractionType::Mount,
-        restricted_to: None,
-    },
-)]
-pub struct Mount {
-    pub mount_type: MountType,
 }
 
 #[derive(Component)]

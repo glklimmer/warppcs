@@ -13,10 +13,9 @@ use networking::join_server::JoinServerPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugins;
 use projectiles::ProjectilePlugin;
+use remote::RemotePlugin;
 use shared::PlayerState;
-use shared::{
-    GameState, SharedPlugin, networking::NetworkRegistry, server::networking::ServerNetworkPlugin,
-};
+use shared::{GameState, SharedPlugin};
 use sprite_variant_loader::SpriteVariantLoaderPlugin;
 use std::env;
 use ui::UiPlugin;
@@ -34,7 +33,6 @@ use crate::{
 
 pub mod background;
 pub mod camera;
-pub mod defeat;
 pub mod entities;
 pub mod gizmos;
 pub mod input;
@@ -108,7 +106,6 @@ fn main() {
             UiPlugin,
             BackgroundSoundPlugin,
             GizmosPlugin,
-            DefeatPlugin,
             GameWorldPlugin,
             TravelPlugin,
             PlayerPlugins,
@@ -120,13 +117,12 @@ fn main() {
             HealthPlugin,
             AIPlugin,
             ProjectilePlugin,
+            RemotePlugin,
         ));
 
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);
 
     if args.contains(&String::from("server")) {
-        client.add_plugins(ServerNetworkPlugin);
-
         #[cfg(feature = "steam")]
         {
             use aeronet_steam::server::SteamNetServerPlugin;
@@ -144,7 +140,7 @@ fn main() {
             client.add_systems(OnEnter(GameState::MainMenu), create_web_transport_server);
         }
     } else {
-        client.add_plugins((NetworkRegistry, JoinServerPlugin));
+        client.add_plugins((JoinServerPlugin));
 
         #[cfg(feature = "steam")]
         {

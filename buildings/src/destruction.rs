@@ -5,9 +5,9 @@ use shared::Owner;
 
 use crate::{BuildStatus, Building};
 
-pub(crate) struct HealthPlugin;
+pub(crate) struct DestructionPlugin;
 
-impl Plugin for HealthPlugin {
+impl Plugin for DestructionPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,

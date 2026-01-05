@@ -1,18 +1,17 @@
 use bevy::prelude::*;
 
 use archer::archer_building;
+use buildings::{
+    BuildStatus, Building, BuildingType, HealthIndicator, MainBuildingLevels, WallLevels,
+    main_building::MainBuildingLevels, wall::WallLevels,
+};
 use gold_farm::gold_farm_building;
 use pikeman::pikeman_building;
-use shared::{
-    enum_map::*,
-    map::buildings::{
-        BuildStatus, Building, BuildingType, HealthIndicator, MainBuildingLevels, WallLevels,
-    },
-    networking::UnitType,
-};
+use shared::enum_map::*;
 use shieldwarrior::shieldwarrior_building;
 use sprite_variant_loader::loader::{SpriteVariants, SpriteVariantsAssetsExt};
 use tent::tent_building;
+use units::UnitType;
 use wall_basic::wall_basic_building;
 use wall_tower::wall_tower_building;
 use wall_wood::wall_wood_building;

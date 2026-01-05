@@ -1,18 +1,16 @@
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
+use physics::attachment::AttachmentTilting;
 use serde::{Deserialize, Serialize};
 
-use shared::{
-    AnimationChange, AnimationChangeEvent, ClientPlayerMap, ClientPlayerMapExt,
-    networking::WorldDirection,
-    server::{ai::UnitBehaviour, entities::commander::ArmyFlagAssignments},
+use ai::UnitBehaviour;
+use army::{
+    ArmyFlagAssignments,
+    flag::{FlagHolder, FlagUnits},
 };
-
-#[derive(Component)]
-pub struct AttackIndicator {
-    pub direction: WorldDirection,
-}
+use lobby::{ClientPlayerMap, ClientPlayerMapExt};
+use shared::{AnimationChange, AnimationChangeEvent, networking::WorldDirection};
 
 pub(crate) struct Attack;
 
@@ -76,10 +74,12 @@ fn attack(
 
     match new_behaviour {
         UnitBehaviour::Attack(direction) => {
-            commands.entity(flag).insert(AttackIndicator { direction });
+            commands
+                .entity(flag)
+                .insert(AttachmentTilting { direction });
         }
         UnitBehaviour::FollowFlag | UnitBehaviour::Idle => {
-            commands.entity(flag).remove::<AttackIndicator>();
+            commands.entity(flag).remove::<AttachmentTilting>();
         }
     }
 

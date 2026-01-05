@@ -1,9 +1,9 @@
 use bevy::{math::bounding::IntersectsVolume, prelude::*};
 
-use crate::{
-    BoxCollider, Player,
-    server::players::interaction::{ActiveInteraction, InteractionTriggeredEvent, InteractionType},
-};
+use crate::{ActiveInteraction, BoxCollider, InteractionTriggeredEvent, InteractionType};
+
+#[derive(Component)]
+pub struct ColliderTriggerActivater;
 
 #[derive(Component)]
 pub enum ColliderTrigger {
@@ -19,13 +19,13 @@ impl Plugin for ColliderTriggerPlugin {
 }
 
 fn check_collider_trigger(
-    players: Query<Entity, (With<Player>, Without<ActiveInteraction>)>,
+    activators: Query<Entity, (With<ColliderTriggerActivater>, Without<ActiveInteraction>)>,
     triggers: Query<(Entity, &ColliderTrigger, &Transform, &BoxCollider)>,
     player_query: Query<(&Transform, &BoxCollider)>,
     mut interaction: MessageWriter<InteractionTriggeredEvent>,
     mut commands: Commands,
 ) -> Result {
-    for player in players.iter() {
+    for player in activators.iter() {
         let (player_transform, player_collider) = player_query.get(player)?;
         let player_bounds = player_collider.at(player_transform);
 

@@ -2,9 +2,33 @@ use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
 use bevy::math::bounding::IntersectsVolume;
+use lobby::{ClientPlayerMap, ClientPlayerMapExt};
+use physics::movement::BoxCollider;
 use serde::{Deserialize, Serialize};
+use shared::PlayerState;
 
-use shared::{BoxCollider, ClientPlayerMap, ClientPlayerMapExt, PlayerState};
+use crate::collider_trigger::ColliderTriggerPlugin;
+
+pub mod collider_trigger;
+
+pub struct InteractPlugin;
+
+impl Plugin for InteractPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(ColliderTriggerPlugin)
+            .replicate::<Interactable>()
+            .add_server_event::<InteractableSound>(Channel::Ordered)
+            .add_client_event::<Interact>(Channel::Ordered)
+            .add_observer(interact)
+            .add_message::<InteractionTriggeredEvent>()
+            .add_systems(
+                PostUpdate,
+                send_interact
+                    .before(ClientSystems::Send)
+                    .run_if(in_state(PlayerState::World)),
+            );
+    }
+}
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum InteractionType {
@@ -45,24 +69,6 @@ pub struct InteractionTriggeredEvent {
 #[derive(Component)]
 pub struct ActiveInteraction {
     pub interactable: Entity,
-}
-
-pub struct InteractPlugin;
-
-impl Plugin for InteractPlugin {
-    fn build(&self, app: &mut App) {
-        app.replicate::<Interactable>()
-            .add_server_event::<InteractableSound>(Channel::Ordered)
-            .add_client_event::<Interact>(Channel::Ordered)
-            .add_observer(interact)
-            .add_message::<InteractionTriggeredEvent>()
-            .add_systems(
-                PostUpdate,
-                send_interact
-                    .before(ClientSystems::Send)
-                    .run_if(in_state(PlayerState::World)),
-            );
-    }
 }
 
 #[derive(Event, Serialize, Deserialize, Debug)]

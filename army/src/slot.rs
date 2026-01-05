@@ -1,13 +1,14 @@
 use bevy::prelude::*;
 
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
+use physics::movement::{Directionless, Velocity};
 use serde::{Deserialize, Serialize};
 
 use shared::{networking::WorldDirection, server::physics::movement::Velocity};
 
 #[derive(Component, Serialize, Deserialize)]
 #[relationship(relationship_target = ArmySlots)]
-#[require(Replicated, Velocity, Transform)]
+#[require(Replicated, Velocity, Transform, Directionless)]
 pub struct ArmySlot {
     #[relationship]
     pub commander: Entity,

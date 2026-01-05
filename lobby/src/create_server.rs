@@ -3,14 +3,11 @@ use bevy::prelude::*;
 use aeronet::io::{
     Session, SessionEndpoint,
     connection::{DisconnectReason, Disconnected},
-    server::Server,
 };
 use aeronet_replicon::server::{AeronetRepliconServer, AeronetRepliconServerPlugin};
-use bevy_replicon::prelude::{ClientId, SendMode, ServerTriggerExt, ToClients};
+use bevy_replicon::prelude::ClientId;
 
-use crate::{
-    ClientPlayerMap, GameState, PendingPlayers, Player, PlayerColor, SetLocalPlayer, enum_map::*,
-};
+use crate::{ClientPlayerMap, GameState, PendingPlayers};
 
 pub struct CreateServerPlugin;
 
@@ -18,7 +15,6 @@ impl Plugin for CreateServerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(AeronetRepliconServerPlugin)
             .init_resource::<PendingPlayers>()
-            .add_observer(on_created)
             .add_observer(on_connecting)
             .add_observer(on_connected)
             .add_observer(on_disconnected);
@@ -108,29 +104,6 @@ pub fn create_steam_server(mut commands: Commands, client: Res<aeronet_steam::St
         .queue(SteamNetServer::open(SessionConfig::default(), target));
 
     info!("Creating server...")
-}
-
-fn on_created(
-    _: On<Add, Server>,
-    mut client_player_map: ResMut<ClientPlayerMap>,
-    mut commands: Commands,
-) {
-    info!("Successfully created server");
-
-    let server_player = commands
-        .spawn(Player {
-            id: 0,
-            color: *fastrand::choice(PlayerColor::all_variants())
-                .expect("No PlayerColor available"),
-        })
-        .id();
-
-    client_player_map.insert(ClientId::Server, server_player);
-
-    commands.server_trigger(ToClients {
-        mode: SendMode::Broadcast,
-        message: SetLocalPlayer(server_player),
-    });
 }
 
 #[cfg(feature = "steam")]

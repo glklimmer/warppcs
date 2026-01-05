@@ -5,29 +5,10 @@ use bevy_replicon::prelude::Replicated;
 use serde::{Deserialize, Serialize};
 
 use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
-use shared::{
-    BoxCollider, GameSceneId, Vec3LayerExt, map::Layers, networking::MountType,
-    server::physics::movement::Velocity, unit_collider,
-};
+use physics::movement::{BoxCollider, Velocity};
+use shared::{GameSceneId, Vec3LayerExt, map::Layers};
 
 use super::items::Item;
-
-#[derive(Component, Clone, Serialize, Deserialize)]
-#[require(
-    Replicated,
-    Transform,
-    BoxCollider = unit_collider(),
-    Velocity,
-    Sprite,
-    Anchor::BOTTOM_CENTER,
-    Interactable {
-        kind: InteractionType::Mount,
-        restricted_to: None,
-    },
-)]
-pub struct Mount {
-    pub mount_type: MountType,
-}
 
 #[derive(Component, Clone, Copy, Serialize, Deserialize)]
 #[require(

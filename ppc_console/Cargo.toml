@@ -9,9 +9,9 @@ workspace = true
 [dependencies]
 dirs = "6.0.0"
 ureq = { version = "3.0.11", features = ["json"] }
-serde = { version = "1.0.219", default-features = false, features = ["derive"] }
 bevy_remote = "0.16.0"
 clap = { version = "4.5.38", features = ["derive"] }
-serde_json = "1.0.140"
 dialoguer = "0.11.0"
-console_protocol = { version = "0.1.0", path = "../console_protocol" }
+console_protocol = { path = "../console_protocol" }
+serde = { workspace = true }
+serde_json = { workspace = true }

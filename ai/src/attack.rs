@@ -4,9 +4,9 @@ use army::{ArmyFlagAssignments, flag::FlagAssignment};
 use bevy_behave::prelude::BehaveCtx;
 use bevy_replicon::prelude::{SendMode, ToClients};
 use health::{DelayedDamage, Health, TakeDamage};
-use physics::{movement::Velocity, projectile::ProjectileType};
+use physics::movement::{GRAVITY_G, Velocity};
 use shared::{
-    AnimationChange, AnimationChangeEvent, GRAVITY_G, GameSceneId, Hitby, Owner, map::Layers,
+    AnimationChange, AnimationChangeEvent, GameSceneId, Hitby, Owner, map::Layers,
     networking::WorldDirection,
 };
 use std::f32::consts::FRAC_PI_4;

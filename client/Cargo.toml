@@ -56,6 +56,9 @@ physics = { path = "../physics" }
 ai = { path = "../ai" }
 health = { path = "../health" }
 projectiles = { path = "../projectiles" }
+remote = { path = "../remote" }
+lobby = { path = "../lobby" }
+items = { path = "../items" }
 bevy-steamworks = { workspace = true, optional = true }
 bevy_replicon = { workspace = true, features = ["client"] }
 bincode = { workspace = true }
@@ -72,5 +75,5 @@ aeronet_steam = { workspace = true, features = [
     "server",
 ], optional = true }
 
-bevy-parallax = { git = "https://github.com/GianlucaFrongia/bevy-parallax" }
+bevy-parallax = { workspace = true }
 image = { workspace = true }

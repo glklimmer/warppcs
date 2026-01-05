@@ -37,5 +37,7 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
+physics = { path = "../physics" }
+interaction = { path = "../interaction" }
 bevy_replicon = { workspace = true }
 serde = { workspace = true }
