@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_replicon::prelude::ToClients;
-use health::{Health, TakeDamage};
-use shared::{AnimationChangeEvent, Owner};
-use units::Unit;
+use health::Health;
 
 use crate::{BanditBehaviour, BehaveSources, Target, TargetedBy, UnitBehaviour};
 
@@ -11,25 +8,23 @@ pub(crate) struct DeathPlugin;
 
 impl Plugin for DeathPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_unit_death);
+        app.add_observer(on_death);
     }
 }
 
-fn on_unit_death(
+fn on_death(
     death: On<Remove, Health>,
-    units: Query<(&Health, &Owner, Option<&TargetedBy>), With<Unit>>,
-    transform: Query<&Transform>,
+    units: Query<Option<&TargetedBy>>,
     mut commands: Commands,
 ) -> Result {
-    let entity = death.entity();
-    let (health, owner, maybe_targeted_by, maybe_flag_assignment, maybe_army) =
-        units.get(entity)?;
+    let entity = death.entity;
+    let maybe_targeted_by = units.get(entity)?;
 
     commands
         .entity(entity)
         .despawn_related::<BehaveSources>()
-        .remove::<BanditBehaviour>()
-        .remove::<UnitBehaviour>();
+        .try_remove::<BanditBehaviour>()
+        .try_remove::<UnitBehaviour>();
 
     if let Some(targeted_by) = maybe_targeted_by {
         commands

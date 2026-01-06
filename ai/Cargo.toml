@@ -42,5 +42,6 @@ units = { path = "../units" }
 physics = { path = "../physics" }
 health = { path = "../health" }
 army = { path = "../army" }
+projectiles = { path = "../projectiles" }
 bevy_replicon = { workspace = true }
-
+fastrand = { workspace = true }

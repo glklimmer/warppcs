@@ -1,20 +1,29 @@
 use bevy::prelude::*;
 
 use attack::AIAttackPlugin;
-use bevy_behave::{Behave, behave, prelude::BehavePlugin};
-use movement::{AIMovementPlugin, FollowFlag, Roam};
-use units::{MeleeRange, ProjectileRange, Sight, Unit, UnitType};
-
+use bevy_behave::{
+    Behave, behave,
+    prelude::{BehaveInterrupt, BehavePlugin, BehaveTimeout, BehaveTree, BehaveTrigger, Tree},
+};
 use health::Health;
-use physics::PushBack;
-use shared::{Owner, networking::WorldDirection};
+use movement::{AIMovementPlugin, FollowFlag, Roam};
+use physics::WorldDirection;
+use shared::Owner;
+use units::{MeleeRange, ProjectileRange, Sight, Unit, UnitType, pushback::PushBack};
+
+use crate::{
+    death::DeathPlugin,
+    flag::FlagPlugin,
+    offset::{FollowOffset, OffsetPlugin},
+    spawn::SpawnPlugin,
+};
 
 mod attack;
 mod death;
+mod flag;
 mod movement;
-
-#[derive(Debug, Deref, DerefMut, Component, Default)]
-pub struct FollowOffset(pub Vec2);
+mod offset;
+mod spawn;
 
 #[derive(Debug, Component, Default, Clone)]
 #[require(FollowOffset)]
@@ -35,14 +44,22 @@ pub struct AIPlugin;
 
 impl Plugin for AIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((BehavePlugin::default(), AIAttackPlugin, AIMovementPlugin))
-            .add_observer(on_insert_unit_behaviour)
-            .add_observer(on_insert_bandit_behaviour)
-            .add_observer(push_back_check)
-            .add_observer(determine_target)
-            .add_observer(check_target_in_melee_range)
-            .add_observer(check_target_in_projectile_range)
-            .add_systems(FixedPostUpdate, remove_target_if_out_of_sight);
+        app.add_plugins((
+            BehavePlugin::default(),
+            AIAttackPlugin,
+            AIMovementPlugin,
+            DeathPlugin,
+            SpawnPlugin,
+            OffsetPlugin,
+            FlagPlugin,
+        ))
+        .add_observer(on_insert_unit_behaviour)
+        .add_observer(on_insert_bandit_behaviour)
+        .add_observer(push_back_check)
+        .add_observer(determine_target)
+        .add_observer(check_target_in_melee_range)
+        .add_observer(check_target_in_projectile_range)
+        .add_systems(FixedPostUpdate, remove_target_if_out_of_sight);
     }
 }
 

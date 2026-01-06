@@ -1,34 +1,29 @@
 use bevy::prelude::*;
 
-use bevy::sprite::Anchor;
-use bevy_replicon::prelude::{Replicated, SendMode, ServerTriggerExt, ToClients};
-use serde::{Deserialize, Serialize};
-
-use shared::{
-    BoxCollider, GameSceneId, Owner, Player, PlayerColor, Vec3LayerExt,
-    enum_map::{EnumIter, EnumMap},
-    flag_collider,
-    map::Layers,
-    networking::{Inventory, UnitType},
-    server::{
-        ai::{FollowOffset, UnitBehaviour},
-        entities::{
-            Damage, MeleeRange, ProjectileRange, Sight, Unit,
-            commander::{
-                ArmyFlagAssignments, ArmyFormation, ArmyPosition, BASE_FORMATION_OFFSET,
-                BASE_FORMATION_WIDTH,
-            },
-            health::Health,
-        },
-        physics::{army_slot::ArmySlot, attachment::AttachedTo, movement::Speed},
-        players::{
-            interaction::{
-                Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType,
-            },
-            items::{CalculatedStats, Effect, Item, ItemType},
-        },
-    },
+use army::{
+    ArmyFlagAssignments, ArmyFormation, ArmyPosition,
+    commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH},
+    flag::{Flag, FlagAssignment, FlagHolder, FlagUnits},
+    slot::ArmySlot,
 };
+use bevy::sprite::Anchor;
+use bevy_replicon::prelude::{AppRuleExt, Replicated, SendMode, ServerTriggerExt, ToClients};
+use health::Health;
+use interaction::{Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType};
+use inventory::Inventory;
+use items::{CalculatedStats, Effect, Item, ItemType};
+use lobby::PlayerColor;
+use physics::{
+    attachment::AttachedTo,
+    movement::{BoxCollider, Speed},
+};
+use serde::{Deserialize, Serialize};
+use shared::{
+    GameSceneId, Owner, Vec3LayerExt,
+    enum_map::{EnumIter, EnumMap},
+    map::Layers,
+};
+use units::{Damage, MeleeRange, ProjectileRange, Sight, Unit, UnitType};
 
 use crate::{BuildStatus, Building, marker_collider};
 
@@ -41,7 +36,6 @@ impl Plugin for RecruitingPlugins {
         app.replicate_bundle::<(RecruitBuilding, Transform)>()
             .add_observer(recruit_units)
             .add_observer(recruit_commander)
-            .add_observer(assign_offset)
             .add_systems(
                 FixedUpdate,
                 check_recruit.run_if(on_message::<InteractionTriggeredEvent>),
@@ -59,43 +53,6 @@ impl Plugin for RecruitingPlugins {
     BuildStatus = BuildStatus::Marker,
 )]
 pub struct RecruitBuilding;
-
-fn assign_offset(
-    trigger: On<Add, FlagAssignment>,
-    mut units: Query<&mut FollowOffset>,
-    flag_units_query: Query<&FlagUnits>,
-    flag_assignment_query: Query<&FlagAssignment>,
-) -> Result {
-    let flag_assignment = flag_assignment_query.get(trigger.entity)?;
-    let flag_entity = **flag_assignment;
-
-    let Ok(flag_units) = flag_units_query.get(flag_entity) else {
-        return Ok(());
-    };
-
-    let mut unit_entities = (**flag_units).to_vec();
-    unit_entities.push(trigger.entity);
-
-    fastrand::shuffle(&mut unit_entities);
-
-    let count = unit_entities.len() as f32;
-    let half = (count - 1.0) / 2.0;
-    let spacing = 15.0;
-    let shift = if unit_entities.len() % 2 == 1 {
-        spacing / 2.0
-    } else {
-        0.0
-    };
-
-    for (i, unit_entity) in unit_entities.into_iter().enumerate() {
-        if let Ok(mut offset) = units.get_mut(unit_entity) {
-            let index = i as f32;
-            let offset_x = spacing * (index - half) - shift;
-            offset.0 = Vec2::new(offset_x, 0.0);
-        }
-    }
-    Ok(())
-}
 
 #[derive(Event, Deserialize, Serialize)]
 pub struct RecruitEvent {
@@ -121,9 +78,12 @@ impl RecruitEvent {
     }
 }
 
+#[derive(Component)]
+pub struct Recruiter;
+
 fn recruit_units(
     trigger: On<RecruitEvent>,
-    mut player_query: Query<(&Transform, &mut Inventory, &Player, &GameSceneId)>,
+    mut player_query: Query<(&Transform, &mut Inventory, &PlayerColor, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
     let RecruitEvent {
@@ -144,8 +104,7 @@ fn recruit_units(
     let player = *player;
     let unit_type = *unit_type;
 
-    let (player_transform, mut inventory, Player { color, .. }, game_scene_id) =
-        player_query.get_mut(player)?;
+    let (player_transform, mut inventory, color, game_scene_id) = player_query.get_mut(player)?;
     let player_translation = player_transform.translation;
 
     let cost = &unit_type.recruitment_cost();
@@ -220,7 +179,6 @@ fn spawn_units(
             owner,
             *game_scene_id,
             FlagAssignment(flag_entity),
-            UnitBehaviour::default(),
         ));
     }
 }
@@ -286,7 +244,7 @@ pub(crate) fn unit_stats(
 
 fn recruit_commander(
     trigger: On<RecruitEvent>,
-    mut player_query: Query<(&Transform, &mut Inventory, &Player, &GameSceneId)>,
+    mut player_query: Query<(&Transform, &mut Inventory, &PlayerColor, &GameSceneId)>,
     mut commands: Commands,
 ) -> Result {
     let RecruitEvent {
@@ -301,8 +259,7 @@ fn recruit_commander(
     };
 
     let player = *player;
-    let (player_transform, mut inventory, Player { color, .. }, game_scene_id) =
-        player_query.get_mut(player)?;
+    let (player_transform, mut inventory, color, game_scene_id) = player_query.get_mut(player)?;
     let player_translation = player_transform.translation;
 
     let cost = &unit_type.recruitment_cost();
@@ -347,7 +304,6 @@ fn recruit_commander(
     let range = 10.;
     let range = MeleeRange(range);
 
-    let offset = Vec2::new(-22., 0.);
     let commander = commands
         .spawn((
             player_translation.with_layer(Layers::Flag),
@@ -359,8 +315,6 @@ fn recruit_commander(
             owner,
             *game_scene_id,
             FlagAssignment(flag_entity),
-            FollowOffset(offset),
-            UnitBehaviour::default(),
             Interactable {
                 kind: InteractionType::Commander,
                 restricted_to: Some(player),

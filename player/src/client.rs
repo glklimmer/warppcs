@@ -36,13 +36,8 @@ fn on_created(
 ) {
     info!("Successfully created server");
 
-    let server_player = commands
-        .spawn(Player {
-            id: 0,
-            color: *fastrand::choice(PlayerColor::all_variants())
-                .expect("No PlayerColor available"),
-        })
-        .id();
+    let color = *fastrand::choice(PlayerColor::all_variants()).expect("No PlayerColor available");
+    let server_player = commands.spawn((Player { id: 0 }, color)).id();
 
     client_player_map.insert(ClientId::Server, server_player);
 
@@ -106,10 +101,8 @@ fn spawn_clients(
     let color = fastrand::choice(PlayerColor::all_variants()).unwrap();
     let player = commands.spawn_empty().id();
     commands.entity(player).insert((
-        Player {
-            id: new_player_id,
-            color: *color,
-        },
+        Player { id: new_player_id },
+        color,
         Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
         Owner::Player(player),
     ));

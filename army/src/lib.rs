@@ -1,7 +1,8 @@
-use bevy::{prelude::*, sprite::Anchor};
-use bevy_replicon::prelude::{AppRuleExt, Channel, ClientEventAppExt, Replicated};
+use bevy::prelude::*;
+
+use bevy_replicon::prelude::{AppRuleExt, Channel, ClientEventAppExt};
 use serde::{Deserialize, Serialize};
-use shared::{BoxCollider, PlayerColor, enum_map::*, map::Layers, networking::UnitType};
+use shared::enum_map::*;
 
 use crate::{
     commander::CommanderPlugin, death::DeathPlugin, flag::FlagPlugins, slot::ArmySlotPlugin,
@@ -25,7 +26,7 @@ impl Plugin for ArmyPlugins {
 }
 
 #[derive(Event, Serialize, Deserialize, Copy, Clone, Mappable, PartialEq, Eq, Debug)]
-enum ArmyPosition {
+pub enum ArmyPosition {
     Front,
     Middle,
     Back,

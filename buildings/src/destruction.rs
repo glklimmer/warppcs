@@ -1,59 +1,15 @@
 use bevy::prelude::*;
 
-use health::{Health, TakeDamage};
-use shared::Owner;
+use health::Health;
 
-use crate::{BuildStatus, Building};
+use crate::{BuildStatus, Building, HealthIndicator};
 
 pub(crate) struct DestructionPlugin;
 
 impl Plugin for DestructionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            (on_building_destroy, update_build_status).chain(),
-        );
+        app.add_systems(FixedUpdate, update_build_status);
     }
-}
-
-fn on_building_destroy(
-    mut query: Query<(
-        Entity,
-        &Health,
-        &Building,
-        &mut BuildStatus,
-        &Owner,
-        Option<&TargetedBy>,
-    )>,
-    mut commands: Commands,
-) -> Result {
-    for (entity, health, building, mut status, owner, maybe_targeted_by) in query.iter_mut() {
-        if health.hitpoints <= 0. {
-            *status = BuildStatus::Destroyed;
-
-            commands
-                .entity(entity)
-                .remove::<Health>()
-                .insert(Interactable {
-                    kind: InteractionType::Building,
-                    restricted_to: Some(owner.entity()?),
-                });
-
-            if let Some(targeted_by) = maybe_targeted_by {
-                commands
-                    .entity(entity)
-                    .remove_related::<Target>(targeted_by);
-            };
-
-            if let BuildingType::MainBuilding { level: _ } = building.building_type {
-                commands.server_trigger(ToClients {
-                    mode: SendMode::Broadcast,
-                    message: PlayerDefeated(owner.entity()?),
-                });
-            }
-        }
-    }
-    Ok(())
 }
 
 fn update_build_status(mut query: Query<(&Health, &mut BuildStatus, &Building), Changed<Health>>) {

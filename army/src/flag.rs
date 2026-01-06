@@ -1,11 +1,13 @@
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::prelude::*;
+
+use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated, SyncRelatedAppExt};
+use interaction::{InteractionTriggeredEvent, InteractionType};
+use lobby::PlayerColor;
+use physics::{attachment::AttachedTo, movement::BoxCollider};
 use serde::{Deserialize, Serialize};
-use shared::{
-    BoxCollider, PlayerColor,
-    networking::UnitType,
-    server::players::interaction::{InteractionTriggeredEvent, InteractionType},
-};
+use shared::map::Layers;
+use units::UnitType;
 
 pub struct FlagPlugins;
 
@@ -67,13 +69,13 @@ fn flag_collider() -> BoxCollider {
 #[derive(Message)]
 pub struct DropFlagEvent {
     player: Entity,
-    flag: Entity,
+    pub flag: Entity,
 }
 
 #[derive(Message)]
 pub struct PickFlagEvent {
     player: Entity,
-    flag: Entity,
+    pub flag: Entity,
 }
 
 #[derive(Component, Serialize, Deserialize)]
@@ -114,8 +116,6 @@ fn flag_interact(
 fn pick_flag(
     mut pick_flag: MessageReader<PickFlagEvent>,
     mut flag_query: Query<&mut Transform>,
-    units: Query<&FlagUnits>,
-    army: Query<Option<&ArmyFlagAssignments>>,
     mut commands: Commands,
 ) -> Result {
     for event in pick_flag.read() {
@@ -125,23 +125,6 @@ fn pick_flag(
 
         commands.entity(event.flag).insert(AttachedTo(event.player));
         commands.entity(event.player).insert(FlagHolder(event.flag));
-
-        let flag_units = units.get(event.flag)?;
-
-        let mut all_units: Vec<Entity> = flag_units.iter().collect();
-        if let Some(commander) = flag_units.iter().next()
-            && let Some(army) = army.get(commander)?
-        {
-            for formation_flag in army.flags.iter().flatten() {
-                let formation_units = units.get(*formation_flag)?;
-                let units: Vec<Entity> = formation_units.iter().collect();
-                all_units.append(&mut units.clone());
-            }
-        };
-
-        for unit in all_units.iter() {
-            commands.entity(*unit).insert(UnitBehaviour::FollowFlag);
-        }
     }
     Ok(())
 }
@@ -149,8 +132,6 @@ fn pick_flag(
 fn drop_flag(
     mut drop_flag: MessageReader<DropFlagEvent>,
     mut flag_query: Query<&mut Transform>,
-    units: Query<&FlagUnits>,
-    army: Query<Option<&ArmyFlagAssignments>>,
     mut commands: Commands,
 ) -> Result {
     for event in drop_flag.read() {
@@ -160,24 +141,6 @@ fn drop_flag(
 
         commands.entity(event.flag).remove::<AttachedTo>();
         commands.entity(event.player).remove::<FlagHolder>();
-
-        let flag_units = units.get(event.flag)?;
-
-        let mut all_units: Vec<Entity> = flag_units.iter().collect();
-        let first_unit = flag_units.iter().next();
-        if let Some(commander) = first_unit
-            && let Some(army) = army.get(commander)?
-        {
-            for formation_flag in army.flags.iter().flatten() {
-                let formation_units = units.get(*formation_flag)?;
-                let units: Vec<Entity> = formation_units.iter().collect();
-                all_units.append(&mut units.clone());
-            }
-        };
-
-        for unit in all_units.iter() {
-            commands.entity(*unit).insert(UnitBehaviour::Idle);
-        }
     }
     Ok(())
 }

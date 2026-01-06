@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use bevy::{ecs::entity::MapEntities, platform::collections::HashMap};
 use bevy_replicon::prelude::{
-    Channel, ClientEventAppExt, ClientId, ClientMessageAppExt, FromClient, SendMode,
-    ServerEventAppExt, ServerTriggerExt, ToClients,
+    AppRuleExt, Channel, ClientEventAppExt, ClientId, ClientMessageAppExt, FromClient, Replicated,
+    SendMode, ServerEventAppExt, ServerTriggerExt, ToClients,
 };
 use serde::{Deserialize, Serialize};
 use shared::enum_map::*;
@@ -16,6 +16,7 @@ pub struct LobbyPlugin;
 impl Plugin for LobbyPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ClientPlayerMap>()
+            .replicate::<PlayerColor>()
             .add_client_message::<LobbyMessage>(Channel::Ordered)
             .add_client_event::<ClientReady>(Channel::Ordered)
             .add_server_event::<GameStarted>(Channel::Ordered)
@@ -72,7 +73,10 @@ pub struct Disconnected;
 #[derive(Component)]
 pub struct ControlledPlayer;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Mappable, Serialize, Deserialize)]
+#[derive(
+    Component, Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Mappable, Serialize, Deserialize,
+)]
+#[require(Replicated)]
 pub enum PlayerColor {
     #[default]
     Blue,

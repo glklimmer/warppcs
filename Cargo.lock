@@ -232,8 +232,10 @@ dependencies = [
  "bevy",
  "bevy_behave",
  "bevy_replicon",
+ "fastrand",
  "health",
  "physics",
+ "projectiles",
  "shared",
  "units",
 ]
@@ -429,10 +431,10 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_replicon",
- "buildings",
  "fastrand",
  "health",
  "interaction",
+ "lobby",
  "physics",
  "serde",
  "shared",
@@ -2332,6 +2334,7 @@ dependencies = [
 name = "buildings"
 version = "0.1.0"
 dependencies = [
+ "army",
  "bevy",
  "bevy_replicon",
  "fastrand",

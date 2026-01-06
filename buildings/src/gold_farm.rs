@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use shared::{Owner, networking::Inventory};
+use inventory::Inventory;
+use shared::Owner;
 
 use crate::BuildingType;
 

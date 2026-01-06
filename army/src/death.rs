@@ -1,10 +1,9 @@
 use bevy::prelude::*;
 
-use bevy_replicon::prelude::ToClients;
-use health::Health;
+use health::{DelayedDespawn, Health};
 use interaction::{Interactable, InteractionType};
 use physics::{attachment::AttachedTo, movement::Velocity};
-use shared::{DelayedDespawn, Owner};
+use shared::Owner;
 use units::Unit;
 
 use crate::{
@@ -35,7 +34,7 @@ fn on_unit_death(
     holder: Query<&FlagHolder>,
     mut commands: Commands,
 ) -> Result {
-    let entity = death.entity();
+    let entity = death.entity;
     let (owner, maybe_flag_assignment, maybe_army) = units.get(entity)?;
 
     commands.entity(entity).try_remove::<Interactable>();

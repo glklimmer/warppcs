@@ -2,20 +2,15 @@ use bevy::prelude::*;
 
 use bevy::{ecs::entity::MapEntities, platform::collections::HashMap};
 use bevy_replicon::prelude::{
-    AppRuleExt, FromClient, Replicated, SendMode, ServerTriggerExt, ToClients,
+    AppRuleExt, Channel, ClientEventAppExt, FromClient, Replicated, SendMode, ServerEventAppExt,
+    ServerTriggerExt, ToClients,
 };
 use interaction::{InteractionTriggeredEvent, InteractionType};
 use inventory::Inventory;
 use items::{Item, ItemType};
-use lobby::{ClientPlayerMap, ClientPlayerMapExt};
+use lobby::{ClientPlayerMap, ClientPlayerMapExt, PlayerColor};
 use serde::{Deserialize, Serialize};
-
-use shared::{
-    ClientPlayerMap, ClientPlayerMapExt, Player,
-    enum_map::*,
-    networking::Inventory,
-    server::players::items::{Item, ItemType},
-};
+use shared::enum_map::*;
 
 use crate::{Building, BuildingType, respawn::RespawnZone};
 
@@ -46,8 +41,8 @@ pub enum ItemSlot {
     Feet,
 }
 
-impl From<Item> for ItemSlot {
-    fn from(value: Item) -> Self {
+impl From<&Item> for ItemSlot {
+    fn from(value: &Item) -> Self {
         match value.item_type {
             ItemType::Weapon(_) => ItemSlot::Weapon,
             ItemType::Chest => ItemSlot::Chest,
@@ -122,11 +117,11 @@ fn check_start_building(
     assignment: Query<&ItemAssignment>,
     active: Res<ActiveBuilding>,
     client_player_map: Res<ClientPlayerMap>,
-    players: Query<&Player>,
+    player_color: Query<&PlayerColor>,
     mut commands: Commands,
 ) -> Result {
     let player_entity = *client_player_map.get_player(&trigger.client_id)?;
-    let player = players.get(player_entity)?;
+    let color = *player_color.get(player_entity)?;
     let active_building = *active.get_entity(&player_entity)?;
 
     let assignment = assignment.get(active_building)?;
@@ -153,7 +148,7 @@ fn check_start_building(
         commands.entity(active_building).insert((
             Building {
                 building_type: BuildingType::Unit { weapon },
-                color: player.color,
+                color,
             },
             RespawnZone::default(),
         ));

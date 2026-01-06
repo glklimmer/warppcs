@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
-use physics::movement::{Directionless, Velocity};
+use physics::{
+    WorldDirection,
+    movement::{Directionless, Velocity},
+};
 use serde::{Deserialize, Serialize};
-
-use shared::{networking::WorldDirection, server::physics::movement::Velocity};
 
 #[derive(Component, Serialize, Deserialize)]
 #[relationship(relationship_target = ArmySlots)]

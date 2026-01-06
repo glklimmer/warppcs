@@ -4,24 +4,20 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use gold_farm::{enable_goldfarm, gold_farm_output};
 use health::Health;
-use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
-use inventory::Inventory;
+use inventory::Cost;
 use item_assignment::ItemAssignmentPlugins;
+use lobby::PlayerColor;
 use physics::movement::BoxCollider;
 use respawn::respawn_units;
 use serde::{Deserialize, Serialize};
+use shared::enum_map::*;
 use shared::{GameState, Owner};
 use siege_camp::siege_camp_lifetime;
 use units::UnitType;
 
-use shared::{PlayerColor, enum_map::*};
-
 use crate::{
-    construction::{
-        BuildingChangeEnd, BuildingChangeStart, ConstructionPlugins, check_building_interaction,
-        end_construction, progess_construction, start_construction,
-    },
-    health::DestructionPlugin,
+    construction::{BuildingChangeEnd, ConstructionPlugins},
+    destruction::DestructionPlugin,
     main_building::MainBuildingLevels,
     respawn::{RespawnZone, respawn_timer},
     siege_camp::SiegeCamp,
@@ -95,9 +91,9 @@ pub struct Building {
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Mappable)]
 pub enum BuildingType {
-    MainBuilding { pub level: MainBuildingLevels },
-    Unit { pub weapon: UnitType },
-    Wall { pub level: WallLevels },
+    MainBuilding { level: MainBuildingLevels },
+    Unit { weapon: UnitType },
+    Wall { level: WallLevels },
     Tower,
     GoldFarm,
 }

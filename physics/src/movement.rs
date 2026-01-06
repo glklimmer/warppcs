@@ -195,7 +195,7 @@ fn set_walking(
     Ok(())
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct FreeDirectional;
 
 fn set_projectile_rotation(

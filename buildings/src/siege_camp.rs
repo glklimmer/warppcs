@@ -1,12 +1,10 @@
 use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
+use health::Health;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    map::buildings::{BuildStatus, HealthIndicator, RespawnZone},
-    server::entities::health::Health,
-};
+use crate::{BuildStatus, HealthIndicator, respawn::RespawnZone};
 
 #[derive(Component, Serialize, Deserialize, Clone)]
 #[require(

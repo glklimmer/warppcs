@@ -1,25 +1,20 @@
 use bevy::prelude::*;
 
+use army::{
+    ArmyFlagAssignments,
+    flag::{Flag, FlagAssignment, FlagUnits},
+};
 use bevy::math::bounding::IntersectsVolume;
+use bevy_replicon::prelude::Replicated;
+use inventory::Inventory;
+use items::{CalculatedStats, Effect, Item};
+use physics::movement::BoxCollider;
+use serde::{Deserialize, Serialize};
+use shared::{GameSceneId, Owner, Vec3LayerExt, map::Layers};
 
-use crate::{
-    BoxCollider, GameSceneId, Owner, Vec3LayerExt,
-    map::{
-        Layers,
-        buildings::{Building, RespawnZone},
-    },
-    networking::Inventory,
-    server::{
-        ai::UnitBehaviour,
-        entities::commander::ArmyFlagAssignments,
-        players::items::{CalculatedStats, Effect, Item},
-    },
-};
+use crate::{Building, recruiting::unit_stats};
 
-use super::{
-    item_assignment::ItemAssignment,
-    recruiting::{Flag, FlagAssignment, FlagUnits, unit_stats},
-};
+use super::item_assignment::ItemAssignment;
 
 const RESPAWN_COST_GOLD: u16 = 20;
 
@@ -206,7 +201,6 @@ fn respawn_for_flag(
             *flag_owner,
             *game_scene_id,
             FlagAssignment(flag_entity),
-            UnitBehaviour::default(),
         ));
     }
 }

@@ -13,6 +13,7 @@ use crate::{
     attack::Attack,
     chest::{Chest, ChestOpened, open_chest},
     client::Client,
+    commander::CommanderPlugin,
     item::pickup_item,
     knockout::KnockoutPlugin,
     mount::MountPlugin,
@@ -26,6 +27,7 @@ pub mod mount;
 
 mod attack;
 mod client;
+mod commander;
 mod defeat;
 mod item;
 mod movement;
@@ -42,6 +44,7 @@ impl Plugin for PlayerPlugins {
             Teleport,
             MountPlugin,
             KnockoutPlugin,
+            CommanderPlugin,
         ))
         .replicate::<ChestOpened>()
         .replicate_bundle::<(Player, Transform, Inventory)>()
@@ -65,11 +68,11 @@ impl Plugin for PlayerPlugins {
     Anchor::BOTTOM_CENTER,
     Inventory,
     Health = Health { hitpoints: 200. },
-    ColliderTriggerActivater
+    ColliderTriggerActivater,
+    PlayerColor
 )]
 pub struct Player {
     pub id: u64,
-    pub color: PlayerColor,
 }
 
 fn player_collider() -> BoxCollider {

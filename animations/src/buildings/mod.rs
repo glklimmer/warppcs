@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use archer::archer_building;
 use buildings::{
-    BuildStatus, Building, BuildingType, HealthIndicator, MainBuildingLevels, WallLevels,
-    main_building::MainBuildingLevels, wall::WallLevels,
+    BuildStatus, Building, BuildingType, HealthIndicator, main_building::MainBuildingLevels,
+    wall::WallLevels,
 };
 use gold_farm::gold_farm_building;
 use pikeman::pikeman_building;

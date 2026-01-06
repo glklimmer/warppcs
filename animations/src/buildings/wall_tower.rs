@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use shared::{enum_map::*, map::buildings::BuildStatus};
+use buildings::BuildStatus;
+use shared::enum_map::*;
 use sprite_variant_loader::loader::SpriteVariants;
 
 use crate::{AnimationSpriteSheet, SpriteSheetAnimation};

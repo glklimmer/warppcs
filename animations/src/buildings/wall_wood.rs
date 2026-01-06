@@ -1,13 +1,11 @@
 use bevy::prelude::*;
 
-use shared::{
-    enum_map::*,
-    map::buildings::{BuildStatus, HealthIndicator},
-};
+use buildings::{BuildStatus, HealthIndicator};
+use shared::enum_map::*;
 use sprite_variant_loader::loader::SpriteVariants;
 
-use crate::anim;
 use crate::AnimationSpriteSheet;
+use crate::anim;
 
 const ATLAS_COLUMNS: usize = 15;
 

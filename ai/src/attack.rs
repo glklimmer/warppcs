@@ -3,12 +3,13 @@ use bevy::prelude::*;
 use army::{ArmyFlagAssignments, flag::FlagAssignment};
 use bevy_behave::prelude::BehaveCtx;
 use bevy_replicon::prelude::{SendMode, ToClients};
-use health::{DelayedDamage, Health, TakeDamage};
-use physics::movement::{GRAVITY_G, Velocity};
-use shared::{
-    AnimationChange, AnimationChangeEvent, GameSceneId, Hitby, Owner, map::Layers,
-    networking::WorldDirection,
+use health::{Health, TakeDamage};
+use physics::{
+    WorldDirection,
+    movement::{GRAVITY_G, Velocity},
 };
+use projectiles::ProjectileType;
+use shared::{AnimationChange, AnimationChangeEvent, GameSceneId, Hitby, Owner, map::Layers};
 use std::f32::consts::FRAC_PI_4;
 use units::{Damage, Unit, UnitType};
 
@@ -103,7 +104,7 @@ fn process_attacks(
 
         match attacking_range {
             Attack::Melee => {
-                commands.spawn(&unit.unit_type.attack_delayed(TakeDamage {
+                commands.spawn(unit.unit_type.attack_delayed(TakeDamage {
                     target_entity: **target,
                     damage: **damage,
                     direction: delta_x.into(),

@@ -1,8 +1,8 @@
 use bevy::prelude::*;
-use shared::{
-    networking::Inventory,
-    server::players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
-};
+
+use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
+use inventory::Inventory;
+use shared::Owner;
 
 use crate::{BuildStatus, Building, HealthIndicator};
 

@@ -1,27 +1,25 @@
 use bevy::prelude::*;
 
 use bevy::{ecs::entity::MapEntities, platform::collections::HashMap};
-use bevy_replicon::prelude::{FromClient, SendMode, ServerTriggerExt, ToClients};
-use buildings::siege_camp::SiegeCamp;
+use bevy_replicon::prelude::{
+    Channel, ClientEventAppExt, FromClient, SendMode, ServerEventAppExt, ServerTriggerExt,
+    ToClients,
+};
+use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
+use lobby::{ClientPlayerMap, ClientPlayerMapExt};
+use physics::attachment::AttachedTo;
 use serde::{Deserialize, Serialize};
+use units::UnitType;
 
-use shared::{
-    ClientPlayerMap, ClientPlayerMapExt, GameSceneId, Owner, Vec3LayerExt,
-    enum_map::*,
-    map::Layers,
-    networking::UnitType,
-    server::{
-        physics::attachment::AttachedTo,
-        players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
-    },
+use crate::{
+    ArmyFlagAssignments, ArmyFormation, ArmyPosition,
+    flag::{Flag, FlagAssignment, FlagHolder},
 };
 
-use crate::ArmyPosition;
-
 #[derive(Resource, Default, DerefMut, Deref)]
-struct ActiveCommander(HashMap<Entity, Entity>);
+pub struct ActiveCommander(HashMap<Entity, Entity>);
 
-trait ActiveCommanderExt {
+pub trait ActiveCommanderExt {
     fn get_entity(&self, entity: &Entity) -> Result<&Entity>;
 }
 
@@ -72,7 +70,7 @@ pub struct CommanderAssignmentRequest(pub usize);
 pub struct CommanderAssignmentReject(pub usize);
 
 #[derive(Event, Serialize, Deserialize)]
-struct Assignment {
+pub struct Assignment {
     player: Entity,
     slot: ArmyPosition,
 }
@@ -92,7 +90,6 @@ impl Plugin for CommanderPlugin {
             .add_mapped_server_event::<CommanderInteraction>(Channel::Ordered)
             .add_observer(commander_assignment_validation)
             .add_observer(handle_slot_selection)
-            .add_observer(handle_camp_interaction)
             .add_observer(assign_flag_to_formation)
             .add_observer(remove_flag_from_formation)
             .add_observer(swap_flag_from_formation)
@@ -168,27 +165,6 @@ fn handle_pick_flag(
 
     commands.entity(*player).insert(FlagHolder(flag_entity));
     commands.entity(flag_entity).insert(AttachedTo(*player));
-    Ok(())
-}
-
-fn handle_camp_interaction(
-    trigger: On<FromClient<CommanderCampInteraction>>,
-    active: Res<ActiveCommander>,
-    client_player_map: ResMut<ClientPlayerMap>,
-    query: Query<(&Transform, &GameSceneId)>,
-    mut commands: Commands,
-) -> Result {
-    let player = client_player_map.get_player(&trigger.client_id)?;
-    let commander = active.get_entity(player)?;
-    let (commander_transform, game_scene_id) = query.get(*commander)?;
-    let commander_pos = commander_transform.translation;
-
-    commands.spawn((
-        SiegeCamp::default(),
-        commander_pos.with_layer(Layers::Building),
-        Owner::Player(*player),
-        *game_scene_id,
-    ));
     Ok(())
 }
 

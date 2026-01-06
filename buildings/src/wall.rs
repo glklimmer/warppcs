@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 
-use bevy::math::bounding::{Aabb2d, IntersectsVolume};
+use bevy::math::bounding::IntersectsVolume;
+use health::Health;
+use physics::movement::{BoxCollider, Velocity};
 use serde::{Deserialize, Serialize};
-use shared::enum_map::*;
+use shared::{Owner, enum_map::*};
 
 use crate::{BuildStatus, Building, BuildingType};
 
@@ -10,7 +12,7 @@ pub(crate) struct WallPlugin;
 
 impl Plugin for WallPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedPostUpdate, wall_collision)
+        app.add_systems(FixedPostUpdate, wall_collision);
     }
 }
 
