@@ -25,7 +25,8 @@ members = [
     "projectiles",
     "remote",
     "lobby",
-    "items"
+    "items",
+    "interactables"
 ]
 
 # Enable a small amount of optimization in the dev profile.

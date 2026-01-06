@@ -1,14 +1,25 @@
 use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
-use bevy_replicon::prelude::Replicated;
-use serde::{Deserialize, Serialize};
-
+use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
+use items::Item;
 use physics::movement::{BoxCollider, Velocity};
+use serde::{Deserialize, Serialize};
 use shared::{GameSceneId, Vec3LayerExt, map::Layers};
 
-use super::items::Item;
+pub(crate) struct ChestPlugin;
+
+impl Plugin for ChestPlugin {
+    fn build(&self, app: &mut App) {
+        app.replicate::<ChestOpened>()
+            .replicate_bundle::<(Chest, Transform)>()
+            .add_systems(
+                FixedUpdate,
+                open_chest.run_if(on_message::<InteractionTriggeredEvent>),
+            );
+    }
+}
 
 #[derive(Component, Clone, Copy, Serialize, Deserialize)]
 #[require(
@@ -17,7 +28,7 @@ use super::items::Item;
     BoxCollider = chest_collider(),
     Sprite,
     Anchor::BOTTOM_CENTER,
-    Interactable{
+    Interactable {
         kind: InteractionType::Chest,
         restricted_to: None,
     },

@@ -4,16 +4,10 @@ use bandits::bandit::bandit;
 use humans::{
     archer::archer, commander::commander, pikeman::pikeman, shieldwarrior::shieldwarrior,
 };
-use shared::{
-    AnimationChange, AnimationChangeEvent,
-    enum_map::*,
-    networking::UnitType,
-    server::{
-        entities::{Unit, UnitAnimation},
-        physics::movement::Moving,
-    },
-};
+use physics::movement::Moving;
+use shared::{AnimationChange, AnimationChangeEvent, enum_map::*, server::entities::UnitAnimation};
 use sprite_variant_loader::loader::SpriteVariants;
+use units::{Unit, UnitType};
 
 use super::{
     AnimationSound, AnimationSpriteSheet, AnimationTrigger, PlayOnce, SpriteSheetAnimation,

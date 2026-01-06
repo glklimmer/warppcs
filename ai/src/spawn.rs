@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use units::Unit;
+use units::{Unit, UnitType};
 
-use crate::UnitBehaviour;
+use crate::{BanditBehaviour, UnitBehaviour};
 
 pub(crate) struct SpawnPlugin;
 
@@ -12,10 +12,16 @@ impl Plugin for SpawnPlugin {
     }
 }
 
-fn on_spawn_unit(spawn: On<Add, Unit>, mut commands: Commands) -> Result {
+fn on_spawn_unit(spawn: On<Add, Unit>, query: Query<&Unit>, mut commands: Commands) -> Result {
     let entity = spawn.entity;
+    let unit = query.get(entity)?;
 
-    commands.entity(entity).insert(UnitBehaviour::default());
+    match unit.unit_type {
+        UnitType::Shieldwarrior | UnitType::Pikeman | UnitType::Archer | UnitType::Commander => {
+            commands.entity(entity).insert(UnitBehaviour::default())
+        }
+        UnitType::Bandit => commands.entity(entity).insert(BanditBehaviour::default()),
+    };
 
     Ok(())
 }

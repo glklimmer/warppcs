@@ -1,11 +1,8 @@
 use bevy::prelude::*;
 
-use shared::{
-    AnimationChange, AnimationChangeEvent, Player,
-    enum_map::*,
-    networking::Mounted,
-    server::{entities::health::PlayerDefeated, physics::movement::Moving},
-};
+use mounts::Mounted;
+use physics::movement::Moving;
+use shared::{AnimationChange, AnimationChangeEvent, Player, enum_map::*};
 use sprite_variant_loader::loader::SpriteVariants;
 
 use crate::{anim, anim_reverse, sound::AnimationSoundTrigger};

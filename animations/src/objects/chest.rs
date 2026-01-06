@@ -1,12 +1,8 @@
 use bevy::prelude::*;
 
-use shared::{
-    enum_map::*,
-    server::players::{
-        chest::{Chest, ChestOpened},
-        interaction::Interactable,
-    },
-};
+use interactables::chest::{Chest, ChestOpened};
+use interaction::Interactable;
+use shared::enum_map::*;
 
 use crate::{AnimationSpriteSheet, PlayOnce, SpriteSheetAnimation, anim, anim_reverse};
 

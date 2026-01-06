@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use army::{
     ArmyFlagAssignments, ArmyFormation, ArmyPosition,
     commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH},
-    flag::{Flag, FlagAssignment, FlagHolder, FlagUnits},
+    flag::{Flag, FlagAssignment, FlagHolder},
     slot::ArmySlot,
 };
 use bevy::sprite::Anchor;

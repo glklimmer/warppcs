@@ -1,11 +1,19 @@
 use bevy::prelude::*;
 
-use bevy_replicon::prelude::Replicated;
+use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use interaction::{Interactable, InteractionType};
 use physics::movement::{BoxCollider, Directionless, Velocity};
 use serde::{Deserialize, Serialize};
 use shared::enum_map::*;
 use std::{cmp::Ordering, fmt, ops::MulAssign};
+
+pub struct ItemPlugins;
+
+impl Plugin for ItemPlugins {
+    fn build(&self, app: &mut App) {
+        app.replicate_bundle::<(Item, Transform)>();
+    }
+}
 
 #[derive(Component, Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[require(

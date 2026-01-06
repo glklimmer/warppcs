@@ -10,18 +10,10 @@ use serde::{Deserialize, Serialize};
 use shared::map::Layers;
 
 use crate::{
-    attack::Attack,
-    chest::{Chest, ChestOpened, open_chest},
-    client::Client,
-    commander::CommanderPlugin,
-    item::pickup_item,
-    knockout::KnockoutPlugin,
-    mount::MountPlugin,
-    movement::Movement,
-    teleport::Teleport,
+    attack::Attack, client::Client, commander::CommanderPlugin, item::pickup_item,
+    knockout::KnockoutPlugin, mount::MountPlugin, movement::Movement, teleport::Teleport,
 };
 
-pub mod chest;
 pub mod knockout;
 pub mod mount;
 
@@ -46,13 +38,10 @@ impl Plugin for PlayerPlugins {
             KnockoutPlugin,
             CommanderPlugin,
         ))
-        .replicate::<ChestOpened>()
         .replicate_bundle::<(Player, Transform, Inventory)>()
-        .replicate_bundle::<(Chest, Transform)>()
-        .replicate_bundle::<(Item, Transform)>()
         .add_systems(
             FixedUpdate,
-            (open_chest, pickup_item).run_if(on_message::<InteractionTriggeredEvent>),
+            pickup_item.run_if(on_message::<InteractionTriggeredEvent>),
         );
     }
 }

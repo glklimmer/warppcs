@@ -1,5 +1,5 @@
 [package]
-name = "game_world"
+name = "interactables"
 version = "0.1.0"
 edition = "2024"
 
@@ -37,17 +37,9 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
-travel = { path = "../travel" }
-buildings = { path = "../buildings" }
-lobby = { path = "../lobby" }
-health = { path = "../health" }
 items = { path = "../items" }
 physics = { path = "../physics" }
-interactables = { path = "../interactables" }
-mounts = { path = "../mounts" }
-units = { path = "../units" }
 interaction = { path = "../interaction" }
 bevy_replicon = { workspace = true }
-fastrand = { workspace = true }
 serde = { workspace = true }
-petgraph = { workspace = true }
+fastrand = { workspace = true }

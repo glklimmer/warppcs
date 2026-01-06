@@ -9,13 +9,16 @@ use serde::{Deserialize, Serialize};
 use shared::enum_map::*;
 use shared::{GameSceneId, GameState};
 
-mod create_server;
+use crate::create_server::CreateServerPlugin;
+
+pub mod create_server;
 
 pub struct LobbyPlugin;
 
 impl Plugin for LobbyPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ClientPlayerMap>()
+        app.add_plugins(CreateServerPlugin)
+            .init_resource::<ClientPlayerMap>()
             .replicate::<PlayerColor>()
             .add_client_message::<LobbyMessage>(Channel::Ordered)
             .add_client_event::<ClientReady>(Channel::Ordered)

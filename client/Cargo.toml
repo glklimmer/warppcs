@@ -59,6 +59,7 @@ projectiles = { path = "../projectiles" }
 remote = { path = "../remote" }
 lobby = { path = "../lobby" }
 items = { path = "../items" }
+interactables = { path = "../interactables" }
 bevy-steamworks = { workspace = true, optional = true }
 bevy_replicon = { workspace = true, features = ["client"] }
 bincode = { workspace = true }

@@ -337,6 +337,12 @@ dependencies = [
  "buildings",
  "fastrand",
  "highlight",
+ "interactables",
+ "interaction",
+ "items",
+ "mounts",
+ "physics",
+ "projectiles",
  "serde",
  "shared",
  "sprite_variant_loader",
@@ -2540,6 +2546,7 @@ dependencies = [
  "health",
  "highlight",
  "image",
+ "interactables",
  "interaction",
  "inventory 0.1.0",
  "items",
@@ -3633,10 +3640,18 @@ dependencies = [
  "bevy_replicon",
  "buildings",
  "fastrand",
+ "health",
+ "interactables",
+ "interaction",
+ "items",
+ "lobby",
+ "mounts",
  "petgraph 0.8.3",
+ "physics",
  "serde",
  "shared",
  "travel",
+ "units",
 ]
 
 [[package]]
@@ -4186,6 +4201,20 @@ name = "inflections"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a257582fdcde896fd96463bf2d40eefea0580021c0712a0e2b028b60b47a837a"
+
+[[package]]
+name = "interactables"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_replicon",
+ "fastrand",
+ "interaction",
+ "items",
+ "physics",
+ "serde",
+ "shared",
+]
 
 [[package]]
 name = "interaction"
@@ -5334,6 +5363,7 @@ dependencies = [
  "buildings",
  "fastrand",
  "health",
+ "interactables",
  "interaction",
  "inventory 0.1.0",
  "items",

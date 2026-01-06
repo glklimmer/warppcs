@@ -1,33 +1,24 @@
 use bevy::prelude::*;
 
-use petgraph::visit::{EdgeRef, IntoNodeReferences};
-use shared::{
-    GameSceneId, Owner, Player, PlayerColor, SceneType, Vec3LayerExt,
-    map::{
-        Layers,
-        buildings::{
-            BuildStatus, Building, BuildingType, HealthIndicator, MainBuildingLevels,
-            RecruitBuilding, WallLevels,
-        },
-    },
-    networking::{MountType, UnitType, WorldDirection},
-    server::{
-        ai::BanditBehaviour,
-        buildings::{gold_farm::GoldFarmTimer, item_assignment::ItemAssignment},
-        entities::{Damage, MeleeRange, Unit, health::Health},
-        physics::{
-            collider_trigger::ColliderTrigger,
-            movement::{NoWalkZone, Speed, Velocity},
-        },
-        players::{
-            chest::Chest,
-            interaction::{Interactable, InteractionType},
-            items::{Item, ItemType, Rarity},
-            mount::Mount,
-        },
-    },
+use buildings::{
+    BuildStatus, Building, BuildingType, HealthIndicator, gold_farm::GoldFarmTimer,
+    item_assignment::ItemAssignment, main_building::MainBuildingLevels,
+    recruiting::RecruitBuilding, wall::WallLevels,
 };
+use health::Health;
+use interactables::chest::Chest;
+use interaction::{Interactable, InteractionType, collider_trigger::ColliderTrigger};
+use items::{Item, ItemType, Rarity};
+use lobby::PlayerColor;
+use mounts::{Mount, MountType};
+use petgraph::visit::{EdgeRef, IntoNodeReferences};
+use physics::{
+    WorldDirection,
+    movement::{NoWalkZone, Speed, Velocity},
+};
+use shared::{GameSceneId, Owner, SceneType, Vec3LayerExt, map::Layers};
 use travel::{SceneEnd, TravelDestinationOffset, TravelDestinations};
+use units::{Damage, MeleeRange, Unit, UnitType};
 
 use super::world::InitWorld;
 
@@ -41,7 +32,7 @@ impl Plugin for StartGamePlugin {
 
 fn init_world(
     init_world: On<InitWorld>,
-    mut players: Query<(&mut Transform, &Player)>,
+    mut players: Query<(&mut Transform, &PlayerColor)>,
     mut commands: Commands,
 ) -> Result {
     let world = &**init_world.event();
@@ -52,7 +43,7 @@ fn init_world(
 
         match node.scene {
             SceneType::Player { player, exit } => {
-                let (mut transform, Player { color, .. }) = players.get_mut(player)?;
+                let (mut transform, color) = players.get_mut(player)?;
                 transform.translation = offset.with_z(Layers::Player.as_f32());
                 commands.entity(player).insert((
                     Owner::Player(player),
@@ -156,7 +147,6 @@ fn meadow(
                 swing_timer: Timer::from_seconds(5., TimerMode::Once),
                 color: PlayerColor::default(),
             },
-            BanditBehaviour::default(),
             Health { hitpoints: 25. },
             MeleeRange(10.),
             Speed(30.),
@@ -214,7 +204,6 @@ fn camp(
                 swing_timer: Timer::from_seconds(5., TimerMode::Once),
                 color: PlayerColor::default(),
             },
-            BanditBehaviour::default(),
             Health { hitpoints: 25. },
             MeleeRange(10.),
             Speed(30.),

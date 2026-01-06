@@ -1,10 +1,8 @@
 use bevy::prelude::*;
 
-use shared::{
-    enum_map::*,
-    networking::UnitType,
-    server::players::items::{ItemColor, MeleeWeapon, ProjectileWeapon, WeaponType},
-};
+use items::{ItemColor, MeleeWeapon, ProjectileWeapon, WeaponType};
+use shared::enum_map::*;
+use units::UnitType;
 
 use crate::{
     AnimationSpriteSheet, BuildSprite, SpriteSheetAnimation,

@@ -8,6 +8,7 @@ use buildings::BuildingsPlugins;
 use game_world::GameWorldPlugin;
 use gizmos::GizmosPlugin;
 use health::HealthPlugin;
+use interactables::InteractablePlugins;
 use interaction::InteractPlugin;
 use networking::join_server::JoinServerPlugin;
 use physics::PhysicsPlugin;
@@ -118,6 +119,7 @@ fn main() {
             AIPlugin,
             ProjectilePlugin,
             RemotePlugin,
+            InteractablePlugins,
         ));
 
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);
@@ -126,7 +128,7 @@ fn main() {
         #[cfg(feature = "steam")]
         {
             use aeronet_steam::server::SteamNetServerPlugin;
-            use shared::server::create_server::create_steam_server;
+            use lobby::create_server::create_steam_server;
 
             client
                 .add_plugins(SteamNetServerPlugin)
@@ -135,7 +137,7 @@ fn main() {
 
         #[cfg(feature = "netcode")]
         {
-            use shared::server::create_server::create_web_transport_server;
+            use lobby::create_server::create_web_transport_server;
 
             client.add_systems(OnEnter(GameState::MainMenu), create_web_transport_server);
         }

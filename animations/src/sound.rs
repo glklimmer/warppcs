@@ -1,13 +1,9 @@
 use bevy::prelude::*;
 
 use bevy::audio::{PlaybackMode, Volume};
-use shared::{
-    AnimationChange, AnimationChangeEvent, Hitby,
-    server::{
-        physics::projectile::ProjectileType,
-        players::interaction::{InteractableSound, InteractionType},
-    },
-};
+use interaction::{InteractableSound, InteractionType};
+use projectiles::ProjectileType;
+use shared::{AnimationChange, AnimationChangeEvent, Hitby};
 
 use crate::SpriteSheetAnimation;
 
