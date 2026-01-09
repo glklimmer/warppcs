@@ -10,11 +10,11 @@ use army::{
     flag::{FlagHolder, FlagUnits},
 };
 use lobby::{ClientPlayerMap, ClientPlayerMapExt};
-use shared::{AnimationChange, AnimationChangeEvent, networking::WorldDirection};
+use shared::{AnimationChange, AnimationChangeEvent};
 
-pub(crate) struct Attack;
+pub(crate) struct AttackPlugin;
 
-impl Plugin for Attack {
+impl Plugin for AttackPlugin {
     fn build(&self, app: &mut App) {
         app.add_client_event::<Attack>(Channel::Ordered)
             .add_observer(attack)

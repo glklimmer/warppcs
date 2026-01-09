@@ -17,8 +17,10 @@ use physics::{
     movement::{NoWalkZone, Speed, Velocity},
 };
 use shared::{GameSceneId, Owner, SceneType, Vec3LayerExt, map::Layers};
-use travel::{SceneEnd, TravelDestinationOffset, TravelDestinations};
+use travel::{TravelDestinationOffset, TravelDestinations};
 use units::{Damage, MeleeRange, Unit, UnitType};
+
+use crate::SceneEnd;
 
 use super::world::InitWorld;
 

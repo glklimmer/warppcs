@@ -15,7 +15,7 @@ pub(crate) struct PortalPlugin;
 impl Plugin for PortalPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PortalAnimationPlugin)
-            .replicate_bundle::<(Portal, Transform)>()
+            .replicate_bundle::<(Portal, Transform)>();
     }
 }
 
@@ -41,4 +41,4 @@ fn portal_collider() -> BoxCollider {
 }
 
 #[derive(Component, Deref)]
-pub struct PortalDestination(Entity);
+pub struct PortalDestination(pub Entity);

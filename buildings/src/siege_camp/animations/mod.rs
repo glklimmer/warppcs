@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{Building, recruiting::RecruitBuilding, siege_camp::SiegeCamp};
+use crate::siege_camp::SiegeCamp;
 
 pub(crate) mod tent;
 

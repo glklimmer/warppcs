@@ -5,11 +5,9 @@ use bevy_replicon::{
     prelude::{ClientState, FromClient, SendMode, ServerTriggerExt, ToClients},
     server::ServerSystems,
 };
+use lobby::{ClientPlayerMap, GameStarted, LobbyMessage, PlayerColor};
 use petgraph::{Graph, Undirected};
-use shared::{
-    ClientPlayerMap, GameScene, GameSceneId, GameStarted, GameState, Player, SceneType,
-    networking::LobbyMessage,
-};
+use shared::{GameScene, GameSceneId, GameState, SceneType};
 use travel::map::MapDiscovery;
 
 pub struct WorldPlugin;
@@ -176,7 +174,7 @@ impl WorldGraph {
 
 fn init_world(
     mut lobby_events: MessageReader<FromClient<LobbyMessage>>,
-    players: Query<Entity, With<Player>>,
+    players: Query<Entity, With<PlayerColor>>,
     client_player_map: Res<ClientPlayerMap>,
     mut commands: Commands,
 ) -> Result {

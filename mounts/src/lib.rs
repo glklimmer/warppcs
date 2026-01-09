@@ -2,7 +2,7 @@ use bevy::{prelude::*, sprite::Anchor};
 
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use interaction::{Interactable, InteractionType};
-use physics::movement::{BoxCollider, Velocity};
+use physics::movement::{BoxCollider, Speed, Velocity};
 use serde::{Deserialize, Serialize};
 
 use crate::horse::animation::HorseAnimationPlugin;
@@ -39,6 +39,14 @@ pub struct Mount {
 #[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum MountType {
     Horse,
+}
+
+impl From<MountType> for Speed {
+    fn from(value: MountType) -> Self {
+        match value {
+            MountType::Horse => Speed(150.),
+        }
+    }
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]

@@ -8,13 +8,16 @@ use physics::movement::{BoxCollider, Velocity};
 use serde::{Deserialize, Serialize};
 use shared::{GameSceneId, Vec3LayerExt, map::Layers};
 
+use crate::chest::animation::ChestAnimationPlugin;
+
 mod animation;
 
 pub(crate) struct ChestPlugin;
 
 impl Plugin for ChestPlugin {
     fn build(&self, app: &mut App) {
-        app.replicate::<ChestOpened>()
+        app.add_plugins(ChestAnimationPlugin)
+            .replicate::<ChestOpened>()
             .replicate_bundle::<(Chest, Transform)>()
             .add_systems(
                 FixedUpdate,

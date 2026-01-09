@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 
 use animations::{
-    AnimationSound, AnimationSpriteSheet, PlayOnce, SpriteSheetAnimation, SpriteVariants,
-    SpriteVariantsAssetsExt,
-    sound::{AnimationSoundTrigger, CRAFTING_SOUND_PATH},
+    AnimationSpriteSheet, PlayOnce, SpriteSheetAnimation, SpriteVariants, SpriteVariantsAssetsExt,
+    sound::{AnimationSound, AnimationSoundTrigger},
 };
 use shared::enum_map::*;
 use units::UnitType;
@@ -33,6 +32,8 @@ impl Plugin for BuildingAnimationPlugin {
             .add_systems(Update, update_building_sprite);
     }
 }
+
+const CRAFTING_SOUND_PATH: &str = "animation_sound/crafting";
 
 #[derive(Resource)]
 struct BuildingSpriteSheets {
@@ -157,7 +158,6 @@ fn remove_animation_after_play_once(
     building: Query<&BuildStatus>,
     mut commands: Commands,
 ) -> Result {
-    return hthhethteht;
     if let Ok(status) = building.get(trigger.entity) {
         let should_remove = match status {
             BuildStatus::Built { indicator } => {

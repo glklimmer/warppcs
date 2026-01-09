@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 
-use crate::{ItemColor, MeleeWeapon, ProjectileWeapon, WeaponType};
+use crate::{MeleeWeapon, ProjectileWeapon, WeaponType};
 use shared::enum_map::*;
-use units::UnitType;
 
 use animations::{AnimationSpriteSheet, BuildSprite, SpriteSheetAnimation};
 
@@ -12,18 +11,6 @@ pub enum Weapons {
     Pike,
     Bow,
     Rapier,
-}
-
-impl From<UnitType> for Weapons {
-    fn from(unit_type: UnitType) -> Self {
-        match unit_type {
-            UnitType::Shieldwarrior => Weapons::SwordAndShield,
-            UnitType::Pikeman => Weapons::Pike,
-            UnitType::Archer => Weapons::Bow,
-            UnitType::Bandit => todo!(),
-            UnitType::Commander => Weapons::Rapier,
-        }
-    }
 }
 
 impl From<WeaponType> for Weapons {
@@ -40,53 +27,14 @@ impl From<WeaponType> for Weapons {
     }
 }
 
-impl From<ItemColor> for Chests {
-    fn from(c: ItemColor) -> Self {
-        match c {
-            ItemColor::Brown => Chests::Brown,
-            ItemColor::Blue => Chests::Blue,
-            ItemColor::Red => Chests::Red,
-            ItemColor::Violet => Chests::Violet,
-            ItemColor::Green => Chests::Green,
-            ItemColor::Beige => Chests::Beige,
-        }
-    }
-}
-
-impl From<ItemColor> for Heads {
-    fn from(c: ItemColor) -> Self {
-        match c {
-            ItemColor::Brown => Heads::Brown,
-            ItemColor::Blue => Heads::Blue,
-            ItemColor::Red => Heads::Red,
-            ItemColor::Violet => Heads::Violet,
-            ItemColor::Green => Heads::Green,
-            ItemColor::Beige => Heads::Beige,
-        }
-    }
-}
-
-impl From<ItemColor> for Feet {
-    fn from(c: ItemColor) -> Self {
-        match c {
-            ItemColor::Brown => Feet::Brown,
-            ItemColor::Blue => Feet::Blue,
-            ItemColor::Red => Feet::Red,
-            ItemColor::Violet => Feet::Violet,
-            ItemColor::Green => Feet::Green,
-            ItemColor::Beige => Feet::Beige,
-        }
-    }
-}
-
 #[derive(Resource)]
 pub struct WeaponsSpriteSheet {
     pub sprite_sheet: AnimationSpriteSheet<Weapons, Image>,
 }
 
 impl WeaponsSpriteSheet {
-    pub fn sprite_for_unit(&self, unit: UnitType) -> Sprite {
-        self.sprite_sheet.sprite_for::<Weapons>(unit.into())
+    pub fn sprite_for_unit(&self, weapon: Weapons) -> Sprite {
+        self.sprite_sheet.sprite_for::<Weapons>(weapon)
     }
 }
 

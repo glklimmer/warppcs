@@ -12,7 +12,7 @@ use crate::sprites::{
     weapons::WeaponsSpriteSheet,
 };
 
-mod sprites;
+pub mod sprites;
 
 pub struct ItemPlugins;
 

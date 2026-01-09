@@ -62,7 +62,7 @@ pub struct ClientReady(pub usize);
 pub struct GameStarted(pub usize);
 
 #[derive(Event, Clone, Copy, Debug, Deserialize, Serialize, Deref, DerefMut)]
-pub struct SetLocalPlayer(Entity);
+pub struct SetLocalPlayer(pub Entity);
 
 impl MapEntities for SetLocalPlayer {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {

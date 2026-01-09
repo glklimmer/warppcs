@@ -10,11 +10,10 @@ use highlight::{
     Highlightable,
     utils::{add_highlight_on, remove_highlight_on},
 };
+use interaction::{InteractionTriggeredEvent, InteractionType};
+use lobby::{ClientPlayerMap, ControlledPlayer, GameStarted};
 use serde::{Deserialize, Serialize};
-use shared::{
-    ClientPlayerMap, ControlledPlayer, GameScene, GameStarted, GameState, PlayerState, SceneType,
-    server::players::interaction::{InteractionTriggeredEvent, InteractionType},
-};
+use shared::{GameScene, GameState, PlayerState, SceneType};
 
 use crate::{TravelDestinations, Traveling};
 

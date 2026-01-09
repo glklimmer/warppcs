@@ -9,7 +9,9 @@ use army::{
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated, SendMode, ServerTriggerExt, ToClients};
 use health::Health;
-use interaction::{Interactable, InteractableSound, InteractionTriggeredEvent, InteractionType};
+use interaction::{
+    Interactable, InteractionTriggeredEvent, InteractionType, sound::InteractableSound,
+};
 use inventory::Inventory;
 use items::{CalculatedStats, Effect, Item, ItemType};
 use lobby::PlayerColor;

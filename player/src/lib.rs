@@ -10,13 +10,10 @@ use serde::{Deserialize, Serialize};
 use shared::map::Layers;
 
 use crate::{
-    animation::PlayerAnimationPlugin, attack::Attack, client::Client, commander::CommanderPlugin,
-    item::pickup_item, knockout::KnockoutPlugin, mount::MountPlugin, movement::Movement,
-    teleport::Teleport,
+    animation::PlayerAnimationPlugin, attack::AttackPlugin, client::Client,
+    commander::CommanderPlugin, item::pickup_item, knockout::KnockoutPlugin, mount::MountPlugin,
+    movement::Movement, teleport::Teleport,
 };
-
-pub mod knockout;
-pub mod mount;
 
 mod animation;
 mod attack;
@@ -24,6 +21,8 @@ mod client;
 mod commander;
 mod defeat;
 mod item;
+mod knockout;
+mod mount;
 mod movement;
 mod teleport;
 
@@ -33,7 +32,7 @@ impl Plugin for PlayerPlugins {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             Client,
-            Attack,
+            AttackPlugin,
             Movement,
             Teleport,
             MountPlugin,

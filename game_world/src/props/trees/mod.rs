@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use shared::enum_map::Mappable;
+use shared::enum_map::*;
 
 pub(crate) mod pine;
 

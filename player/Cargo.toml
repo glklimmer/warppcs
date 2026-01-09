@@ -52,6 +52,7 @@ items = { path = "../items" }
 units = { path = "../units" }
 interactables = { path = "../interactables" }
 serde = { workspace = true }
+aeronet = { workspace = true }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }
 bevy-parallax = { workspace = true }

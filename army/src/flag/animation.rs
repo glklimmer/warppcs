@@ -2,9 +2,8 @@ use bevy::prelude::*;
 
 use animations::{AnimationSpriteSheet, SpriteVariants, SpriteVariantsAssetsExt, anim};
 use highlight::Highlighted;
-use physics::attachment::AttachedTo;
 use serde::{Deserialize, Serialize};
-use shared::{Player, enum_map::*};
+use shared::enum_map::*;
 
 use crate::flag::{Flag, FlagDestroyed};
 
@@ -14,8 +13,7 @@ impl Plugin for FlagAnimationPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<FlagSpriteSheet>()
             .add_observer(on_flag_destroyed)
-            .add_observer(init_flag_sprite)
-            .add_systems(Update, update_flag_visibility);
+            .add_observer(init_flag_sprite);
     }
 }
 
@@ -95,21 +93,6 @@ fn init_flag_sprite(
     let mut commands = commands.entity(trigger.entity);
     commands.insert((animation.clone(), FlagAnimation::default()));
     Ok(())
-}
-
-// TODO: Change to Observer after Replcion 0.34 update
-fn update_flag_visibility(
-    flag: Query<(Entity, &AttachedTo), Changed<AttachedTo>>,
-    player: Query<&Player>,
-    mut commands: Commands,
-) {
-    for (flag, attachted_to) in flag.iter() {
-        if player.get(**attachted_to).is_ok() {
-            commands.entity(flag).insert(Visibility::Visible);
-        } else {
-            commands.entity(flag).insert(Visibility::Hidden);
-        }
-    }
 }
 
 fn on_flag_destroyed(

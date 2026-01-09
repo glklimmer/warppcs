@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use animations::{
-    AnimationSound, AnimationSpriteSheet, SpriteVariants, anim,
-    sound::{AnimationSoundTrigger, DIRT_FOOTSTEPS_SOUND_PATH},
+    AnimationSpriteSheet, SpriteVariants, anim,
+    sound::{AnimationSound, AnimationSoundTrigger},
 };
 use shared::enum_map::*;
 

@@ -1,15 +1,12 @@
 use bevy::prelude::*;
+
 use bevy::time::Timer;
-
-use bevy::sprite::Anchor;
-use bevy_replicon::prelude::{Replicated, SendMode, ToClients};
-use serde::{Deserialize, Serialize};
-
+use bevy_replicon::prelude::{SendMode, ToClients};
 use mounts::{Mount, MountType, Mounted};
-use physics::movement::{Speed, Velocity};
-use shared::{AnimationChange, AnimationChangeEvent, GameSceneId, map::Layers};
+use physics::movement::Speed;
 
 use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
+use shared::{AnimationChange, AnimationChangeEvent, GameSceneId, map::Layers};
 
 pub(crate) struct MountPlugin;
 
@@ -30,14 +27,6 @@ struct DelayedMountSpawn {
     mount_type: MountType,
     position: Transform,
     timer: Timer,
-}
-
-impl From<MountType> for Speed {
-    fn from(value: MountType) -> Self {
-        match value {
-            MountType::Horse => Speed(150.),
-        }
-    }
 }
 
 fn mount(

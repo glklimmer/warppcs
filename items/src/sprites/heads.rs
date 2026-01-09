@@ -3,6 +3,8 @@ use bevy::prelude::*;
 use animations::{AnimationSpriteSheet, SpriteSheetAnimation};
 use shared::enum_map::*;
 
+use crate::ItemColor;
+
 #[derive(Debug, Clone, Copy, Mappable)]
 pub enum Heads {
     Brown,
@@ -76,6 +78,19 @@ impl FromWorld for HeadsSpriteSheet {
                 animations,
                 animations_sound,
             ),
+        }
+    }
+}
+
+impl From<ItemColor> for Heads {
+    fn from(c: ItemColor) -> Self {
+        match c {
+            ItemColor::Brown => Heads::Brown,
+            ItemColor::Blue => Heads::Blue,
+            ItemColor::Red => Heads::Red,
+            ItemColor::Violet => Heads::Violet,
+            ItemColor::Green => Heads::Green,
+            ItemColor::Beige => Heads::Beige,
         }
     }
 }

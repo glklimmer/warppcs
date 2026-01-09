@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 
 use animations::{
-    AnimationSound, AnimationSpriteSheet, SpriteVariants, anim,
-    sound::{AnimationSoundTrigger, DIRT_FOOTSTEPS_SOUND_PATH},
+    AnimationSpriteSheet, SpriteVariants, anim,
+    sound::{AnimationSound, AnimationSoundTrigger},
 };
 use shared::enum_map::*;
 
-use super::super::UnitAnimation;
+use super::super::{GRASS_FOOTSTEPS_SOUND_PATH, UnitAnimation};
 
 const ATLAS_COLUMNS: usize = 6;
 

@@ -10,19 +10,17 @@ use lobby::PlayerColor;
 use physics::movement::BoxCollider;
 use respawn::respawn_units;
 use serde::{Deserialize, Serialize};
-use shared::GameState;
-use shared::enum_map::*;
-use siege_camp::siege_camp_lifetime;
+use shared::{GameState, enum_map::*};
 use units::UnitType;
 
-use crate::animations::BuildingAnimationPlugin;
 use crate::{
+    animations::BuildingAnimationPlugin,
     construction::{BuildingChangeEnd, ConstructionPlugins},
     destruction::DestructionPlugin,
     main_building::MainBuildingLevels,
     recruiting::RecruitingPlugins,
     respawn::{RespawnZone, respawn_timer},
-    siege_camp::SiegeCamp,
+    siege_camp::SiegeCampPlugin,
     wall::{WallLevels, WallPlugin},
 };
 
@@ -46,9 +44,10 @@ impl Plugin for BuildingsPlugins {
             ItemAssignmentPlugins,
             ConstructionPlugins,
             DestructionPlugin,
-            WallPlugin,
-            RecruitingPlugins,
             BuildingAnimationPlugin,
+            RecruitingPlugins,
+            WallPlugin,
+            SiegeCampPlugin,
         ))
         .replicate_bundle::<(Building, BuildStatus, Transform)>()
         .replicate_bundle::<(RespawnZone, Transform)>()

@@ -4,11 +4,9 @@ use army::{
     ArmyFlagAssignments,
     flag::{FlagAssignment, FlagHolder},
 };
-use bevy::sprite::Anchor;
-use bevy_replicon::prelude::{AppRuleExt, ClientState, FromClient, Replicated};
-use interaction::{ActiveInteraction, Interactable, InteractionType};
+use bevy_replicon::prelude::{AppRuleExt, ClientState, FromClient};
+use interaction::ActiveInteraction;
 use lobby::{ClientPlayerMap, ClientPlayerMapExt, ControlledPlayer};
-use physics::movement::BoxCollider;
 use serde::{Deserialize, Serialize};
 use shared::{GameScene, GameSceneId, PlayerState, map::Layers};
 use units::Unit;

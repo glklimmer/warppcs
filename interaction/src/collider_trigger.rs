@@ -2,7 +2,7 @@ use bevy::{math::bounding::IntersectsVolume, prelude::*};
 
 use crate::{ActiveInteraction, BoxCollider, InteractionTriggeredEvent, InteractionType};
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct ColliderTriggerActivater;
 
 #[derive(Component)]

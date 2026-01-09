@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
 use animations::{
-    AnimationSound, AnimationSpriteSheet, AnimationTrigger, PlayOnce, SpriteSheetAnimation,
-    SpriteVariants, SpriteVariantsAssetsExt, anim, anim_reverse, sound::AnimationSoundTrigger,
+    AnimationSpriteSheet, AnimationTrigger, PlayOnce, SpriteSheetAnimation, SpriteVariants,
+    SpriteVariantsAssetsExt, anim, anim_reverse, sound::AnimationSound,
+    sound::AnimationSoundTrigger,
 };
 use bevy_replicon::client::ClientSystems;
 use lobby::PlayerColor;
@@ -34,7 +35,7 @@ impl Plugin for PlayerAnimationPlugin {
 }
 
 #[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Mappable, Default)]
-enum KingAnimation {
+pub(crate) enum KingAnimation {
     #[default]
     Idle,
     Drink,
@@ -145,7 +146,7 @@ fn init_player_sprite(
         .animations
         .get(KingAnimation::Idle);
 
-    sprite.image = sprite_variants.variants.get(**color).clone();
+    sprite.image = sprite_variants.variants.get(*color).clone();
     sprite.texture_atlas = Some(TextureAtlas {
         layout: king_sprite_sheet.sprite_sheet.layout.clone(),
         index: animation.first_sprite_index,

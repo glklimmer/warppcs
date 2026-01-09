@@ -1,6 +1,6 @@
+use aeronet::io::server::Server;
 use bevy::prelude::*;
 
-use animations::king::KingAnimation;
 use bevy::platform::collections::HashMap;
 use bevy_parallax::{CameraFollow, LinearAxisStrategy, TranslationStrategy};
 use bevy_replicon::{
@@ -15,7 +15,7 @@ use lobby::{
 };
 use shared::{GameSceneId, GameState, Owner, enum_map::EnumIter, map::Layers};
 
-use crate::Player;
+use crate::{Player, animation::KingAnimation};
 
 pub(crate) struct Client;
 
@@ -102,7 +102,7 @@ fn spawn_clients(
     let player = commands.spawn_empty().id();
     commands.entity(player).insert((
         Player { id: new_player_id },
-        color,
+        *color,
         Transform::from_xyz(250.0, 0.0, Layers::Player.as_f32()),
         Owner::Player(player),
     ));

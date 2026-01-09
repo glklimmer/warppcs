@@ -196,7 +196,7 @@ fn open_slots_dialog(
                 let Ok(flag) = flag.get(flag_entity) else {
                     return None;
                 };
-                let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
+                let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type.into());
                 let weapon_sprite_entity = commands
                     .spawn((
                         weapon_sprite,
@@ -359,7 +359,7 @@ fn draw_hovering_flag(
     let player_flag = **flag_holder;
     let flag = flag.get(player_flag)?;
 
-    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
+    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type.into());
 
     match current_hover.single_mut() {
         Ok(mut flag_position) => {
@@ -427,7 +427,7 @@ fn update_flag_assignment(
     };
 
     let flag = flag.get(*flag_assigned)?;
-    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type);
+    let weapon_sprite = weapons_sprite_sheet.sprite_for_unit(flag.unit_type.into());
 
     let flag_weapon_slot = commands
         .spawn((

@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use animations::{
-    AnimationSound, AnimationSpriteSheet, AnimationTrigger, PlayOnce, SpriteSheetAnimation,
-    SpriteVariants, SpriteVariantsAssetsExt,
+    AnimationSpriteSheet, AnimationTrigger, PlayOnce, SpriteSheetAnimation, SpriteVariants,
+    SpriteVariantsAssetsExt, sound::AnimationSound,
 };
 use bandits::bandit::bandit;
 use bevy_replicon::client::ClientSystems;
@@ -35,6 +35,13 @@ impl Plugin for UnitAnimationPlugin {
             .add_systems(Update, set_unit_sprite_animation);
     }
 }
+
+const DIRT_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/dirt_footsteps";
+const GRASS_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/grass_footsteps";
+// const SNOW_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/snow_footsteps";
+// const STONE_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/stone_footsteps";
+// const WATER_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/water_footsteps";
+// const HORSE_SOUND_PATH: &str = "animation_sound/horse";
 
 #[derive(Resource)]
 struct UnitSpriteSheets {

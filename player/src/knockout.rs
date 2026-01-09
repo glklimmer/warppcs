@@ -1,24 +1,19 @@
 use bevy::prelude::*;
-use bevy_replicon::prelude::{SendMode, ToClients};
 
+use ai::{Target, TargetedBy};
 use army::flag::{Flag, FlagHolder};
+use bevy_replicon::prelude::{SendMode, ToClients};
 use buildings::{Building, BuildingType};
-use shared::{
-    AnimationChange, AnimationChangeEvent, GameSceneId, Owner, Player, PlayerState,
-    map::Layers,
-    server::{
-        ai::{Target, TargetedBy},
-        entities::{
-            Unit,
-            health::{Health, TakeDamage},
-        },
-        physics::{attachment::AttachedTo, movement::Velocity},
-    },
-};
+use health::{Health, TakeDamage};
+use physics::{attachment::AttachedTo, movement::Velocity};
+use shared::{AnimationChange, AnimationChangeEvent, GameSceneId, Owner, PlayerState, map::Layers};
+use units::Unit;
+
+use crate::Player;
 
 #[derive(Component)]
-pub struct RespawnTimer {
-    pub timer: Timer,
+struct RespawnTimer {
+    timer: Timer,
 }
 
 impl Default for RespawnTimer {

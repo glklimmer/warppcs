@@ -3,7 +3,7 @@ use bevy::{prelude::*, sprite::Anchor};
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use health::{DelayedDamage, Health, TakeDamage};
 use inventory::Cost;
-use items::{MeleeWeapon, ProjectileWeapon, WeaponType};
+use items::{MeleeWeapon, ProjectileWeapon, WeaponType, sprites::weapons::Weapons};
 use lobby::PlayerColor;
 use physics::movement::{BoxCollider, RandomVelocityMul, Speed, Velocity};
 use serde::{Deserialize, Serialize};
@@ -50,6 +50,18 @@ impl From<WeaponType> for UnitType {
             WeaponType::Projectile(projectile_weapon) => match projectile_weapon {
                 ProjectileWeapon::Bow => UnitType::Archer,
             },
+        }
+    }
+}
+
+impl From<UnitType> for Weapons {
+    fn from(unit_type: UnitType) -> Self {
+        match unit_type {
+            UnitType::Shieldwarrior => Weapons::SwordAndShield,
+            UnitType::Pikeman => Weapons::Pike,
+            UnitType::Archer => Weapons::Bow,
+            UnitType::Bandit => todo!(),
+            UnitType::Commander => Weapons::Rapier,
         }
     }
 }

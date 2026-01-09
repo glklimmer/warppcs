@@ -4,13 +4,11 @@ use army::{
     ArmyFlagAssignments,
     flag::{FlagAssignment, FlagHolder},
 };
-use bevy::sprite::Anchor;
 use bevy_replicon::prelude::*;
 use health::DelayedDespawn;
 use interactables::portal::{Portal, PortalDestination};
-use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
+use interaction::{InteractionTriggeredEvent, InteractionType};
 use lobby::{ClientPlayerMap, ClientPlayerMapExt};
-use physics::movement::BoxCollider;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use units::Unit;

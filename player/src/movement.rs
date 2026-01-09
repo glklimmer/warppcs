@@ -1,12 +1,11 @@
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 
+use lobby::{ClientPlayerMap, ClientPlayerMapExt};
 use serde::{Deserialize, Serialize};
 
-use shared::{
-    ClientPlayerMap, ClientPlayerMapExt, PlayerState,
-    server::physics::movement::{Speed, Velocity},
-};
+use physics::movement::{Speed, Velocity};
+use shared::PlayerState;
 
 pub(crate) struct Movement;
 

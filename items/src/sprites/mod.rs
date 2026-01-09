@@ -1,4 +1,4 @@
-pub(crate) mod chests;
-pub(crate) mod feet;
-pub(crate) mod heads;
-pub(crate) mod weapons;
+pub mod chests;
+pub mod feet;
+pub mod heads;
+pub mod weapons;
