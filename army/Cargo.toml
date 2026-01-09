@@ -42,6 +42,8 @@ units = { path = "../units" }
 interaction = { path = "../interaction" }
 physics = { path = "../physics" }
 lobby = { path = "../lobby" }
+animations = { path = "../animations" }
+highlight = { path = "../highlight" }
 serde = { workspace = true }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }

@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 
 use bevy::audio::{PlaybackMode, Volume};
-use interaction::{InteractableSound, InteractionType};
-use projectiles::ProjectileType;
 use shared::{AnimationChange, AnimationChangeEvent, Hitby};
 
 use crate::SpriteSheetAnimation;
@@ -16,14 +14,14 @@ pub const GRASS_FOOTSTEPS_SOUND_PATH: &str = "animation_sound/footsteps/grass_fo
 // pub const HORSE_SOUND_PATH: &str = "animation_sound/horse";
 
 #[derive(Message)]
-struct PlayAnimationSoundEvent {
-    entity: Entity,
-    sound_handles: Vec<Handle<AudioSource>>,
-    speed: f32,
-    volume: Volume,
+pub struct PlayAnimationSoundEvent {
+    pub entity: Entity,
+    pub sound_handles: Vec<Handle<AudioSource>>,
+    pub speed: f32,
+    pub volume: Volume,
 }
 
-const ANIMATION_VOLUME: f32 = 0.25;
+pub const ANIMATION_VOLUME: f32 = 0.25;
 
 #[derive(Component, Clone, Default, PartialEq, Eq)]
 pub enum AnimationSoundTrigger {
@@ -45,8 +43,6 @@ pub struct AnimationSoundPlugin;
 impl Plugin for AnimationSoundPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<PlayAnimationSoundEvent>();
-        app.add_observer(play_animation_on_projectile_spawn);
-        app.add_observer(play_on_interactable);
         app.add_observer(stop_animation_sound_on_remove);
 
         app.add_systems(
@@ -150,60 +146,6 @@ fn play_sound_on_entity_change(
             volume: Volume::Linear(ANIMATION_VOLUME),
         });
     }
-}
-
-fn play_animation_on_projectile_spawn(
-    trigger: On<Add, ProjectileType>,
-    mut projectile: Query<&ProjectileType>,
-    mut sound_events: MessageWriter<PlayAnimationSoundEvent>,
-    asset_server: Res<AssetServer>,
-) -> Result {
-    let projectile_type = projectile.get_mut(trigger.entity)?;
-
-    let sound_handles = match projectile_type {
-        ProjectileType::Arrow => vec![asset_server.load("animation_sound/arrow/arrow_flying.ogg")],
-    };
-
-    sound_events.write(PlayAnimationSoundEvent {
-        entity: trigger.entity,
-        sound_handles,
-        speed: 1.5,
-        volume: Volume::Linear(ANIMATION_VOLUME),
-    });
-    Ok(())
-}
-
-fn play_on_interactable(
-    trigger: On<InteractableSound>,
-    asset_server: Res<AssetServer>,
-    mut commands: Commands,
-) {
-    let audio_file = match trigger.kind {
-        InteractionType::Recruit => {
-            asset_server.load("animation_sound/recruitment/recruite_call.ogg")
-        }
-        InteractionType::Flag => todo!(),
-        InteractionType::Building => todo!(),
-        InteractionType::Mount => todo!(),
-        InteractionType::Travel => todo!(),
-        InteractionType::Chest => todo!(),
-        InteractionType::Item => todo!(),
-        InteractionType::Commander => todo!(),
-        InteractionType::ItemAssignment => todo!(),
-        InteractionType::Unmount => todo!(),
-        InteractionType::Portal => todo!(),
-    };
-
-    commands.spawn((
-        AudioPlayer::<AudioSource>(audio_file),
-        PlaybackSettings {
-            mode: PlaybackMode::Remove,
-            volume: Volume::Linear(ANIMATION_VOLUME * 0.5),
-            spatial: true,
-            ..default()
-        },
-        Transform::from_translation(trigger.spatial_position),
-    ));
 }
 
 fn play_animation_on_frame_timer(

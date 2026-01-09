@@ -49,6 +49,7 @@ animations = { path = "../animations" }
 mounts = { path = "../mounts" }
 ai = { path = "../ai" }
 items = { path = "../items" }
+units = { path = "../units" }
 interactables = { path = "../interactables" }
 serde = { workspace = true }
 bevy_replicon = { workspace = true }

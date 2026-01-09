@@ -37,6 +37,7 @@ bevy = { workspace = true, default-features = false, features = [
     "wayland",
 ] }
 shared = { path = "../shared", default-features = false }
+animations = { path = "../animations" }
 physics = { path = "../physics" }
 units = { path = "../units" }
 health = { path = "../health" }

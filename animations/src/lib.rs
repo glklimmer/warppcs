@@ -1,54 +1,23 @@
 use bevy::prelude::*;
 
-use animals::horse::{
-    HorseAnimation, HorseSpriteSheet, next_horse_animation, set_horse_sprite_animation,
-};
-use bevy_replicon::client::ClientSystems;
-use buildings::{BuildingSpriteSheets, remove_animation_after_play_once, update_building_sprite};
-use king::{
-    KingAnimation, KingSpriteSheet, set_king_after_play_once, set_king_idle,
-    set_king_sprite_animation, set_king_walking, trigger_king_animation,
-};
-use objects::{
-    chest::{ChestSpriteSheet, set_chest_after_play_once},
-    flag::{FlagSpriteSheet, on_flag_destroyed, update_flag_visibility},
-    items::{
-        chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
-        weapons::WeaponsSpriteSheet,
-    },
-    portal::PortalSpriteSheet,
-    projectiles::ProjectileSpriteSheet,
-};
-use shared::{enum_map::*, server::entities::UnitAnimation};
-
-use sprite_variant_loader::AssetsToLoad;
+use shared::enum_map::*;
+use sprite_variant_loader::{AssetsToLoad, SpriteVariantLoaderPlugin};
 use ui::{item_info::ItemInfoSpriteSheet, map_icon::MapIconSpriteSheet};
-use units::{
-    UnitSpriteSheets, set_unit_after_play_once, set_unit_idle, set_unit_sprite_animation,
-    set_unit_walking, trigger_unit_animation,
-};
 
 use crate::{
-    king::{remove_animation, set_king_defeat},
-    objects::chest::on_chest_opened,
     sound::{AnimationSound, AnimationSoundPlugin},
     ui::{
         animations::UIAnimationsPlugin, army_formations::FormationIconSpriteSheet,
         commander_menu::CommanderMenuSpriteSheet,
     },
-    world::{road::RoadSpriteSheet, trees::pine::PineTreeSpriteSheet},
 };
 
-pub mod animals;
-pub mod buildings;
-pub mod king;
-pub mod objects;
-pub mod ui;
-pub mod units;
-pub mod world;
+pub use sprite_variant_loader::loader::{SpriteVariants, SpriteVariantsAssetsExt};
 
 mod macros;
-mod sound;
+
+pub mod sound;
+pub mod ui;
 
 #[derive(Clone)]
 pub struct StaticSpriteSheet<E: EnumIter> {
@@ -185,69 +154,21 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(UIAnimationsPlugin);
+        app.add_plugins((
+            UIAnimationsPlugin,
+            SpriteVariantLoaderPlugin,
+            AnimationSoundPlugin,
+        ));
 
-        app.init_resource::<UnitSpriteSheets>();
-        app.add_message::<AnimationTrigger<UnitAnimation>>();
-
-        app.init_resource::<KingSpriteSheet>();
-        app.add_message::<AnimationTrigger<KingAnimation>>();
-
-        app.init_resource::<FlagSpriteSheet>();
-        app.init_resource::<ChestSpriteSheet>();
-        app.init_resource::<PortalSpriteSheet>();
-        app.init_resource::<RoadSpriteSheet>();
-        app.init_resource::<PineTreeSpriteSheet>();
-        app.init_resource::<WeaponsSpriteSheet>();
-        app.init_resource::<ChestsSpriteSheet>();
-        app.init_resource::<HeadsSpriteSheet>();
-        app.init_resource::<FeetSpriteSheet>();
-        app.init_resource::<ProjectileSpriteSheet>();
         app.init_resource::<CommanderMenuSpriteSheet>();
-
-        app.init_resource::<HorseSpriteSheet>();
-        app.add_message::<AnimationTrigger<HorseAnimation>>();
 
         app.init_resource::<ItemInfoSpriteSheet>();
         app.init_resource::<MapIconSpriteSheet>();
         app.init_resource::<FormationIconSpriteSheet>();
 
-        app.init_resource::<BuildingSpriteSheets>();
+        app.add_observer(remove_animation_after_play_once);
 
-        app.add_systems(
-            PreUpdate,
-            (trigger_king_animation, trigger_unit_animation).after(ClientSystems::Receive),
-        )
-        .add_observer(on_flag_destroyed)
-        .add_observer(on_chest_opened)
-        .add_observer(set_king_defeat)
-        .add_observer(remove_animation)
-        .add_observer(set_king_walking)
-        .add_observer(set_king_idle)
-        .add_observer(set_king_after_play_once)
-        .add_observer(set_unit_walking)
-        .add_observer(set_unit_idle)
-        .add_observer(set_unit_after_play_once)
-        .add_observer(set_chest_after_play_once)
-        .add_observer(remove_animation_after_play_once);
-
-        app.add_plugins(AnimationSoundPlugin);
-
-        app.add_systems(Update, update_flag_visibility);
-        app.add_systems(
-            Update,
-            (
-                (
-                    set_king_sprite_animation,
-                    set_unit_sprite_animation,
-                    set_horse_sprite_animation,
-                    next_horse_animation,
-                    update_building_sprite,
-                ),
-                advance_animation,
-            )
-                .chain(),
-        );
+        app.add_systems(PostUpdate, advance_animation);
     }
 }
 
@@ -283,5 +204,15 @@ fn advance_animation(
             };
         }
     }
+    Ok(())
+}
+
+fn remove_animation_after_play_once(
+    trigger: On<Remove, PlayOnce>,
+    mut commands: Commands,
+) -> Result {
+    commands
+        .entity(trigger.entity)
+        .remove::<SpriteSheetAnimation>();
     Ok(())
 }

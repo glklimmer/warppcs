@@ -17,7 +17,6 @@ use projectiles::ProjectilePlugin;
 use remote::RemotePlugin;
 use shared::PlayerState;
 use shared::{GameState, SharedPlugin};
-use sprite_variant_loader::SpriteVariantLoaderPlugin;
 use std::env;
 use ui::UiPlugin;
 use units::UnitsPlugins;
@@ -97,7 +96,6 @@ fn main() {
         .insert_state(GameState::Loading)
         .insert_state(PlayerState::World)
         .add_plugins((
-            SpriteVariantLoaderPlugin,
             ParallaxPlugin,
             CameraPlugin,
             InputPlugin,

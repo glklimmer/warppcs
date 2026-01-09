@@ -7,17 +7,17 @@ use physics::movement::BoxCollider;
 use serde::{Deserialize, Serialize};
 use shared::PlayerState;
 
-use crate::collider_trigger::ColliderTriggerPlugin;
+use crate::{collider_trigger::ColliderTriggerPlugin, sound::InteractionSoundPlugin};
 
 pub mod collider_trigger;
+pub mod sound;
 
 pub struct InteractPlugin;
 
 impl Plugin for InteractPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ColliderTriggerPlugin)
+        app.add_plugins((ColliderTriggerPlugin, InteractionSoundPlugin))
             .replicate::<Interactable>()
-            .add_server_event::<InteractableSound>(Channel::Ordered)
             .add_client_event::<Interact>(Channel::Ordered)
             .add_observer(interact)
             .add_message::<InteractionTriggeredEvent>()
@@ -51,12 +51,6 @@ pub struct Interactable {
     pub kind: InteractionType,
     #[entities]
     pub restricted_to: Option<Entity>,
-}
-
-#[derive(Event, Clone, Copy, Serialize, Deserialize)]
-pub struct InteractableSound {
-    pub kind: InteractionType,
-    pub spatial_position: Vec3,
 }
 
 #[derive(Message)]

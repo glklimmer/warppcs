@@ -38,15 +38,6 @@ bevy = { workspace = true, default-features = false, features = [
 ] }
 shared = { path = "../shared", default-features = false }
 sprite_variant_loader = { path = "../sprite_variant_loader" }
-highlight = { path = "../highlight" }
-buildings = { path = "../buildings" }
-units = { path = "../units" }
-mounts = { path = "../mounts" }
-physics = { path = "../physics" }
-interactables = { path = "../interactables" }
-interaction = { path = "../interaction" }
-projectiles = { path = "../projectiles" }
-items = { path = "../items" }
 bevy_replicon = { workspace = true, features = ["client"] }
 fastrand = { workspace = true }
 serde = { workspace = true }

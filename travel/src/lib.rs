@@ -1,18 +1,17 @@
 use bevy::prelude::*;
 
+use army::{
+    ArmyFlagAssignments,
+    flag::{FlagAssignment, FlagHolder},
+};
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, ClientState, FromClient, Replicated};
+use interaction::{ActiveInteraction, Interactable, InteractionType};
+use lobby::{ClientPlayerMap, ClientPlayerMapExt, ControlledPlayer};
+use physics::movement::BoxCollider;
 use serde::{Deserialize, Serialize};
-use shared::{
-    BoxCollider, ClientPlayerMap, ClientPlayerMapExt, ControlledPlayer, GameScene, GameSceneId,
-    PlayerState,
-    map::Layers,
-    server::{
-        buildings::recruiting::{FlagAssignment, FlagHolder},
-        entities::{Unit, commander::ArmyFlagAssignments},
-        players::interaction::{ActiveInteraction, Interactable, InteractionType},
-    },
-};
+use shared::{GameScene, GameSceneId, PlayerState, map::Layers};
+use units::Unit;
 
 use crate::map::{MapDiscovery, MapPlugin, SelectTravelDestination};
 
@@ -24,8 +23,6 @@ impl Plugin for TravelPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MapPlugin)
             .replicate::<Traveling>()
-            .replicate_bundle::<(Road, Transform)>()
-            .replicate_bundle::<(SceneEnd, Transform)>()
             .add_observer(enter_travel_state)
             .add_observer(leave_travel_state)
             .add_observer(start_travel)
@@ -76,44 +73,6 @@ impl TravelDestinationOffset {
 
     pub fn player() -> Self {
         Self(-50.)
-    }
-}
-
-#[derive(Component, Clone, Serialize, Deserialize)]
-#[require(
-    Replicated,
-    Transform,
-    BoxCollider = scene_end_collider(),
-    Sprite,
-    Anchor::BOTTOM_CENTER,
-)]
-pub struct SceneEnd;
-
-fn scene_end_collider() -> BoxCollider {
-    BoxCollider {
-        dimension: Vec2::new(32., 32.),
-        offset: Some(Vec2::new(0., 16.)),
-    }
-}
-
-#[derive(Component, Clone, Serialize, Deserialize)]
-#[require(
-    Replicated,
-    Transform,
-    BoxCollider = road_collider(),
-    Sprite,
-    Anchor::BOTTOM_CENTER,
-    Interactable{
-        kind: InteractionType::Travel,
-        restricted_to: None,
-    },
-)]
-pub struct Road;
-
-fn road_collider() -> BoxCollider {
-    BoxCollider {
-        dimension: Vec2::new(32., 32.),
-        offset: Some(Vec2::new(0., 16.)),
     }
 }
 

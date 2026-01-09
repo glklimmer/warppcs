@@ -47,6 +47,7 @@ interactables = { path = "../interactables" }
 mounts = { path = "../mounts" }
 units = { path = "../units" }
 interaction = { path = "../interaction" }
+animations = { path = "../animations" }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }
 serde = { workspace = true }

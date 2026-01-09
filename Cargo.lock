@@ -334,19 +334,10 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_replicon",
- "buildings",
  "fastrand",
- "highlight",
- "interactables",
- "interaction",
- "items",
- "mounts",
- "physics",
- "projectiles",
  "serde",
  "shared",
  "sprite_variant_loader",
- "units",
 ]
 
 [[package]]
@@ -435,10 +426,12 @@ dependencies = [
 name = "army"
 version = "0.1.0"
 dependencies = [
+ "animations",
  "bevy",
  "bevy_replicon",
  "fastrand",
  "health",
+ "highlight",
  "interaction",
  "lobby",
  "physics",
@@ -2340,6 +2333,7 @@ dependencies = [
 name = "buildings"
 version = "0.1.0"
 dependencies = [
+ "animations",
  "army",
  "bevy",
  "bevy_replicon",
@@ -3636,6 +3630,7 @@ dependencies = [
 name = "game_world"
 version = "0.1.0"
 dependencies = [
+ "animations",
  "bevy",
  "bevy_replicon",
  "buildings",
@@ -4206,6 +4201,7 @@ checksum = "a257582fdcde896fd96463bf2d40eefea0580021c0712a0e2b028b60b47a837a"
 name = "interactables"
 version = "0.1.0"
 dependencies = [
+ "animations",
  "bevy",
  "bevy_replicon",
  "fastrand",
@@ -4220,6 +4216,7 @@ dependencies = [
 name = "interaction"
 version = "0.1.0"
 dependencies = [
+ "animations",
  "bevy",
  "bevy_replicon",
  "lobby",
@@ -4269,6 +4266,7 @@ checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 name = "items"
 version = "0.1.0"
 dependencies = [
+ "animations",
  "bevy",
  "bevy_replicon",
  "fastrand",
@@ -4577,6 +4575,7 @@ dependencies = [
 name = "mounts"
 version = "0.1.0"
 dependencies = [
+ "animations",
  "bevy",
  "bevy_replicon",
  "interaction",
@@ -5373,6 +5372,7 @@ dependencies = [
  "serde",
  "shared",
  "travel",
+ "units",
 ]
 
 [[package]]
@@ -5533,6 +5533,7 @@ dependencies = [
 name = "projectiles"
 version = "0.1.0"
 dependencies = [
+ "animations",
  "bevy",
  "bevy_replicon",
  "health",
@@ -6995,12 +6996,17 @@ name = "travel"
 version = "0.1.0"
 dependencies = [
  "animations",
+ "army",
  "bevy",
  "bevy_replicon",
  "fastrand",
  "highlight",
+ "interaction",
+ "lobby",
+ "physics",
  "serde",
  "shared",
+ "units",
 ]
 
 [[package]]
@@ -7123,6 +7129,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 name = "units"
 version = "0.1.0"
 dependencies = [
+ "animations",
  "bevy",
  "bevy_replicon",
  "health",

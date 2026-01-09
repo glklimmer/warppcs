@@ -38,6 +38,7 @@ bevy = { workspace = true, default-features = false, features = [
 ] }
 shared = { path = "../shared", default-features = false }
 lobby = { path = "../lobby" }
+animations = { path = "../animations" }
 interaction = { path = "../interaction" }
 units = { path = "../units" }
 army = { path = "../army" }

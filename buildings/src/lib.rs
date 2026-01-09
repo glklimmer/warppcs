@@ -15,6 +15,7 @@ use shared::enum_map::*;
 use siege_camp::siege_camp_lifetime;
 use units::UnitType;
 
+use crate::animations::BuildingAnimationPlugin;
 use crate::{
     construction::{BuildingChangeEnd, ConstructionPlugins},
     destruction::DestructionPlugin,
@@ -25,6 +26,7 @@ use crate::{
     wall::{WallLevels, WallPlugin},
 };
 
+mod animations;
 mod construction;
 mod destruction;
 mod respawn;
@@ -46,16 +48,15 @@ impl Plugin for BuildingsPlugins {
             DestructionPlugin,
             WallPlugin,
             RecruitingPlugins,
+            BuildingAnimationPlugin,
         ))
         .replicate_bundle::<(Building, BuildStatus, Transform)>()
         .replicate_bundle::<(RespawnZone, Transform)>()
-        .replicate_bundle::<(SiegeCamp, Transform)>()
         .add_systems(
             FixedUpdate,
             (
                 gold_farm_output.run_if(in_state(GameState::GameSession)),
                 (respawn_timer, respawn_units).chain(),
-                siege_camp_lifetime,
                 enable_goldfarm.run_if(on_message::<BuildingChangeEnd>),
             ),
         );

@@ -5,11 +5,16 @@ use interaction::{Interactable, InteractionType};
 use physics::movement::{BoxCollider, Velocity};
 use serde::{Deserialize, Serialize};
 
+use crate::horse::animation::HorseAnimationPlugin;
+
+mod horse;
+
 pub struct MountPlugins;
 
 impl Plugin for MountPlugins {
     fn build(&self, app: &mut App) {
-        app.replicate::<Mounted>()
+        app.add_plugins(HorseAnimationPlugin)
+            .replicate::<Mounted>()
             .replicate_bundle::<(Mount, Transform)>();
     }
 }

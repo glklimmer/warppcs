@@ -10,10 +10,12 @@ use serde::{Deserialize, Serialize};
 use shared::{enum_map::*, server::entities::UnitAnimation};
 
 use crate::{
+    animations::UnitAnimationPlugin,
     death::DeathPlugin,
     pushback::{PushBack, PushbackPlugins},
 };
 
+mod animations;
 mod death;
 
 pub mod pushback;
@@ -22,7 +24,7 @@ pub struct UnitsPlugins;
 
 impl Plugin for UnitsPlugins {
     fn build(&self, app: &mut App) {
-        app.add_plugins(DeathPlugin)
+        app.add_plugins((DeathPlugin, UnitAnimationPlugin))
             .replicate_bundle::<(Unit, Transform)>()
             .add_plugins(PushbackPlugins)
             .add_systems(FixedUpdate, unit_swing_timer);

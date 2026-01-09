@@ -39,6 +39,11 @@ bevy = { workspace = true, default-features = false, features = [
 shared = { path = "../shared", default-features = false }
 highlight = { path = "../highlight" }
 animations = { path = "../animations" }
+physics = { path = "../physics" }
+interaction = { path = "../interaction" }
+units = { path = "../units" }
+lobby = { path = "../lobby" }
+army = { path = "../army" }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }
 serde = { workspace = true }

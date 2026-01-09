@@ -1,0 +1,51 @@
+use bevy::prelude::*;
+
+use animations::{AnimationSpriteSheet, SpriteSheetAnimation, SpriteVariants};
+use shared::enum_map::*;
+
+use crate::BuildStatus;
+
+pub(crate) fn wall_tower_building(
+    world: &mut World,
+) -> AnimationSpriteSheet<BuildStatus, SpriteVariants> {
+    let asset_server = world.resource::<AssetServer>();
+    let texture = asset_server.load("sprites/buildings/wall_3.png");
+
+    let mut texture_atlas_layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
+
+    let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::new(128, 96),
+        1,
+        1,
+        None,
+        None,
+    ));
+
+    let animations = EnumMap::new(|c| match c {
+        BuildStatus::Marker => SpriteSheetAnimation {
+            first_sprite_index: 0,
+            ..default()
+        },
+        BuildStatus::Constructing => SpriteSheetAnimation {
+            first_sprite_index: 0,
+            ..default()
+        },
+        BuildStatus::Built { indicator: _ } => SpriteSheetAnimation {
+            first_sprite_index: 0,
+            ..default()
+        },
+        BuildStatus::Destroyed => SpriteSheetAnimation {
+            first_sprite_index: 0,
+            ..default()
+        },
+    });
+
+    let animations_sound = EnumMap::new(|c| match c {
+        BuildStatus::Marker => None,
+        BuildStatus::Constructing => None,
+        BuildStatus::Built { indicator: _ } => None,
+        BuildStatus::Destroyed => None,
+    });
+
+    AnimationSpriteSheet::new(world, texture, layout, animations, animations_sound)
+}

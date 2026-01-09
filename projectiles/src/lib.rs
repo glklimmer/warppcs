@@ -8,6 +8,11 @@ use serde::{Deserialize, Serialize};
 use shared::{Hitby, Owner};
 use units::Damage;
 
+use crate::{animation::ProjectileAnimationPlugin, sound::ProjectileSoundPlugin};
+
+mod animation;
+mod sound;
+
 #[derive(Debug, Component, PartialEq, Serialize, Deserialize, Copy, Clone)]
 #[require(
     Replicated,
@@ -27,7 +32,8 @@ pub struct ProjectilePlugin;
 
 impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
-        app.replicate_bundle::<(ProjectileType, Transform)>()
+        app.add_plugins((ProjectileAnimationPlugin, ProjectileSoundPlugin))
+            .replicate_bundle::<(ProjectileType, Transform)>()
             .add_systems(FixedUpdate, projectile_collision);
     }
 }

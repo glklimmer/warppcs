@@ -1,29 +1,31 @@
 use bevy::prelude::*;
 
+use army::{
+    ArmyFlagAssignments,
+    flag::{FlagAssignment, FlagHolder},
+};
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::*;
+use health::DelayedDespawn;
+use interactables::portal::{Portal, PortalDestination};
+use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
+use lobby::{ClientPlayerMap, ClientPlayerMapExt};
+use physics::movement::BoxCollider;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
+use units::Unit;
 
 use buildings::{Building, BuildingType};
 
-use shared::{
-    BoxCollider, ClientPlayerMap, ClientPlayerMapExt, DelayedDespawn, GameSceneId, Owner, Player,
-    PlayerState, Vec3LayerExt,
-    map::Layers,
-    server::{
-        buildings::recruiting::{FlagAssignment, FlagHolder},
-        entities::{Unit, commander::ArmyFlagAssignments},
-        players::interaction::{Interactable, InteractionTriggeredEvent, InteractionType},
-    },
-};
+use shared::{GameSceneId, Owner, PlayerState, Vec3LayerExt, map::Layers};
+
+use crate::Player;
 
 pub(crate) struct Teleport;
 
 impl Plugin for Teleport {
     fn build(&self, app: &mut App) {
-        app.replicate_bundle::<(Portal, Transform)>()
-            .add_client_event::<ChannelPort>(Channel::Ordered)
+        app.add_client_event::<ChannelPort>(Channel::Ordered)
             .add_observer(add_port_cooldown)
             .add_observer(check_port_cooldown)
             .add_observer(spawn_player_portal)
@@ -66,30 +68,6 @@ impl Default for PortCooldown {
         PortCooldown { summon, usage }
     }
 }
-
-#[derive(Component, Clone, Serialize, Deserialize)]
-#[require(
-    Replicated,
-    Transform,
-    BoxCollider = portal_collider(),
-    Sprite,
-    Anchor::BOTTOM_CENTER,
-    Interactable{
-        kind: InteractionType::Portal,
-        restricted_to: None,
-    },
-)]
-pub struct Portal;
-
-fn portal_collider() -> BoxCollider {
-    BoxCollider {
-        dimension: Vec2::new(32., 32.),
-        offset: Some(Vec2::new(0., 16.)),
-    }
-}
-
-#[derive(Component, Deref)]
-struct PortalDestination(Entity);
 
 fn add_port_cooldown(trigger: On<Add, Player>, mut commands: Commands) -> Result {
     commands

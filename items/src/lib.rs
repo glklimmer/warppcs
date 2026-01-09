@@ -7,11 +7,22 @@ use serde::{Deserialize, Serialize};
 use shared::enum_map::*;
 use std::{cmp::Ordering, fmt, ops::MulAssign};
 
+use crate::sprites::{
+    chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
+    weapons::WeaponsSpriteSheet,
+};
+
+mod sprites;
+
 pub struct ItemPlugins;
 
 impl Plugin for ItemPlugins {
     fn build(&self, app: &mut App) {
-        app.replicate_bundle::<(Item, Transform)>();
+        app.replicate_bundle::<(Item, Transform)>()
+            .init_resource::<WeaponsSpriteSheet>()
+            .init_resource::<ChestsSpriteSheet>()
+            .init_resource::<HeadsSpriteSheet>()
+            .init_resource::<FeetSpriteSheet>();
     }
 }
 
