@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use ai::{BanditBehaviour, FollowOffset, UnitBehaviour};
+use ai::{BanditBehaviour, UnitBehaviour, offset::FollowOffset};
 use army::{
     ArmyFlagAssignments, ArmyFormation, ArmyPosition,
     commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH},
@@ -21,25 +21,23 @@ use buildings::{
 use console_protocol::*;
 use health::Health;
 use interaction::{Interactable, InteractionType};
+use items::{Item, ItemType, MeleeWeapon, ProjectileWeapon, Rarity, WeaponType};
+use lobby::{ClientPlayerMap, PlayerColor};
 use physics::{
     attachment::AttachedTo,
     movement::{Speed, Velocity},
 };
-use player::{
-    Player,
-    items::{Item, ItemType, MeleeWeapon, ProjectileWeapon, Rarity, WeaponType},
-};
 use serde_json::{Value, json};
 use shared::{
-    ClientPlayerMap, GameSceneId, Owner, PlayerColor, Vec3LayerExt,
+    GameSceneId, Owner, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
     map::Layers,
 };
 use units::{Damage, MeleeRange, Sight, Unit, UnitType};
 
-pub struct RemotePlugin;
+pub struct CheatRemotePlugin;
 
-impl Plugin for RemotePlugin {
+impl Plugin for CheatRemotePlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.add_plugins((
             RemotePlugin::default()
@@ -108,8 +106,9 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
     };
 
     let player_entity = unit_req.player_entity(world)?;
-    let (player_transform, player, game_scene_id) = {
-        let mut query: QueryState<(&Transform, &Player, &GameSceneId)> = QueryState::new(world);
+    let (player_transform, color, game_scene_id) = {
+        let mut query: QueryState<(&Transform, &PlayerColor, &GameSceneId)> =
+            QueryState::new(world);
         query.get(world, player_entity).unwrap()
     };
 
@@ -128,7 +127,7 @@ fn spawn_unit_handler(In(params): In<Option<Value>>, world: &mut World) -> BrpRe
 
     let building = Building {
         building_type: BuildingType::Unit { weapon: unit_type },
-        color: player.color,
+        color: *color,
     };
     let building = world
         .spawn((
@@ -202,11 +201,11 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
     let brp: BrpSpawnFullCommander = serde_json::from_value(value)
         .map_err(|e| BrpError::internal(format!("invalid commander parameters: {e}")))?;
     let player = brp.player_entity(world)?;
-    let (player_component, game_scene_id) = world
+    let (color, game_scene_id) = world
         .entity(player)
-        .get_components::<(&Player, &GameSceneId)>()
+        .get_components::<(&PlayerColor, &GameSceneId)>()
         .unwrap();
-    let color = player_component.color;
+    let color = *color;
 
     let game_scene_id = *game_scene_id;
 

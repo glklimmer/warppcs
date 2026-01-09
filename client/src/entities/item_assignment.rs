@@ -1,27 +1,22 @@
 use bevy::{color::palettes::css::GREY, prelude::*};
 
-use animations::{
-    AnimationSpriteSheet, BuildSprite,
-    objects::items::{
+use animations::{AnimationSpriteSheet, BuildSprite};
+use bevy_replicon::prelude::ClientTriggerExt;
+use buildings::item_assignment::{
+    AssignItem, CloseBuildingDialog, ItemAssignment, ItemSlot, OpenBuildingDialog, StartBuild,
+};
+use inventory::Inventory;
+use items::{
+    Item, ItemType,
+    sprites::{
         chests::{Chests, ChestsSpriteSheet},
         feet::{Feet, FeetSpriteSheet},
         heads::{Heads, HeadsSpriteSheet},
         weapons::{Weapons, WeaponsSpriteSheet},
     },
 };
-use bevy_replicon::prelude::ClientTriggerExt;
-use shared::{
-    ControlledPlayer, PlayerState, Vec3LayerExt,
-    map::Layers,
-    networking::Inventory,
-    server::{
-        buildings::item_assignment::{
-            AssignItem, CloseBuildingDialog, ItemAssignment, ItemSlot, OpenBuildingDialog,
-            StartBuild,
-        },
-        players::items::{Item, ItemType},
-    },
-};
+use lobby::ControlledPlayer;
+use shared::{PlayerState, Vec3LayerExt, map::Layers};
 
 use crate::{
     entities::items::ItemSprite,

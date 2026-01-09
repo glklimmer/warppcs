@@ -14,7 +14,7 @@ use networking::join_server::JoinServerPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugins;
 use projectiles::ProjectilePlugin;
-use remote::RemotePlugin;
+use remote::CheatRemotePlugin;
 use shared::PlayerState;
 use shared::{GameState, SharedPlugin};
 use std::env;
@@ -27,9 +27,7 @@ use entities::EntitiesPlugin;
 use input::InputPlugin;
 use travel::TravelPlugin;
 
-use crate::{
-    background::BackgroundPlugin, background_sound::BackgroundSoundPlugin, defeat::DefeatPlugin,
-};
+use crate::{background::BackgroundPlugin, background_sound::BackgroundSoundPlugin};
 
 pub mod background;
 pub mod camera;
@@ -116,7 +114,7 @@ fn main() {
             HealthPlugin,
             AIPlugin,
             ProjectilePlugin,
-            RemotePlugin,
+            CheatRemotePlugin,
             InteractablePlugins,
         ));
 

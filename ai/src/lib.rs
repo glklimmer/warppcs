@@ -18,11 +18,12 @@ use crate::{
     spawn::SpawnPlugin,
 };
 
+pub mod offset;
+
 mod attack;
 mod death;
 mod flag;
 mod movement;
-mod offset;
 mod spawn;
 
 #[derive(Debug, Component, Default, Clone)]

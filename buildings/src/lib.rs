@@ -27,12 +27,12 @@ use crate::{
 mod animations;
 mod construction;
 mod destruction;
-mod respawn;
 
 pub mod gold_farm;
 pub mod item_assignment;
 pub mod main_building;
 pub mod recruiting;
+pub mod respawn;
 pub mod siege_camp;
 pub mod wall;
 

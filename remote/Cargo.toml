@@ -46,6 +46,9 @@ army = { path = "../army" }
 physics = { path = "../physics" }
 health = { path = "../health" }
 interaction = { path = "../interaction" }
+items = { path = "../items" }
+lobby = { path = "../lobby" }
 bevy_replicon = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+fastrand = { workspace = true }
