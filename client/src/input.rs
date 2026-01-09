@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_replicon::client::ClientSystems;
-use shared::networking::LobbyMessage;
+use lobby::LobbyMessage;
 
 use crate::gizmos::GizmosSettings;
 

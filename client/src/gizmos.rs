@@ -1,12 +1,8 @@
-use bevy::{
-    color::palettes::css::{BLUE, GREEN, RED, YELLOW},
-    prelude::*,
-};
+use bevy::prelude::*;
 
-use shared::{
-    BoxCollider,
-    server::entities::{MeleeRange, ProjectileRange, Sight},
-};
+use bevy::color::palettes::css::{BLUE, GREEN, RED, YELLOW};
+use physics::movement::BoxCollider;
+use units::{MeleeRange, ProjectileRange, Sight};
 
 pub struct GizmosPlugin;
 

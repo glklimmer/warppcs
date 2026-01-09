@@ -1,21 +1,18 @@
-use animations::BuildSprite;
 use bevy::prelude::*;
 
+use animations::BuildSprite;
+use animations::ui::item_info::{ItemInfoParts, ItemInfoSpriteSheet};
 use bevy::{sprite::Anchor, text::TextBounds};
-
-use animations::{
-    objects::items::{
+use highlight::Highlighted;
+use items::{BaseEffect, Modifier, ModifierSign};
+use items::{
+    Item, ItemType,
+    sprites::{
         chests::ChestsSpriteSheet, feet::FeetSpriteSheet, heads::HeadsSpriteSheet,
         weapons::WeaponsSpriteSheet,
     },
-    ui::item_info::{ItemInfoParts, ItemInfoSpriteSheet},
 };
-use highlight::Highlighted;
-use shared::{
-    Vec3LayerExt,
-    map::Layers,
-    server::players::items::{BaseEffect, Item, ItemType, Modifier, ModifierSign},
-};
+use shared::{Vec3LayerExt, map::Layers};
 
 pub struct ItemsPlugin;
 

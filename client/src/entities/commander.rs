@@ -1,28 +1,24 @@
 use bevy::prelude::*;
 
-use animations::{
-    objects::items::weapons::WeaponsSpriteSheet,
-    ui::{
-        animations::SpriteShaking,
-        army_formations::{FormationIconSpriteSheet, FormationIcons},
-        commander_menu::{CommanderMenuNodes, CommanderMenuSpriteSheet},
+use animations::ui::{
+    animations::SpriteShaking,
+    army_formations::{FormationIconSpriteSheet, FormationIcons},
+    commander_menu::{CommanderMenuNodes, CommanderMenuSpriteSheet},
+};
+use army::{
+    ArmyFlagAssignments, ArmyFormation, ArmyPosition,
+    commander::{
+        CommanderAssignmentReject, CommanderAssignmentRequest, CommanderCampInteraction,
+        CommanderInteraction, CommanderPickFlag,
     },
+    flag::{Flag, FlagHolder},
 };
 use bevy::color::palettes::css::YELLOW;
 use bevy_replicon::prelude::ClientTriggerExt;
-use shared::{
-    ControlledPlayer, PlayerState, Vec3LayerExt,
-    map::Layers,
-    networking::UnitType,
-    server::{
-        buildings::recruiting::{Flag, FlagHolder},
-        entities::commander::{
-            ArmyFlagAssignments, ArmyFormation, ArmyPosition, CommanderAssignmentReject,
-            CommanderAssignmentRequest, CommanderCampInteraction, CommanderInteraction,
-            CommanderPickFlag,
-        },
-    },
-};
+use items::sprites::weapons::WeaponsSpriteSheet;
+use lobby::ControlledPlayer;
+use shared::{PlayerState, Vec3LayerExt, map::Layers};
+use units::UnitType;
 
 use crate::widgets::menu::{
     CloseEvent, ClosedMenu, Menu, MenuNode, MenuPlugin, NodePayload, Selected, SelectionEvent,

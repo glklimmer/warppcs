@@ -105,6 +105,8 @@ fn main() {
             GizmosPlugin,
             GameWorldPlugin,
             TravelPlugin,
+        ))
+        .add_plugins((
             PlayerPlugins,
             BuildingsPlugins,
             ArmyPlugins,
@@ -138,7 +140,7 @@ fn main() {
             client.add_systems(OnEnter(GameState::MainMenu), create_web_transport_server);
         }
     } else {
-        client.add_plugins((JoinServerPlugin));
+        client.add_plugins(JoinServerPlugin);
 
         #[cfg(feature = "steam")]
         {

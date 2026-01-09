@@ -93,7 +93,7 @@ fn slot_selected(
 
     let nodes: Vec<_> = items
         .iter()
-        .filter(|item| item.slot() == slot)
+        .filter(|item| ItemSlot::from(*item) == slot)
         .map(|item| build_node(item, &sheets))
         .collect();
 
@@ -222,7 +222,7 @@ fn update_assignment(
 
             let Some((entry, _, maybe_selected)) = menu_entries
                 .iter()
-                .find(|(_, slot, _)| ***slot == item.slot())
+                .find(|(_, slot, _)| ***slot == ItemSlot::from(item))
             else {
                 continue;
             };

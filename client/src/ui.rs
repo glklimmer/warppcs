@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use shared::{ControlledPlayer, GameState, networking::Inventory};
+
+use inventory::Inventory;
+use lobby::ControlledPlayer;
+use shared::GameState;
 
 #[derive(Component)]
 pub struct GoldAmountDisplay;

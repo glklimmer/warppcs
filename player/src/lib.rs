@@ -11,8 +11,8 @@ use shared::map::Layers;
 
 use crate::{
     animation::PlayerAnimationPlugin, attack::AttackPlugin, client::Client,
-    commander::CommanderPlugin, item::pickup_item, knockout::KnockoutPlugin, mount::MountPlugin,
-    movement::Movement, teleport::Teleport,
+    commander::CommanderPlugin, defeat::DefeatPlugin, item::pickup_item, knockout::KnockoutPlugin,
+    mount::MountPlugin, movement::Movement, teleport::Teleport,
 };
 
 mod animation;
@@ -39,6 +39,7 @@ impl Plugin for PlayerPlugins {
             KnockoutPlugin,
             CommanderPlugin,
             PlayerAnimationPlugin,
+            DefeatPlugin,
         ))
         .replicate_bundle::<(Player, Transform, Inventory)>()
         .add_systems(

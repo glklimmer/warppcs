@@ -8,7 +8,7 @@ use lobby::ControlledPlayer;
 use serde::{Deserialize, Serialize};
 use shared::{Owner, PlayerState};
 
-pub struct DefeatPlugin;
+pub(crate) struct DefeatPlugin;
 
 impl Plugin for DefeatPlugin {
     fn build(&self, app: &mut App) {
@@ -20,7 +20,7 @@ impl Plugin for DefeatPlugin {
 }
 
 #[derive(Event, Clone, Copy, Deserialize, Serialize, Deref)]
-pub struct PlayerDefeated(Entity);
+pub(crate) struct PlayerDefeated(Entity);
 
 impl MapEntities for PlayerDefeated {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {

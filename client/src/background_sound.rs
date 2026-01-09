@@ -1,10 +1,9 @@
-use std::ops::Mul;
+use bevy::prelude::*;
 
-use bevy::{
-    audio::{PlaybackMode, Volume},
-    prelude::*,
-};
-use shared::{ControlledPlayer, GameState, Owner, server::entities::UnitAnimation};
+use bevy::audio::{PlaybackMode, Volume};
+use lobby::ControlledPlayer;
+use shared::{GameState, Owner, server::entities::UnitAnimation};
+use std::ops::Mul;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum MusicTrack {

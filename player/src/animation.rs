@@ -25,6 +25,7 @@ impl Plugin for PlayerAnimationPlugin {
                 PreUpdate,
                 trigger_king_animation.after(ClientSystems::Receive),
             )
+            .add_observer(init_player_sprite)
             .add_observer(set_king_defeat)
             .add_observer(remove_animation)
             .add_observer(set_king_walking)

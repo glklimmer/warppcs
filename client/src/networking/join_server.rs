@@ -67,7 +67,7 @@ impl Plugin for JoinServerPlugin {
 #[cfg(feature = "netcode")]
 pub fn join_web_transport_server(mut commands: Commands) {
     use aeronet_webtransport::client::WebTransportClient;
-    use shared::server::create_server::WEB_TRANSPORT_PORT;
+    use lobby::create_server::WEB_TRANSPORT_PORT;
 
     let config = web_transport_config(None);
     let default_target = format!("https://127.0.0.1:{WEB_TRANSPORT_PORT}");
