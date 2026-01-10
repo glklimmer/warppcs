@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use bevy_replicon::prelude::ServerState;
 use health::{DelayedDespawn, Health};
 use interaction::{Interactable, InteractionType};
 use physics::{attachment::AttachedTo, movement::Velocity};
@@ -32,10 +33,16 @@ fn on_unit_death(
     group: Query<&FlagUnits>,
     transform: Query<&Transform>,
     holder: Query<&FlagHolder>,
+    server_state: Res<State<ServerState>>,
     mut commands: Commands,
 ) -> Result {
+    let ServerState::Running = server_state.get() else {
+        return Ok(());
+    };
     let entity = death.entity;
-    let (owner, maybe_flag_assignment, maybe_army) = units.get(entity)?;
+    let Ok((owner, maybe_flag_assignment, maybe_army)) = units.get(entity) else {
+        return Ok(());
+    };
 
     commands.entity(entity).try_remove::<Interactable>();
 

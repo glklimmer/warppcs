@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
 use bevy::ecs::entity::MapEntities;
-use bevy_replicon::prelude::{Channel, SendMode, ServerEventAppExt, ServerTriggerExt, ToClients};
+use bevy_replicon::prelude::{
+    Channel, SendMode, ServerEventAppExt, ServerState, ServerTriggerExt, ToClients,
+};
 use buildings::{Building, BuildingType};
 use health::Health;
 use lobby::ControlledPlayer;
@@ -30,11 +32,17 @@ impl MapEntities for PlayerDefeated {
 
 fn on_building_destroy(
     destruction: On<Remove, Health>,
+    server_state: Res<State<ServerState>>,
     mut query: Query<(&Building, &Owner)>,
     mut commands: Commands,
 ) -> Result {
+    let ServerState::Running = server_state.get() else {
+        return Ok(());
+    };
     let entity = destruction.entity;
-    let (building, owner) = query.get_mut(entity)?;
+    let Ok((building, owner)) = query.get_mut(entity) else {
+        return Ok(());
+    };
 
     if let BuildingType::MainBuilding { level: _ } = building.building_type {
         commands.server_trigger(ToClients {

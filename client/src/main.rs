@@ -107,6 +107,7 @@ fn main() {
             GizmosPlugin,
             GameWorldPlugin,
             TravelPlugin,
+            HealthPlugin,
         ))
         .add_plugins((
             PlayerPlugins,
@@ -115,10 +116,7 @@ fn main() {
             InteractPlugin,
             PhysicsPlugin,
             UnitsPlugins,
-            HealthPlugin,
-            AIPlugin,
             ProjectilePlugin,
-            CheatRemotePlugin,
             InteractablePlugins,
             ItemPlugins,
             LobbyPlugin,
@@ -127,6 +125,8 @@ fn main() {
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);
 
     if args.contains(&String::from("server")) {
+        client.add_plugins((AIPlugin, CheatRemotePlugin));
+
         #[cfg(feature = "steam")]
         {
             use aeronet_steam::server::SteamNetServerPlugin;

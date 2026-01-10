@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
+use bevy_replicon::prelude::ServerState;
 use health::Health;
+use units::Unit;
 
 use crate::{BanditBehaviour, BehaveSources, Target, TargetedBy, UnitBehaviour};
 
@@ -14,11 +16,17 @@ impl Plugin for DeathPlugin {
 
 fn on_death(
     death: On<Remove, Health>,
-    units: Query<Option<&TargetedBy>>,
+    units: Query<Option<&TargetedBy>, With<Unit>>,
+    server_state: Res<State<ServerState>>,
     mut commands: Commands,
 ) -> Result {
+    let ServerState::Running = server_state.get() else {
+        return Ok(());
+    };
     let entity = death.entity;
-    let maybe_targeted_by = units.get(entity)?;
+    let Ok(maybe_targeted_by) = units.get(entity) else {
+        return Ok(());
+    };
 
     commands
         .entity(entity)

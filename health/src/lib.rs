@@ -65,19 +65,23 @@ fn apply_damage(
     mut animation: MessageWriter<ToClients<AnimationChangeEvent>>,
 ) {
     for event in attack_events.read() {
-        if let Ok((entity, mut health)) = query.get_mut(event.target_entity) {
-            health.hitpoints -= event.damage;
+        let Ok((entity, mut health)) = query.get_mut(event.target_entity) else {
+            continue;
+        };
 
+        health.hitpoints -= event.damage;
+
+        if health.hitpoints <= 0. {
             commands.entity(entity).remove::<Health>().insert(Unmovable);
-
-            animation.write(ToClients {
-                mode: SendMode::Broadcast,
-                message: AnimationChangeEvent {
-                    entity,
-                    change: AnimationChange::Hit(event.by),
-                },
-            });
         }
+
+        animation.write(ToClients {
+            mode: SendMode::Broadcast,
+            message: AnimationChangeEvent {
+                entity,
+                change: AnimationChange::Hit(event.by),
+            },
+        });
     }
 }
 
