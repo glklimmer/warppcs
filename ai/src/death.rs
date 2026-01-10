@@ -4,7 +4,7 @@ use bevy_replicon::prelude::ServerState;
 use health::Health;
 use units::Unit;
 
-use crate::{BanditBehaviour, BehaveSources, Target, TargetedBy, UnitBehaviour};
+use crate::{BehaveSources, Target, TargetedBy, UnitBehaviour, bandit::BanditBehaviour};
 
 pub(crate) struct DeathPlugin;
 

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use units::{Unit, UnitType};
 
-use crate::{BanditBehaviour, UnitBehaviour};
+use crate::{UnitBehaviour, bandit::BanditBehaviour};
 
 pub(crate) struct SpawnPlugin;
 

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use ai::{BanditBehaviour, UnitBehaviour, offset::FollowOffset};
+use ai::{ArmyFormationTo, BanditBehaviour, UnitBehaviour, offset::FollowOffset};
 use army::{
     ArmyFlagAssignments, ArmyFormation, ArmyPosition,
     commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH},
@@ -10,6 +10,7 @@ use army::{
 use bevy::{
     app::Plugin,
     ecs::{entity::Entity, system::In, world::World},
+    input::common_conditions::input_just_pressed,
     remote::{BrpError, BrpResult, RemotePlugin, http::RemoteHttpPlugin},
 };
 use buildings::{
@@ -27,13 +28,14 @@ use physics::{
     attachment::AttachedTo,
     movement::{Speed, Velocity},
 };
+use player::Player;
 use serde_json::{Value, json};
 use shared::{
     GameSceneId, Owner, Vec3LayerExt,
     enum_map::{EnumIter, EnumMap},
     map::Layers,
 };
-use units::{Damage, MeleeRange, Sight, Unit, UnitType};
+use units::{Damage, MeleeRange, ProjectileRange, Sight, Unit, UnitType};
 
 pub struct CheatRemotePlugin;
 
@@ -46,7 +48,8 @@ impl Plugin for CheatRemotePlugin {
                 .with_method(BRP_SPAWN_FULL_COMMANDER, spawn_full_commander)
                 .with_method(BRP_SPAWN_UNIT_AND_BANDITS, spawn_unit_and_bandits),
             RemoteHttpPlugin::default(),
-        ));
+        ))
+        .add_systems(Update, test.run_if(input_just_pressed(KeyCode::Space)));
     }
 }
 
@@ -292,7 +295,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         army_formation.push(formation);
     });
 
-    let front = spawn_unit(
+    let front = spawn_unit_world(
         world,
         player,
         army_formation[0],
@@ -301,7 +304,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         color,
         game_scene_id,
     );
-    let middle = spawn_unit(
+    let middle = spawn_unit_world(
         world,
         player,
         army_formation[1],
@@ -310,7 +313,7 @@ fn spawn_full_commander(In(params): In<Option<Value>>, world: &mut World) -> Brp
         color,
         game_scene_id,
     );
-    let back = spawn_unit(
+    let back = spawn_unit_world(
         world,
         player,
         army_formation[2],
@@ -393,6 +396,254 @@ fn spawn_unit_and_bandits(In(params): In<Option<Value>>, world: &mut World) -> B
 }
 
 fn spawn_unit(
+    mut commands: Commands,
+    player: Entity,
+    formation: Entity,
+    unit_type: UnitType,
+    player_translation: Vec3,
+    color: PlayerColor,
+    game_scene_id: GameSceneId,
+    amount: i32,
+    commander: Entity,
+) -> Entity {
+    let owner = Owner::Player(player);
+    let flag_entity = commands
+        .spawn((
+            Flag {
+                original_building: player,
+                unit_type,
+                color,
+            },
+            AttachedTo(formation),
+            owner,
+            Visibility::Hidden,
+            game_scene_id,
+        ))
+        .id();
+
+    let unit = Unit {
+        swing_timer: Timer::from_seconds(4., TimerMode::Repeating),
+        unit_type,
+        color,
+    };
+
+    let hitpoints = 200.;
+    let health = Health { hitpoints };
+
+    let movement_speed = 40.;
+    let speed = Speed(movement_speed);
+
+    let damage = 20.;
+    let damage = Damage(damage);
+
+    let range = match unit_type {
+        UnitType::Shieldwarrior => 10.,
+        UnitType::Pikeman => 20.,
+        UnitType::Archer => 10.,
+        UnitType::Bandit => todo!(),
+        UnitType::Commander => todo!(),
+    };
+    let melee_range_shield = MeleeRange(range);
+    let melee_range_pike = MeleeRange(range * 2.);
+    let projectile_range = ProjectileRange(range * 10.);
+
+    for i in 1..=amount {
+        let mut un = commands.spawn((
+            Name::new(format!("{:?} {}", unit_type, i)),
+            player_translation.with_layer(Layers::Flag),
+            unit.clone(),
+            health,
+            speed,
+            damage,
+            owner,
+            game_scene_id,
+            FlagAssignment(flag_entity),
+            UnitBehaviour::default(),
+            ArmyFormationTo(commander),
+        ));
+        if unit.unit_type.eq(&UnitType::Shieldwarrior) {
+            un.insert(melee_range_shield);
+        }
+        if unit.unit_type.eq(&UnitType::Pikeman) {
+            un.insert(melee_range_pike);
+        }
+        if unit.unit_type.eq(&UnitType::Archer) {
+            un.insert(projectile_range);
+        }
+    }
+    flag_entity
+}
+
+fn test(
+    mut commands: Commands,
+    player: Query<(Entity, &GameSceneId, &Transform), With<Player>>,
+) -> Result {
+    let (player_entity, game_scene_id, player_pos) = player.single()?;
+
+    let game_scene_id = *game_scene_id;
+
+    for i in 1..=3 {
+        commands.spawn((
+            Name::new(format!("Bandit {}", i)),
+            Owner::Bandits,
+            Unit {
+                unit_type: UnitType::Bandit,
+                swing_timer: Timer::from_seconds(5., TimerMode::Once),
+                color: PlayerColor::default(),
+            },
+            BanditBehaviour::default(),
+            Health { hitpoints: 255. },
+            MeleeRange(10.),
+            Sight::default(),
+            Speed(30.),
+            Damage(10.),
+            game_scene_id,
+            Transform::from_xyz(450. - 10. * i as f32, 1., 1.),
+        ));
+    }
+
+    let owner = Owner::Player(player_entity);
+    let flag_commander = commands
+        .spawn((
+            Flag {
+                original_building: player_entity,
+                unit_type: UnitType::Commander,
+                color: PlayerColor::Blue,
+            },
+            AttachedTo(player_entity),
+            Interactable {
+                kind: InteractionType::Flag,
+                restricted_to: Some(player_entity),
+            },
+            owner,
+        ))
+        .id();
+
+    commands
+        .entity(player_entity)
+        .insert(FlagHolder(flag_commander));
+    let time = 3.;
+    let unit = Unit {
+        swing_timer: Timer::from_seconds(time, TimerMode::Repeating),
+        unit_type: UnitType::Commander,
+        color: PlayerColor::Blue,
+    };
+
+    let hitpoints = 100.;
+    let health = Health { hitpoints };
+
+    let movement_speed = 50.;
+    let speed = Speed(movement_speed);
+
+    let damage = 20.;
+    let damage = Damage(damage);
+
+    let range = 10.;
+    let range = MeleeRange(range);
+
+    let offset = Vec2::new(-18., 0.);
+
+    let commander = commands
+        .spawn((
+            Name::new("Commander"),
+            player_pos
+                .translation
+                .offset_x(-100.)
+                .with_layer(Layers::Unit),
+            unit.clone(),
+            health,
+            speed,
+            damage,
+            range,
+            owner,
+            FlagAssignment(flag_commander),
+            game_scene_id,
+            FollowOffset(offset),
+            Sight(30.),
+            UnitBehaviour::default(),
+            Interactable {
+                kind: InteractionType::Commander,
+                restricted_to: Some(player_entity),
+            },
+        ))
+        .id();
+
+    let mut formation_offset = 0.;
+
+    let mut army_formation: Vec<Entity> = vec![];
+
+    ArmyPosition::all_variants().iter().for_each(|_| {
+        formation_offset += (BASE_FORMATION_WIDTH) + BASE_FORMATION_OFFSET;
+        let formation = commands
+            .spawn((
+                ArmySlot {
+                    commander,
+                    offset: formation_offset,
+                },
+                Velocity::default(),
+                Transform::default(),
+            ))
+            .id();
+        army_formation.push(formation);
+    });
+
+    let player_translation = player_pos.translation;
+    let color = PlayerColor::Blue;
+    let front = spawn_unit(
+        commands.reborrow(),
+        player_entity,
+        army_formation[0],
+        UnitType::Shieldwarrior,
+        player_translation,
+        color,
+        game_scene_id,
+        2,
+        commander,
+    );
+    let middle = spawn_unit(
+        commands.reborrow(),
+        player_entity,
+        army_formation[1],
+        UnitType::Pikeman,
+        player_translation,
+        color,
+        game_scene_id,
+        1,
+        commander,
+    );
+    let back = spawn_unit(
+        commands.reborrow(),
+        player_entity,
+        army_formation[2],
+        UnitType::Archer,
+        player_translation,
+        color,
+        game_scene_id,
+        4,
+        commander,
+    );
+
+    commands.entity(commander).insert((
+        ArmyFlagAssignments {
+            flags: EnumMap::new(|c| match c {
+                ArmyPosition::Front => Some(front),
+                ArmyPosition::Middle => Some(middle),
+                ArmyPosition::Back => Some(back),
+            }),
+        },
+        ArmyFormation {
+            positions: EnumMap::new(|c| match c {
+                ArmyPosition::Front => army_formation[0],
+                ArmyPosition::Middle => army_formation[1],
+                ArmyPosition::Back => army_formation[2],
+            }),
+        },
+    ));
+
+    Ok(())
+}
+
+fn spawn_unit_world(
     world: &mut World,
     player: Entity,
     commander: Entity,
@@ -440,8 +691,9 @@ fn spawn_unit(
     };
     let range = MeleeRange(range);
 
-    for _ in 1..=4 {
+    for i in 1..=4 {
         world.spawn((
+            Name::new(format!("Unit {}", i)),
             player_translation.with_layer(Layers::Flag),
             unit.clone(),
             health,

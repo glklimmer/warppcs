@@ -1,26 +1,44 @@
 use bevy::prelude::*;
 
-use attack::AIAttackPlugin;
 use bevy_behave::{
-    Behave, behave,
-    prelude::{BehaveInterrupt, BehavePlugin, BehaveTimeout, BehaveTree, BehaveTrigger, Tree},
+    behave,
+    prelude::{
+        Behave, BehaveInterrupt, BehavePlugin, BehaveTimeout, BehaveTree, BehaveTrigger, Tree,
+    },
 };
 use health::Health;
-use movement::{AIMovementPlugin, FollowFlag, Roam};
+use movement::{
+    AIMovementPlugin, FollowFlag, IsFriendlyFormationUnitInFront, IsFriendlyUnitInFront,
+};
 use physics::WorldDirection;
 use shared::Owner;
 use units::{MeleeRange, ProjectileRange, Sight, Unit, UnitType, pushback::PushBack};
 
+#[derive(Component, Deref)]
+#[relationship(relationship_target = ArmyFormations)]
+pub struct ArmyFormationTo(pub Entity);
+
+#[derive(Component, Default)]
+#[relationship_target(relationship = ArmyFormationTo, linked_spawn)]
+pub struct ArmyFormations(Vec<Entity>);
+
 use crate::{
+    attack::AIAttackPlugin,
+    bandit::AIBanditPlugin,
+    commander::AICommanderPlugin,
     death::DeathPlugin,
     flag::FlagPlugin,
     offset::{FollowOffset, OffsetPlugin},
+    retreat::{AIRetreatPlugin, GeneralInSightRange},
     spawn::SpawnPlugin,
 };
 
 pub mod offset;
+pub mod retreat;
 
 mod attack;
+mod bandit;
+mod commander;
 mod death;
 mod flag;
 mod movement;
@@ -53,14 +71,22 @@ impl Plugin for AIPlugin {
             SpawnPlugin,
             OffsetPlugin,
             FlagPlugin,
+            AIBanditPlugin,
+            AICommanderPlugin,
+            AIRetreatPlugin,
         ))
         .add_observer(on_insert_unit_behaviour)
-        .add_observer(on_insert_bandit_behaviour)
         .add_observer(push_back_check)
         .add_observer(determine_target)
         .add_observer(check_target_in_melee_range)
         .add_observer(check_target_in_projectile_range)
         .add_systems(FixedPostUpdate, remove_target_if_out_of_sight);
+
+        #[cfg(debug_assertions)]
+        app.add_systems(
+            Update,
+            (debug_display_unit_names, debug_display_targeted_by),
+        );
     }
 }
 
@@ -73,17 +99,36 @@ enum Attack {
 #[derive(Component, Clone)]
 struct WalkIntoRange;
 
-#[derive(Component, Clone, Deref)]
-struct WalkingInDirection(WorldDirection);
+#[derive(Component, Clone)]
+struct TargetInSightRange;
+
+#[derive(Component, Clone)]
+struct RetreatToBase;
+
+#[derive(Component, Clone)]
+struct WalkingInDirection;
+
+#[derive(Event, Clone)]
+struct FormationHasTarget;
 
 fn on_insert_unit_behaviour(
     trigger: On<Insert, UnitBehaviour>,
-    query: Query<(&UnitBehaviour, &Unit)>,
+    units: Query<&Unit>,
     mut commands: Commands,
 ) -> Result {
     let entity = trigger.entity;
-    let (behaviour, unit) = query.get(entity)?;
+    let unit = units.get(entity)?;
 
+    if unit.unit_type.eq(&UnitType::Commander) {
+        return Ok(());
+    }
+
+    let general_within_range = behave!(
+        Behave::Sequence =>{
+            Behave::trigger(GeneralInSightRange),
+            Behave::spawn_named("Retreat to Base", (RetreatToBase, BehaveTarget(entity)))
+        }
+    );
     let mut attack_chain: Vec<Tree<Behave>> = Vec::new();
 
     attack_chain.push(behave!(
@@ -108,7 +153,10 @@ fn on_insert_unit_behaviour(
                 "Attack nearest enemy Range",
                 (
                     Attack::Projectile,
-                    BehaveInterrupt::by_not(TargetInProjectileRange).or(TargetInMeleeRange),
+                    BehaveInterrupt::by_not(TargetInProjectileRange)
+                        .or(TargetInMeleeRange)
+                        .or(IsFriendlyUnitInFront)
+                        .or(IsFriendlyFormationUnitInFront),
                     BehaveTarget(entity),
                 ),
             )
@@ -116,54 +164,53 @@ fn on_insert_unit_behaviour(
         ));
     }
 
-    if let UnitBehaviour::Idle | UnitBehaviour::Attack(_) = behaviour {
-        attack_chain.push(behave!(Behave::spawn_named(
-            "Walking to target",
-            (
-                WalkIntoRange,
-                BehaveInterrupt::by(TargetInMeleeRange).or(TargetInProjectileRange),
-                BehaveTimeout::from_secs(3.0, false),
-                BehaveTarget(entity),
-            ),
-        )));
-    }
-
-    let stance = match behaviour {
-        UnitBehaviour::Idle | UnitBehaviour::FollowFlag => behave!(Behave::spawn_named(
-            "Following flag",
-            (
-                FollowFlag,
-                BehaveInterrupt::by(DetermineTarget).or(BeingPushed),
-                BehaveTarget(entity)
-            )
-        )),
-        UnitBehaviour::Attack(direction) => behave!(
-            Behave::Sequence => {
-                Behave::spawn((
-                    Name::new("Wait until unit can attack in direction"),
-                    WaitToAttack(*direction)
-                )),
-                Behave::spawn_named(
-                "Attacking direction",
+    let enemy_within_sight_range = behave!(
+        Behave::Sequence => {
+            Behave::trigger(TargetInSightRange),
+            Behave::Invert => {
+                Behave::trigger(IsFriendlyUnitInFront)
+            },
+            Behave::Invert => {
+                Behave::trigger(IsFriendlyFormationUnitInFront)
+            },
+            Behave::spawn_named(
+                "Attack nearest enemy Melee",
                 (
-                    WalkingInDirection(*direction),
-                    BehaveInterrupt::by(DetermineTarget).or(BeingPushed),
-                    BehaveTarget(entity)
-                ))
-            }
-        ),
-    };
+                    WalkIntoRange,
+                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyFormationUnitInFront).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
+                    BehaveTarget(entity),
+                ),
+            ),
+        },
+    );
+
+    let notify = behave!(
+        Behave::Sequence => {
+            Behave::trigger(FormationHasTarget),
+            Behave::spawn_named(
+                "Notify Formation",
+                (
+                    WalkingInDirection,
+                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyFormationUnitInFront).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
+                    BehaveTarget(entity),
+                ),
+            ),
+        }
+    );
 
     let tree = behave!(
         Behave::Forever => {
             Behave::Fallback => {
-                Behave::Sequence => {
-                    Behave::trigger(DetermineTarget),
-                    Behave::Fallback => {
-                        ... attack_chain
-                    }
-                },
-                @ stance
+                @general_within_range,
+                ...attack_chain,
+                @enemy_within_sight_range,
+                @notify,
+                @behave!(
+                    Behave::spawn_named(
+                        "Following flag",
+                            (FollowFlag, BehaveTarget(entity), BehaveInterrupt::by(TargetInSightRange).or(BeingPushed).or(FormationHasTarget))
+                    )
+                )
             }
         }
     );
@@ -176,46 +223,6 @@ fn on_insert_unit_behaviour(
             BehaveTarget(entity),
         ));
 
-    Ok(())
-}
-
-fn on_insert_bandit_behaviour(
-    trigger: On<Insert, BanditBehaviour>,
-    query: Query<&BanditBehaviour>,
-    mut commands: Commands,
-) -> Result {
-    let entity = trigger.entity;
-    let behaviour = query.get(entity)?;
-
-    let stance = match behaviour {
-        BanditBehaviour::Aggressive => behave!(Behave::spawn_named(
-            "Roaming",
-            (
-                Roam::default(),
-                BehaveInterrupt::by(DetermineTarget).or(BeingPushed),
-                BehaveTarget(entity)
-            )
-        )),
-    };
-
-    let attack_chain = attack_and_walk_in_range(entity);
-
-    let tree = behave!(
-        Behave::Forever => {
-            Behave::Fallback => {
-                @ attack_chain,
-                @ stance
-            }
-        }
-    );
-
-    commands
-        .entity(entity)
-        .despawn_related::<BehaveSources>()
-        .with_child((
-            BehaveTree::new(tree).with_logging(false),
-            BehaveTarget(entity),
-        ));
     Ok(())
 }
 
@@ -302,7 +309,7 @@ fn push_back_check(
 }
 
 fn determine_target(
-    trigger: On<BehaveTrigger<DetermineTarget>>,
+    trigger: On<BehaveTrigger<TargetInSightRange>>,
     query: Query<(&Transform, &Owner, &Sight, Option<&Target>)>,
     others: Query<(Entity, &Transform, &Owner), With<Health>>,
     mut commands: Commands,
@@ -408,6 +415,69 @@ fn remove_target_if_out_of_sight(
         if distance > **sight {
             commands.entity(entity).try_remove::<Target>();
         }
+    }
+    Ok(())
+}
+
+#[derive(Component)]
+pub struct DebugNameTag;
+
+#[cfg(debug_assertions)]
+fn debug_display_unit_names(
+    mut commands: Commands,
+    query: Query<(Entity, &Name), (With<Unit>, Without<DebugNameTag>)>,
+) {
+    let mut y_offset = 1.;
+    for (entity, name) in query.iter() {
+        y_offset += 4.;
+        commands
+            .entity(entity)
+            .insert(DebugNameTag)
+            .with_children(|parent| {
+                parent.spawn((
+                    Text2d::new(name.as_str()),
+                    TextFont {
+                        font_size: 4.0,
+                        font_smoothing: bevy::text::FontSmoothing::AntiAliased,
+                        ..Default::default()
+                    },
+                    Transform::from_xyz(0.0, 24.0 + y_offset, 0.0).with_scale(vec3(-1., 1., 1.)),
+                ));
+            });
+    }
+}
+
+#[cfg(debug_assertions)]
+fn debug_display_targeted_by(
+    mut commands: Commands,
+    query: Query<(Entity, &TargetedBy), With<Unit>>,
+    name_query: Query<&Name>,
+) -> Result {
+    for (entity, targeted_by) in query.iter() {
+        let mut targeter_names = Vec::new();
+        for targeter in targeted_by.iter() {
+            if let Ok(name) = name_query.get(targeter) {
+                targeter_names.push(name.as_str().to_string());
+            } else {
+                targeter_names.push(format!("Entity({:?})", targeter));
+            }
+        }
+        let display_text = if targeter_names.is_empty() {
+            "Not targeted".to_string()
+        } else {
+            format!("Targeted by: {}", targeter_names.join(", "))
+        };
+        commands.entity(entity).with_children(|parent| {
+            parent.spawn((
+                Text2d::new(display_text),
+                TextFont {
+                    font_size: 4.0,
+                    font_smoothing: bevy::text::FontSmoothing::AntiAliased,
+                    ..Default::default()
+                },
+                Transform::from_xyz(0.0, 24.0, 0.0).with_scale(vec3(-1., 1., 1.)),
+            ));
+        });
     }
     Ok(())
 }

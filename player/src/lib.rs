@@ -1,5 +1,7 @@
-use bevy::{prelude::*, sprite::Anchor};
+use ai::retreat::General;
+use bevy::prelude::*;
 
+use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use health::Health;
 use interaction::{InteractionTriggeredEvent, collider_trigger::ColliderTriggerActivater};
@@ -61,7 +63,8 @@ impl Plugin for PlayerPlugins {
     Inventory,
     Health = Health { hitpoints: 200. },
     ColliderTriggerActivater,
-    PlayerColor
+    PlayerColor,
+    General
 )]
 pub struct Player {
     pub id: u64,
