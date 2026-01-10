@@ -12,7 +12,7 @@ use crate::{
         ai::{
             bandit::AIBanditPlugin,
             commander::AICommanderPlugin,
-            movement::IsFriendlyUnitInFront,
+            movement::{IsFriendlyFormationUnitInFront, IsFriendlyUnitInFront},
             retreat::{AIRetreatPlugin, KingInSightRange},
         },
         entities::{ProjectileRange, Sight, Unit},
@@ -165,7 +165,7 @@ fn on_insert_unit_behaviour(
                 "Attack nearest enemy Range",
                 (
                     Attack::Projectile,
-                    BehaveInterrupt::by_not(TargetInProjectileRange).or(TargetInMeleeRange),
+                    BehaveInterrupt::by_not(TargetInProjectileRange).or(TargetInMeleeRange).or(IsFriendlyUnitInFront).or(IsFriendlyFormationUnitInFront),
                     BehaveTarget(entity),
                 ),
             )
@@ -179,15 +179,18 @@ fn on_insert_unit_behaviour(
             Behave::Invert => {
                 Behave::trigger(IsFriendlyUnitInFront)
             },
+            Behave::Invert => {
+                Behave::trigger(IsFriendlyFormationUnitInFront)
+            },
             Behave::spawn_named(
                 "Attack nearest enemy Melee",
                 (
                     WalkIntoRange,
-                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
+                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyFormationUnitInFront).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
                     BehaveTarget(entity),
                 ),
             ),
-        }
+        },
     );
 
     let notfiy = behave!(
@@ -197,7 +200,7 @@ fn on_insert_unit_behaviour(
                 "Notify Formation",
                 (
                     WalkingInDirection,
-                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
+                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyFormationUnitInFront).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
                     BehaveTarget(entity),
                 ),
             ),
@@ -207,16 +210,16 @@ fn on_insert_unit_behaviour(
     let tree = behave!(
         Behave::Forever => {
             Behave::Fallback => {
-                        @king_within_range,
-                        ...attack_chain,
-                        @enemy_within_sight_range,
-                        @notfiy,
-                        @behave!(
-                            Behave::spawn_named(
-                                "Following flag",
-                                    (FollowFlag, BehaveTarget(entity), BehaveInterrupt::by(TargetInSightRange).or(BeingPushed).or(FormationHasTarget))
-                            )
-                        )
+                @king_within_range,
+                ...attack_chain,
+                @enemy_within_sight_range,
+                @notfiy,
+                @behave!(
+                    Behave::spawn_named(
+                        "Following flag",
+                            (FollowFlag, BehaveTarget(entity), BehaveInterrupt::by(TargetInSightRange).or(BeingPushed).or(FormationHasTarget))
+                    )
+                )
             }
         }
     );

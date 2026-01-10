@@ -11,7 +11,7 @@ use crate::{
         ai::FormationHasTarget,
         buildings::recruiting::FlagAssignment,
         console::{ArmyFormationTo, ArmyFormations},
-        entities::{MeleeRange, ProjectileRange, Unit},
+        entities::{MeleeRange, ProjectileRange, Unit, commander::ArmyFormation},
         physics::{
             attachment::AttachedTo,
             movement::{RandomVelocityMul, Speed, Velocity},
@@ -21,6 +21,9 @@ use crate::{
 
 #[derive(Component, Clone)]
 pub struct FollowFlag;
+
+#[derive(Component, Clone)]
+pub struct IsFriendlyFormationUnitInFront;
 
 #[derive(Component, Clone)]
 pub struct IsFriendlyUnitInFront;
@@ -42,6 +45,7 @@ impl Plugin for AIMovementPlugin {
             FixedUpdate,
             (follow_flag, roam, walk_into_range, walk_in_direction),
         );
+        app.add_observer(friendly_formation_unit_in_front);
         app.add_observer(friendly_unit_in_front);
         app.add_observer(formation_has_target);
     }
@@ -199,7 +203,7 @@ fn walk_into_range(
 fn friendly_unit_in_front(
     trigger: On<BehaveTrigger<IsFriendlyUnitInFront>>,
     units: Query<(&Unit, Option<&ArmyFormationTo>)>,
-    other_units: Query<(Entity, &Transform, &Unit, &BoxCollider)>,
+    other_units: Query<(Entity, &Transform, &Unit)>,
     commander: Query<&ArmyFormations>,
     mut commands: Commands,
 ) -> Result {
@@ -207,7 +211,11 @@ fn friendly_unit_in_front(
     let ctx = trigger.event().ctx();
 
     // Get army formation for target
-    let (_unit, army_formation) = units.get(target)?;
+    let (target_unit, army_formation) = units.get(target)?;
+    if target_unit.unit_type.eq(&UnitType::Shieldwarrior) {
+        commands.trigger(ctx.failure());
+        return Ok(());
+    }
 
     let army_formation = match army_formation {
         Some(formation) => formation,
@@ -217,7 +225,67 @@ fn friendly_unit_in_front(
         }
     };
 
-    // Get all formation units
+    let entities = commander.get(**army_formation)?;
+
+    for entity in entities.iter() {
+        if let (Ok((_, transform_1, _)), Ok((_, transform_2, unit))) =
+            (other_units.get(target), other_units.get(entity))
+        {
+            let is_behind = transform_2.translation.x > transform_1.translation.x;
+            if is_behind
+                && target_unit.unit_type == UnitType::Archer
+                && (unit.unit_type == UnitType::Pikeman
+                    || unit.unit_type == UnitType::Shieldwarrior)
+            {
+                info!(
+                    "Target: {:?} : Other: {:?}",
+                    target_unit.unit_type, unit.unit_type
+                );
+                commands.trigger(ctx.success());
+                continue;
+            }
+
+            if is_behind
+                && target_unit.unit_type == UnitType::Pikeman
+                && unit.unit_type == UnitType::Shieldwarrior
+            {
+                info!(
+                    "Target: {:?} : Other: {:?}",
+                    target_unit.unit_type, unit.unit_type
+                );
+                commands.trigger(ctx.success());
+                continue;
+            }
+        } else {
+            commands.trigger(ctx.failure());
+        }
+    }
+
+    commands.trigger(ctx.failure());
+    Ok(())
+}
+
+fn friendly_formation_unit_in_front(
+    trigger: On<BehaveTrigger<IsFriendlyFormationUnitInFront>>,
+    units: Query<(&Unit, Option<&ArmyFormationTo>)>,
+    other_units: Query<(Entity, &Transform, &Unit, &BoxCollider)>,
+    commander: Query<&ArmyFormations>,
+    mut commands: Commands,
+) -> Result {
+    let target = trigger.ctx().target_entity();
+    let ctx = trigger.event().ctx();
+
+    // Get army formation for target
+    let (unit, army_formation) = units.get(target)?;
+
+    let army_formation = match army_formation {
+        Some(formation) => formation,
+        None => {
+            commands.trigger(ctx.failure());
+            return Ok(());
+        }
+    };
+
     let entities = commander.get(**army_formation)?;
     let position = entities.iter().position(|entity| entity == target);
 
@@ -227,21 +295,17 @@ fn friendly_unit_in_front(
                 commands.trigger(ctx.failure());
                 return Ok(());
             } else {
-                // Get the unit in front (previous position in formation)
                 let unit_in_front = entities.iter().nth(pos - 1).unwrap();
 
-                // Get target and front unit data
                 if let (Ok((_, transform_1, _, box_1)), Ok((_, transform_2, _, box_2))) =
                     (other_units.get(target), other_units.get(unit_in_front))
                 {
-                    // Check for collision using Bevy's intersects method
                     if box_1.at(transform_1).intersects(&box_2.at(transform_2)) {
                         commands.trigger(ctx.success());
                     } else {
                         commands.trigger(ctx.failure());
                     }
                 } else {
-                    // Unit in front not found or doesn't have required components
                     commands.trigger(ctx.failure());
                 }
             }
@@ -325,7 +389,6 @@ fn walk_in_direction(
             if let Ok((mut entity_velocity, rand_velocity_mul, speed, _)) =
                 unit.get_mut(ctx.target_entity())
             {
-                info!("Walking to target");
                 entity_velocity.0.x = direction * **speed * **rand_velocity_mul;
             }
         }

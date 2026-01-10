@@ -10,7 +10,7 @@ use crate::{
         ai::{
             Attack, BehaveSources, BehaveTarget, BeingPushed, RetreatToBase, TargetInMeleeRange,
             TargetInProjectileRange, TargetInSightRange, UnitBehaviour,
-            movement::{FollowFlag, IsFriendlyUnitInFront},
+            movement::{FollowFlag, IsFriendlyFormationUnitInFront},
             retreat::KingInSightRange,
         },
         entities::Unit,
@@ -80,7 +80,7 @@ fn on_insert_commander_behaviour(
                         @behave!(
                             Behave::spawn_named(
                                 "Following flag",
-                                    (FollowFlag, BehaveTarget(entity), BehaveInterrupt::by(TargetInSightRange).or(BeingPushed).or(IsFriendlyUnitInFront))
+                                    (FollowFlag, BehaveTarget(entity), BehaveInterrupt::by(TargetInSightRange).or(BeingPushed).or(IsFriendlyFormationUnitInFront))
                             )
                         )
             }
