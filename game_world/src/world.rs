@@ -197,13 +197,14 @@ fn init_world(
 
     commands.trigger(InitWorld(map));
 
-    for (client, player) in client_player_map.iter() {
+    for player in client_player_map.values() {
         let game_scene = player_game_scenes
             .get(player)
             .ok_or("GameScene for player not found")?;
 
-        let discovery = MapDiscovery::base(commands.reborrow(), *client, *game_scene);
-        commands.entity(*player).insert(discovery);
+        commands
+            .entity(*player)
+            .insert(MapDiscovery::base(*game_scene));
     }
 
     commands.server_trigger(ToClients {

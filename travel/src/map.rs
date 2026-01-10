@@ -11,7 +11,7 @@ use highlight::{
     utils::{add_highlight_on, remove_highlight_on},
 };
 use interaction::{InteractionTriggeredEvent, InteractionType};
-use lobby::{ClientPlayerMap, ControlledPlayer, GameStarted};
+use lobby::{ClientPlayerMap, ControlledPlayer};
 use serde::{Deserialize, Serialize};
 use shared::{GameScene, GameState, PlayerState, SceneType};
 
@@ -68,19 +68,13 @@ struct DiscoveryChange {
 }
 
 impl MapDiscovery {
-    pub fn base(mut commands: Commands, client: ClientId, base: GameScene) -> Self {
-        commands.server_trigger(ToClients {
-            mode: SendMode::Direct(client),
-            message: DiscoveryChange {
-                game_scene: base,
-                change_type: DiscoveryType::Revealed,
-            },
-        });
+    pub fn base(base: GameScene) -> Self {
         let mut game_scenes = HashMap::new();
         game_scenes.insert(base, DiscoveryType::Revealed);
         Self { game_scenes }
     }
-    pub fn add_unrevealed(
+
+    pub(crate) fn add_unrevealed(
         &mut self,
         mut commands: Commands,
         client: ClientId,
@@ -102,7 +96,7 @@ impl MapDiscovery {
         });
     }
 
-    pub fn reveal(
+    pub(crate) fn reveal(
         &mut self,
         mut commands: Commands,
         client: ClientId,
@@ -204,13 +198,15 @@ fn init_travel_dialog(
 }
 
 fn init_map(
-    _trigger: On<GameStarted>,
+    _trigger: On<Add, MapDiscovery>,
     assets: Res<AssetServer>,
     player: Query<&MapDiscovery, With<ControlledPlayer>>,
     mut commands: Commands,
 ) -> Result {
     let map_texture = assets.load::<Image>("sprites/ui/map.png");
-    let discovery = player.single()?;
+    let Ok(discovery) = player.single() else {
+        return Ok(());
+    };
 
     commands.spawn((
         Map,
