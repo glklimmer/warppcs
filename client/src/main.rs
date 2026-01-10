@@ -10,6 +10,8 @@ use gizmos::GizmosPlugin;
 use health::HealthPlugin;
 use interactables::InteractablePlugins;
 use interaction::InteractPlugin;
+use items::ItemPlugins;
+use lobby::LobbyPlugin;
 use networking::join_server::JoinServerPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugins;
@@ -118,6 +120,8 @@ fn main() {
             ProjectilePlugin,
             CheatRemotePlugin,
             InteractablePlugins,
+            ItemPlugins,
+            LobbyPlugin,
         ));
 
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);
