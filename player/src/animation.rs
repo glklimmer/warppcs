@@ -70,7 +70,7 @@ impl FromWorld for KingSpriteSheet {
         let layout = texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
             UVec2::splat(32),
             ATLAS_COLUMNS as u32,
-            10,
+            11,
             None,
             None,
         ));
@@ -79,7 +79,7 @@ impl FromWorld for KingSpriteSheet {
             KingAnimation::Idle => anim!(0, 3),
             KingAnimation::Drink => anim!(1, 5),
             KingAnimation::Walk => anim!(2, 5),
-            KingAnimation::Attack => anim!(4, 10),
+            KingAnimation::Attack => anim!(10, 1),
             KingAnimation::Hit => anim!(5, 3),
             KingAnimation::Death => anim!(6, 6),
             KingAnimation::KnockOut => SpriteSheetAnimation {
