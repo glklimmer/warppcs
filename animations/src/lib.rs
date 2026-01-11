@@ -19,6 +19,26 @@ mod macros;
 pub mod sound;
 pub mod ui;
 
+pub struct AnimationPlugin;
+
+impl Plugin for AnimationPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            UIAnimationsPlugin,
+            SpriteVariantLoaderPlugin,
+            AnimationSoundPlugin,
+        ));
+
+        app.init_resource::<CommanderMenuSpriteSheet>();
+
+        app.init_resource::<ItemInfoSpriteSheet>();
+        app.init_resource::<MapIconSpriteSheet>();
+        app.init_resource::<FormationIconSpriteSheet>();
+
+        app.add_systems(PostUpdate, advance_animation);
+    }
+}
+
 #[derive(Clone)]
 pub struct StaticSpriteSheet<E: EnumIter> {
     pub texture: Handle<Image>,
@@ -150,28 +170,6 @@ pub struct AnimationTrigger<E> {
 #[derive(Component)]
 pub struct PlayOnce;
 
-pub struct AnimationPlugin;
-
-impl Plugin for AnimationPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins((
-            UIAnimationsPlugin,
-            SpriteVariantLoaderPlugin,
-            AnimationSoundPlugin,
-        ));
-
-        app.init_resource::<CommanderMenuSpriteSheet>();
-
-        app.init_resource::<ItemInfoSpriteSheet>();
-        app.init_resource::<MapIconSpriteSheet>();
-        app.init_resource::<FormationIconSpriteSheet>();
-
-        app.add_observer(remove_animation_after_play_once);
-
-        app.add_systems(PostUpdate, advance_animation);
-    }
-}
-
 #[allow(clippy::type_complexity)]
 fn advance_animation(
     mut query: Query<(
@@ -204,15 +202,5 @@ fn advance_animation(
             };
         }
     }
-    Ok(())
-}
-
-fn remove_animation_after_play_once(
-    trigger: On<Remove, PlayOnce>,
-    mut commands: Commands,
-) -> Result {
-    commands
-        .entity(trigger.entity)
-        .remove::<SpriteSheetAnimation>();
     Ok(())
 }

@@ -231,11 +231,13 @@ fn remove_animation(
     current_animation: Query<&KingAnimation>,
     mut commands: Commands,
 ) {
-    if let Ok(KingAnimation::Death) = current_animation.get(trigger.entity) {
-        commands
-            .entity(trigger.entity)
-            .remove::<SpriteSheetAnimation>();
+    let Ok(KingAnimation::Death) = current_animation.get(trigger.entity) else {
+        return;
     };
+
+    commands
+        .entity(trigger.entity)
+        .remove::<SpriteSheetAnimation>();
 }
 
 fn set_king_after_play_once(
