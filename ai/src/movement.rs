@@ -9,9 +9,9 @@ use physics::{
 };
 use units::{MeleeRange, ProjectileRange, Unit, UnitType};
 
-use crate::{ArmyFormationTo, ArmyFormations, WalkIntoRange};
+use crate::{ArmyFormationTo, ArmyFormations, WalkIntoRange, WalkingInDirection};
 
-use super::{Attack, FormationHasTarget, Target, offset::FollowOffset};
+use super::{FormationHasTarget, Target, offset::FollowOffset};
 
 #[derive(Component, Clone)]
 pub struct FollowFlag;
@@ -21,6 +21,7 @@ pub struct IsFriendlyFormationUnitInFront;
 
 #[derive(Component, Clone)]
 pub struct IsFriendlyUnitInFront;
+
 #[derive(Component, Clone, Deref, DerefMut)]
 pub struct Roam(Timer);
 
@@ -85,26 +86,23 @@ fn follow_flag(
             .unwrap()
             .translation
             .truncate();
-        let attached_to = is_attached.get(**flag_assignment)?;
-        let building_pos = transform_query.get(**attached_to)?.translation.truncate();
 
-        let desired = building_pos + **offset;
+        let target = match (
+            is_attached.get(**flag_assignment).is_ok(),
+            unit.unit_type.eq(&UnitType::Commander),
+        ) {
+            (true, true) | (true, false) | (false, false) => flag_pos + **offset,
+            (false, true) => flag_pos,
+        };
 
-        let diff = desired - transform.translation.truncate();
+        let direction = (target.x - transform.translation.x).signum();
 
-        if diff.length() > MOVE_EPSILON {
-            velocity.0 = diff.normalize() * **speed * **rand_velocity_mul;
-        } else {
-            velocity.0 = Vec2::ZERO;
+        if (transform.translation.x - target.x).abs() <= MOVE_EPSILON {
+            velocity.0.x = 0.;
+            continue;
         }
 
-        if unit.unit_type.eq(&UnitType::Commander) {
-            velocity.0.x = if (flag_pos.x - transform.translation.x).abs() > MOVE_EPSILON {
-                (flag_pos.x - transform.translation.x).signum() * **speed
-            } else {
-                0.
-            };
-        }
+        velocity.0.x = direction * **speed * **rand_velocity_mul;
     }
 
     Ok(())
@@ -242,40 +240,66 @@ fn friendly_formation_unit_in_front(
 
 fn friendly_unit_in_front(
     trigger: On<BehaveTrigger<IsFriendlyUnitInFront>>,
-    units: Query<(&Unit, &Transform)>,
+    units: Query<(&Unit, Option<&ArmyFormationTo>)>,
     other_units: Query<(Entity, &Transform, &Unit)>,
+    commander: Query<&ArmyFormations>,
     mut commands: Commands,
 ) -> Result {
     let target = trigger.ctx().target_entity();
     let ctx = trigger.event().ctx();
 
     // Get army formation for target
-    let (target_unit, target_transform) = units.get(target)?;
+    let (target_unit, army_formation) = units.get(target)?;
     if target_unit.unit_type.eq(&UnitType::Shieldwarrior) {
         commands.trigger(ctx.failure());
         return Ok(());
     }
 
-    let target_pos = target_transform.translation.truncate();
-    let target_direction = target_transform.forward().truncate();
+    let army_formation = match army_formation {
+        Some(formation) => formation,
+        None => {
+            commands.trigger(ctx.failure());
+            return Ok(());
+        }
+    };
 
-    let is_unit_in_front = other_units
-        .iter()
-        .filter(|(entity, _, _)| *entity != target)
-        .any(|(_, other_transform, _)| {
-            let other_pos = other_transform.translation.truncate();
-            let to_other = (other_pos - target_pos).normalize();
-            let distance = target_pos.distance(other_pos);
+    let entities = commander.get(**army_formation)?;
 
-            distance < 20. && to_other.dot(target_direction) > 0.5
-        });
+    for entity in entities.iter() {
+        if let (Ok((_, transform_1, _)), Ok((_, transform_2, unit))) =
+            (other_units.get(target), other_units.get(entity))
+        {
+            let is_behind = transform_2.translation.x > transform_1.translation.x;
+            if is_behind
+                && target_unit.unit_type == UnitType::Archer
+                && (unit.unit_type == UnitType::Pikeman
+                    || unit.unit_type == UnitType::Shieldwarrior)
+            {
+                info!(
+                    "Target: {:?} : Other: {:?}",
+                    target_unit.unit_type, unit.unit_type
+                );
+                commands.trigger(ctx.success());
+                continue;
+            }
 
-    if is_unit_in_front {
-        commands.trigger(ctx.success());
-    } else {
-        commands.trigger(ctx.failure());
+            if is_behind
+                && target_unit.unit_type == UnitType::Pikeman
+                && unit.unit_type == UnitType::Shieldwarrior
+            {
+                info!(
+                    "Target: {:?} : Other: {:?}",
+                    target_unit.unit_type, unit.unit_type
+                );
+                commands.trigger(ctx.success());
+                continue;
+            }
+        } else {
+            commands.trigger(ctx.failure());
+        }
     }
 
+    commands.trigger(ctx.failure());
     Ok(())
 }
 
@@ -311,7 +335,7 @@ fn formation_has_target(
 }
 
 fn walk_in_direction(
-    query: Query<&BehaveCtx, With<Attack>>,
+    query: Query<&BehaveCtx, With<WalkingInDirection>>,
     mut unit: Query<(
         &mut Velocity,
         &RandomVelocityMul,
