@@ -1,8 +1,16 @@
 use bevy::prelude::*;
 
-use bevy_replicon::prelude::Replicated;
+use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use items::Item;
 use serde::{Deserialize, Serialize};
+
+pub struct InventoryPlugin;
+
+impl Plugin for InventoryPlugin {
+    fn build(&self, app: &mut App) {
+        app.replicate::<Inventory>();
+    }
+}
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
 #[require(Replicated)]

@@ -2346,6 +2346,7 @@ dependencies = [
  "physics",
  "serde",
  "shared",
+ "transport",
  "units",
 ]
 
@@ -2553,6 +2554,7 @@ dependencies = [
  "serde",
  "shared",
  "sprite_variant_loader",
+ "transport",
  "travel",
  "units",
 ]
@@ -6993,6 +6995,21 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "transport"
+version = "0.1.0"
+dependencies = [
+ "animations",
+ "bevy",
+ "bevy_replicon",
+ "fastrand",
+ "health",
+ "inventory 0.1.0",
+ "physics",
+ "serde",
+ "shared",
 ]
 
 [[package]]

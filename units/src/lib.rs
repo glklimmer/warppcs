@@ -1,5 +1,6 @@
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::prelude::*;
 
+use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use health::{DelayedDamage, Health, TakeDamage};
 use inventory::Cost;

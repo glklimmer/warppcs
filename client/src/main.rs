@@ -10,6 +10,7 @@ use gizmos::GizmosPlugin;
 use health::HealthPlugin;
 use interactables::InteractablePlugins;
 use interaction::InteractPlugin;
+use inventory::InventoryPlugin;
 use items::ItemPlugins;
 use lobby::LobbyPlugin;
 use networking::join_server::JoinServerPlugin;
@@ -120,6 +121,7 @@ fn main() {
             InteractablePlugins,
             ItemPlugins,
             LobbyPlugin,
+            InventoryPlugin,
         ));
 
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);

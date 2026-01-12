@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
+use health::Health;
 use inventory::Inventory;
-use shared::Owner;
+use lobby::PlayerColor;
+use shared::{GameState, Owner, Vec3LayerExt, map::Layers};
+use transport::Transport;
 
 use crate::BuildingType;
 
@@ -12,12 +15,27 @@ pub(crate) mod animation;
 const GOLD_PER_TICK: u16 = 10;
 const GOLD_TIMER: f32 = 2.;
 
-#[derive(Component)]
-pub struct GoldFarmTimer {
-    pub timer: Timer,
+pub(crate) struct GoldFarmPlugin;
+
+impl Plugin for GoldFarmPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            FixedUpdate,
+            (
+                gold_farm_output.run_if(in_state(GameState::GameSession)),
+                enable_goldfarm.run_if(on_message::<BuildingChangeEnd>),
+            ),
+        );
+    }
 }
 
-impl Default for GoldFarmTimer {
+#[derive(Component)]
+#[require(Inventory)]
+pub struct GoldFarm {
+    timer: Timer,
+}
+
+impl Default for GoldFarm {
     fn default() -> Self {
         Self {
             timer: Timer::from_seconds(GOLD_TIMER, TimerMode::Repeating),
@@ -25,10 +43,7 @@ impl Default for GoldFarmTimer {
     }
 }
 
-pub(crate) fn enable_goldfarm(
-    mut commands: Commands,
-    mut events: MessageReader<BuildingChangeEnd>,
-) {
+fn enable_goldfarm(mut commands: Commands, mut events: MessageReader<BuildingChangeEnd>) {
     for event in events.read() {
         let BuildingType::GoldFarm = event.building.building_type else {
             continue;
@@ -36,24 +51,30 @@ pub(crate) fn enable_goldfarm(
 
         commands
             .entity(event.0.building_entity)
-            .insert(GoldFarmTimer::default());
+            .insert(GoldFarm::default());
     }
 }
 
-pub fn gold_farm_output(
-    mut gold_farms_query: Query<(&mut GoldFarmTimer, &Owner)>,
-    mut inventory_query: Query<&mut Inventory>,
+fn gold_farm_output(
+    mut gold_farms_query: Query<(&mut GoldFarm, &mut Inventory)>,
     time: Res<Time>,
 ) -> Result {
-    for (mut farm_timer, owner) in &mut gold_farms_query {
+    for (mut farm_timer, mut inventory) in &mut gold_farms_query {
         farm_timer.timer.tick(time.delta());
 
         if farm_timer.timer.just_finished() {
-            let owner = owner.entity()?;
-            let mut inventory = inventory_query.get_mut(owner)?;
-
             inventory.gold += GOLD_PER_TICK;
+            info!("gold farm inventory: {}", inventory.gold);
         }
     }
     Ok(())
 }
+
+// fn spawn_transport(mut commands: Commands) {
+//     commands.spawn((
+//         Transport,
+//         transform.translation.with_layer(Layers::Unit),
+//         Health { hitpoints: 100. },
+//         PlayerColor,
+//     ));
+// }

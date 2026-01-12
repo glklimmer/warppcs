@@ -46,6 +46,7 @@ health = { path = "../health" }
 inventory = { path = "../inventory" }
 physics = { path = "../physics" }
 items = { path = "../items" }
+transport = { path = "../transport" }
 serde = { workspace = true }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }

@@ -43,7 +43,7 @@ impl Plugin for PlayerPlugins {
             PlayerAnimationPlugin,
             DefeatPlugin,
         ))
-        .replicate_bundle::<(Player, Transform, Inventory)>()
+        .replicate_bundle::<(Player, Transform)>()
         .add_systems(
             FixedUpdate,
             pickup_item.run_if(on_message::<InteractionTriggeredEvent>),

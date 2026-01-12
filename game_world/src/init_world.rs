@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use buildings::{
-    BuildStatus, Building, BuildingType, HealthIndicator, gold_farm::GoldFarmTimer,
+    BuildStatus, Building, BuildingType, HealthIndicator, gold_farm::GoldFarm,
     item_assignment::ItemAssignment, main_building::MainBuildingLevels,
     recruiting::RecruitBuilding, wall::WallLevels,
 };
@@ -331,7 +331,7 @@ fn player_base(
         BuildStatus::Built {
             indicator: HealthIndicator::Healthy,
         },
-        GoldFarmTimer::default(),
+        GoldFarm::default(),
         offset.offset_x(-265.).with_layer(Layers::Building),
         owner,
         game_scene_id,

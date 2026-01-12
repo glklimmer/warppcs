@@ -1,0 +1,46 @@
+[package]
+name = "transport"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy = { workspace = true, default-features = false, features = [
+  "std",
+  "serialize",
+  "animation",
+  "bevy_asset",
+  "bevy_audio",
+  "bevy_color",
+  "bevy_core_pipeline",
+  "bevy_gizmos",
+  "bevy_mesh_picking_backend",
+  "bevy_render",
+  "bevy_scene",
+  "bevy_sprite",
+  "bevy_sprite_picking_backend",
+  "bevy_state",
+  "bevy_text",
+  "bevy_ui",
+  "bevy_ui_picking_backend",
+  "bevy_window",
+  "bevy_winit",
+  "custom_cursor",
+  "default_font",
+  "hdr",
+  "multi_threaded",
+  "png",
+  "sysinfo_plugin",
+  "vorbis",
+  "wayland",
+] }
+shared = { path = "../shared", default-features = false }
+animations = { path = "../animations" }
+inventory = { path = "../inventory" }
+physics = { path = "../physics" }
+health = { path = "../health" }
+bevy_replicon = { workspace = true }
+serde = { workspace = true }
+fastrand = { workspace = true }

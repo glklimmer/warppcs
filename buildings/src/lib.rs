@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
-use gold_farm::{enable_goldfarm, gold_farm_output};
 use health::Health;
 use inventory::Cost;
 use item_assignment::ItemAssignmentPlugins;
@@ -10,13 +9,14 @@ use lobby::PlayerColor;
 use physics::movement::BoxCollider;
 use respawn::respawn_units;
 use serde::{Deserialize, Serialize};
-use shared::{GameState, enum_map::*};
+use shared::enum_map::*;
 use units::UnitType;
 
 use crate::{
     animations::BuildingAnimationPlugin,
     construction::{BuildingChangeEnd, ConstructionPlugins},
     destruction::DestructionPlugin,
+    gold_farm::GoldFarmPlugin,
     main_building::MainBuildingLevels,
     recruiting::RecruitingPlugins,
     respawn::{RespawnZone, respawn_timer},
@@ -48,17 +48,11 @@ impl Plugin for BuildingsPlugins {
             RecruitingPlugins,
             WallPlugin,
             SiegeCampPlugin,
+            GoldFarmPlugin,
         ))
         .replicate_bundle::<(Building, BuildStatus, Transform)>()
         .replicate_bundle::<(RespawnZone, Transform)>()
-        .add_systems(
-            FixedUpdate,
-            (
-                gold_farm_output.run_if(in_state(GameState::GameSession)),
-                (respawn_timer, respawn_units).chain(),
-                enable_goldfarm.run_if(on_message::<BuildingChangeEnd>),
-            ),
-        );
+        .add_systems(FixedUpdate, ((respawn_timer, respawn_units).chain(),));
     }
 }
 

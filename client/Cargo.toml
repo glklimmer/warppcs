@@ -60,6 +60,7 @@ remote = { path = "../remote" }
 lobby = { path = "../lobby" }
 items = { path = "../items" }
 interactables = { path = "../interactables" }
+transport = { path = "../transport" }
 bevy-steamworks = { workspace = true, optional = true }
 bevy_replicon = { workspace = true, features = ["client"] }
 bincode = { workspace = true }
