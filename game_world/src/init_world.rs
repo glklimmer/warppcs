@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use buildings::{
     BuildStatus, Building, BuildingType, HealthIndicator, gold_farm::GoldFarm,
-    item_assignment::ItemAssignment, main_building::MainBuildingLevels,
-    recruiting::RecruitBuilding, wall::WallLevels,
+    main_building::MainBuildingLevels, recruiting::RecruitBuilding, transport::TransportBuilding,
+    wall::WallLevels,
 };
 use health::Health;
 use interactables::chest::Chest;
@@ -274,7 +274,6 @@ fn player_base(
     ));
     commands.spawn((
         RecruitBuilding,
-        ItemAssignment::default(),
         offset.offset_x(135.).with_layer(Layers::Building),
         owner,
         Interactable {
@@ -284,19 +283,17 @@ fn player_base(
         game_scene_id,
     ));
     commands.spawn((
-        RecruitBuilding,
-        ItemAssignment::default(),
+        TransportBuilding,
         offset.offset_x(-135.).with_layer(Layers::Building),
         owner,
         Interactable {
-            kind: InteractionType::ItemAssignment,
+            kind: InteractionType::Building,
             restricted_to: Some(player),
         },
         game_scene_id,
     ));
     commands.spawn((
         RecruitBuilding,
-        ItemAssignment::default(),
         offset.offset_x(235.).with_layer(Layers::Building),
         owner,
         Interactable {

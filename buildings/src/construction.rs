@@ -2,9 +2,10 @@ use bevy::prelude::*;
 
 use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
 use inventory::Inventory;
+use lobby::PlayerColor;
 use shared::Owner;
 
-use crate::{BuildStatus, Building, HealthIndicator};
+use crate::{BuildStatus, Building, BuildingType, HealthIndicator};
 
 pub(crate) struct ConstructionPlugins;
 
@@ -52,8 +53,8 @@ pub(crate) struct BuildingChangeEnd(pub BuildingEventInfo);
 pub(crate) fn check_building_interaction(
     mut interactions: MessageReader<InteractionTriggeredEvent>,
     mut writer: MessageWriter<BuildingChangeStart>,
-    player: Query<&Inventory>,
-    building: Query<(Entity, &Building, &BuildStatus)>,
+    player: Query<(&Inventory, &PlayerColor)>,
+    building: Query<(Entity, Option<&Building>, &BuildStatus)>,
 ) -> Result {
     for event in interactions.read() {
         let InteractionType::Building = &event.interaction else {
@@ -61,9 +62,17 @@ pub(crate) fn check_building_interaction(
         };
         info!("Checking building interact.");
 
-        let inventory = player.get(event.player)?;
+        let (inventory, color) = player.get(event.player)?;
 
-        let (entity, building, status) = building.get(event.interactable)?;
+        let (entity, maybe_building, status) = building.get(event.interactable)?;
+
+        let building = match maybe_building {
+            Some(building) => building,
+            None => &Building {
+                building_type: BuildingType::Transport,
+                color: *color,
+            },
+        };
 
         match status {
             BuildStatus::Constructing => {
@@ -112,20 +121,17 @@ pub(crate) fn check_building_interaction(
 pub(crate) fn start_construction(
     mut events: MessageReader<BuildingChangeStart>,
     mut inventory: Query<&mut Inventory>,
-    mut building_query: Query<&mut Building>,
     mut commands: Commands,
 ) -> Result {
     for event in events.read() {
         let mut building_entity = commands.entity(event.building_entity);
         let building = event.building;
 
-        let mut building_state = building_query.get_mut(event.building_entity)?;
-        *building_state = building;
-
         info!("Start constructing: {:?}", building);
 
         building_entity
             .insert((
+                building,
                 BuildingConstructing {
                     timer: Timer::from_seconds(building.time(), TimerMode::Once),
                     change: (**event).clone(),

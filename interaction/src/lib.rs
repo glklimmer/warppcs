@@ -43,6 +43,7 @@ pub enum InteractionType {
     Commander,
     Chest,
     Item,
+    Collect,
 }
 
 #[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]

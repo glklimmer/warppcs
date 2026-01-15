@@ -1,10 +1,8 @@
 use bevy::prelude::*;
 
-use health::Health;
+use interaction::{Interactable, InteractionType};
 use inventory::Inventory;
-use lobby::PlayerColor;
-use shared::{GameState, Owner, Vec3LayerExt, map::Layers};
-use transport::Transport;
+use shared::GameState;
 
 use crate::BuildingType;
 
@@ -30,7 +28,13 @@ impl Plugin for GoldFarmPlugin {
 }
 
 #[derive(Component)]
-#[require(Inventory)]
+#[require(
+    Inventory,
+    Interactable {
+        kind: InteractionType::Collect,
+        restricted_to: None,
+    },
+)]
 pub struct GoldFarm {
     timer: Timer,
 }
@@ -69,12 +73,3 @@ fn gold_farm_output(
     }
     Ok(())
 }
-
-// fn spawn_transport(mut commands: Commands) {
-//     commands.spawn((
-//         Transport,
-//         transform.translation.with_layer(Layers::Unit),
-//         Health { hitpoints: 100. },
-//         PlayerColor,
-//     ));
-// }

@@ -3,8 +3,10 @@ use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use health::Health;
+use inventory::Inventory;
 use physics::movement::{BoxCollider, RandomVelocityMul, Speed, Velocity};
 use serde::{Deserialize, Serialize};
+use shared::GameState;
 
 use crate::animation::TransporterAnimationPlugin;
 

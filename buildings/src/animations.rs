@@ -15,6 +15,7 @@ use crate::{
         archer::archer_building, pikeman::pikeman_building, shieldwarrior::shieldwarrior_building,
     },
     siege_camp::animations::tent::tent_building,
+    transport::animation::transport_building,
     wall::{
         WallLevels,
         animations::{
@@ -28,6 +29,7 @@ pub(crate) struct BuildingAnimationPlugin;
 impl Plugin for BuildingAnimationPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(remove_animation_after_play_once)
+            .add_observer(init_marker_building_sprite)
             .init_resource::<BuildingSpriteSheets>()
             .add_systems(Update, update_building_sprite);
     }
@@ -50,6 +52,7 @@ impl FromWorld for BuildingSpriteSheets {
         let wall_wood = wall_wood_building(world);
         let wall_tower = wall_tower_building(world);
         let gold_farm = gold_farm_building(world);
+        let transport = transport_building(world);
 
         let sprite_sheets = EnumMap::new(|c| match c {
             BuildingType::MainBuilding { level } => match level {
@@ -71,10 +74,26 @@ impl FromWorld for BuildingSpriteSheets {
             },
             BuildingType::Tower => tent.clone(),
             BuildingType::GoldFarm => gold_farm.clone(),
+            BuildingType::Transport => transport.clone(),
         });
 
         BuildingSpriteSheets { sprite_sheets }
     }
+}
+
+fn init_marker_building_sprite(
+    trigger: On<Add, BuildStatus>,
+    query: Query<&BuildStatus>,
+    mut slots: Query<&mut Sprite>,
+    asset_server: Res<AssetServer>,
+) -> Result {
+    let status = query.get(trigger.entity)?;
+    let BuildStatus::Marker = status else {
+        return Ok(());
+    };
+    let mut sprite = slots.get_mut(trigger.entity)?;
+    sprite.image = asset_server.load::<Image>(Building::marker_texture());
+    Ok(())
 }
 
 #[allow(clippy::type_complexity)]

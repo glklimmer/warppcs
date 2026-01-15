@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use shared::map::Layers;
 
 use crate::{
-    animation::PlayerAnimationPlugin, attack::AttackPlugin, client::Client,
+    animation::PlayerAnimationPlugin, attack::AttackPlugin, client::Client, collect::CollectPlugin,
     commander::CommanderPlugin, defeat::DefeatPlugin, item::pickup_item, knockout::KnockoutPlugin,
     mount::MountPlugin, movement::Movement, teleport::Teleport,
 };
@@ -20,6 +20,7 @@ use crate::{
 mod animation;
 mod attack;
 mod client;
+mod collect;
 mod commander;
 mod defeat;
 mod item;
@@ -42,6 +43,7 @@ impl Plugin for PlayerPlugins {
             CommanderPlugin,
             PlayerAnimationPlugin,
             DefeatPlugin,
+            CollectPlugin,
         ))
         .replicate_bundle::<(Player, Transform)>()
         .add_systems(

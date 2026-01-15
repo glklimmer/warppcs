@@ -21,6 +21,7 @@ use crate::{
     recruiting::RecruitingPlugins,
     respawn::{RespawnZone, respawn_timer},
     siege_camp::SiegeCampPlugin,
+    transport::TransportPlugins,
     wall::{WallLevels, WallPlugin},
 };
 
@@ -34,6 +35,7 @@ pub mod main_building;
 pub mod recruiting;
 pub mod respawn;
 pub mod siege_camp;
+pub mod transport;
 pub mod wall;
 
 pub struct BuildingsPlugins;
@@ -49,6 +51,7 @@ impl Plugin for BuildingsPlugins {
             WallPlugin,
             SiegeCampPlugin,
             GoldFarmPlugin,
+            TransportPlugins,
         ))
         .replicate_bundle::<(Building, BuildStatus, Transform)>()
         .replicate_bundle::<(RespawnZone, Transform)>()
@@ -92,6 +95,7 @@ pub enum BuildingType {
     Wall { level: WallLevels },
     Tower,
     GoldFarm,
+    Transport,
 }
 
 impl Building {
@@ -147,6 +151,7 @@ impl BuildingType {
             BuildingType::Unit { weapon: _ } => None,
             BuildingType::Tower => None,
             BuildingType::GoldFarm => None,
+            BuildingType::Transport => None,
         }
     }
 
@@ -208,6 +213,10 @@ impl BuildingType {
                 dimension: Vec2::new(80., 40.),
                 offset: Some(Vec2::new(0., 20.)),
             },
+            BuildingType::Transport => BoxCollider {
+                dimension: Vec2::new(80., 40.),
+                offset: Some(Vec2::new(0., 20.)),
+            },
         }
     }
 
@@ -226,6 +235,7 @@ impl BuildingType {
             },
             BuildingType::Tower => 400.,
             BuildingType::GoldFarm => 600.,
+            BuildingType::Transport => 800.,
         };
         Health { hitpoints }
     }
@@ -245,6 +255,7 @@ impl BuildingType {
             },
             BuildingType::Tower => 150,
             BuildingType::GoldFarm => 200,
+            BuildingType::Transport => 150,
         };
         Cost { gold }
     }
@@ -256,6 +267,7 @@ impl BuildingType {
             BuildingType::Wall { level: _ } => false,
             BuildingType::Tower => false,
             BuildingType::GoldFarm => false,
+            BuildingType::Transport => false,
         }
     }
 
@@ -263,7 +275,10 @@ impl BuildingType {
         match *self {
             BuildingType::MainBuilding { level: _ } => Some(UnitType::Commander),
             BuildingType::Unit { weapon: unit_type } => Some(unit_type),
-            BuildingType::Wall { level: _ } | BuildingType::Tower | BuildingType::GoldFarm => None,
+            BuildingType::Wall { level: _ }
+            | BuildingType::Tower
+            | BuildingType::GoldFarm
+            | BuildingType::Transport => None,
         }
     }
 
@@ -282,6 +297,7 @@ impl BuildingType {
             },
             BuildingType::Tower => todo!(),
             BuildingType::GoldFarm => 5.,
+            BuildingType::Transport => 10.,
         }
     }
 }

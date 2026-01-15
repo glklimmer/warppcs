@@ -27,9 +27,7 @@ use shared::{
 };
 use units::{Damage, MeleeRange, ProjectileRange, Sight, Unit, UnitType};
 
-use crate::{
-    BuildStatus, Building, marker_collider, recruiting::animations::RecruitAnimationPlugin,
-};
+use crate::{BuildStatus, Building, marker_collider};
 
 use super::item_assignment::ItemAssignment;
 
@@ -39,8 +37,7 @@ pub(crate) struct RecruitingPlugins;
 
 impl Plugin for RecruitingPlugins {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RecruitAnimationPlugin)
-            .replicate_bundle::<(RecruitBuilding, Transform)>()
+        app.replicate_bundle::<(RecruitBuilding, Transform)>()
             .add_observer(recruit_units)
             .add_observer(recruit_commander)
             .add_systems(
@@ -58,6 +55,7 @@ impl Plugin for RecruitingPlugins {
     Sprite,
     Anchor::BOTTOM_CENTER,
     BuildStatus = BuildStatus::Marker,
+    ItemAssignment
 )]
 pub struct RecruitBuilding;
 
