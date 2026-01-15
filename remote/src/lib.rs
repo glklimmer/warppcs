@@ -498,7 +498,7 @@ fn test(
             Speed(30.),
             Damage(10.),
             game_scene_id,
-            Transform::from_xyz(450. - 10. * i as f32, 1., 1.),
+            Transform::from_xyz(350. - 10. * i as f32, 1., 1.),
         ));
     }
 

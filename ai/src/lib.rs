@@ -108,6 +108,14 @@ struct RetreatToBase;
 #[derive(Component, Clone)]
 struct WalkingInDirection;
 
+#[derive(Component, Clone)]
+struct Reposition;
+
+#[derive(Component, Clone)]
+pub struct RepositionTo {
+    pub x_pos: f32,
+}
+
 #[derive(Event, Clone)]
 struct FormationHasTarget;
 
@@ -164,20 +172,28 @@ fn on_insert_unit_behaviour(
         ));
     }
 
+    let reposition = behave!(
+        Behave::Sequence => {
+            // Behave::trigger(IsFriendlyUnitInFront),
+            Behave::trigger(IsFriendlyFormationUnitInFront),
+            Behave::spawn_named(
+                "Reposition",
+                (
+                    Reposition,
+                    BehaveTarget(entity),
+                ),
+            ),
+        }
+    );
+
     let enemy_within_sight_range = behave!(
         Behave::Sequence => {
             Behave::trigger(TargetInSightRange),
-            Behave::Invert => {
-                Behave::trigger(IsFriendlyUnitInFront)
-            },
-            Behave::Invert => {
-                Behave::trigger(IsFriendlyFormationUnitInFront)
-            },
             Behave::spawn_named(
-                "Attack nearest enemy Melee",
+                "Walking towards enemy",
                 (
                     WalkIntoRange,
-                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyFormationUnitInFront).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
+                    BehaveInterrupt::by(IsFriendlyUnitInFront).or_not(IsFriendlyFormationUnitInFront),
                     BehaveTarget(entity),
                 ),
             ),
@@ -201,10 +217,12 @@ fn on_insert_unit_behaviour(
     let tree = behave!(
         Behave::Forever => {
             Behave::Fallback => {
-                @general_within_range,
+                // @general_within_range,
                 ...attack_chain,
                 @enemy_within_sight_range,
+                @reposition,
                 @notify,
+
                 @behave!(
                     Behave::spawn_named(
                         "Following flag",
