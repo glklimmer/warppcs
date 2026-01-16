@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use ai::{ArmyFormationTo, BanditBehaviour, UnitBehaviour, offset::FollowOffset};
+use ai::{ArmyFormationTo, UnitBehaviour, bandit::BanditBehaviour, offset::FollowOffset};
 use army::{
     ArmyFlagAssignments, ArmyFormation, ArmyPosition,
     commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH},

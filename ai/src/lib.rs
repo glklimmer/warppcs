@@ -34,11 +34,11 @@ use crate::{
     transport::TransportPlugin,
 };
 
+pub mod bandit;
 pub mod offset;
 pub mod retreat;
 
 mod attack;
-mod bandit;
 mod commander;
 mod death;
 mod flag;
@@ -53,12 +53,6 @@ pub enum UnitBehaviour {
     FollowFlag,
     Idle,
     Attack(WorldDirection),
-}
-
-#[derive(Debug, Component, Default, Clone)]
-pub enum BanditBehaviour {
-    #[default]
-    Aggressive,
 }
 
 pub struct AIPlugin;
@@ -114,7 +108,7 @@ struct WalkingInDirection;
 #[derive(Event, Clone)]
 struct FormationHasTarget;
 
-#[derive(Component, Clone, Deref)]
+#[derive(Component, Clone, Deref, Debug)]
 struct TravelToEntity(Entity);
 
 fn on_insert_unit_behaviour(

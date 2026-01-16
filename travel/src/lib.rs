@@ -43,7 +43,7 @@ pub struct Traveling {
 }
 
 impl Traveling {
-    fn between(source: GameScene, target: GameScene) -> Self {
+    pub fn between(source: GameScene, target: GameScene) -> Self {
         Self {
             source,
             target,

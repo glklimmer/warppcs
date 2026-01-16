@@ -7,7 +7,8 @@ use physics::{
     attachment::AttachedTo,
     movement::{BoxCollider, RandomVelocityMul, Speed, Velocity},
 };
-use shared::GameSceneId;
+use shared::{GameScene, GameSceneId};
+use travel::Traveling;
 use units::{MeleeRange, ProjectileRange, Unit, UnitType};
 
 use crate::{ArmyFormationTo, ArmyFormations, TravelToEntity, WalkIntoRange};
@@ -40,7 +41,13 @@ impl Plugin for AIMovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (follow_flag, roam, walk_into_range, walk_in_direction),
+            (
+                follow_flag,
+                roam,
+                walk_into_range,
+                walk_in_direction,
+                travel_to_entity,
+            ),
         );
         app.add_observer(friendly_formation_unit_in_front);
         app.add_observer(friendly_unit_in_front);
@@ -358,14 +365,45 @@ fn walk_in_direction(
 }
 
 fn travel_to_entity(
-    query: Query<&BehaveCtx, With<TravelToEntity>>,
-    mut travelers: Query<(&TravelToEntity, &mut Velocity, &Speed, &GameSceneId)>,
-    transform_query: Query<&Transform>,
+    query: Query<(&BehaveCtx, &TravelToEntity)>,
+    mut traveler: Query<(&mut Velocity, &Speed, Option<&Traveling>)>,
+    world_position: Query<(&Transform, &GameSceneId)>,
+    game_scenes: Query<&GameScene>,
     mut commands: Commands,
 ) -> Result {
-    for ctx in query.iter() {
-        let (travel_target, mut velocity, speed, game_scene_id) =
-            travelers.get_mut(ctx.target_entity())?;
+    for (ctx, travel_target) in query.iter() {
+        info!("target: {:?}", **travel_target);
+        let entity = ctx.target_entity();
+        let (mut velocity, speed, maybe_traveling) = traveler.get_mut(entity)?;
+        let (traveler_transform, traveler_scene_id) = world_position.get(entity)?;
+        let (target_transform, target_scene_id) = world_position.get(**travel_target)?;
+
+        if traveler_scene_id == target_scene_id {
+            let diff = target_transform.translation - traveler_transform.translation;
+            if diff.length() > MOVE_EPSILON {
+                velocity.0 = diff.truncate().normalize() * **speed;
+            } else {
+                velocity.0 = Vec2::ZERO;
+                commands.trigger(ctx.success());
+            }
+        } else {
+            let source_game_scene = game_scenes
+                .iter()
+                .find(|scene| scene.id == *traveler_scene_id);
+            let target_game_scene = game_scenes
+                .iter()
+                .find(|scene| scene.id == *target_scene_id);
+
+            if let (Some(source), Some(target)) = (source_game_scene, target_game_scene) {
+                commands
+                    .entity(entity)
+                    .insert(Traveling::between(*source, *target))
+                    .remove::<GameSceneId>();
+                velocity.0 = Vec2::ZERO;
+            } else {
+                commands.trigger(ctx.failure());
+            }
+        }
     }
     Ok(())
 }

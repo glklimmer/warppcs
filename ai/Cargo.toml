@@ -44,5 +44,6 @@ health = { path = "../health" }
 army = { path = "../army" }
 projectiles = { path = "../projectiles" }
 transport = { path = "../transport" }
+travel = { path = "../travel" }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }

@@ -238,6 +238,7 @@ dependencies = [
  "projectiles",
  "shared",
  "transport",
+ "travel",
  "units",
 ]
 

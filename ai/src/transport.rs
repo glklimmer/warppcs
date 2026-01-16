@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_behave::{Behave, behave, prelude::BehaveTree};
 use transport::Transport;
 
-use crate::{BehaveSources, BehaveTarget, TravelToEntity};
+use crate::TravelToEntity;
 
 pub(crate) struct TransportPlugin;
 
@@ -19,28 +19,17 @@ fn on_spawn_transport(
     mut commands: Commands,
 ) -> Result {
     let entity = spawn.entity;
-    let target = query.get(entity)?;
+    let transport = query.get(entity)?;
 
-    let tree = behave!(
-        Behave::Forever => {
-            Behave::Fallback => {
-                Behave::spawn_named(
-                    "Traveling to entity",
-                    (
-                        TravelToEntity(target.target),
-                        BehaveTarget(entity)
-                    )
-                )
-            }
-        }
-    );
+    let tree = behave!(Behave::Forever => {
+        Behave::spawn_named(
+            "Traveling to entity",
+            TravelToEntity(transport.target)
+        )
+    });
 
     commands
         .entity(entity)
-        .despawn_related::<BehaveSources>()
-        .with_child((
-            BehaveTree::new(tree).with_logging(false),
-            BehaveTarget(entity),
-        ));
+        .with_child((BehaveTree::new(tree).with_logging(true),));
     Ok(())
 }
