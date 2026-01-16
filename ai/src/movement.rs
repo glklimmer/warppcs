@@ -119,9 +119,9 @@ fn follow_flag(
 }
 
 fn roam(
-    time: Res<Time>,
     query: Query<&BehaveCtx, With<Roam>>,
     mut unit: Query<(&mut Roam, &mut Velocity, &RandomVelocityMul, &Speed)>,
+    time: Res<Time>,
 ) -> Result {
     for ctx in query.iter() {
         let (mut roam, mut velocity, rand_velocity_mul, speed) =

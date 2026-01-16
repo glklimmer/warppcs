@@ -297,7 +297,7 @@ impl BuildingType {
             },
             BuildingType::Tower => todo!(),
             BuildingType::GoldFarm => 5.,
-            BuildingType::Transport => 10.,
+            BuildingType::Transport => 1.,
         }
     }
 }

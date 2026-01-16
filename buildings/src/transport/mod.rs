@@ -4,7 +4,7 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use health::Health;
 use inventory::Inventory;
-use physics::movement::{BoxCollider, Speed, Velocity};
+use physics::movement::{BoxCollider, Speed};
 use serde::{Deserialize, Serialize};
 use shared::{GameState, Owner, Vec3LayerExt, map::Layers};
 use std::collections::HashMap;
@@ -103,12 +103,11 @@ fn send_transporter(
         {
             info!("spawning transport");
             commands.spawn((
-                Speed(100.0),
-                Velocity::default(),
                 Transport { target },
                 HomeBuilding(transport_building_entity),
                 *transport_building_owner,
                 Health { hitpoints: 100.0 },
+                Speed(100.0),
                 transport_building_transform
                     .translation
                     .with_layer(Layers::Unit),
