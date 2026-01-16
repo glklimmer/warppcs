@@ -608,7 +608,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        1,
+        0,
         commander,
     );
     let back = spawn_unit(
@@ -619,7 +619,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        4,
+        0,
         commander,
     );
 

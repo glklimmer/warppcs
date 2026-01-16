@@ -162,9 +162,7 @@ fn on_insert_unit_behaviour(
                 (
                     Attack::Projectile,
                     BehaveInterrupt::by_not(TargetInProjectileRange)
-                        .or(TargetInMeleeRange)
-                        .or(IsFriendlyUnitInFront)
-                        .or(IsFriendlyFormationUnitInFront),
+                        .or(TargetInMeleeRange),
                     BehaveTarget(entity),
                 ),
             )
@@ -173,16 +171,19 @@ fn on_insert_unit_behaviour(
     }
 
     let reposition = behave!(
-        Behave::Sequence => {
-            // Behave::trigger(IsFriendlyUnitInFront),
-            Behave::trigger(IsFriendlyFormationUnitInFront),
-            Behave::spawn_named(
-                "Reposition",
-                (
-                    Reposition,
-                    BehaveTarget(entity),
-                ),
-            ),
+            Behave::Sequence => {
+
+                Behave::trigger(IsFriendlyFormationUnitInFront),
+                Behave::trigger(IsFriendlyUnitInFront),
+                Behave::While => {
+                    Behave::spawn_named(
+                        "Reposition",
+                        (
+                            Reposition,
+                            BehaveTarget(entity),
+                        ),
+                    ),
+                }
         }
     );
 
@@ -193,7 +194,7 @@ fn on_insert_unit_behaviour(
                 "Walking towards enemy",
                 (
                     WalkIntoRange,
-                    BehaveInterrupt::by(IsFriendlyUnitInFront).or_not(IsFriendlyFormationUnitInFront),
+                    // BehaveInterrupt::by_not(IsFriendlyUnitInFront),
                     BehaveTarget(entity),
                 ),
             ),
@@ -207,7 +208,7 @@ fn on_insert_unit_behaviour(
                 "Notify Formation",
                 (
                     WalkingInDirection,
-                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyFormationUnitInFront).or(IsFriendlyUnitInFront).or_not(TargetInMeleeRange),
+                    BehaveInterrupt::by(TargetInProjectileRange).or_not(TargetInMeleeRange),
                     BehaveTarget(entity),
                 ),
             ),
@@ -219,9 +220,9 @@ fn on_insert_unit_behaviour(
             Behave::Fallback => {
                 // @general_within_range,
                 ...attack_chain,
+                @notify,
                 @enemy_within_sight_range,
                 @reposition,
-                @notify,
 
                 @behave!(
                     Behave::spawn_named(
