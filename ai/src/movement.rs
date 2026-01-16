@@ -375,6 +375,11 @@ fn travel_to_entity(
         info!("target: {:?}", **travel_target);
         let entity = ctx.target_entity();
         let (mut velocity, speed, maybe_traveling) = traveler.get_mut(entity)?;
+
+        if maybe_traveling.is_some() {
+            continue;
+        };
+
         let (traveler_transform, traveler_scene_id) = world_position.get(entity)?;
         let (target_transform, target_scene_id) = world_position.get(**travel_target)?;
 

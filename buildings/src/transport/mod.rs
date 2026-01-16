@@ -6,7 +6,7 @@ use health::Health;
 use inventory::Inventory;
 use physics::movement::{BoxCollider, Speed};
 use serde::{Deserialize, Serialize};
-use shared::{GameState, Owner, Vec3LayerExt, map::Layers};
+use shared::{GameSceneId, GameState, Owner, Vec3LayerExt, map::Layers};
 use std::collections::HashMap;
 use transport::{HomeBuilding, Transport};
 
@@ -64,6 +64,7 @@ fn send_transporter(
         &Owner,
         &Transform,
         &BuildStatus,
+        &GameSceneId,
     )>,
     transporter_query: Query<&HomeBuilding>,
     collectables_query: Query<(Entity, &Owner), (With<Building>, With<Inventory>)>,
@@ -79,6 +80,7 @@ fn send_transporter(
         transport_building_owner,
         transport_building_transform,
         build_status,
+        game_scene_id,
     ) in transport_building_query.iter_mut()
     {
         let BuildStatus::Built { indicator: _ } = build_status else {
@@ -111,6 +113,7 @@ fn send_transporter(
                 transport_building_transform
                     .translation
                     .with_layer(Layers::Unit),
+                *game_scene_id,
             ));
         }
     }

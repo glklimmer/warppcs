@@ -39,6 +39,7 @@ pub mod offset;
 pub mod retreat;
 
 mod attack;
+mod collect;
 mod commander;
 mod death;
 mod flag;
@@ -110,6 +111,12 @@ struct FormationHasTarget;
 
 #[derive(Component, Clone, Deref, Debug)]
 struct TravelToEntity(Entity);
+
+#[derive(Component, Clone, Deref, Debug)]
+struct CollectFromEntity(Entity);
+
+#[derive(Component, Clone, Deref, Debug)]
+struct DepositToEntity(Entity);
 
 fn on_insert_unit_behaviour(
     trigger: On<Insert, UnitBehaviour>,
