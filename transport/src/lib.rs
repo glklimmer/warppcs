@@ -4,9 +4,8 @@ use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use health::Health;
 use inventory::Inventory;
-use physics::movement::{BoxCollider, RandomVelocityMul, Speed, Velocity};
+use physics::movement::{BoxCollider, Speed, Velocity};
 use serde::{Deserialize, Serialize};
-use shared::GameState;
 
 use crate::animation::TransporterAnimationPlugin;
 
@@ -29,11 +28,13 @@ impl Plugin for TransportPlugin {
     Velocity,
     Sprite,
     Anchor::BOTTOM_CENTER,
-    RandomVelocityMul,
     Health,
     Speed,
+    Inventory
 )]
-pub struct Transport;
+pub struct Transport {
+    pub target: Entity,
+}
 
 fn transport_collider() -> BoxCollider {
     BoxCollider {
@@ -41,3 +42,9 @@ fn transport_collider() -> BoxCollider {
         offset: Some(Vec2::new(0., 8.)),
     }
 }
+
+#[derive(Component, Debug, Clone)]
+pub struct CollectionTarget(pub Entity);
+
+#[derive(Component, Debug, Clone, Deref)]
+pub struct HomeBuilding(pub Entity);

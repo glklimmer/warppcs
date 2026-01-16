@@ -283,7 +283,7 @@ fn player_base(
         game_scene_id,
     ));
     commands.spawn((
-        TransportBuilding,
+        TransportBuilding::default(),
         offset.offset_x(-135.).with_layer(Layers::Building),
         owner,
         Interactable {

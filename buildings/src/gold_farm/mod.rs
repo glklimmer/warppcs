@@ -68,7 +68,6 @@ fn gold_farm_output(
 
         if farm_timer.timer.just_finished() {
             inventory.gold += GOLD_PER_TICK;
-            info!("gold farm inventory: {}", inventory.gold);
         }
     }
     Ok(())

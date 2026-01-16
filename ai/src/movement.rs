@@ -7,9 +7,10 @@ use physics::{
     attachment::AttachedTo,
     movement::{BoxCollider, RandomVelocityMul, Speed, Velocity},
 };
+use shared::GameSceneId;
 use units::{MeleeRange, ProjectileRange, Unit, UnitType};
 
-use crate::{ArmyFormationTo, ArmyFormations, WalkIntoRange};
+use crate::{ArmyFormationTo, ArmyFormations, TravelToEntity, WalkIntoRange};
 
 use super::{Attack, FormationHasTarget, Target, offset::FollowOffset};
 
@@ -352,6 +353,19 @@ fn walk_in_direction(
                 entity_velocity.0.x = direction * **speed * **rand_velocity_mul;
             }
         }
+    }
+    Ok(())
+}
+
+fn travel_to_entity(
+    query: Query<&BehaveCtx, With<TravelToEntity>>,
+    mut travelers: Query<(&TravelToEntity, &mut Velocity, &Speed, &GameSceneId)>,
+    transform_query: Query<&Transform>,
+    mut commands: Commands,
+) -> Result {
+    for ctx in query.iter() {
+        let (travel_target, mut velocity, speed, game_scene_id) =
+            travelers.get_mut(ctx.target_entity())?;
     }
     Ok(())
 }

@@ -31,6 +31,7 @@ use crate::{
     offset::{FollowOffset, OffsetPlugin},
     retreat::{AIRetreatPlugin, GeneralInSightRange},
     spawn::SpawnPlugin,
+    transport::TransportPlugin,
 };
 
 pub mod offset;
@@ -43,6 +44,7 @@ mod death;
 mod flag;
 mod movement;
 mod spawn;
+mod transport;
 
 #[derive(Debug, Component, Default, Clone)]
 #[require(FollowOffset)]
@@ -74,6 +76,7 @@ impl Plugin for AIPlugin {
             AIBanditPlugin,
             AICommanderPlugin,
             AIRetreatPlugin,
+            TransportPlugin,
         ))
         .add_observer(on_insert_unit_behaviour)
         .add_observer(push_back_check)
@@ -110,6 +113,9 @@ struct WalkingInDirection;
 
 #[derive(Event, Clone)]
 struct FormationHasTarget;
+
+#[derive(Component, Clone, Deref)]
+struct TravelToEntity(Entity);
 
 fn on_insert_unit_behaviour(
     trigger: On<Insert, UnitBehaviour>,

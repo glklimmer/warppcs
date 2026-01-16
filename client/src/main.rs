@@ -21,6 +21,7 @@ use remote::CheatRemotePlugin;
 use shared::PlayerState;
 use shared::{GameState, SharedPlugin};
 use std::env;
+use transport::TransportPlugin;
 use ui::UiPlugin;
 use units::UnitsPlugins;
 
@@ -122,6 +123,7 @@ fn main() {
             ItemPlugins,
             LobbyPlugin,
             InventoryPlugin,
+            TransportPlugin,
         ));
 
     client.add_systems(OnEnter(GameState::MainMenu), setup_background);
