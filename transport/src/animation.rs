@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use animations::{
     AnimationSpriteSheet, AnimationTrigger, SpriteSheetAnimation, anim, sound::AnimationSound,
 };
+use physics::movement::Moving;
 use shared::{AnimationChange, AnimationChangeEvent, enum_map::*};
 
 use crate::Transport;
@@ -16,6 +17,8 @@ impl Plugin for TransporterAnimationPlugin {
         app.init_resource::<TransportSpriteSheet>()
             .add_message::<AnimationTrigger<TransportAnimation>>()
             .add_observer(init_transport_sprite)
+            .add_observer(set_transport_walking)
+            .add_observer(set_transport_idle)
             .add_systems(
                 Update,
                 (set_transport_sprite_animation, next_transport_animation),
@@ -95,6 +98,32 @@ fn init_transport_sprite(
     let mut commands = commands.entity(trigger.entity);
     commands.insert((animation.clone(), TransportAnimation::default()));
     Ok(())
+}
+
+fn set_transport_walking(
+    trigger: On<Add, Moving>,
+    is_transport: Query<Entity, With<Transport>>,
+    mut animation_trigger: MessageWriter<AnimationTrigger<TransportAnimation>>,
+) {
+    if is_transport.get(trigger.entity).is_ok() {
+        animation_trigger.write(AnimationTrigger {
+            entity: trigger.entity,
+            state: TransportAnimation::Walk,
+        });
+    }
+}
+
+fn set_transport_idle(
+    trigger: On<Remove, Moving>,
+    is_transport: Query<Entity, With<Transport>>,
+    mut animation_trigger: MessageWriter<AnimationTrigger<TransportAnimation>>,
+) {
+    if is_transport.get(trigger.entity).is_ok() {
+        animation_trigger.write(AnimationTrigger {
+            entity: trigger.entity,
+            state: TransportAnimation::Idle,
+        });
+    }
 }
 
 fn next_transport_animation(

@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use bevy_replicon::prelude::{AppRuleExt, Replicated};
 use health::Health;
+use interaction::{Interactable, InteractionType};
 use inventory::Inventory;
 use physics::movement::{BoxCollider, Speed};
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,7 @@ use shared::{GameSceneId, GameState, Owner, Vec3LayerExt, map::Layers};
 use std::collections::HashMap;
 use transport::{HomeBuilding, Transport};
 
-use crate::{BuildStatus, gold_farm::GoldFarm};
+use crate::{BuildStatus, BuildingType, construction::BuildingChangeEnd, gold_farm::GoldFarm};
 
 pub(crate) mod animation;
 
@@ -21,7 +22,10 @@ impl Plugin for TransportPlugins {
         app.replicate_bundle::<(TransportBuilding, Transform)>()
             .add_systems(
                 FixedUpdate,
-                (send_transporter.run_if(in_state(GameState::GameSession)),),
+                (
+                    send_transporter.run_if(in_state(GameState::GameSession)),
+                    enable_transport.run_if(on_message::<BuildingChangeEnd>),
+                ),
             );
     }
 }
@@ -54,6 +58,21 @@ fn marker_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(28., 26.),
         offset: Some(Vec2::new(0., 13.)),
+    }
+}
+
+fn enable_transport(mut commands: Commands, mut events: MessageReader<BuildingChangeEnd>) {
+    for event in events.read() {
+        let BuildingType::Transport = event.building.building_type else {
+            continue;
+        };
+
+        commands
+            .entity(event.0.building_entity)
+            .insert(Interactable {
+                kind: InteractionType::Collect,
+                restricted_to: None,
+            });
     }
 }
 
