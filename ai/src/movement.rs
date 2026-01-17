@@ -372,7 +372,6 @@ fn travel_to_entity(
     mut commands: Commands,
 ) -> Result {
     for (ctx, travel_target) in query.iter() {
-        info!("target: {:?}", **travel_target);
         let entity = ctx.target_entity();
         let (mut velocity, speed, maybe_traveling) = traveler.get_mut(entity)?;
 
@@ -385,7 +384,7 @@ fn travel_to_entity(
 
         if traveler_scene_id == target_scene_id {
             let diff = target_transform.translation - traveler_transform.translation;
-            if diff.length() > MOVE_EPSILON {
+            if diff.length() > 10. {
                 velocity.0 = diff.truncate().normalize() * **speed;
             } else {
                 velocity.0 = Vec2::ZERO;

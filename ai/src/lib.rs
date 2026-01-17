@@ -25,6 +25,7 @@ pub struct ArmyFormations(Vec<Entity>);
 use crate::{
     attack::AIAttackPlugin,
     bandit::AIBanditPlugin,
+    collect::CollectPlugin,
     commander::AICommanderPlugin,
     death::DeathPlugin,
     flag::FlagPlugin,
@@ -72,6 +73,7 @@ impl Plugin for AIPlugin {
             AICommanderPlugin,
             AIRetreatPlugin,
             TransportPlugin,
+            CollectPlugin,
         ))
         .add_observer(on_insert_unit_behaviour)
         .add_observer(push_back_check)
@@ -117,6 +119,9 @@ struct CollectFromEntity(Entity);
 
 #[derive(Component, Clone, Deref, Debug)]
 struct DepositToEntity(Entity);
+
+#[derive(Component, Clone)]
+struct EntityDespawn;
 
 fn on_insert_unit_behaviour(
     trigger: On<Insert, UnitBehaviour>,

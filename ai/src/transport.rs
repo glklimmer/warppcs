@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_behave::{Behave, behave, prelude::BehaveTree};
 use transport::{HomeBuilding, Transport};
 
-use crate::{CollectFromEntity, TravelToEntity};
+use crate::{CollectFromEntity, DepositToEntity, EntityDespawn, TravelToEntity};
 
 pub(crate) struct TransportPlugin;
 
@@ -37,7 +37,8 @@ fn on_spawn_transport(
         Behave::spawn_named(
             "Deposit",
             DepositToEntity(**home_building)
-        )
+        ),
+        Behave::trigger(EntityDespawn)
     });
 
     commands

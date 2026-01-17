@@ -10,7 +10,7 @@ use shared::{GameSceneId, GameState, Owner, Vec3LayerExt, map::Layers};
 use std::collections::HashMap;
 use transport::{HomeBuilding, Transport};
 
-use crate::{BuildStatus, Building};
+use crate::{BuildStatus, gold_farm::GoldFarm};
 
 pub(crate) mod animation;
 
@@ -34,6 +34,7 @@ impl Plugin for TransportPlugins {
     Sprite,
     Anchor::BOTTOM_CENTER,
     BuildStatus = BuildStatus::Marker,
+    Inventory
 )]
 pub struct TransportBuilding {
     transporters: u8,
@@ -67,7 +68,7 @@ fn send_transporter(
         &GameSceneId,
     )>,
     transporter_query: Query<&HomeBuilding>,
-    collectables_query: Query<(Entity, &Owner), (With<Building>, With<Inventory>)>,
+    collectables_query: Query<(Entity, &Owner), With<GoldFarm>>,
 ) {
     let mut transport_counts = HashMap::new();
     for home_building in transporter_query.iter() {
@@ -109,7 +110,7 @@ fn send_transporter(
                 HomeBuilding(transport_building_entity),
                 *transport_building_owner,
                 Health { hitpoints: 100.0 },
-                Speed(100.0),
+                Speed(25.0),
                 transport_building_transform
                     .translation
                     .with_layer(Layers::Unit),

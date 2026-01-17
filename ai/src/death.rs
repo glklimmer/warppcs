@@ -1,16 +1,19 @@
 use bevy::prelude::*;
 
+use bevy_behave::prelude::BehaveTrigger;
 use bevy_replicon::prelude::ServerState;
 use health::Health;
 use units::Unit;
 
-use crate::{BehaveSources, Target, TargetedBy, UnitBehaviour, bandit::BanditBehaviour};
+use crate::{
+    BehaveSources, EntityDespawn, Target, TargetedBy, UnitBehaviour, bandit::BanditBehaviour,
+};
 
 pub(crate) struct DeathPlugin;
 
 impl Plugin for DeathPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_death);
+        app.add_observer(on_death).add_observer(on_entity_despawn);
     }
 }
 
@@ -39,6 +42,16 @@ fn on_death(
             .entity(entity)
             .remove_related::<Target>(targeted_by);
     };
+
+    Ok(())
+}
+
+fn on_entity_despawn(trigger: On<BehaveTrigger<EntityDespawn>>, mut commands: Commands) -> Result {
+    let ctx = trigger.event().ctx();
+    let target_entity = ctx.target_entity();
+
+    commands.entity(target_entity).despawn();
+    commands.trigger(ctx.success());
 
     Ok(())
 }
