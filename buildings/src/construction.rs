@@ -164,11 +164,11 @@ pub(crate) fn progess_construction(
 
 pub(crate) fn end_construction(
     mut events: MessageReader<BuildingChangeEnd>,
-    owner_query: Query<&Owner>,
     mut commands: Commands,
 ) -> Result {
     for event in events.read() {
         let building = event.building;
+        let player = event.player_entity;
 
         info!("End constructing: {:?}", building);
 
@@ -179,21 +179,20 @@ pub(crate) fn end_construction(
             BuildStatus::Built {
                 indicator: HealthIndicator::Healthy,
             },
+            Owner::Player(player),
         ));
-
-        let owner = owner_query.get(event.building_entity)?.entity()?;
 
         if building.can_upgrade() {
             building_commands.insert(Interactable {
                 kind: InteractionType::Building,
-                restricted_to: Some(owner),
+                restricted_to: Some(player),
             });
         }
 
         if building.is_recruit_building() {
             building_commands.insert(Interactable {
                 kind: InteractionType::Recruit,
-                restricted_to: Some(owner),
+                restricted_to: Some(player),
             });
         }
     }
