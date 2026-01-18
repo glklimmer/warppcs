@@ -430,7 +430,7 @@ fn spawn_unit(
     let hitpoints = 200.;
     let health = Health { hitpoints };
 
-    let movement_speed = 40.;
+    let movement_speed = 70.;
     let speed = Speed(movement_speed);
 
     let damage = 20.;
@@ -449,6 +449,7 @@ fn spawn_unit(
 
     for i in 1..=amount {
         let mut un = commands.spawn((
+            ArmyFormationTo(commander),
             Name::new(format!("{:?} {}", unit_type, i)),
             player_translation.with_layer(Layers::Flag),
             unit.clone(),
@@ -459,7 +460,6 @@ fn spawn_unit(
             game_scene_id,
             FlagAssignment(flag_entity),
             UnitBehaviour::default(),
-            ArmyFormationTo(commander),
         ));
         if unit.unit_type.eq(&UnitType::Shieldwarrior) {
             un.insert(melee_range_shield);
@@ -608,7 +608,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        0,
+        2,
         commander,
     );
     let back = spawn_unit(
@@ -619,7 +619,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        0,
+        4,
         commander,
     );
 

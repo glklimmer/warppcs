@@ -112,6 +112,9 @@ struct WalkingInDirection;
 struct Reposition;
 
 #[derive(Component, Clone)]
+struct Waiting;
+
+#[derive(Component, Clone)]
 pub struct RepositionTo {
     pub x_pos: f32,
 }
@@ -137,6 +140,7 @@ fn on_insert_unit_behaviour(
             Behave::spawn_named("Retreat to Base", (RetreatToBase, BehaveTarget(entity)))
         }
     );
+
     let mut attack_chain: Vec<Tree<Behave>> = Vec::new();
 
     attack_chain.push(behave!(
@@ -171,19 +175,31 @@ fn on_insert_unit_behaviour(
     }
 
     let reposition = behave!(
-            Behave::Sequence => {
-
-                Behave::trigger(IsFriendlyFormationUnitInFront),
-                Behave::trigger(IsFriendlyUnitInFront),
-                Behave::While => {
-                    Behave::spawn_named(
-                        "Reposition",
-                        (
-                            Reposition,
-                            BehaveTarget(entity),
-                        ),
+        Behave::Sequence => {
+            Behave::trigger(IsFriendlyUnitInFront),
+                Behave::spawn_named(
+                    "Reposition",
+                    (
+                        Reposition,
+                        BehaveInterrupt::by_not(TargetInProjectileRange)
+                            .or(TargetInMeleeRange),
+                        BehaveTarget(entity),
                     ),
-                }
+                ),
+        }
+    );
+
+    let waiting = behave!(
+            Behave::Sequence => {
+                Behave::trigger(IsFriendlyFormationUnitInFront),
+                Behave::spawn_named(
+                    "Waiting",
+                    (
+                        Waiting,
+                        BehaveInterrupt::by_not(IsFriendlyFormationUnitInFront).or_not(TargetInProjectileRange).or_not(TargetInMeleeRange),
+                        BehaveTarget(entity),
+                    ),
+            ),
         }
     );
 
@@ -194,7 +210,7 @@ fn on_insert_unit_behaviour(
                 "Walking towards enemy",
                 (
                     WalkIntoRange,
-                    // BehaveInterrupt::by_not(IsFriendlyUnitInFront),
+                    BehaveInterrupt::by(TargetInProjectileRange).or_not(IsFriendlyFormationUnitInFront).or_not(TargetInMeleeRange),
                     BehaveTarget(entity),
                 ),
             ),
@@ -220,10 +236,10 @@ fn on_insert_unit_behaviour(
             Behave::Fallback => {
                 // @general_within_range,
                 ...attack_chain,
-                @notify,
-                @enemy_within_sight_range,
+                @waiting,
                 @reposition,
-
+                @enemy_within_sight_range,
+                @notify,
                 @behave!(
                     Behave::spawn_named(
                         "Following flag",
@@ -441,10 +457,15 @@ fn remove_target_if_out_of_sight(
 #[derive(Component)]
 pub struct DebugNameTag;
 
+#[derive(Component)]
+pub struct DebugTargetedByText;
+
 #[cfg(debug_assertions)]
+use bevy::text::{FontSmoothing, LineHeight};
 fn debug_display_unit_names(
     mut commands: Commands,
     query: Query<(Entity, &Name), (With<Unit>, Without<DebugNameTag>)>,
+    asset_server: Res<AssetServer>,
 ) {
     let mut y_offset = 1.;
     for (entity, name) in query.iter() {
@@ -456,11 +477,12 @@ fn debug_display_unit_names(
                 parent.spawn((
                     Text2d::new(name.as_str()),
                     TextFont {
-                        font_size: 4.0,
-                        font_smoothing: bevy::text::FontSmoothing::AntiAliased,
-                        ..Default::default()
+                        font_size: 5.0,
+                        line_height: LineHeight::RelativeToFont(1.2),
+                        font_smoothing: FontSmoothing::None,
+                        font: asset_server.load("fonts/GoogleSansCode-Regular.ttf"),
                     },
-                    Transform::from_xyz(0.0, 24.0 + y_offset, 0.0).with_scale(vec3(-1., 1., 1.)),
+                    Transform::from_xyz(0.0, 24.0 + y_offset, 0.0).with_scale(vec3(1., 1., 1.)),
                 ));
             });
     }
@@ -469,34 +491,61 @@ fn debug_display_unit_names(
 #[cfg(debug_assertions)]
 fn debug_display_targeted_by(
     mut commands: Commands,
-    query: Query<(Entity, &TargetedBy), With<Unit>>,
+    unit_query: Query<(Entity, &TargetedBy, Option<&Children>, &Name), With<Unit>>,
+    mut text_query: Query<(&mut Text2d, &mut Transform), With<DebugTargetedByText>>,
     name_query: Query<&Name>,
+    asset_server: Res<AssetServer>,
 ) -> Result {
-    for (entity, targeted_by) in query.iter() {
-        let mut targeter_names = Vec::new();
-        for targeter in targeted_by.iter() {
-            if let Ok(name) = name_query.get(targeter) {
-                targeter_names.push(name.as_str().to_string());
+    let mut y_offset = 1.;
+    for (unit_entity, targeted_by, children, name) in unit_query.iter() {
+        y_offset += 4.;
+        let display_text = {
+            let mut targeter_names = Vec::new();
+            for targeter in targeted_by.iter() {
+                if let Ok(name) = name_query.get(targeter) {
+                    targeter_names.push(name.as_str().to_string());
+                } else {
+                    targeter_names.push(format!("Entity({:?})", targeter));
+                }
+            }
+            if targeter_names.is_empty() {
+                "Not targeted".to_string()
             } else {
-                targeter_names.push(format!("Entity({:?})", targeter));
+                format!("{} by: {}", name, targeter_names.join(", "))
+            }
+        };
+
+        let mut text_child_entity = None;
+        if let Some(children) = children {
+            for child in children.iter() {
+                if text_query.get(child).is_ok() {
+                    text_child_entity = Some(child);
+                    break;
+                }
             }
         }
-        let display_text = if targeter_names.is_empty() {
-            "Not targeted".to_string()
+
+        if let Some(text_child_entity) = text_child_entity {
+            if let Ok((mut text, mut transform)) = text_query.get_mut(text_child_entity) {
+                text.0 = display_text;
+                transform.translation.y = -22.0 - y_offset;
+            }
         } else {
-            format!("Targeted by: {}", targeter_names.join(", "))
-        };
-        commands.entity(entity).with_children(|parent| {
-            parent.spawn((
-                Text2d::new(display_text),
-                TextFont {
-                    font_size: 4.0,
-                    font_smoothing: bevy::text::FontSmoothing::AntiAliased,
-                    ..Default::default()
-                },
-                Transform::from_xyz(0.0, 24.0, 0.0).with_scale(vec3(-1., 1., 1.)),
-            ));
-        });
+            commands.entity(unit_entity).with_children(|parent| {
+                parent.spawn((
+                    DebugTargetedByText,
+                    Text2d::new(display_text),
+                    TextColor(Color::linear_rgb(1., 0., 0.)),
+                    TextFont {
+                        font_size: 5.0,
+                        line_height: LineHeight::RelativeToFont(1.2),
+                        font_smoothing: FontSmoothing::None,
+                        font: asset_server.load("fonts/GoogleSansCode-Regular.ttf"),
+                    },
+                    Transform::from_xyz(0.0, -22.0 - y_offset, 0.0).with_scale(vec3(1., 1., 1.)),
+                ));
+            });
+        }
     }
     Ok(())
 }

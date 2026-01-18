@@ -7,8 +7,7 @@ use units::{Unit, UnitType};
 
 use crate::{
     Attack, BehaveSources, BehaveTarget, BeingPushed, RetreatToBase, TargetInMeleeRange,
-    TargetInProjectileRange, TargetInSightRange, UnitBehaviour,
-    movement::{FollowFlag, IsFriendlyFormationUnitInFront},
+    TargetInProjectileRange, TargetInSightRange, UnitBehaviour, movement::FollowFlag,
     retreat::GeneralInSightRange,
 };
 
@@ -69,15 +68,15 @@ fn on_insert_commander_behaviour(
     let tree = behave!(
         Behave::Forever => {
             Behave::Fallback => {
-                        @king_within_range,
-                        ...attack_chain,
-                        @tartget_in_sight,
-                        @behave!(
-                            Behave::spawn_named(
-                                "Following flag",
-                                    (FollowFlag, BehaveTarget(entity), BehaveInterrupt::by(TargetInSightRange).or(BeingPushed).or(IsFriendlyFormationUnitInFront))
-                            )
-                        )
+                @king_within_range,
+                ...attack_chain,
+                @tartget_in_sight,
+                @behave!(
+                    Behave::spawn_named(
+                        "Following flag",
+                            (FollowFlag, BehaveTarget(entity), BehaveInterrupt::by(TargetInSightRange).or(BeingPushed))
+                    )
+                )
             }
         }
     );
