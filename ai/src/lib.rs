@@ -234,7 +234,7 @@ fn on_insert_unit_behaviour(
     let tree = behave!(
         Behave::Forever => {
             Behave::Fallback => {
-                // @general_within_range,
+                @general_within_range,
                 ...attack_chain,
                 @waiting,
                 @reposition,
@@ -345,18 +345,13 @@ fn push_back_check(
 
 fn determine_target(
     trigger: On<BehaveTrigger<TargetInSightRange>>,
-    query: Query<(&Transform, &Owner, &Sight, Option<&Target>)>,
+    query: Query<(&Transform, &Owner, &Sight)>,
     others: Query<(Entity, &Transform, &Owner), With<Health>>,
     mut commands: Commands,
 ) -> Result {
     let ctx = trigger.event().ctx();
     let unit_entity = ctx.target_entity();
-    let (transform, owner, sight, maybe_target) = query.get(unit_entity)?;
-
-    if maybe_target.is_some() {
-        commands.trigger(ctx.success());
-        return Ok(());
-    }
+    let (transform, owner, sight) = query.get(unit_entity)?;
 
     let nearest = others
         .iter()

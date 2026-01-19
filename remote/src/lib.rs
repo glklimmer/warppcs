@@ -597,7 +597,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        2,
+        0,
         commander,
     );
     let middle = spawn_unit(
@@ -608,7 +608,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        2,
+        0,
         commander,
     );
     let back = spawn_unit(

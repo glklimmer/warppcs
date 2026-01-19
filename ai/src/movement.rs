@@ -143,14 +143,14 @@ fn walk_into_range(
         &Transform,
         Option<&Target>,
         &Speed,
+        &MeleeRange,
         Option<&ProjectileRange>,
-        Option<&MeleeRange>,
     )>,
     transform_query: Query<&Transform>,
     mut commands: Commands,
 ) -> Result {
     for ctx in query.iter() {
-        let (mut velocity, transform, maybe_target, speed, projectile_range, melee_range) =
+        let (mut velocity, transform, maybe_target, speed, melee_range, projectile_range) =
             unit.get_mut(ctx.target_entity())?;
 
         let Some(target) = maybe_target else {
@@ -160,17 +160,14 @@ fn walk_into_range(
 
         let target = transform_query.get(**target)?.translation.truncate();
 
-        let range = if let Some(r) = projectile_range {
-            **r
-        } else if let Some(r) = melee_range {
-            **r
+        let range = if let Some(range) = projectile_range {
+            **range
         } else {
-            commands.trigger(ctx.failure());
-            continue;
+            **melee_range
         };
 
         let direction = (target.x - transform.translation.x).signum();
-        if (transform.translation.x - target.x).abs() <= range {
+        if (transform.translation.x - target.x).abs() + 20. <= range {
             velocity.0.x = 0.;
             commands.trigger(ctx.failure());
             continue;
@@ -186,7 +183,7 @@ fn walk_into_range(
 fn friendly_unit_in_front(
     trigger: On<BehaveTrigger<IsFriendlyUnitInFront>>,
     units: Query<(&Unit, Option<&ArmyFormationTo>)>,
-    other_units: Query<(Entity, &Transform, &Velocity, &Unit, &BoxCollider, &Name)>,
+    other_units: Query<(Entity, &Transform, &Velocity, &Unit, &BoxCollider)>,
     commander: Query<&ArmyFormations>,
     time: Res<Time>,
     mut commands: Commands,
@@ -194,7 +191,6 @@ fn friendly_unit_in_front(
     let target = trigger.ctx().target_entity();
     let ctx = trigger.event().ctx();
 
-    // Get army formation for target
     let (target_unit, army_formation) = units.get(target)?;
     if target_unit.unit_type.eq(&UnitType::Shieldwarrior) {
         commands.trigger(ctx.failure());
@@ -211,18 +207,15 @@ fn friendly_unit_in_front(
 
     let entities = commander.get(**army_formation)?;
 
-    let (_, target_transform, target_velocity, _, target_box, target_name) =
-        other_units.get(target)?;
-    let mut furthest_back_x: Option<f32> = None;
+    let (_, target_transform, target_velocity, _, target_box) = other_units.get(target)?;
+    let mut furthest_back: Option<f32> = None;
 
     for entity in entities.iter() {
         if entity == target {
             continue;
         }
 
-        if let Ok((_, other_transform, other_velocity, unit, other_box, other_name)) =
-            other_units.get(entity)
-        {
+        if let Ok((_, other_transform, other_velocity, unit, other_box)) = other_units.get(entity) {
             let future_target =
                 target_transform.translation.truncate() + target_velocity.0 * time.delta_secs();
             let future_target_bound = target_box.at_pos(future_target);
@@ -241,20 +234,16 @@ fn friendly_unit_in_front(
                         && unit.unit_type == UnitType::Shieldwarrior))
             {
                 let separation = target_box.half_size().x + other_box.half_size().x;
-                let target_x = future_other_bound.min.x - separation;
-                info!(
-                    "target unit {:?} should be behind {}",
-                    target_name, other_name
-                );
-                furthest_back_x = Some(match furthest_back_x {
-                    None => target_x,
-                    Some(current) => current.min(target_x),
+                let target_position = future_other_bound.min.x - separation;
+                furthest_back = Some(match furthest_back {
+                    None => target_position,
+                    Some(current) => current.min(target_position),
                 });
             }
         }
     }
 
-    if let Some(x_pos) = furthest_back_x {
+    if let Some(x_pos) = furthest_back {
         commands.entity(target).insert(RepositionTo { x_pos });
         commands.trigger(ctx.success());
     } else {
@@ -266,23 +255,17 @@ fn friendly_unit_in_front(
 
 fn reposition(
     query: Query<&BehaveCtx, With<Reposition>>,
-    mut unit: Query<(&mut Velocity, &Speed, &Transform, &RepositionTo, &Name)>,
+    mut unit: Query<(&mut Velocity, &Speed, &Transform, &RepositionTo)>,
     mut commands: Commands,
 ) -> Result {
     for ctx in query.iter() {
-        let (mut velocity, speed, transform, reposition_to, name) =
-            unit.get_mut(ctx.target_entity())?;
+        let (mut velocity, speed, transform, reposition_to) = unit.get_mut(ctx.target_entity())?;
 
         if (reposition_to.x_pos - transform.translation.x).abs() > 0.2 {
             let direction = reposition_to.x_pos.signum();
-            info!(
-                "Repositioning {} to x: {} at {}",
-                name, reposition_to.x_pos, transform.translation.x
-            );
             velocity.0.x = direction * **speed;
             continue;
         } else {
-            info!("{} is already at the target position", name);
             commands
                 .entity(ctx.target_entity())
                 .remove::<RepositionTo>();
@@ -337,8 +320,10 @@ fn friendly_formation_unit_in_front(
 
     let (target_unit, army_formation) = units.get(target)?;
 
-    let entities = commander.get(**army_formation)?;
-    let sorted_entities: Vec<Entity> = entities
+    let padding = intersects_padding(target_unit);
+
+    let units = commander.get(**army_formation)?;
+    let same_units_type: Vec<Entity> = units
         .iter()
         .filter(|entity| {
             if let Ok((_, _, _, _, unit)) = other_units.get(*entity) {
@@ -348,11 +333,11 @@ fn friendly_formation_unit_in_front(
         })
         .collect();
 
-    let target_idx = sorted_entities.iter().position(|e| e == &target);
+    let target_idx = same_units_type.iter().position(|e| e == &target);
 
     let mut should_wait = false;
 
-    for entity in sorted_entities.iter() {
+    for entity in same_units_type.iter() {
         if *entity == target {
             continue;
         }
@@ -362,18 +347,18 @@ fn friendly_formation_unit_in_front(
         ) = (other_units.get(target), other_units.get(*entity))
         {
             if let (Some(t_idx), Some(other_idx)) =
-                (target_idx, sorted_entities.iter().position(|e| e == entity))
+                (target_idx, same_units_type.iter().position(|e| e == entity))
                 && t_idx < other_idx
             {
                 continue;
             }
 
-            let future_target =
-                target_transform.translation.truncate() + vel_target.0 * time.delta_secs();
+            let future_target = target_transform.translation.truncate() * padding
+                + vel_target.0 * time.delta_secs();
             let future_target_bound = box_1.at_pos(future_target);
 
             let future_other =
-                other_transform.translation.truncate() + vel_other.0 * time.delta_secs();
+                other_transform.translation.truncate() * padding + vel_other.0 * time.delta_secs();
             let future_other_bound = box_2.at_pos(future_other);
 
             if future_other_bound.intersects(&future_target_bound) {
@@ -394,6 +379,16 @@ fn friendly_formation_unit_in_front(
     Ok(())
 }
 
+fn intersects_padding(unit: &Unit) -> f32 {
+    match unit.unit_type {
+        UnitType::Shieldwarrior => 1.,
+        UnitType::Pikeman => 1.,
+        UnitType::Archer => 1.5,
+        UnitType::Bandit => 1.,
+        UnitType::Commander => 1.,
+    }
+}
+
 fn waiting(query: Query<&BehaveCtx, With<Waiting>>, mut velocity: Query<&mut Velocity>) -> Result {
     for ctx in query.iter() {
         let mut velocity = velocity.get_mut(ctx.target_entity())?;
@@ -404,13 +399,13 @@ fn waiting(query: Query<&BehaveCtx, With<Waiting>>, mut velocity: Query<&mut Vel
 
 fn walk_in_direction(
     query: Query<&BehaveCtx, With<WalkingInDirection>>,
-    mut unit: Query<(&mut Velocity, &RandomVelocityMul, &Speed, &ArmyFormationTo)>,
+    mut unit: Query<(&mut Velocity, &Speed, &ArmyFormationTo)>,
     has_target: Query<Option<&Target>>,
     commander: Query<&ArmyFormations>,
     target_location: Query<&Transform>,
 ) -> Result {
     for ctx in query.iter() {
-        let (_, _, _, army_formation) = unit.get_mut(ctx.target_entity())?;
+        let (_, _, army_formation) = unit.get_mut(ctx.target_entity())?;
 
         let formation = commander.get(**army_formation)?;
 
@@ -426,10 +421,8 @@ fn walk_in_direction(
                 .signum()
                 .x;
 
-            if let Ok((mut entity_velocity, rand_velocity_mul, speed, _)) =
-                unit.get_mut(ctx.target_entity())
-            {
-                entity_velocity.0.x = direction * **speed * **rand_velocity_mul;
+            if let Ok((mut entity_velocity, speed, _)) = unit.get_mut(ctx.target_entity()) {
+                entity_velocity.0.x = direction * **speed;
             }
         }
     }
