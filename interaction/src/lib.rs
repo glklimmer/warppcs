@@ -39,11 +39,11 @@ pub enum InteractionType {
     Building,
     Travel,
     Portal,
+    Collect,
     Mount,
     Commander,
     Chest,
     Item,
-    Collect,
 }
 
 #[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
