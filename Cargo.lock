@@ -234,6 +234,7 @@ dependencies = [
  "bevy_replicon",
  "fastrand",
  "health",
+ "interaction",
  "inventory 0.1.0",
  "physics",
  "projectiles",

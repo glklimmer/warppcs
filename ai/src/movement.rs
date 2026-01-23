@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use army::flag::FlagAssignment;
 use bevy::math::bounding::IntersectsVolume;
 use bevy_behave::prelude::{BehaveCtx, BehaveTrigger};
+use interaction::collider_trigger::ColliderTrigger;
 use physics::{
     attachment::AttachedTo,
     movement::{BoxCollider, RandomVelocityMul, Speed, Velocity},
@@ -364,18 +365,57 @@ fn walk_in_direction(
     Ok(())
 }
 
+#[derive(Component, Deref)]
+struct TravelingToCollider(Entity);
+
 fn travel_to_entity(
     query: Query<(&BehaveCtx, &TravelToEntity)>,
-    mut traveler: Query<(&mut Velocity, &Speed, Option<&Traveling>)>,
+    mut traveler: Query<(
+        &mut Velocity,
+        &Speed,
+        Option<&Traveling>,
+        Option<&TravelingToCollider>,
+    )>,
     world_position: Query<(&Transform, &GameSceneId)>,
     game_scenes: Query<&GameScene>,
+    collider_triggers: Query<(Entity, &ColliderTrigger)>,
     mut commands: Commands,
 ) -> Result {
     for (ctx, travel_target) in query.iter() {
         let entity = ctx.target_entity();
-        let (mut velocity, speed, maybe_traveling) = traveler.get_mut(entity)?;
+        let (mut velocity, speed, maybe_traveling, maybe_collider_travel) =
+            traveler.get_mut(entity)?;
 
         if maybe_traveling.is_some() {
+            continue;
+        };
+
+        if let Some(collider_travel) = maybe_collider_travel {
+            let collider = **collider_travel;
+            let (traveler_transform, traveler_scene_id) = world_position.get(entity)?;
+            let (collider_transform, _) = world_position.get(collider)?;
+            let (_, target_scene_id) = world_position.get(**travel_target)?;
+
+            let diff = collider_transform.translation - traveler_transform.translation;
+            if diff.length() > 10. {
+                velocity.0 = diff.truncate().normalize() * **speed;
+            } else {
+                let source = game_scenes
+                    .iter()
+                    .find(|scene| scene.id == *traveler_scene_id)
+                    .ok_or("Traveler GameScene not found for set GameSceneId")?;
+                let target = game_scenes
+                    .iter()
+                    .find(|scene| scene.id == *target_scene_id)
+                    .ok_or("Travel Target GameScene not found for set GameSceneId")?;
+
+                commands
+                    .entity(entity)
+                    .insert(Traveling::between(*source, *target))
+                    .remove::<(GameSceneId, TravelingToCollider)>();
+                velocity.0 = Vec2::ZERO;
+            }
+
             continue;
         };
 
@@ -391,22 +431,19 @@ fn travel_to_entity(
                 commands.trigger(ctx.success());
             }
         } else {
-            let source_game_scene = game_scenes
+            let (collider, _) = collider_triggers
                 .iter()
-                .find(|scene| scene.id == *traveler_scene_id);
-            let target_game_scene = game_scenes
-                .iter()
-                .find(|scene| scene.id == *target_scene_id);
+                .filter(|(_, trigger)| **trigger == ColliderTrigger::Travel)
+                .map(|(entity, _)| {
+                    let (_, game_scene_id) = world_position.get(entity).unwrap();
+                    (entity, game_scene_id)
+                })
+                .find(|(_, game_scene_id)| **game_scene_id == *traveler_scene_id)
+                .ok_or("Each Scene needs to have an ColliderTrigger::Travel")?;
 
-            if let (Some(source), Some(target)) = (source_game_scene, target_game_scene) {
-                commands
-                    .entity(entity)
-                    .insert(Traveling::between(*source, *target))
-                    .remove::<GameSceneId>();
-                velocity.0 = Vec2::ZERO;
-            } else {
-                commands.trigger(ctx.failure());
-            }
+            commands
+                .entity(entity)
+                .insert(TravelingToCollider(collider));
         }
     }
     Ok(())

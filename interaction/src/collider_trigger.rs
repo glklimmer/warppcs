@@ -5,7 +5,7 @@ use crate::{ActiveInteraction, BoxCollider, InteractionTriggeredEvent, Interacti
 #[derive(Component, Default)]
 pub struct ColliderTriggerActivater;
 
-#[derive(Component)]
+#[derive(Component, PartialEq, Eq)]
 pub enum ColliderTrigger {
     Travel,
 }

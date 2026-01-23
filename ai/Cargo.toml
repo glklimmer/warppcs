@@ -46,5 +46,6 @@ projectiles = { path = "../projectiles" }
 transport = { path = "../transport" }
 travel = { path = "../travel" }
 inventory = { path = "../inventory" }
+interaction = { path = "../interaction" }
 bevy_replicon = { workspace = true }
 fastrand = { workspace = true }
