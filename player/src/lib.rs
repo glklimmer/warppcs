@@ -62,7 +62,7 @@ impl Plugin for PlayerPlugins {
     Velocity,
     Sprite,
     Anchor::BOTTOM_CENTER,
-    Inventory,
+    Inventory = start_inventory(),
     Health = Health { hitpoints: 200. },
     ColliderTriggerActivater,
     PlayerColor,
@@ -76,5 +76,12 @@ fn player_collider() -> BoxCollider {
     BoxCollider {
         dimension: Vec2::new(16., 16.),
         offset: Some(Vec2::new(0., 8.)),
+    }
+}
+
+fn start_inventory() -> Inventory {
+    Inventory {
+        gold: 600,
+        items: Vec::new(),
     }
 }
