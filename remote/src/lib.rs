@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use ai::{ArmyFormationTo, BanditBehaviour, UnitBehaviour, offset::FollowOffset};
+use ai::{BanditBehaviour, UnitBehaviour, offset::FollowOffset};
 use army::{
     ArmyFlagAssignments, ArmyFormation, ArmyPosition,
     commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH},
@@ -35,7 +35,7 @@ use shared::{
     enum_map::{EnumIter, EnumMap},
     map::Layers,
 };
-use units::{Damage, MeleeRange, ProjectileRange, Sight, Unit, UnitType};
+use units::{ArmyFormationTo, Damage, MeleeRange, ProjectileRange, Sight, Unit, UnitType};
 
 pub struct CheatRemotePlugin;
 
@@ -597,7 +597,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        0,
+        2,
         commander,
     );
     let middle = spawn_unit(
@@ -608,7 +608,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        0,
+        3,
         commander,
     );
     let back = spawn_unit(

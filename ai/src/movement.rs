@@ -7,12 +7,9 @@ use physics::{
     attachment::AttachedTo,
     movement::{BoxCollider, RandomVelocityMul, Speed, Velocity},
 };
-use units::{MeleeRange, ProjectileRange, Unit, UnitType};
+use units::{ArmyFormationTo, ArmyFormations, MeleeRange, ProjectileRange, Unit, UnitType};
 
-use crate::{
-    ArmyFormationTo, ArmyFormations, Reposition, RepositionTo, Waiting, WalkIntoRange,
-    WalkingInDirection,
-};
+use crate::{Reposition, RepositionTo, Waiting, WalkIntoRange, WalkingInDirection};
 
 use super::{FormationHasTarget, Target, offset::FollowOffset};
 
@@ -269,7 +266,6 @@ fn reposition(
             commands
                 .entity(ctx.target_entity())
                 .remove::<RepositionTo>();
-            commands.trigger(ctx.failure());
         }
     }
 
@@ -309,6 +305,7 @@ fn formation_has_target(
 
 fn friendly_formation_unit_in_front(
     trigger: On<BehaveTrigger<IsFriendlyFormationUnitInFront>>,
+    has_target: Query<&Target>,
     units: Query<(&Unit, &ArmyFormationTo)>,
     other_units: Query<(Entity, &Transform, &Velocity, &BoxCollider, &Unit)>,
     commander: Query<&ArmyFormations>,
@@ -318,8 +315,12 @@ fn friendly_formation_unit_in_front(
     let target = trigger.ctx().target_entity();
     let ctx = trigger.event().ctx();
 
-    let (target_unit, army_formation) = units.get(target)?;
+    // if has_target.get(target).is_err() {
+    //     commands.trigger(ctx.failure());
+    //     return Ok(());
+    // }
 
+    let (target_unit, army_formation) = units.get(target)?;
     let padding = intersects_padding(target_unit);
 
     let units = commander.get(**army_formation)?;
@@ -333,44 +334,34 @@ fn friendly_formation_unit_in_front(
         })
         .collect();
 
-    let target_idx = same_units_type.iter().position(|e| e == &target);
+    let Some(target_idx) = same_units_type.iter().position(|e| e == &target) else {
+        commands.trigger(ctx.failure());
+        return Ok(());
+    };
 
-    let mut should_wait = false;
+    let (_, target_transform, vel_target, box_1, _) = other_units.get(target)?;
 
-    for entity in same_units_type.iter() {
-        if *entity == target {
-            continue;
-        }
-        if let (
-            Ok((_, target_transform, vel_target, box_1, _)),
-            Ok((_, other_transform, vel_other, box_2, _)),
-        ) = (other_units.get(target), other_units.get(*entity))
-        {
-            if let (Some(t_idx), Some(other_idx)) =
-                (target_idx, same_units_type.iter().position(|e| e == entity))
-                && t_idx < other_idx
-            {
-                continue;
-            }
+    let has_collision = same_units_type
+        .iter()
+        .enumerate()
+        .filter(|(idx, entity)| *entity != &target && *idx > target_idx)
+        .any(|(_, entity)| {
+            if let Ok((_, other_transform, vel_other, box_2, _)) = other_units.get(*entity) {
+                let future_target = target_transform.translation.truncate() * padding
+                    + vel_target.0 * time.delta_secs();
+                let future_target_bound = box_1.at_pos(future_target);
 
-            let future_target = target_transform.translation.truncate() * padding
-                + vel_target.0 * time.delta_secs();
-            let future_target_bound = box_1.at_pos(future_target);
+                let future_other = other_transform.translation.truncate() * padding
+                    + vel_other.0 * time.delta_secs();
+                let future_other_bound = box_2.at_pos(future_other);
 
-            let future_other =
-                other_transform.translation.truncate() * padding + vel_other.0 * time.delta_secs();
-            let future_other_bound = box_2.at_pos(future_other);
-
-            if future_other_bound.intersects(&future_target_bound) {
-                should_wait = true;
-                break;
+                future_other_bound.intersects(&future_target_bound)
             } else {
-                should_wait = false;
+                false
             }
-        }
-    }
+        });
 
-    if should_wait {
+    if has_collision {
         commands.trigger(ctx.success());
     } else {
         commands.trigger(ctx.failure());
@@ -400,7 +391,7 @@ fn waiting(query: Query<&BehaveCtx, With<Waiting>>, mut velocity: Query<&mut Vel
 fn walk_in_direction(
     query: Query<&BehaveCtx, With<WalkingInDirection>>,
     mut unit: Query<(&mut Velocity, &Speed, &ArmyFormationTo)>,
-    has_target: Query<Option<&Target>>,
+    has_target: Query<&Target>,
     commander: Query<&ArmyFormations>,
     target_location: Query<&Transform>,
 ) -> Result {

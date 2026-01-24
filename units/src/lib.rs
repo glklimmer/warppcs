@@ -31,6 +31,14 @@ impl Plugin for UnitsPlugins {
     }
 }
 
+#[derive(Component, Deref)]
+#[relationship(relationship_target = ArmyFormations)]
+pub struct ArmyFormationTo(pub Entity);
+
+#[derive(Component, Default)]
+#[relationship_target(relationship = ArmyFormationTo, linked_spawn)]
+pub struct ArmyFormations(Vec<Entity>);
+
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Mappable, PartialEq, Eq)]
 pub enum UnitType {
     Shieldwarrior,

@@ -14,14 +14,6 @@ use physics::WorldDirection;
 use shared::Owner;
 use units::{MeleeRange, ProjectileRange, Sight, Unit, UnitType, pushback::PushBack};
 
-#[derive(Component, Deref)]
-#[relationship(relationship_target = ArmyFormations)]
-pub struct ArmyFormationTo(pub Entity);
-
-#[derive(Component, Default)]
-#[relationship_target(relationship = ArmyFormationTo, linked_spawn)]
-pub struct ArmyFormations(Vec<Entity>);
-
 use crate::{
     attack::AIAttackPlugin,
     bandit::AIBanditPlugin,
@@ -175,7 +167,7 @@ fn on_insert_unit_behaviour(
     }
 
     let reposition = behave!(
-        Behave::Sequence => {
+        Behave::While => {
             Behave::trigger(IsFriendlyUnitInFront),
                 Behave::spawn_named(
                     "Reposition",
@@ -236,8 +228,8 @@ fn on_insert_unit_behaviour(
             Behave::Fallback => {
                 @general_within_range,
                 ...attack_chain,
-                @waiting,
                 @reposition,
+                @waiting,
                 @enemy_within_sight_range,
                 @notify,
                 @behave!(
@@ -254,7 +246,7 @@ fn on_insert_unit_behaviour(
         .entity(entity)
         .despawn_related::<BehaveSources>()
         .with_child((
-            BehaveTree::new(tree).with_logging(false),
+            BehaveTree::new(tree).with_logging(true),
             BehaveTarget(entity),
         ));
 
