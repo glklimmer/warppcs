@@ -202,7 +202,7 @@ fn on_insert_unit_behaviour(
                 "Walking towards enemy",
                 (
                     WalkIntoRange,
-                    BehaveInterrupt::by(TargetInProjectileRange).or_not(IsFriendlyFormationUnitInFront).or_not(TargetInMeleeRange),
+                    BehaveInterrupt::by(TargetInProjectileRange).or(IsFriendlyFormationUnitInFront).or_not(TargetInMeleeRange),
                     BehaveTarget(entity),
                 ),
             ),
