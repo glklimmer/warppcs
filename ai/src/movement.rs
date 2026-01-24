@@ -85,31 +85,27 @@ fn follow_flag(
             .unwrap()
             .translation
             .truncate();
-        let attached_to = is_attached.get(**flag_assignment)?;
-        let building_pos = transform_query.get(**attached_to)?.translation.truncate();
 
-        let desired = building_pos + **offset;
+        let target = match (
+            is_attached.get(**flag_assignment).is_ok(),
+            unit.unit_type.eq(&UnitType::Commander),
+        ) {
+            (true, true) | (true, false) | (false, false) => flag_pos + **offset,
+            (false, true) => flag_pos,
+        };
 
-        let diff = desired - transform.translation.truncate();
+        let direction = (target.x - transform.translation.x).signum();
 
-        if diff.length() > MOVE_EPSILON {
-            velocity.0 = diff.normalize() * **speed * **rand_velocity_mul;
-        } else {
-            velocity.0 = Vec2::ZERO;
+        if (transform.translation.x - target.x).abs() <= MOVE_EPSILON {
+            velocity.0.x = 0.;
+            continue;
         }
 
-        if unit.unit_type.eq(&UnitType::Commander) {
-            velocity.0.x = if (flag_pos.x - transform.translation.x).abs() > MOVE_EPSILON {
-                (flag_pos.x - transform.translation.x).signum() * **speed
-            } else {
-                0.
-            };
-        }
+        velocity.0.x = direction * **speed * **rand_velocity_mul;
     }
 
     Ok(())
 }
-
 fn roam(
     time: Res<Time>,
     query: Query<&BehaveCtx, With<Roam>>,
