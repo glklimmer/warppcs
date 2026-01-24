@@ -9,7 +9,7 @@ use interaction::{Interactable, InteractionTriggeredEvent, InteractionType};
 use lobby::{ClientPlayerMap, ClientPlayerMapExt};
 use physics::attachment::AttachedTo;
 use serde::{Deserialize, Serialize};
-use units::UnitType;
+use units::{ArmyFormationTo, ArmyFormations, UnitType};
 
 use crate::{
     ArmyFlagAssignments, ArmyFormation, ArmyPosition,
@@ -248,6 +248,7 @@ fn handle_slot_selection(
 fn assign_flag_to_formation(
     trigger: On<SlotInteraction>,
     mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation)>,
+    formations: Query<(Entity, &FlagAssignment)>,
     mut commands: Commands,
 ) -> Result {
     let SlotCommand::Assign = trigger.command else {
@@ -267,13 +268,25 @@ fn assign_flag_to_formation(
         .entity(flag)
         .insert(AttachedTo(*formation))
         .remove::<Interactable>();
-    commands.entity(trigger.player).remove::<FlagHolder>();
+    commands
+        .entity(trigger.player)
+        .remove::<(FlagHolder, ArmyFormations)>();
+
+    formations.iter().for_each(|(entity, flag_assigment)| {
+        if flag_assigment.0 == flag {
+            commands
+                .entity(entity)
+                .insert(ArmyFormationTo(trigger.commander));
+        }
+    });
+
     Ok(())
 }
 
 fn remove_flag_from_formation(
     trigger: On<SlotInteraction>,
     mut commanders: Query<&mut ArmyFlagAssignments>,
+    formations: Query<(Entity, &FlagAssignment)>,
     mut commands: Commands,
 ) -> Result {
     let SlotCommand::Remove = trigger.command else {
@@ -295,6 +308,14 @@ fn remove_flag_from_formation(
         },
     ));
 
+    formations.iter().for_each(|(entity, flag_assigment)| {
+        if flag_assigment.0 == flag {
+            commands
+                .entity(entity)
+                .insert(ArmyFormationTo(trigger.player));
+        }
+    });
+
     commands.entity(trigger.player).insert(FlagHolder(flag));
     Ok(())
 }
@@ -302,6 +323,7 @@ fn remove_flag_from_formation(
 fn swap_flag_from_formation(
     trigger: On<SlotInteraction>,
     mut commanders: Query<(&mut ArmyFlagAssignments, &ArmyFormation)>,
+    formations: Query<(Entity, &FlagAssignment)>,
     mut commands: Commands,
 ) -> Result {
     let SlotCommand::Swap = trigger.command else {
@@ -328,6 +350,14 @@ fn swap_flag_from_formation(
         .insert(AttachedTo(*formation))
         .remove::<Interactable>();
 
+    formations.iter().for_each(|(entity, flag_assigment)| {
+        if flag_assigment.0 == new_flag {
+            commands
+                .entity(entity)
+                .insert(ArmyFormationTo(trigger.commander));
+        }
+    });
+
     commands.entity(old_flag).insert((
         AttachedTo(trigger.player),
         Interactable {
@@ -335,6 +365,14 @@ fn swap_flag_from_formation(
             restricted_to: Some(trigger.player),
         },
     ));
+
+    formations.iter().for_each(|(entity, flag_assigment)| {
+        if flag_assigment.0 == old_flag {
+            commands
+                .entity(entity)
+                .insert(ArmyFormationTo(trigger.player));
+        }
+    });
     commands.entity(trigger.player).insert(FlagHolder(old_flag));
     Ok(())
 }

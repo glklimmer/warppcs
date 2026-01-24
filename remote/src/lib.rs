@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use ai::{ArmyFormationTo, BanditBehaviour, UnitBehaviour, offset::FollowOffset};
+use ai::{BanditBehaviour, UnitBehaviour, offset::FollowOffset};
 use army::{
     ArmyFlagAssignments, ArmyFormation, ArmyPosition,
     commander::{BASE_FORMATION_OFFSET, BASE_FORMATION_WIDTH},
@@ -35,7 +35,7 @@ use shared::{
     enum_map::{EnumIter, EnumMap},
     map::Layers,
 };
-use units::{Damage, MeleeRange, ProjectileRange, Sight, Unit, UnitType};
+use units::{ArmyFormationTo, Damage, MeleeRange, ProjectileRange, Sight, Unit, UnitType};
 
 pub struct CheatRemotePlugin;
 
@@ -430,7 +430,7 @@ fn spawn_unit(
     let hitpoints = 200.;
     let health = Health { hitpoints };
 
-    let movement_speed = 40.;
+    let movement_speed = 70.;
     let speed = Speed(movement_speed);
 
     let damage = 20.;
@@ -449,6 +449,7 @@ fn spawn_unit(
 
     for i in 1..=amount {
         let mut un = commands.spawn((
+            ArmyFormationTo(commander),
             Name::new(format!("{:?} {}", unit_type, i)),
             player_translation.with_layer(Layers::Flag),
             unit.clone(),
@@ -459,7 +460,6 @@ fn spawn_unit(
             game_scene_id,
             FlagAssignment(flag_entity),
             UnitBehaviour::default(),
-            ArmyFormationTo(commander),
         ));
         if unit.unit_type.eq(&UnitType::Shieldwarrior) {
             un.insert(melee_range_shield);
@@ -498,7 +498,7 @@ fn test(
             Speed(30.),
             Damage(10.),
             game_scene_id,
-            Transform::from_xyz(450. - 10. * i as f32, 1., 1.),
+            Transform::from_xyz(350. - 10. * i as f32, 1., 1.),
         ));
     }
 
@@ -608,7 +608,7 @@ fn test(
         player_translation,
         color,
         game_scene_id,
-        1,
+        3,
         commander,
     );
     let back = spawn_unit(
