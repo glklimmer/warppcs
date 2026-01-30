@@ -25,7 +25,7 @@ use shared::{
     enum_map::{EnumIter, EnumMap},
     map::Layers,
 };
-use units::{Damage, MeleeRange, ProjectileRange, Sight, Unit, UnitType};
+use units::{ArmyFormationTo, Damage, MeleeRange, ProjectileRange, Sight, Unit, UnitType};
 
 use crate::{
     BuildStatus, Building, marker_collider, recruiting::animations::RecruitAnimationPlugin,
@@ -146,6 +146,7 @@ fn recruit_units(
         flag_entity,
         *color,
         game_scene_id,
+        player,
     );
 
     commands.server_trigger(ToClients {
@@ -167,6 +168,7 @@ fn spawn_units(
     flag_entity: Entity,
     color: PlayerColor,
     game_scene_id: &GameSceneId,
+    formation_to: Entity,
 ) {
     let unit_amount = items.calculated(Effect::UnitAmount) as i32;
 
@@ -186,6 +188,7 @@ fn spawn_units(
             owner,
             *game_scene_id,
             FlagAssignment(flag_entity),
+            ArmyFormationTo(formation_to),
         ));
     }
 }

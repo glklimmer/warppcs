@@ -1,5 +1,5 @@
 use bevy_remote::{BrpRequest, http::DEFAULT_ADDR, http::DEFAULT_PORT};
-use clap::{Parser, Subcommand, ValueHint, arg, command};
+use clap::{Parser, Subcommand, ValueHint};
 use console_protocol::*;
 use dialoguer::Select;
 use serde_json::{Value, to_value};
